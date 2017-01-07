@@ -17,6 +17,9 @@ static struct
 
 void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 {
+    // TODO Implement speed parameter and remove the line below
+    (void) speed;
+
     if (channel == BC_I2C_I2C0)
     {
         if (bc_i2c.i2c0_initialized)

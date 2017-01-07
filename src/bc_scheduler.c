@@ -64,4 +64,8 @@ void bc_scheduler_register(bc_tick_t (*task)(void *), void *param, bc_tick_t tic
 
 void bc_scheduler_unregister(bc_tick_t (*task)(void *), void *param)
 {
+  (void) task;
+  (void) param;
+
+  // TODO Implement this
 }
