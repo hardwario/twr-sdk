@@ -45,26 +45,26 @@ struct bc_tmp112_t
 };
 
 //! @brief Initialize TMP112 driver
-//! @param[in] self ::bc_tmp112_t instance
-//! @param[in] i2c_channel I2C channel ::bc_i2c_channel_t
+//! @param[in] self Instance
+//! @param[in] i2c_channel I2C channel
 //! @param[in] i2c_address Address of the I2C device
 
 void bc_tmp112_init(bc_tmp112_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
 //! @brief Set callback function
-//! @param[in] self ::bc_tmp112_t instance
+//! @param[in] self Instance
 //! @param[in] event_handler Pointer to the function
 
 void bc_tmp112_set_event_handler(bc_tmp112_t *self, void (*event_handler)(bc_tmp112_t *, bc_tmp112_event_t));
 
 //! @brief Set update interval of the measurement
-//! @param[in] self ::bc_tmp112_t instance
-//! @param[in] interval Interval in ::bc_tick_t
+//! @param[in] self Instance
+//! @param[in] interval Measuring interval
 
 void bc_tmp112_set_update_interval(bc_tmp112_t *self, bc_tick_t interval);
 
 //! @brief Get measured temperature in raw values
-//! @param[in] self ::bc_tmp112_t instance
+//! @param[in] self Instance
 //! @param[in] raw pointer to the data buffer
 //! @return true when value is valid
 //! @return false when value is invalid
@@ -72,7 +72,7 @@ void bc_tmp112_set_update_interval(bc_tmp112_t *self, bc_tick_t interval);
 bool bc_tmp112_get_temperature_raw(bc_tmp112_t *self, int16_t *raw);
 
 //! @brief Get measured temperature in degrees of celsius
-//! @param[in] self ::bc_tmp112_t instance
+//! @param[in] self Instance
 //! @param[in] celsius pointer to the variable
 //! @return true when value is valid
 //! @return false when value is invalid
@@ -80,7 +80,7 @@ bool bc_tmp112_get_temperature_raw(bc_tmp112_t *self, int16_t *raw);
 bool bc_tmp112_get_temperature_celsius(bc_tmp112_t *self, float *celsius);
 
 //! @brief Get measured temperature in fahrenheit
-//! @param[in] self ::bc_tmp112_t instance
+//! @param[in] self Instance
 //! @param[in] fahrenheit pointer to the variable
 //! @return true when value is valid
 //! @return false when value is invalid
@@ -88,7 +88,7 @@ bool bc_tmp112_get_temperature_celsius(bc_tmp112_t *self, float *celsius);
 bool bc_tmp112_get_temperature_fahrenheit(bc_tmp112_t *self, float *fahrenheit);
 
 //! @brief Get measured temperature in kelvin
-//! @param[in] self ::bc_tmp112_t instance
+//! @param[in] self Instance
 //! @param[in] kelvin pointer to the variable
 //! @return true when value is valid
 //! @return false when value is invalid

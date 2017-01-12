@@ -25,7 +25,7 @@ typedef bc_tmp112_event_t bc_temperature_tag_event_t;
 typedef bc_tmp112_t bc_temperature_tag_t;
 
 //! @brief Initialize temperature tag
-//! @param[in] self ::bc_temperature_tag_t instance
+//! @param[in] self Instance
 //! @param[in] i2c_channel I2C channel ::bc_i2c_channel_t
 //! @param[in] i2c_address Address of the I2C device
 
@@ -35,7 +35,7 @@ inline void bc_temperature_tag_init(bc_temperature_tag_t *self, bc_i2c_channel_t
 }
 
 //! @brief Set callback function
-//! @param[in] self ::bc_temperature_tag_t instance
+//! @param[in] self Instance
 //! @param[in] event_handler Pointer to the function
 
 inline void bc_temperature_tag_set_event_handler(bc_temperature_tag_t *self, void (*event_handler)(bc_temperature_tag_t *, bc_temperature_tag_event_t))
@@ -44,8 +44,8 @@ inline void bc_temperature_tag_set_event_handler(bc_temperature_tag_t *self, voi
 }
 
 //! @brief Set update interval of the measurement
-//! @param[in] self ::bc_temperature_tag_t instance
-//! @param[in] interval Interval in ::bc_tick_t
+//! @param[in] self Instance
+//! @param[in] interval Measurement interval
 
 inline void bc_temperature_tag_set_update_interval(bc_temperature_tag_t *self, bc_tick_t interval)
 {
@@ -53,8 +53,8 @@ inline void bc_temperature_tag_set_update_interval(bc_temperature_tag_t *self, b
 }
 
 //! @brief Get measured temperature in raw values
-//! @param[in] self ::bc_temperature_tag_t instance
-//! @param[in] raw pointer to the data buffer
+//! @param[in] self Instance
+//! @param[in] raw Pointer to the data buffer
 //! @return true when value is valid
 //! @return false when value is invalid
 
@@ -64,7 +64,7 @@ inline bool bc_temperature_tag_get_temperature_raw(bc_temperature_tag_t *self, i
 }
 
 //! @brief Get measured temperature in degrees of celsius
-//! @param[in] self ::bc_temperature_tag_t instance
+//! @param[in] self Instance
 //! @param[in] celsius pointer to the variable
 //! @return true when value is valid
 //! @return false when value is invalid
@@ -75,7 +75,7 @@ inline bool bc_temperature_tag_get_temperature_celsius(bc_temperature_tag_t *sel
 }
 
 //! @brief Get measured temperature in fahrenheit
-//! @param[in] self ::bc_temperature_tag_t instance
+//! @param[in] self Instance
 //! @param[in] fahrenheit pointer to the variable
 //! @return true when value is valid
 //! @return false when value is invalid
@@ -86,7 +86,7 @@ inline bool bc_temperature_tag_get_temperature_fahrenheit(bc_temperature_tag_t *
 }
 
 //! @brief Get measured temperature in kelvin
-//! @param[in] self ::bc_temperature_tag_t instance
+//! @param[in] self Instance
 //! @param[in] kelvin pointer to the variable
 //! @return true when value is valid
 //! @return false when value is invalid
