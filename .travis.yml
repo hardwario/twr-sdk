@@ -11,6 +11,7 @@ env:
     - GH_REPO_REF: github.com/bigclownlabs/bc-core-module-bcl.git
     - GH_REPO_NAME: bc-core-module-bcl
     - GH_PAGES_BRANCH: gh-pages
+    - GH_PAGES_CNAME: api.bigclown.com
     - DOXYFILE: $TRAVIS_BUILD_DIR/Doxyfile
     - HTML_DIR: $TRAVIS_BUILD_DIR/doc/html
 

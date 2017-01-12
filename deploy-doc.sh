@@ -30,7 +30,13 @@ echo '' > ${HTML_DIR}/.nojekyll
 einfo 'Generating Doxygen documentation...'
 doxygen ${DOXYFILE} 2>&1 | tee doxygen.log
 
+einfo 'Switching to HTML directory...'
 cd ${HTML_DIR}
+
+einfo 'Populating CNAME (if exists)...'
+if [ "${GH_PAGES_CNAME:-}" ]; then
+    echo "${GH_PAGES_CNAME}" > CNAME
+fi
 
 einfo 'Adding files to staging area...'
 git add --all
