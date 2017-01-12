@@ -22,7 +22,7 @@ einfo "Cloning branch ${GH_PAGES_BRANCH} from https://${GH_REPO_REF}..."
 git clone -b ${GH_PAGES_BRANCH} https://${GH_REPO_REF} ${HTML_DIR}
 
 einfo 'Deleting old content...'
-git -C ${HTML_DIR} rm -rf .
+git -C ${HTML_DIR} rm -rf --ignore-unmatch .
 
 einfo 'Creating .nojekyll file...'
 echo '' > ${HTML_DIR}/.nojekyll
