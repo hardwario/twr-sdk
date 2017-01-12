@@ -1,45 +1,41 @@
-
 #include <bc_rtc.h>
 #include <bc_irq.h>
 #include <stm32l0xx.h>
 
 void bc_rtc_init(void)
 {
-    // Disable interrupts
-    bc_irq_disable();
-
     // Disable backup write protection
     PWR->CR |= PWR_CR_DBP;
 
-    while((PWR->CR & PWR_CR_DBP) == 0)
+    while ((PWR->CR & PWR_CR_DBP) == 0)
     {
         continue;
     }
 
     RCC->CSR |= RCC_CSR_LSEON | RCC_CSR_LSEDRV_1;
 
-    while((RCC->CSR & RCC_CSR_LSERDY) == 0);
-
-
-
-    //RCC->CSR |= RCC_CSR_RTCRST;
-    //RCC->CSR &= ~RCC_CSR_RTCRST;
-
-    //while((RCC->CSR & RCC_CSR_LSERDY) == 0);
+    while((RCC->CSR & RCC_CSR_LSERDY) == 0)
+    {
+        continue;
+    }
 
     // Enable clock, LSE as a clock
     RCC->CSR |= RCC_CSR_RTCEN | RCC_CSR_RTCSEL_LSE;
-    RTC->WUTR;
+    RCC->CSR;
+
+    bc_irq_disable();
 
     // Disable write protection
-    RTC->WPR = 0xCAU;
-    RTC->WPR = 0x53U;
+    RTC->WPR = 0xCA;
+    RTC->WPR = 0x53;
+
+    bc_irq_enable();
 
     // Enable init mode
     RTC->ISR |= RTC_ISR_INIT;
 
     // Wait for RTC to be in init mode
-    while ((RTC->ISR & RTC_ISR_INITF) == 0UL)
+    while((RTC->ISR & RTC_ISR_INITF) == 0)
     {
         continue;
     }
@@ -48,11 +44,27 @@ void bc_rtc_init(void)
     RTC->PRER = 255;
 
     // Asynch prediv
-    RTC->PRER |= 127UL << 16UL;
+    RTC->PRER |= (127UL) << 16UL;
 
+    // Exit from init mode
+    RTC->ISR &= ~RTC_ISR_INIT;
+
+    // Enable NVIC IRQ
     NVIC_EnableIRQ(RTC_IRQn);
 
-    RTC->WUTR = 5;
+    // Disable WUTE
+    RTC->CR &= ~RTC_CR_WUTE;
+
+    // Wait until WUTE is disabled
+    while((RTC->ISR & RTC_ISR_WUTWF) == 0)
+    {
+        continue;
+    }
+
+    RTC->WUTR = 63;
+
+    // Clear WUTF
+    RTC->ISR &= ~RTC_ISR_WUTF;
 
     // RTC IRQ need to be configured through EXTI
     EXTI->IMR |= EXTI_IMR_IM20;
@@ -60,21 +72,28 @@ void bc_rtc_init(void)
     // Exti rising edge
     EXTI->RTSR |= EXTI_IMR_IM20;
 
-    // Enable wake up timer interrupt
+    // Enable wake up timer
     RTC->CR |= RTC_CR_WUTIE | RTC_CR_WUTE;
 
-    // Exit from init mode
-    RTC->ISR &= ~RTC_ISR_INIT;
-
+    // Enable write protection
     RTC->WPR = 0xFF;
-
-    // Enable interrupts
-    bc_irq_enable();
 }
 
 volatile uint32_t rtcCounter = 0;
 
 void RTC_IRQHandler(void)
 {
-    rtcCounter++;
+    // WUTR 20 = 10 ms
+
+    // Check IRQ flag
+    if (RTC->ISR & RTC_ISR_WUTF)
+    {
+        rtcCounter++;
+
+        // Clear WUTF
+        RTC->ISR &= ~RTC_ISR_WUTF;
+    }
+
+    // Clear EXTI flag
+    EXTI->PR = EXTI_IMR_IM20;
 }

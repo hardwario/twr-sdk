@@ -5,7 +5,7 @@
 
 #define BC_TICK_INFINITY 0xffffffff
 
-typedef int32_t bc_tick_t;
+typedef uint64_t bc_tick_t;
 
 bc_tick_t bc_tick_get(void);
 
