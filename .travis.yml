@@ -8,7 +8,7 @@ branches:
 
 env:
   global:
-    - GH_REPO_REF: github.com/hubpav/bc-core-module-bcl.git
+    - GH_REPO_REF: github.com/bigclownlabs/bc-core-module-bcl.git
     - GH_REPO_NAME: bc-core-module-bcl
     - GH_PAGES_BRANCH: gh-pages
     - DOXYFILE: $TRAVIS_BUILD_DIR/Doxyfile
