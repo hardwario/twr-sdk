@@ -11,7 +11,7 @@
 #define BC_TICK_INFINITY 0xffffffff
 
 //! @brief Timestamp data type
-typedef int32_t bc_tick_t;
+typedef uint64_t bc_tick_t;
 
 //! @brief Get timestamp since the code started
 //! @return time in milliseconds
