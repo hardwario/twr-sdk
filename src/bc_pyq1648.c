@@ -1,8 +1,8 @@
 #include <bc_pyq1648.h>
 #include <bc_scheduler.h>
-
-#include <stm32l083xx.h>
+#include <bc_irq.h>
 #include <bc_gpio.h>
+#include <stm32l0xx.h>
 
 extern GPIO_TypeDef *bc_gpio_port[];
 extern uint16_t bc_gpio_16_bit_mask[];
@@ -47,7 +47,7 @@ static bc_pyq1648_t bc_pyq1648_default = {
     ._update_interval = 100,
     ._state = BC_PYQ1648_STATE_INITIALIZE,
     ._event_valid = false,
-    ._sensitivity = 20,
+    ._sensitivity = 50,
     ._config = 0
 };
 
@@ -67,11 +67,13 @@ static const uint8_t sensitivity_lut[3] = {
     [BC_PYQ1648_SENSITIVITY_HIGH] = 15,
 };
 
-GPIO_TypeDef **_pyq1648_gpiox_table = (GPIO_TypeDef **)bc_gpio_port;
-/*
-uint16_t *_pyq1648_set_mask = bc_gpio_16_bit_mask[];
-uint32_t *_pyq1648_reset_mask = bc_gpio_32_bit_upper_mask[];
-*/
+extern GPIO_TypeDef * bc_gpio_port[];
+extern uint16_t bc_gpio_16_bit_mask[];
+extern uint32_t bc_gpio_32_bit_upper_mask[];
+
+GPIO_TypeDef **_pyq1648_gpiox_table = bc_gpio_port;
+uint16_t *_pyq1648_set_mask = bc_gpio_16_bit_mask;
+uint32_t *_pyq1648_reset_mask = bc_gpio_32_bit_upper_mask;
 
 void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl)
 {
@@ -129,8 +131,6 @@ static void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
 {
     bc_irq_disable();
 
-
-    /*
     uint32_t regval = self->_config;
     uint32_t regmask = 0x1000000;
 
@@ -138,35 +138,20 @@ static void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
         [0] = _pyq1648_reset_mask[self->_gpio_channel_serin],
         [1] = _pyq1648_set_mask[self->_gpio_channel_serin]
     };
-    */
+
     GPIO_TypeDef *GPIOx = _pyq1648_gpiox_table[self->_gpio_channel_serin];
-    /*
     uint32_t *GPIOx_BSRR = (uint32_t *)&GPIOx->BSRR;
 
-    GPIOx_BSRR = 0x10;
-*/
-    /*
-    *GPIOx_BSRR = bsrr_mask[0];
-    *GPIOx_BSRR = bsrr_mask[1];
-    *GPIOx_BSRR = bsrr_mask[0];
-    *GPIOx_BSRR = bsrr_mask[1];
-    *GPIOx_BSRR = bsrr_mask[0];
-    *GPIOx_BSRR = bsrr_mask[1];
-*/
-
-    /*
     bc_gpio_set_output(self->_gpio_channel_serin, false);
 
     for (int i = 0; i < 25; i++)
     {
         bool next_bit = (regval & regmask) != 0 ? true : false;
         regmask >>= 1;
-        bc_gpio_set_output(self->_gpio_channel_serin, false);
-        bc_gpio_set_output(self->_gpio_channel_serin, true);
-        *serin_bsrr = (next_bit == true) ? upper_mask : lower_mask;
-        // GPIOB->BSRR = (next_bit == false) ? (0b100 << 16) : 0b100;
-        // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2, next_bit);
-        // bc_gpio_set_output(self->_gpio_channel_serin, next_bit);
+
+        *GPIOx_BSRR = bsrr_mask[0];
+        *GPIOx_BSRR = bsrr_mask[1];
+        *GPIOx_BSRR = bsrr_mask[next_bit];
         // TODO ... replace with wait
         _bc_pyq1648_delay_100us(1);
     }
@@ -174,7 +159,6 @@ static void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     bc_gpio_set_output(self->_gpio_channel_serin, false);
     // TODO ... replace with wait
     _bc_pyq1648_delay_100us(6);
-    */
 
     bc_irq_enable();
 }
@@ -206,12 +190,12 @@ static bc_tick_t _bc_pyq1648_task(void *param)
 
         if (self->_event_handler != NULL)
         {
-            self->_event_handler(self, BC_PYQ1648_STATE_ERROR);
+            self->_event_handler(self, BC_PYQ1648_EVENT_ERROR);
         }
 
         self->_state = BC_PYQ1648_STATE_INITIALIZE;
 
-        return PYQ1648_UPDATE_INTERVAL;
+        return self->_update_interval;
     }
     case BC_PYQ1648_STATE_INITIALIZE:
     {
@@ -220,17 +204,33 @@ static bc_tick_t _bc_pyq1648_task(void *param)
         // TODO ... kontrola pøítomnosti modulu, kdyžtak goto start;
 
         _bc_pyq1648_dev_init(self);
+        _bc_pyq1648_clear_event(self);
 
         self->_state = BC_PYQ1648_STATE_CHECK;
+
+        return BC_PYQ1648_DELAY_INITIALIZATION;
     }
     case BC_PYQ1648_STATE_CHECK:
     {
         /* If event occurred call event handler and update _blind_time (ten Pavlùv, ne nastavení) */
 
+        /*
+
+        TODO ... check if module is connected,
+        if so continue, else ...state = BC_PYQ1648_STATE_ERROR
+
+        */
+
         if(bc_gpio_get_input(self->_gpio_channel_dl))
         {
             self->_event_handler(self, BC_PYQ1648_EVENT_MOTION);
         }
+
+        _bc_pyq1648_clear_event(self);
+
+        self->_state = BC_PYQ1648_STATE_CHECK;
+
+        return self->_update_interval;
     }
     default:
     {
