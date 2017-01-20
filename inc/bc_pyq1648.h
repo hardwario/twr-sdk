@@ -39,10 +39,11 @@ struct bc_pyq1648_t
     bc_gpio_channel_t _gpio_channel_dl;
     void (*_event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t);
     bc_tick_t _update_interval;
+    bc_tick_t _aware_time;
     bc_pyq1648_state_t _state;
     bool _event_valid;
     uint8_t _sensitivity;
-    uint8_t _blank_period;
+    bc_tick_t _blank_period;
     uint32_t _config;
 };
 
