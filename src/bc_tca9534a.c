@@ -1,52 +1,4 @@
 #include <bc_tca9534a.h>
-#include <bc_scheduler.h>
-
-#include <bc_module_relay.h>
-
-void bc_tca9534a_test()
-{
-    /*uint8_t data[4];
-
-    bc_i2c_read_8b(BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT, 0x00, &data[0]);
-    bc_i2c_read_8b(BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT, 0x01, &data[1]);
-    bc_i2c_read_8b(BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT, 0x02, &data[2]);
-    bc_i2c_read_8b(BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT, 0x03, &data[3]);
-
-    uint8_t out_port = (1 << 7);
-    uint8_t out_dir = 0xF0;
-    bc_i2c_write_8b(BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT, 0x01, out_port);
-    bc_i2c_write_8b(BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT, 0x03, ~out_dir);
-
-
-    bc_i2c_read_8b(BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT, 0x00, &data[0]);
-    bc_i2c_read_8b(BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT, 0x01, &data[1]);
-    bc_i2c_read_8b(BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT, 0x02, &data[2]);
-    bc_i2c_read_8b(BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT, 0x03, &data[3]);
-*/
-    bc_tca9534a_t instance;
-
-    bc_tca9534a_init(&instance, BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT);
-    bc_tca9534a_set_port_direction(&instance, 0x0F); // inverted: O = output
-
-    bc_tca9534a_write_port(&instance, (1 << 6) | (1 << 7)); // pol A
-
-    bc_tca9534a_write_port(&instance, (1 << 6) | (1 << 4)); // off
-
-    bc_tca9534a_write_port(&instance, (1 << 4) | (1 << 5)); // pol B
-
-    bc_tca9534a_write_port(&instance, (1 << 6) | (1 << 4)); // off
-
-
-    bc_tca9534a_write_port(&instance, (1 << 6) | (1 << 7)); // pol A
-
-    bc_tca9534a_write_port(&instance, (1 << 6) | (1 << 4)); // off
-
-    bc_tca9534a_write_port(&instance, (1 << 4) | (1 << 5)); // pol B
-
-    bc_tca9534a_write_port(&instance, (1 << 6) | (1 << 4)); // off
-
-
-}
 
 
 bool bc_tca9534a_init(bc_tca9534a_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
@@ -97,11 +49,11 @@ bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534
 
     if (((port >> (uint8_t) pin) & 1) == 0)
     {
-        *value = BC_I2C_TCA9534A_VALUE_LOW;
+        *value = BC_TCA9534A_VALUE_LOW;
     }
     else
     {
-        *value = BC_I2C_TCA9534A_VALUE_HIGH;
+        *value = BC_TCA9534A_VALUE_HIGH;
     }
 
     return true;
@@ -118,7 +70,7 @@ bool bc_tca9534a_write_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca953
 
     port &= ~(1 << (uint8_t) pin);
 
-    if (value != BC_I2C_TCA9534A_VALUE_LOW)
+    if (value != BC_TCA9534A_VALUE_LOW)
     {
         port |= 1 << (uint8_t) pin;
     }
@@ -163,11 +115,11 @@ bool bc_tca9534a_get_pin_direction(bc_tca9534a_t *self, bc_tca9534a_pin_t pin,
 
     if (((port_direction >> (uint8_t) pin) & 1) == 0)
     {
-        *direction = BC_I2C_TCA9534A_DIRECTION_OUTPUT;
+        *direction = BC_TCA9534A_DIRECTION_OUTPUT;
     }
     else
     {
-        *direction = BC_I2C_TCA9534A_DIRECTION_INPUT;
+        *direction = BC_TCA9534A_DIRECTION_INPUT;
     }
 
     return true;
@@ -185,7 +137,7 @@ bool bc_tca9534a_set_pin_direction(bc_tca9534a_t *self, bc_tca9534a_pin_t pin,
 
     port_direction &= ~(1 << (uint8_t) pin);
 
-    if (direction == BC_I2C_TCA9534A_DIRECTION_INPUT)
+    if (direction == BC_TCA9534A_DIRECTION_INPUT)
     {
         port_direction |= 1 << (uint8_t) pin;
     }

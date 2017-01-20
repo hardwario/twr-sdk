@@ -30,6 +30,7 @@ typedef struct bc_module_relay_t
     bc_tca9534a_t _tca9534a;
     bc_module_relay_state_t _relay_state;
     bc_tick_t _timestamp;
+    bc_scheduler_task_id_t _task_id;
 } bc_module_relay_t;
 
 
@@ -42,7 +43,7 @@ void bc_module_relay_set(bc_module_relay_t *self, bc_module_relay_state_t state)
 //! Make a pulse
 void bc_module_relay_pulse(bc_module_relay_t *self, bc_tick_t duration);
 
-void bc_module_relay_toggle(bc_module_relay_t *self);
+bool bc_module_relay_toggle(bc_module_relay_t *self);
 
 //! @}
 
