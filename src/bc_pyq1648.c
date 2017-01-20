@@ -40,13 +40,18 @@ static bc_pyq1648_t bc_pyq1648_default =
 #define BC_PYQ1648_DELAY_RUN 50
 // TODO ... doladit init delay
 #define BC_PYQ1648_DELAY_INITIALIZATION 50
-#define PYQ1648_UPDATE_INTERVAL 100
+#define PYQ1648_UPDATE_INTERVAL 400
+#define PYQ1648_CONNECTION_CHECK_INTERVAL 5000
+#define DUMMY_EVENT_UNIT_CONFIG 0x1000010
 
 static void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl);
 static void _bc_pyq1648_dev_init(bc_pyq1648_t *self);
 static void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self);
 static void _bc_pyq1648_delay_100us(unsigned int i);
 static bc_tick_t _bc_pyq1648_task(void *param);
+bool _bc_pyq1648_echo(bc_pyq1648_t *self);
+static void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self);
+static bool _bc_pyq1648_get_forcet_read_out(bc_pyq1648_t *self, int32_t *PIRval, uint32_t *statcfg);
 
 static const uint8_t sensitivity_lut[3] =
 {
@@ -84,6 +89,11 @@ void bc_pyq1648_set_sensitivity(bc_pyq1648_t *self, bc_pyq1648_sensitivity_t sen
 {
     self->_sensitivity = sensitivity_lut[sensitivity];
     _bc_pyq1648_compose_event_unit_config(self);
+}
+
+void bc_pyq1648_set_blank_period(bc_pyq1648_t *self, uint16_t blank_period)
+{
+    self->_blank_period = blank_period;
 }
 
 void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self)
@@ -129,7 +139,8 @@ static void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     GPIO_TypeDef *GPIOx = _pyq1648_gpiox_table[self->_gpio_channel_serin];
     uint32_t *GPIOx_BSRR = (uint32_t *) &GPIOx->BSRR;
 
-    bc_gpio_set_output(self->_gpio_channel_serin, false);
+    // bc_gpio_set_output(self->_gpio_channel_serin, false);
+    _bc_pyq1648_msp_init(self->_gpio_channel_serin, self->_gpio_channel_dl);
 
     for (int i = 0; i < 25; i++)
     {
@@ -147,6 +158,8 @@ static void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     // TODO ... replace with wait
     _bc_pyq1648_delay_100us(6);
 
+    _bc_pyq1648_clear_event(self);
+
     bc_irq_enable();
 }
 
@@ -158,43 +171,45 @@ static void _bc_pyq1648_delay_100us(unsigned int i)
     }
 }
 
-static bool _bc_pyq1648_echo(bc_pyq1648_t *self)
+bool _bc_pyq1648_echo(bc_pyq1648_t *self)
 {
+    int32_t PIRval;
+    uint32_t statcfg;
+    bool pir_module_present;
+    uint32_t event_unit_config = self->_config;
+
     // nastavit jako manual read out
     _bc_pyq1648_set_dummy_forced_read_out(self);
 
     // pokusit se vz49st... pokud bude v3e nula, nebo sam0 jedni4kz vr8t9 error (false)
+    pir_module_present = _bc_pyq1648_get_forcet_read_out(self, &PIRval, &statcfg);
 
     // Vr8tit spr8vnou _config
-    _bc_pyq1648_compose_event_unit_config(self);
+    self->_config = event_unit_config;
     _bc_pyq1648_dev_init(self);
+
+    return pir_module_present;
 }
 
-void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self)
+static void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self)
 {
-    uint32_t dummy_event_unit_config = 0b1000000000000000000010000;
+    uint32_t dummy_event_unit_config = DUMMY_EVENT_UNIT_CONFIG;
 
     self->_config = dummy_event_unit_config;
 
     _bc_pyq1648_dev_init(self);
 }
 
-bool _bc_pyq1648_get_dummy_forcet_read_out(bc_pyq1648_t *self)
+static bool _bc_pyq1648_get_forcet_read_out(bc_pyq1648_t *self, int32_t *PIRval, uint32_t *statcfg)
 {
-    // pulse po dobu setup time (TODO)
+    int32_t i;
+    int32_t uibitmask;
+    uint32_t ulbitmask;
 
-    // 39x puls d0lkz max 2 us, p5enastavit an vstup a vz49st bit (perioda jednoho bitu je max 22us)
-
-    int i;
-    unsigned int uibitmask;
-    unsigned long ulbitmask;
-    uint32_t PIRval;
-    uint32_t statcfg;
+    int32_t PIRval_temp;
+    uint32_t statcfg_temp;
 
     bc_irq_disable();
-
-    uint32_t regval = self->_config;
-    uint32_t regmask = 0x1000000;
 
     uint32_t bsrr_mask[2] =
     {
@@ -202,7 +217,6 @@ bool _bc_pyq1648_get_dummy_forcet_read_out(bc_pyq1648_t *self)
         [1] = _pyq1648_set_mask[self->_gpio_channel_dl] };
 
     uint32_t idr_mask = _pyq1648_set_mask[self->_gpio_channel_dl];
-
     GPIO_TypeDef *GPIOx = _pyq1648_gpiox_table[self->_gpio_channel_dl];
     uint32_t *GPIOx_BSRR = (uint32_t *) &GPIOx->BSRR;
     uint32_t *GPIOx_IDR = (uint32_t *) &GPIOx->IDR;
@@ -212,7 +226,7 @@ bool _bc_pyq1648_get_dummy_forcet_read_out(bc_pyq1648_t *self)
     _bc_pyq1648_delay_100us(1);
     // get first 15bit out-off-range and ADC value
     uibitmask = 0x4000; // Set BitPos
-    PIRval = 0;
+    PIRval_temp = 0;
     for (i = 0; i < 15; i++)
     {
         // create low to high transition
@@ -223,12 +237,12 @@ bool _bc_pyq1648_get_dummy_forcet_read_out(bc_pyq1648_t *self)
         // Wait for stable low signal
         // If DL High set masked bit in PIRVal
         if (*GPIOx_IDR & idr_mask)
-            PIRval |= uibitmask;
+            PIRval_temp |= uibitmask;
         uibitmask >>= 1;
     }
     // get 25bit status and config
     ulbitmask = 0x1000000; // Set BitPos
-    statcfg = 0;
+    statcfg_temp = 0;
     for (i = 0; i < 25; i++)
     {
         // create low to high transition
@@ -239,32 +253,39 @@ bool _bc_pyq1648_get_dummy_forcet_read_out(bc_pyq1648_t *self)
         // Wait for stable low signal, tbd empirically using scope
         // If DL High set masked bit
         if (*GPIOx_IDR & idr_mask)
-            statcfg |= ulbitmask;
+            statcfg_temp |= ulbitmask;
         ulbitmask >>= 1;
     }
-    *GPIOx_BSRR = bsrr_mask[0]; //DLA_OUT = 0; // Set DL = Low
+    *GPIOx_BSRR = bsrr_mask[0]; // Set DL = Low
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT); // Configure DL as Output
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT); // Configure DL as Input
-    PIRval &= 0x3FFF; // clear unused bit
-    if (!(statcfg & 0x60))
+    PIRval_temp &= 0x3FFF; // clear unused bit
+    if (!(statcfg_temp & 0x60))
     {
         // ADC source to PIR band pass
         // number in 14bit two's complement
-        if (PIRval & 0x2000)
-            PIRval -= 0x4000;
+        if (PIRval_temp & 0x2000)
+            PIRval_temp -= 0x4000;
     }
 
-    if(((PIRval == 0x3fff) && (statcfg == 0x7fffff)) || ((PIRval == 0x00) && (statcfg == 0x00)))
+    bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT); // Configure DL as Input
 
-    return false;
+    if (((PIRval_temp == 0x3fff) && (statcfg_temp == 0x1ffffff)) || ((PIRval_temp == 0x00) && (statcfg_temp == 0x00)))
+    {
+        return false;
+    }
+    else
+    {
+        *PIRval = PIRval_temp;
+        *statcfg = statcfg_temp;
+
+        return true;
+    }
 }
 
 static bc_tick_t _bc_pyq1648_task(void *param)
 {
     bc_pyq1648_t *self = param;
-
-    // TODO ... env9m jak to, pokud v;bec, ykontrolovat
-    //          nejak7 test se d2lat mus9... pokus9m se ya49t vz49t8n9 dat y DL, pokud to pujde je PIR modul p5ipojen
 
     start:
 
@@ -289,10 +310,7 @@ static bc_tick_t _bc_pyq1648_task(void *param)
     {
         self->_state = BC_PYQ1648_STATE_ERROR;
 
-        // TODO ... kontrola pøítomnosti modulu, kdyžtak goto start;
-
         _bc_pyq1648_dev_init(self);
-        _bc_pyq1648_clear_event(self);
 
         self->_state = BC_PYQ1648_STATE_CHECK;
 
@@ -302,27 +320,31 @@ static bc_tick_t _bc_pyq1648_task(void *param)
     {
         bc_tick_t tick_now = bc_tick_get();
 
-        /*
-
-         TODO ... check if module is connected,
-         if so continue, else ...state = BC_PYQ1648_STATE_ERROR
-
-         */
+        self->_state = BC_PYQ1648_STATE_ERROR;
 
         if (tick_now >= self->_aware_time)
         {
-
             if (bc_gpio_get_input(self->_gpio_channel_dl))
             {
+                self->_event_valid = true;
                 self->_event_handler(self, BC_PYQ1648_EVENT_MOTION);
-                self->_aware_time = tick_now + self->_blank_period;
+                self->_blank_period = tick_now + self->_blank_period;
+                _bc_pyq1648_clear_event(self);
             }
+        }
 
-            _bc_pyq1648_clear_event(self);
+        if(tick_now >= self->_connection_check_tick)
+        {
+            self->_connection_check_tick = tick_now + PYQ1648_CONNECTION_CHECK_INTERVAL;
+            if(!_bc_pyq1648_echo(self))
+            {
+                self->_event_valid = false;
+                self->_event_handler(self, BC_PYQ1648_EVENT_ERROR);
+                goto start;
+            }
         }
 
         self->_state = BC_PYQ1648_STATE_CHECK;
-
         return PYQ1648_UPDATE_INTERVAL;
     }
     default:
