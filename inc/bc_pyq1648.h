@@ -40,6 +40,7 @@ struct bc_pyq1648_t
     void (*_event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t);
     bc_tick_t _update_interval;
     bc_tick_t _aware_time;
+    bc_tick_t _connection_check_tick;
     bc_pyq1648_state_t _state;
     bool _event_valid;
     uint8_t _sensitivity;
@@ -65,6 +66,12 @@ void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_p
 //! @param[in] event_handler pyq1648 event handler
 
 void bc_pyq1648_set_sensitivity(bc_pyq1648_t *self, bc_pyq1648_sensitivity_t sensitivity);
+
+//! @brief Set pyq1648 set blank period
+//! @param[in] self pyq1648 image
+//! @param[in] bc_pyq1648_sensitivity_t blanj period in ms
+
+void bc_pyq1648_set_blank_period(bc_pyq1648_t *self, uint16_t blank_period);
 
 //! @}
 
