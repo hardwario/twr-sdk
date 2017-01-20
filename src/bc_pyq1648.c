@@ -165,26 +165,98 @@ static bool _bc_pyq1648_echo(bc_pyq1648_t *self)
 
     // pokusit se vz49st... pokud bude v3e nula, nebo sam0 jedni4kz vr8t9 error (false)
 
-
     // Vr8tit spr8vnou _config
+    _bc_pyq1648_compose_event_unit_config(self);
+    _bc_pyq1648_dev_init(self);
 }
 
-static void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self)
+void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self)
 {
     uint32_t dummy_event_unit_config = 0b1000000000000000000010000;
 
     self->_config = dummy_event_unit_config;
 
     _bc_pyq1648_dev_init(self);
-
-    _bc_pyq1648_compose_event_unit_config(self);
 }
 
-static void _bc_pyq1648_get_forcet_read_out(bc_pyq1648_t *self)
+bool _bc_pyq1648_get_dummy_forcet_read_out(bc_pyq1648_t *self)
 {
     // pulse po dobu setup time (TODO)
 
     // 39x puls d0lkz max 2 us, p5enastavit an vstup a vz49st bit (perioda jednoho bitu je max 22us)
+
+    int i;
+    unsigned int uibitmask;
+    unsigned long ulbitmask;
+    uint32_t PIRval;
+    uint32_t statcfg;
+
+    bc_irq_disable();
+
+    uint32_t regval = self->_config;
+    uint32_t regmask = 0x1000000;
+
+    uint32_t bsrr_mask[2] =
+    {
+        [0] = _pyq1648_reset_mask[self->_gpio_channel_dl],
+        [1] = _pyq1648_set_mask[self->_gpio_channel_dl] };
+
+    uint32_t idr_mask = _pyq1648_set_mask[self->_gpio_channel_dl];
+
+    GPIO_TypeDef *GPIOx = _pyq1648_gpiox_table[self->_gpio_channel_dl];
+    uint32_t *GPIOx_BSRR = (uint32_t *) &GPIOx->BSRR;
+    uint32_t *GPIOx_IDR = (uint32_t *) &GPIOx->IDR;
+
+    *GPIOx_BSRR = bsrr_mask[1]; // Set DL = High, to force fast uC controlled DL read out
+    bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT); // Configure PORT DL as Output
+    _bc_pyq1648_delay_100us(1);
+    // get first 15bit out-off-range and ADC value
+    uibitmask = 0x4000; // Set BitPos
+    PIRval = 0;
+    for (i = 0; i < 15; i++)
+    {
+        // create low to high transition
+        *GPIOx_BSRR = bsrr_mask[0]; // Set DL = Low, duration must be > 200 ns (tL)
+        bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT); // Configure DL as Output
+        *GPIOx_BSRR = bsrr_mask[1]; // Set DL = High, duration must be > 200 ns (tH)
+        bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT); // Configure DL as Input
+        // Wait for stable low signal
+        // If DL High set masked bit in PIRVal
+        if (*GPIOx_IDR & idr_mask)
+            PIRval |= uibitmask;
+        uibitmask >>= 1;
+    }
+    // get 25bit status and config
+    ulbitmask = 0x1000000; // Set BitPos
+    statcfg = 0;
+    for (i = 0; i < 25; i++)
+    {
+        // create low to high transition
+        *GPIOx_BSRR = bsrr_mask[0]; // Set DL = Low, duration must be > 200 ns (tL)
+        bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT); // Configure DL as Output
+        *GPIOx_BSRR = bsrr_mask[1]; // Set DL = High, duration must be > 200 ns (tH)
+        bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT); // Configure DL as Input
+        // Wait for stable low signal, tbd empirically using scope
+        // If DL High set masked bit
+        if (*GPIOx_IDR & idr_mask)
+            statcfg |= ulbitmask;
+        ulbitmask >>= 1;
+    }
+    *GPIOx_BSRR = bsrr_mask[0]; //DLA_OUT = 0; // Set DL = Low
+    bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT); // Configure DL as Output
+    bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT); // Configure DL as Input
+    PIRval &= 0x3FFF; // clear unused bit
+    if (!(statcfg & 0x60))
+    {
+        // ADC source to PIR band pass
+        // number in 14bit two's complement
+        if (PIRval & 0x2000)
+            PIRval -= 0x4000;
+    }
+
+    if(((PIRval == 0x3fff) && (statcfg == 0x7fffff)) || ((PIRval == 0x00) && (statcfg == 0x00)))
+
+    return false;
 }
 
 static bc_tick_t _bc_pyq1648_task(void *param)
