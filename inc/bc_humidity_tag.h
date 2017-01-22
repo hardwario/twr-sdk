@@ -1,7 +1,6 @@
 #ifndef _BC_HUMIDITY_TAG_H
 #define _BC_HUMIDITY_TAG_H
 
-#include <stddef.h>
 #include <bc_hdc2080.h>
 #include <bc_hts221.h>
 #include <bc_common.h>
@@ -23,10 +22,16 @@ typedef enum
 
 } bc_humidity_tag_i2c_address_t;
 
-/*
- typedef bc_hdc2080_event_t bc_humidity_tag_event_t;
- typedef bc_hdc2080_t bc_humidity_tag_t;
- */
+typedef enum
+{
+#if (BC_HTS221_EVENT_ERROR == BC_HDC2080_EVENT_ERROR)
+    BC_HUMIDITY_TAG_EVENT_ERROR = BC_HTS221_EVENT_ERROR,
+#endif
+
+#if (BC_HTS221_EVENT_UPDATE == BC_HDC2080_EVENT_UPDATE)
+    BC_HUMIDITY_TAG_EVENT_UPDATE = BC_HTS221_EVENT_UPDATE,
+#endif
+} bc_humidity_tag_event_t;
 
 typedef struct
 {
@@ -37,15 +42,6 @@ typedef struct
     } sensor;
     bc_humidity_tag_device_t device_type;
 } bc_humidity_tag_t;
-
-typedef union
-{
-    bc_hts221_event_t hts221_event;
-    bc_hdc2080_event_t hdc2080_event;
-} bc_humidity_tag_event_t;
-
-// TODO ... doporuèuju nepoužívat v HAL_I2C_Mem_Read(.....,0xFFFFFFFF),
-//              pøi velice špatném naèasování vytažení tagu se tam program zasekne forever
 
 void bc_humidity_tag_init(bc_humidity_tag_t *self, uint8_t i2c_channel, bc_humidity_tag_i2c_address_t i2c_address);
 void bc_humidity_tag_set_event_handler(bc_humidity_tag_t *self, void (*event_handler)(bc_humidity_tag_t *, bc_humidity_tag_event_t));

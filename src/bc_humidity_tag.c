@@ -46,9 +46,10 @@ static const uint32_t fcn_table[BC_HUMIDITY_TAG_DEVICE_COUNT][_BC_HUMIDITY_TAG_F
     [BC_HUMIDITY_TAG_DEVICE_HTS221][_BC_HUMIDITY_TAG_FUNCTION_GET_HUMIDITY_PERCENTAGE] = (const uint32_t)&bc_hts221_get_humidity_percentage,
     [BC_HUMIDITY_TAG_DEVICE_HDC2080][_BC_HUMIDITY_TAG_FUNCTION_GET_HUMIDITY_PERCENTAGE] = (const uint32_t)&bc_hdc2080_get_humidity_percentage,
 
+#if 0
     [BC_HUMIDITY_TAG_DEVICE_HTS221][_BC_HUMIDITY_TAG_FUNCTION_GET_VALIDITY] = (const uint32_t)&bc_hts221_get_humidity_percentage,
     [BC_HUMIDITY_TAG_DEVICE_HDC2080][_BC_HUMIDITY_TAG_FUNCTION_GET_VALIDITY] = (const uint32_t)&bc_hdc2080_get_humidity_percentage,
-
+#endif
 };
 
 #define _BC_HUMIDITY_TAG_INIT(_SELF_, _I2C_CHANNEL_, _I2C_ADDRESS_) (((void (*)(bc_humidity_tag_t *, uint8_t, uint8_t)) fcn_table[self->device_type][_BC_HUMIDITY_TAG_FUNCTION_SET_EVENT_HANDLER])((void *)&_SELF_->sensor, _I2C_CHANNEL_, _I2C_ADDRESS_))
