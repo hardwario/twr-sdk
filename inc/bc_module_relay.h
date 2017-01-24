@@ -51,9 +51,9 @@ typedef enum
 
 typedef enum
 {
-    BC_MODULE_RELAY_COMMAND_NONE = 0x00,
-    BC_MODULE_RELAY_COMMAND_SET = 0x01,
-    BC_MODULE_RELAY_COMMAND_PULSE = 0x02
+    BC_MODULE_RELAY_COMMAND_NONE = 0,
+    BC_MODULE_RELAY_COMMAND_SET = 1,
+    BC_MODULE_RELAY_COMMAND_PULSE = 2
 } bc_module_relay_command_t;
 
 typedef struct bc_module_relay_t bc_module_relay_t;
