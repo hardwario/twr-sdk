@@ -124,7 +124,6 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
                 // Unregister task if no command is needed
                 bc_module_relay_scheduler_unregister(self);
                 return 0;
-                break;
 
 
             //
@@ -137,7 +136,6 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
 
                 self->_state = BC_MODULE_RELAY_TASK_STATE_SET_DEMAGNETIZE;
                 return 20;
-                break;
 
             case BC_MODULE_RELAY_TASK_STATE_SET_DEMAGNETIZE:
                 // De-energize bistable relay coil - turn off
@@ -146,7 +144,6 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
                 self->_state = BC_MODULE_RELAY_TASK_STATE_IDLE;
                 // Needs 100ms to let the capacitor on relay board to charge
                 return 100;
-                break;
 
 
             //
@@ -159,7 +156,6 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
 
                 self->_state = BC_MODULE_RELAY_TASK_STATE_PULSE_DEMAGNETIZE;
                 return 20;
-                break;
 
             case BC_MODULE_RELAY_TASK_STATE_PULSE_DEMAGNETIZE:
                 // De-energize bistable relay coil - turn off
@@ -167,7 +163,6 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
 
                 self->_state = BC_MODULE_RELAY_TASK_STATE_PULSE_REVERSE;
                 return self->_pulse_duration;
-                break;
 
             case BC_MODULE_RELAY_TASK_STATE_PULSE_REVERSE:
                 // Change actual relay state to the oposite polarity
@@ -176,7 +171,6 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
 
                 self->_state = BC_MODULE_RELAY_TASK_STATE_PULSE_DEMAGNETIZE_2;
                 return 20;
-                break;
 
             case BC_MODULE_RELAY_TASK_STATE_PULSE_DEMAGNETIZE_2:
                 // De-energize bistable relay coil - turn off
@@ -185,7 +179,6 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
                 self->_state = BC_MODULE_RELAY_TASK_STATE_IDLE;
                 // Needs 100ms to let the capacitor on relay board to charge
                 return 100;
-                break;
 
             default:
                 break;
