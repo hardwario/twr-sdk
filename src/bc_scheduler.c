@@ -5,7 +5,7 @@ static struct
     struct
     {
         bc_tick_t tick;
-        bc_tick_t (*task)(void *);
+        bc_tick_t (*task)(void *, bc_tick_t);
         void *param;
 
     } pool[BC_SCHEDULER_MAX_TASKS];
@@ -33,21 +33,19 @@ void bc_scheduler_run(void)
             {
                 if (tick_now >= bc_scheduler.pool[i].tick)
                 {
-                    bc_tick_t tick = bc_scheduler.pool[i].task(bc_scheduler.pool[i].param);
+                    bc_scheduler.pool[i].tick = bc_scheduler.pool[i].task(bc_scheduler.pool[i].param, tick_now);
 
-                    if (tick > max_tick)
+                    if (bc_scheduler.pool[i].tick > max_tick)
                     {
-                        max_tick = tick;
+                        max_tick = bc_scheduler.pool[i].tick;
                     }
-
-                    bc_scheduler.pool[i].tick = tick_now + tick;
                 }
             }
         }
     }
 }
 
-bc_scheduler_task_id_t bc_scheduler_register(bc_tick_t (*task)(void *), void *param, bc_tick_t tick)
+bc_scheduler_task_id_t bc_scheduler_register(bc_tick_t (*task)(void *, bc_tick_t), void *param, bc_tick_t tick)
 {
     for (bc_scheduler_task_id_t i = 0; i < BC_SCHEDULER_MAX_TASKS; i++)
     {
@@ -92,4 +90,9 @@ void bc_scheduler_unregister(bc_scheduler_task_id_t task_id)
 void bc_scheduler_plan(bc_scheduler_task_id_t task_id, bc_tick_t tick)
 {
     bc_scheduler.pool[task_id].tick = tick;
+}
+
+void bc_scheduler_plan_now(bc_scheduler_task_id_t task_id)
+{
+    bc_scheduler.pool[task_id].tick = 0;
 }
