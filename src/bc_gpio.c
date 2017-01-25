@@ -46,7 +46,7 @@
 #define BC_GPIO_POS_LED 1UL
 #define BC_GPIO_POS_BUTTON 8UL
 
-static GPIO_TypeDef * const bc_gpio_port[BC_GPIO_CHANNEL_COUNT] =
+GPIO_TypeDef * const bc_gpio_port[BC_GPIO_CHANNEL_COUNT] =
 {
     BC_GPIO_PORT_P0,
     BC_GPIO_PORT_P1,
@@ -142,7 +142,7 @@ static const uint16_t bc_gpio_32_bit_pos[BC_GPIO_CHANNEL_COUNT] =
     2UL * BC_GPIO_POS_BUTTON
 };
 
-static const uint16_t bc_gpio_16_bit_mask[BC_GPIO_CHANNEL_COUNT] =
+const uint16_t bc_gpio_16_bit_mask[BC_GPIO_CHANNEL_COUNT] =
 {
     1UL << BC_GPIO_POS_P0,
     1UL << BC_GPIO_POS_P1,
@@ -258,7 +258,7 @@ static const uint32_t bc_gpio_32_bit_mask[4][BC_GPIO_CHANNEL_COUNT] =
     }
 };
 
-static const uint32_t bc_gpio_32_bit_upper_mask[BC_GPIO_CHANNEL_COUNT] =
+const uint32_t bc_gpio_32_bit_upper_mask[BC_GPIO_CHANNEL_COUNT] =
 {
     (1UL << 16UL) << BC_GPIO_POS_P0,
     (1UL << 16UL) << BC_GPIO_POS_P1,
