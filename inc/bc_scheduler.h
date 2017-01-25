@@ -26,7 +26,7 @@ void bc_scheduler_run(void);
 //! @param[in] param Optional parameter pointer which will be passed to the registered task
 //! @return Assigned task ID
 
-bc_scheduler_task_id_t bc_scheduler_register(bc_tick_t (*task)(void *), void *param, bc_tick_t tick);
+bc_scheduler_task_id_t bc_scheduler_register(bc_tick_t (*task)(void *, bc_tick_t), void *param, bc_tick_t tick);
 
 //! @brief Unregister previously registered task
 //! @param[in] task_id Task ID of the registered task
@@ -38,6 +38,11 @@ void bc_scheduler_unregister(bc_scheduler_task_id_t task_id);
 //! @param[in] tick Tick at which the task will be run
 
 void bc_scheduler_plan(bc_scheduler_task_id_t task_id, bc_tick_t tick);
+
+//! @brief Plan previously registered task for immediate execution
+//! @param[in] task_id Task ID of the registered task
+
+void bc_scheduler_plan_now(bc_scheduler_task_id_t task_id);
 
 //! @}
 

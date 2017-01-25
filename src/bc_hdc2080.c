@@ -6,7 +6,7 @@
 #define BC_HDC2080_DELAY_INITIALIZATION 50
 #define BC_HDC2080_DELAY_MEASUREMENT 50
 
-static bc_tick_t _bc_hdc2080_task(void *param);
+static bc_tick_t _bc_hdc2080_task(void *param, bc_tick_t tick_now);
 
 void bc_hdc2080_init(bc_hdc2080_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -59,7 +59,7 @@ bool bc_hdc2080_get_humidity_percentage(bc_hdc2080_t *self, float *percentage)
     return true;
 }
 
-static bc_tick_t _bc_hdc2080_task(void *param)
+static bc_tick_t _bc_hdc2080_task(void *param, bc_tick_t tick_now)
 {
     bc_hdc2080_t *self = param;
 
@@ -78,7 +78,7 @@ start:
 
             self->_state = BC_HDC2080_STATE_INITIALIZE;
 
-            return self->_update_interval;
+            return tick_now + self->_update_interval;
         }
         case BC_HDC2080_STATE_INITIALIZE:
         {
@@ -91,7 +91,7 @@ start:
 
             self->_state = BC_HDC2080_STATE_MEASURE;
 
-            return BC_HDC2080_DELAY_INITIALIZATION;
+            return tick_now + BC_HDC2080_DELAY_INITIALIZATION;
         }
         case BC_HDC2080_STATE_MEASURE:
         {
@@ -104,7 +104,7 @@ start:
 
             self->_state = BC_HDC2080_STATE_READ;
 
-            return BC_HDC2080_DELAY_MEASUREMENT;
+            return tick_now + BC_HDC2080_DELAY_MEASUREMENT;
         }
         case BC_HDC2080_STATE_READ:
         {
@@ -144,7 +144,7 @@ start:
 
             self->_state = BC_HDC2080_STATE_MEASURE;
 
-            return self->_update_interval;
+            return tick_now + self->_update_interval;
         }
         default:
         {

@@ -5,7 +5,7 @@
 #define BC_MPL3115A2_DELAY_RESET 1500
 #define BC_MPL3115A2_DELAY_MEASUREMENT 1500
 
-static bc_tick_t _bc_mpl3115a2_task(void *param);
+static bc_tick_t _bc_mpl3115a2_task(void *param, bc_tick_t tick_now);
 
 void bc_mpl3115a2_init(bc_mpl3115a2_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -55,7 +55,7 @@ bool bc_mpl3115a2_get_pressure_pascal(bc_mpl3115a2_t *self, float *pascal)
     return true;
 }
 
-static bc_tick_t _bc_mpl3115a2_task(void *param)
+static bc_tick_t _bc_mpl3115a2_task(void *param, bc_tick_t tick_now)
 {
     bc_mpl3115a2_t *self = param;
 
@@ -75,7 +75,7 @@ start:
 
             self->_state = BC_MPL3115A2_STATE_INITIALIZE;
 
-            return self->_update_interval;
+            return tick_now + self->_update_interval;
         }
         case BC_MPL3115A2_STATE_INITIALIZE:
         {
@@ -83,7 +83,7 @@ start:
 
             self->_state = BC_MPL3115A2_STATE_MEASURE_ALTITUDE;
 
-            return BC_MPL3115A2_DELAY_RESET;
+            return tick_now + BC_MPL3115A2_DELAY_RESET;
         }
         case BC_MPL3115A2_STATE_MEASURE_ALTITUDE:
         {
@@ -106,7 +106,7 @@ start:
 
             self->_state = BC_MPL3115A2_STATE_READ_ALTITUDE;
 
-            return BC_MPL3115A2_DELAY_MEASUREMENT;
+            return tick_now + BC_MPL3115A2_DELAY_MEASUREMENT;
         }
         case BC_MPL3115A2_STATE_READ_ALTITUDE:
         {
@@ -171,7 +171,7 @@ start:
 
             self->_state = BC_MPL3115A2_STATE_READ_PRESSURE;
 
-            return BC_MPL3115A2_DELAY_MEASUREMENT;
+            return tick_now + BC_MPL3115A2_DELAY_MEASUREMENT;
         }
         case BC_MPL3115A2_STATE_READ_PRESSURE:
         {
@@ -224,7 +224,7 @@ start:
 
             self->_state = BC_MPL3115A2_STATE_MEASURE_ALTITUDE;
 
-            return self->_update_interval;
+            return tick_now + self->_update_interval;
         }
         default:
         {

@@ -5,7 +5,7 @@
 #define BC_OPT3001_DELAY_INITIALIZATION 50
 #define BC_OPT3001_DELAY_MEASUREMENT 1000
 
-static bc_tick_t _bc_opt3001_task(void *param);
+static bc_tick_t _bc_opt3001_task(void *param, bc_tick_t tick_now);
 
 void bc_opt3001_init(bc_opt3001_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -53,7 +53,7 @@ bool bc_opt3001_get_luminosity_lux(bc_opt3001_t *self, float *lux)
     return true;
 }
 
-static bc_tick_t _bc_opt3001_task(void *param)
+static bc_tick_t _bc_opt3001_task(void *param, bc_tick_t tick_now)
 {
     bc_opt3001_t *self = param;
 
@@ -72,7 +72,7 @@ start:
 
             self->_state = BC_OPT3001_STATE_INITIALIZE;
 
-            return self->_update_interval;
+            return tick_now + self->_update_interval;
         }
         case BC_OPT3001_STATE_INITIALIZE:
         {
@@ -85,7 +85,7 @@ start:
 
             self->_state = BC_OPT3001_STATE_MEASURE;
 
-            return BC_OPT3001_DELAY_INITIALIZATION;
+            return tick_now + BC_OPT3001_DELAY_INITIALIZATION;
         }
         case BC_OPT3001_STATE_MEASURE:
         {
@@ -98,7 +98,7 @@ start:
 
             self->_state = BC_OPT3001_STATE_READ;
 
-            return BC_OPT3001_DELAY_MEASUREMENT;
+            return tick_now + BC_OPT3001_DELAY_MEASUREMENT;
         }
         case BC_OPT3001_STATE_READ:
         {
@@ -136,7 +136,7 @@ start:
 
             self->_state = BC_OPT3001_STATE_MEASURE;
 
-            return self->_update_interval;
+            return tick_now + self->_update_interval;
         }
         default:
         {
