@@ -3,7 +3,7 @@
 #include <bc_module_relay.h>
 #include <bc_scheduler.h>
 
-static bc_tick_t _bc_module_relay_task(void *param);
+static bc_tick_t _bc_module_relay_task(void *param, bc_tick_t tick_now);
 
 #define BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT 0x3B
 #define BC_MODULE_RELAY_I2C_ADDRESS_ALTERNATE 0x3F
@@ -54,8 +54,10 @@ static void bc_module_relay_scheduler_unregister(bc_module_relay_t *self)
 static void bc_module_relay_scheduler_register(bc_module_relay_t *self)
 {
     // Exit if there's already registered task
-    if(self->_task_is_active)
+    if (self->_task_is_active)
+    {
         return;
+    }
 
     // Register relay task
     self->_task_id = bc_scheduler_register(_bc_module_relay_task, self, 0);
@@ -88,16 +90,15 @@ static void _bc_module_relay_set_output_disable(bc_module_relay_t *self)
     }
 }
 
-static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
+static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self, bc_tick_t tick_now)
 {
-    while(true)
+    while (true)
     {
         switch (self->_state)
         {
-
             case BC_MODULE_RELAY_TASK_STATE_IDLE:
                 // Handle Error
-                if(self->_error)
+                if (self->_error)
                 {
                     // Try to initialize relay module again
                     if (_bc_module_relay_hardware_init(self))
@@ -123,8 +124,7 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
 
                 // Unregister task if no command is needed
                 bc_module_relay_scheduler_unregister(self);
-                return 0;
-
+                return tick_now;
 
             //
             // Relay set start state
@@ -135,7 +135,7 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
                 self->_relay_state = self->_desired_state;
 
                 self->_state = BC_MODULE_RELAY_TASK_STATE_SET_DEMAGNETIZE;
-                return 20;
+                return tick_now + 20;
 
             case BC_MODULE_RELAY_TASK_STATE_SET_DEMAGNETIZE:
                 // De-energize bistable relay coil - turn off
@@ -143,8 +143,7 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
 
                 self->_state = BC_MODULE_RELAY_TASK_STATE_IDLE;
                 // Needs 100ms to let the capacitor on relay board to charge
-                return 100;
-
+                return tick_now + 100;
 
             //
             // Relay pulse start state
@@ -155,14 +154,14 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
                 self->_relay_state = self->_desired_state;
 
                 self->_state = BC_MODULE_RELAY_TASK_STATE_PULSE_DEMAGNETIZE;
-                return 20;
+                return tick_now + 20;
 
             case BC_MODULE_RELAY_TASK_STATE_PULSE_DEMAGNETIZE:
                 // De-energize bistable relay coil - turn off
                 _bc_module_relay_set_output_disable(self);
 
                 self->_state = BC_MODULE_RELAY_TASK_STATE_PULSE_REVERSE;
-                return self->_pulse_duration;
+                return tick_now + self->_pulse_duration;
 
             case BC_MODULE_RELAY_TASK_STATE_PULSE_REVERSE:
                 // Change actual relay state to the oposite polarity
@@ -170,7 +169,7 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
                 _bc_module_relay_set_output(self, self->_relay_state);
 
                 self->_state = BC_MODULE_RELAY_TASK_STATE_PULSE_DEMAGNETIZE_2;
-                return 20;
+                return tick_now + 20;
 
             case BC_MODULE_RELAY_TASK_STATE_PULSE_DEMAGNETIZE_2:
                 // De-energize bistable relay coil - turn off
@@ -178,7 +177,7 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
 
                 self->_state = BC_MODULE_RELAY_TASK_STATE_IDLE;
                 // Needs 100ms to let the capacitor on relay board to charge
-                return 100;
+                return tick_now + 100;
 
             default:
                 break;
@@ -186,10 +185,11 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self)
     }
 }
 
-static bc_tick_t _bc_module_relay_task(void *param)
+static bc_tick_t _bc_module_relay_task(void *param, bc_tick_t tick_now)
 {
     bc_module_relay_t *self = param;
-    return bc_module_relay_state_machine(self);
+
+    return bc_module_relay_state_machine(self, tick_now);
 }
 
 void bc_module_relay_set_state(bc_module_relay_t *self, bool state)

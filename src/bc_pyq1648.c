@@ -50,10 +50,10 @@ static inline void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc
 static void _bc_pyq1648_dev_init(bc_pyq1648_t *self);
 static void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self);
 static void _bc_pyq1648_delay_100us(unsigned int i);
-static bc_tick_t _bc_pyq1648_task(void *param);
+static bc_tick_t _bc_pyq1648_task(void *param, bc_tick_t tick_now);
 static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self);
 static inline void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self);
-static inline bool _bc_pyq1648_get_forcet_read_out(bc_pyq1648_t *self, int32_t *PIRval, uint32_t *statcfg);
+static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *PIRval, uint32_t *statcfg);
 
 static const uint8_t _bc_pyq1648_sensitivity_table[4] =
 {
@@ -209,7 +209,7 @@ static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self)
     _bc_pyq1648_set_dummy_forced_read_out(self);
 
     /* Check if PIR response is valid */
-    pir_module_present = _bc_pyq1648_get_forcet_read_out(self, &PIRval, &statcfg);
+    pir_module_present = _bc_pyq1648_get_forced_read_out(self, &PIRval, &statcfg);
 
     self->_config = event_unit_config;
 
@@ -235,7 +235,7 @@ static inline void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self)
     _bc_pyq1648_dev_init(self);
 }
 
-static inline bool _bc_pyq1648_get_forcet_read_out(bc_pyq1648_t *self, int32_t *PIRval, uint32_t *statcfg)
+static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *PIRval, uint32_t *statcfg)
 {
     int32_t i;
     int32_t uibitmask;
@@ -323,101 +323,101 @@ static inline bool _bc_pyq1648_get_forcet_read_out(bc_pyq1648_t *self, int32_t *
     }
 }
 
-static bc_tick_t _bc_pyq1648_task(void *param)
+static bc_tick_t _bc_pyq1648_task(void *param, bc_tick_t tick_now)
 {
     bc_pyq1648_t *self = param;
 
-    start:
+start:
 
     switch (self->_state)
     {
-    case BC_PYQ1648_STATE_ERROR:
-    {
-        self->_event_valid = false;
-
-        if (self->_event_handler != NULL)
+        case BC_PYQ1648_STATE_ERROR:
         {
-            self->_event_handler(self, BC_PYQ1648_EVENT_ERROR);
-        }
+            self->_event_valid = false;
 
-        self->_state = BC_PYQ1648_STATE_INITIALIZE;
-
-        return BC_PYQ1648_UPDATE_INTERVAL;
-    }
-    case BC_PYQ1648_STATE_INITIALIZE:
-    {
-        self->_state = BC_PYQ1648_STATE_ERROR;
-
-        _bc_pyq1648_dev_init(self);
-
-        self->_state = BC_PYQ1648_STATE_IGNORE;
-
-        return BC_PYQ1648_DELAY_INITIALIZATION;
-    }
-    case BC_PYQ1648_STATE_IGNORE:
-    {
-        self->_state = BC_PYQ1648_STATE_ERROR;
-
-        if (self->_ignore_untill == 0)
-        {
-            // TODO ... acquire !!!
-            self->_ignore_untill = bc_tick_get() + (75000 / 15);
-        }
-
-        if (bc_gpio_get_input(self->_gpio_channel_dl))
-        {
-            _bc_pyq1648_clear_event(self);
-        }
-
-        if (bc_tick_get() >= self->_ignore_untill)
-        {
-            self->_state = BC_PYQ1648_STATE_CHECK;
-        }
-        else
-        {
-            self->_state = BC_PYQ1648_STATE_IGNORE;
-        }
-
-        return BC_PYQ1648_UPDATE_INTERVAL;
-    }
-    case BC_PYQ1648_STATE_CHECK:
-    {
-        bc_tick_t tick_now = bc_tick_get();
-
-        self->_state = BC_PYQ1648_STATE_ERROR;
-
-        if (bc_gpio_get_input(self->_gpio_channel_dl))
-        {
-            if (tick_now >= self->_aware_time)
+            if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_PYQ1648_EVENT_MOTION);
-                self->_aware_time = tick_now + self->_blank_period;
-                self->_event_valid = true;
-            }
-            _bc_pyq1648_clear_event(self);
-        }
-
-#if(BC_PYQ1648_CONNECTION_CHECK)
-        if (tick_now >= self->_connection_check)
-        {
-            self->_connection_check = tick_now + BC_PYQ1648_CONNECTION_CHECK_INTERVAL;
-            if (!_bc_pyq1648_echo(self))
-            {
-                self->_event_valid = false;
                 self->_event_handler(self, BC_PYQ1648_EVENT_ERROR);
-                goto start;
             }
+
+            self->_state = BC_PYQ1648_STATE_INITIALIZE;
+
+            return tick_now + BC_PYQ1648_UPDATE_INTERVAL;
         }
+        case BC_PYQ1648_STATE_INITIALIZE:
+        {
+            self->_state = BC_PYQ1648_STATE_ERROR;
+
+            _bc_pyq1648_dev_init(self);
+
+            self->_state = BC_PYQ1648_STATE_IGNORE;
+
+            return tick_now + BC_PYQ1648_DELAY_INITIALIZATION;
+        }
+        case BC_PYQ1648_STATE_IGNORE:
+        {
+            self->_state = BC_PYQ1648_STATE_ERROR;
+
+            if (self->_ignore_untill == 0)
+            {
+                // TODO ... acquire !!!
+                self->_ignore_untill = bc_tick_get() + (75000 / 15);
+            }
+
+            if (bc_gpio_get_input(self->_gpio_channel_dl))
+            {
+                _bc_pyq1648_clear_event(self);
+            }
+
+            if (bc_tick_get() >= self->_ignore_untill)
+            {
+                self->_state = BC_PYQ1648_STATE_CHECK;
+            }
+            else
+            {
+                self->_state = BC_PYQ1648_STATE_IGNORE;
+            }
+
+            return tick_now + BC_PYQ1648_UPDATE_INTERVAL;
+        }
+        case BC_PYQ1648_STATE_CHECK:
+        {
+            bc_tick_t tick_now = bc_tick_get();
+
+            self->_state = BC_PYQ1648_STATE_ERROR;
+
+            if (bc_gpio_get_input(self->_gpio_channel_dl))
+            {
+                if (tick_now >= self->_aware_time)
+                {
+                    self->_event_handler(self, BC_PYQ1648_EVENT_MOTION);
+                    self->_aware_time = tick_now + self->_blank_period;
+                    self->_event_valid = true;
+                }
+                _bc_pyq1648_clear_event(self);
+            }
+
+#if (BC_PYQ1648_CONNECTION_CHECK)
+            if (tick_now >= self->_connection_check)
+            {
+                self->_connection_check = tick_now + BC_PYQ1648_CONNECTION_CHECK_INTERVAL;
+                if (!_bc_pyq1648_echo(self))
+                {
+                    self->_event_valid = false;
+                    self->_event_handler(self, BC_PYQ1648_EVENT_ERROR);
+                    goto start;
+                }
+            }
 #endif
 
-        self->_state = BC_PYQ1648_STATE_CHECK;
-        return BC_PYQ1648_UPDATE_INTERVAL;
-    }
-    default:
-    {
-        self->_state = BC_PYQ1648_STATE_ERROR;
+            self->_state = BC_PYQ1648_STATE_CHECK;
+            return tick_now + BC_PYQ1648_UPDATE_INTERVAL;
+        }
+        default:
+        {
+            self->_state = BC_PYQ1648_STATE_ERROR;
 
-        goto start;
-    }
+            goto start;
+        }
     }
 }

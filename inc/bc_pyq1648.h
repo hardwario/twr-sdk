@@ -1,12 +1,11 @@
-#ifndef INC_BC_PYQ1648_H_
-#define INC_BC_PYQ1648_H_
+#ifndef _BC_PYQ1648_H
+#define _BC_PYQ1648_H
 
-#include <bc_common.h>
 #include <bc_tick.h>
 #include <bc_gpio.h>
 
 //! @addtogroup bc_pyq1648 bc_pyq1648
-//! @brief Driver for pyq1648 pir sensor
+//! @brief Driver for PYQ1648 PIR sensor
 //! @{
 
 typedef enum
@@ -28,9 +27,10 @@ typedef enum
 typedef enum
 {
     BC_PYQ1648_SENSITIVITY_LOW = 0,
-    BC_PYQ1648_SENSITIVITY_MEDIUM,
-    BC_PYQ1648_SENSITIVITY_HIGH,
-    BC_PYQ1648_SENSITIVITY_VERY_HIGH
+    BC_PYQ1648_SENSITIVITY_MEDIUM = 1,
+    BC_PYQ1648_SENSITIVITY_HIGH = 2,
+    BC_PYQ1648_SENSITIVITY_VERY_HIGH = 3
+
 } bc_pyq1648_sensitivity_t;
 
 typedef struct bc_pyq1648_t bc_pyq1648_t;
@@ -50,31 +50,33 @@ struct bc_pyq1648_t
     bc_tick_t _connection_check;
 };
 
-//! @brief Initialize pyq1648 on channels gpio_channel_serin and gpio_channel_dl
-//! @param[in] self PIR image
-//! @param[in] gpio_channel_serin PIR serin channel
-//! @param[in] gpio_channel_dl PIR dl channel
+//! @brief Initialize PIR sensor PYQ1648
+//! @param[in] self Instance
+//! @param[in] gpio_channel_serin GPIO channel for SERIN pin
+//! @param[in] gpio_channel_dl GPIO channel for DL pin
 
 void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl);
 
-//! @brief Set pyq1648 event handler
-//! @param[in] self pyq1648 image
-//! @param[in] event_handler pyq1648 event handler
+//! @brief Set callback function
+//! @param[in] self Instance
+//! @param[in] event_handler Callback function
 
 void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t));
 
-//! @brief Set pyq1648 set sensitivity
-//! @param[in] self pyq1648 image
-//! @param[in] event_handler pyq1648 event handler
+//! @brief Set PIR sensor sensitivity
+//! @param[in] self Instance
+//! @param[in] sensitivity Desired sensitivity
 
 void bc_pyq1648_set_sensitivity(bc_pyq1648_t *self, bc_pyq1648_sensitivity_t sensitivity);
 
-//! @brief Set pyq1648 set blank period
-//! @param[in] self pyq1648 image
-//! @param[in] bc_pyq1648_sensitivity_t blanj period in ms
+//! @brief Set blank period (for how long alarm events will be ignored)
+//! @param[in] self Instance
+//! @param[in] blank_period Blank period in milliseconds
+
+// TODO Change to bc_tick_t
 
 void bc_pyq1648_set_blank_period(bc_pyq1648_t *self, uint16_t blank_period);
 
 //! @}
 
-#endif /* INC_BC_PYQ1648_H_ */
+#endif // _BC_PYQ1648_H
