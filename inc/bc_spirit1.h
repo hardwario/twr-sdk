@@ -7,9 +7,9 @@
 
 typedef enum
 {
-    BC_SPIRIT1_EVENT_TRANSMISSION_DONE = 0,
-    BC_SPIRIT1_EVENT_RECEPTION_DONE = 1,
-    BC_SPIRIT1_EVENT_RECEPTION_TIMEOUT = 2
+    BC_SPIRIT1_EVENT_TX_DONE = 0,
+    BC_SPIRIT1_EVENT_RX_DONE = 1,
+    BC_SPIRIT1_EVENT_RX_TIMEOUT = 2
 
 } bc_spirit1_event_t;
 
@@ -17,9 +17,19 @@ void bc_spirit1_init(void);
 
 void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t));
 
-void bc_spirit1_transmit(const void *buffer, size_t length);
+void *bc_spirit1_get_tx_buffer(void);
 
-void bc_spirit1_receive(void *buffer, size_t *length, bc_tick_t timeout);
+void bc_spirit1_set_tx_length(size_t length);
+
+void *bc_spirit1_get_rx_buffer(void);
+
+size_t bc_spirit1_get_rx_length(void);
+
+void bc_spirit1_set_rx_timeout(bc_tick_t timeout);
+
+void bc_spirit1_tx(void);
+
+void bc_spirit1_rx(void);
 
 void bc_spirit1_sleep(void);
 

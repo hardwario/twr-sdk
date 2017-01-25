@@ -8,23 +8,23 @@
 typedef enum
 {
     BC_SPIRIT1_STATE_SLEEP = 0,
-    BC_SPIRIT1_STATE_IDLE = 1,
-    BC_SPIRIT1_STATE_TX = 2,
-    BC_SPIRIT1_STATE_RX = 3
+    BC_SPIRIT1_STATE_TX = 1,
+    BC_SPIRIT1_STATE_RX = 2
 
 } bc_spirit1_state_t;
 
 typedef struct
 {
+    void (*event_handler)(bc_spirit1_event_t);
     bc_scheduler_task_id_t task_id;
     bc_spirit1_state_t desired_state;
     bc_spirit1_state_t current_state;
-    void (*event_handler)(bc_spirit1_event_t);
-    bc_tick_t rx_tick_timeout;
-    void *rx_buffer;
-    size_t *rx_length;
     uint8_t tx_buffer[BC_SPIRIT1_MAX_PACKET_SIZE];
     size_t tx_length;
+    uint8_t  rx_buffer[BC_SPIRIT1_MAX_PACKET_SIZE];
+    size_t rx_length;
+    bc_tick_t rx_timeout;
+    bc_tick_t rx_tick_timeout;
 
 } bc_spirit1_t;
 
@@ -125,31 +125,41 @@ void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t))
     _bc_spirit1.event_handler = event_handler;
 }
 
-void bc_spirit1_transmit(const void *buffer, size_t length)
+void *bc_spirit1_get_tx_buffer(void)
 {
-    if (length == 0 || length > BC_SPIRIT1_MAX_PACKET_SIZE)
-    {
-        return;
-    }
+    return _bc_spirit1.tx_buffer;
+}
 
-    _bc_spirit1.desired_state = BC_SPIRIT1_STATE_TX;
-
-    memcpy(_bc_spirit1.tx_buffer, buffer, length);
-
+void bc_spirit1_set_tx_length(size_t length)
+{
     _bc_spirit1.tx_length = length;
+}
+
+void *bc_spirit1_get_rx_buffer(void)
+{
+    return _bc_spirit1.rx_buffer;
+}
+
+size_t bc_spirit1_get_rx_length(void)
+{
+    return _bc_spirit1.rx_length;
+}
+
+void bc_spirit1_set_rx_timeout(bc_tick_t timeout)
+{
+    _bc_spirit1.rx_timeout = timeout;
+}
+
+void bc_spirit1_tx(void)
+{
+    _bc_spirit1.desired_state = BC_SPIRIT1_STATE_TX;
 
     bc_scheduler_plan_now(_bc_spirit1.task_id);
 }
 
-void bc_spirit1_receive(void *buffer, size_t *length, bc_tick_t timeout)
+void bc_spirit1_rx(void)
 {
     _bc_spirit1.desired_state = BC_SPIRIT1_STATE_RX;
-
-    _bc_spirit1.rx_buffer = buffer;
-
-    _bc_spirit1.rx_length = length;
-
-    _bc_spirit1.rx_tick_timeout = bc_tick_get() + timeout;
 
     bc_scheduler_plan_now(_bc_spirit1.task_id);
 }
@@ -248,7 +258,7 @@ static bc_tick_t _bc_spirit1_check_state_tx(void)
 
         if (_bc_spirit1.event_handler != NULL)
         {
-            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_TRANSMISSION_DONE);
+            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_TX_DONE);
         }
 
         if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_RX)
@@ -267,6 +277,15 @@ static bc_tick_t _bc_spirit1_check_state_tx(void)
 static bc_tick_t _bc_spirit1_enter_state_rx(void)
 {
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_RX;
+
+    if (_bc_spirit1.rx_timeout == 0)
+    {
+        _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
+    }
+    else
+    {
+        _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
+    }
 
     SpiritIrqs xIrqStatus;
 
@@ -314,7 +333,7 @@ static bc_tick_t _bc_spirit1_check_state_rx(void)
     {
         if (_bc_spirit1.event_handler != NULL)
         {
-            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RECEPTION_TIMEOUT);
+            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_TIMEOUT);
         }
     }
 
@@ -339,11 +358,11 @@ static bc_tick_t _bc_spirit1_check_state_rx(void)
       /* Read the RX FIFO */
       SpiritSpiReadLinearFifo(cRxData, _bc_spirit1.rx_buffer);
 
-      *_bc_spirit1.rx_length = cRxData;
+      _bc_spirit1.rx_length = cRxData;
 
       if (_bc_spirit1.event_handler != NULL)
       {
-          _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RECEPTION_DONE);
+          _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE);
       }
     }
 
@@ -368,57 +387,6 @@ static bc_tick_t _bc_spirit1_enter_state_sleep(void)
 
     return BC_TICK_INFINITY;
 }
-
-#if 0
-
-bool bc_spirit1_receive_packet(void *buffer, size_t size, size_t *length)
-{
-    if ((GPIOH->IDR & GPIO_IDR_ID0) != 0)
-    {
-        return false;
-    }
-
-    bool ret = false;
-
-    SpiritIrqs xIrqStatus;
-
-    /* Get the IRQ status */
-    SpiritIrqGetStatus(&xIrqStatus);
-
-    /* Check the SPIRIT RX_DATA_DISC IRQ flag */
-    if (xIrqStatus.IRQ_RX_DATA_DISC)
-    {
-      /* RX command - to ensure the device will be ready for the next reception */
-      SpiritCmdStrobeRx();
-    }
-
-    /* Check the SPIRIT RX_DATA_READY IRQ flag */
-    if (xIrqStatus.IRQ_RX_DATA_READY)
-    {
-      /* Get the RX FIFO size */
-      uint8_t cRxData = SpiritLinearFifoReadNumElementsRxFifo();
-
-      if (cRxData <= size)
-      {
-          /* Read the RX FIFO */
-          SpiritSpiReadLinearFifo(cRxData, buffer);
-
-          *length = cRxData;
-
-          ret = true;
-      }
-
-      /* Flush the RX FIFO */
-      SpiritCmdStrobeFlushRxFifo();
-
-      /* RX command - to ensure the device will be ready for the next reception */
-      SpiritCmdStrobeRx();
-    }
-
-    return ret;
-}
-
-#endif
 
 bc_spirit_status_t bc_spirit1_command(uint8_t command)
 {
