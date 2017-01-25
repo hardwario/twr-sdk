@@ -65,6 +65,8 @@ struct bc_accelerometer_t
 
 bool bc_accelerometer_init(bc_accelerometer_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
 void bc_accelerometer_set_event_handler(bc_accelerometer_t *self, void (*event_handler)(bc_accelerometer_t *, bc_accelerometer_event_t));
+void bc_accelerometer_set_update_interval(bc_accelerometer_t *self, bc_tick_t interval);
+
 bool bc_accelerometer_is_communication_fault(bc_accelerometer_t *self);
 bool bc_accelerometer_get_state(bc_accelerometer_t *self, bc_accelerometer_state_t *state);
 bool bc_accelerometer_power_down(bc_accelerometer_t *self);

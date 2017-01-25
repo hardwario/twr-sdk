@@ -4,7 +4,7 @@
 #define BC_ACCELEROMETER_DELAY_RUN 50
 #define BC_ACCELEROMETER_DELAY_READ 50
 
-static bc_tick_t _bc_accelerometer_task(void *param);
+static bc_tick_t _bc_accelerometer_task(void *param, bc_tick_t tick_now);
 
 bool bc_accelerometer_init(bc_accelerometer_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -14,6 +14,7 @@ bool bc_accelerometer_init(bc_accelerometer_t *self, bc_i2c_channel_t i2c_channe
 
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
+    self->_update_interval = 50;
 
 	self->_communication_fault = true;
 
@@ -49,6 +50,12 @@ void bc_accelerometer_set_event_handler(bc_accelerometer_t *self, void (*event_h
     self->_event_handler = event_handler;
 }
 
+void bc_accelerometer_set_update_interval(bc_accelerometer_t *self, bc_tick_t interval)
+{
+    self->_update_interval = interval;
+}
+
+
 bool bc_accelerometer_is_communication_fault(bc_accelerometer_t *self)
 {
 	return self->_communication_fault;
@@ -58,7 +65,7 @@ bool bc_accelerometer_get_state(bc_accelerometer_t *self, bc_accelerometer_state
 {
     (void)self;
     (void)state;
-    
+
     /*
 	uint8_t value;
 
@@ -113,6 +120,8 @@ bool bc_accelerometer_continuous_conversion(bc_accelerometer_t *self)
 
 	return true;
 }
+
+
 
 bool bc_accelerometer_read_result(bc_accelerometer_t *self)
 {
@@ -197,9 +206,9 @@ bool bc_accelerometer_get_result_g(bc_accelerometer_t *self, bc_accelerometer_re
 	return true;
 }
 
-
-static bc_tick_t _bc_accelerometer_task(void *param)
+static bc_tick_t _bc_accelerometer_task(void *param, bc_tick_t tick_now)
 {
+    (void) tick_now;
     bc_accelerometer_t *self = param;
 
 start:
@@ -222,11 +231,11 @@ start:
         case BC_ACCELEROMETER_STATE_MEASURE:
         {
             self->_state = BC_ACCELEROMETER_STATE_ERROR;
-/*
-            if (!bc_accelerometer_read_result(self))
+
+            if (!bc_accelerometer_continuous_conversion(self))
             {
                 goto start;
-            }*/
+            }
 
             self->_state = BC_ACCELEROMETER_STATE_READ;
 
@@ -237,6 +246,11 @@ start:
             self->_state = BC_ACCELEROMETER_STATE_ERROR;
 
             if (!bc_accelerometer_read_result(self))
+            {
+                goto start;
+            }
+
+            if (!bc_accelerometer_power_down(self))
             {
                 goto start;
             }
