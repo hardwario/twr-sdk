@@ -1,5 +1,9 @@
 #include <bc_tca9534a.h>
 
+#define BC_TCA9534A_REGISTER_INPUT_PORT 0x00
+#define BC_TCA9534A_REGISTER_OUTPUT_PORT 0x01
+#define BC_TCA9534A_REGISTER_POLARITY_INVERSION 0x02
+#define BC_TCA9534A_REGISTER_CONFIGURATION 0x03
 
 bool bc_tca9534a_init(bc_tca9534a_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -38,7 +42,7 @@ bool bc_tca9534a_write_port(bc_tca9534a_t *self, uint8_t value)
     return true;
 }
 
-bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_value_t *value)
+bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_state_t *value)
 {
     uint8_t port;
 
@@ -49,17 +53,17 @@ bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534
 
     if (((port >> (uint8_t) pin) & 1) == 0)
     {
-        *value = BC_TCA9534A_VALUE_LOW;
+        *value = BC_TCA9534A_PIN_STATE_LOW;
     }
     else
     {
-        *value = BC_TCA9534A_VALUE_HIGH;
+        *value = BC_TCA9534A_PIN_STATE_HIGH;
     }
 
     return true;
 }
 
-bool bc_tca9534a_write_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_value_t value)
+bool bc_tca9534a_write_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_state_t value)
 {
     uint8_t port;
 
@@ -70,7 +74,7 @@ bool bc_tca9534a_write_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca953
 
     port &= ~(1 << (uint8_t) pin);
 
-    if (value != BC_TCA9534A_VALUE_LOW)
+    if (value != BC_TCA9534A_PIN_STATE_LOW)
     {
         port |= 1 << (uint8_t) pin;
     }
@@ -103,8 +107,7 @@ bool bc_tca9534a_set_port_direction(bc_tca9534a_t *self, uint8_t direction)
     return true;
 }
 
-bool bc_tca9534a_get_pin_direction(bc_tca9534a_t *self, bc_tca9534a_pin_t pin,
-                                       bc_tca9534a_direction_t *direction)
+bool bc_tca9534a_get_pin_direction(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_pin_direction_t *direction)
 {
     uint8_t port_direction;
 
@@ -115,18 +118,17 @@ bool bc_tca9534a_get_pin_direction(bc_tca9534a_t *self, bc_tca9534a_pin_t pin,
 
     if (((port_direction >> (uint8_t) pin) & 1) == 0)
     {
-        *direction = BC_TCA9534A_DIRECTION_OUTPUT;
+        *direction = BC_TCA9534A_PIN_DIRECTION_OUTPUT;
     }
     else
     {
-        *direction = BC_TCA9534A_DIRECTION_INPUT;
+        *direction = BC_TCA9534A_PIN_DIRECTION_INPUT;
     }
 
     return true;
 }
 
-bool bc_tca9534a_set_pin_direction(bc_tca9534a_t *self, bc_tca9534a_pin_t pin,
-                                       bc_tca9534a_direction_t direction)
+bool bc_tca9534a_set_pin_direction(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_pin_direction_t direction)
 {
     uint8_t port_direction;
 
@@ -137,7 +139,7 @@ bool bc_tca9534a_set_pin_direction(bc_tca9534a_t *self, bc_tca9534a_pin_t pin,
 
     port_direction &= ~(1 << (uint8_t) pin);
 
-    if (direction == BC_TCA9534A_DIRECTION_INPUT)
+    if (direction == BC_TCA9534A_PIN_DIRECTION_INPUT)
     {
         port_direction |= 1 << (uint8_t) pin;
     }

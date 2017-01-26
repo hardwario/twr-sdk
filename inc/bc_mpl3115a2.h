@@ -1,9 +1,14 @@
 #ifndef _BC_MPL3115A2_H
 #define _BC_MPL3115A2_H
 
-#include <bc_common.h>
 #include <bc_i2c.h>
 #include <bc_tick.h>
+
+//! @addtogroup bc_mpl3115a2 bc_mpl3115a2
+//! @brief Driver for MPL3115A2
+//! @{
+
+//! @brief Callback events
 
 typedef enum
 {
@@ -26,6 +31,8 @@ typedef enum
 
 typedef struct bc_mpl3115a2_t bc_mpl3115a2_t;
 
+//! @brief MPL3115A2 instance
+
 struct bc_mpl3115a2_t
 {
     bc_i2c_channel_t _i2c_channel;
@@ -47,10 +54,41 @@ struct bc_mpl3115a2_t
     uint8_t _reg_out_t_lsb_pressure;
 };
 
+//! @brief Initialize MPL3115A2
+//! @param[in] self Instance
+//! @param[in] i2c_channel I2C channel
+//! @param[in] i2c_address I2C device address
+
 void bc_mpl3115a2_init(bc_mpl3115a2_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
+
+//! @brief Set callback function
+//! @param[in] self Instance
+//! @param[in] event_handler Function address
+
 void bc_mpl3115a2_set_event_handler(bc_mpl3115a2_t *self, void (*event_handler)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t));
+
+//! @brief Set measurement interval
+//! @param[in] self Instance
+//! @param[in] interval Measurement interval
+
 void bc_mpl3115a2_set_update_interval(bc_mpl3115a2_t *self, bc_tick_t interval);
+
+//! @brief Get measured altitude in meters
+//! @param[in] self Instance
+//! @param[in] meter Pointer to variable where result will be stored
+//! @return true When value is valid
+//! @return false When value is invalid
+
 bool bc_mpl3115a2_get_altitude_meter(bc_mpl3115a2_t *self, float *meter);
+
+//! @brief Get measured pressured in Pascal
+//! @param[in] self Instance
+//! @param[in] meter Pointer to variable where result will be stored
+//! @return true When value is valid
+//! @return false When value is invalid
+
 bool bc_mpl3115a2_get_pressure_pascal(bc_mpl3115a2_t *self, float *pascal);
+
+//! @}
 
 #endif // _BC_MPL3115A2_H

@@ -4,19 +4,22 @@
 #include <bc_common.h>
 
 //! @addtogroup bc_tick bc_tick
-//! @brief Time measuring function
+//! @brief Timestamp functions
 //! @{
 
 //! @brief Maximum timestamp value
-#define BC_TICK_INFINITY 0xffffffff
+
+#define BC_TICK_INFINITY UINT64_C(0xffffffffffffffff)
 
 //! @brief Timestamp data type
+
 typedef uint64_t bc_tick_t;
 
-//! @brief Get timestamp since the code started
-//! @return time in milliseconds
+//! @brief Get absolute timestamp since start of program
+//! @return Timestamp in milliseconds
+
 bc_tick_t bc_tick_get(void);
 
 //! @}
 
-#endif /* _BC_TICK_H */
+#endif // _BC_TICK_H

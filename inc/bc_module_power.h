@@ -81,4 +81,4 @@ void bc_module_power_init(void);
 
 //! @}
 
-#endif /* _BC_MODULE_POWER_H */
+#endif // _BC_MODULE_POWER_H

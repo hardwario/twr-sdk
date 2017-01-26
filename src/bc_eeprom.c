@@ -7,7 +7,7 @@ bool bc_eeprom_write(uint32_t address, const void *buffer, size_t length)
     // Add EEPROM base offset to address
     address += DATA_EEPROM_BASE;
 
-    // If user attempts to write outside of EEPROM boundary...
+    // If user attempts to write outside EEPROM area...
     if ((address + length) > (DATA_EEPROM_BANK2_END + 1UL))
     {
         // Indicate failure

@@ -1,5 +1,5 @@
-#include "bc_irq.h"
-#include "stm32l0xx.h"
+#include <bc_irq.h>
+#include <stm32l0xx.h>
 
 void bc_irq_disable(void)
 {
