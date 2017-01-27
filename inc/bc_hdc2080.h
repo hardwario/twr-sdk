@@ -3,7 +3,7 @@
 
 #include <bc_common.h>
 #include <bc_i2c.h>
-#include <bc_tick.h>
+#include <bc_scheduler.h>
 
 typedef enum
 {
@@ -28,7 +28,9 @@ struct bc_hdc2080_t
 {
     bc_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
-    void (*_event_handler)(bc_hdc2080_t *, bc_hdc2080_event_t);
+    void (*_event_handler)(bc_hdc2080_t *, bc_hdc2080_event_t, void *);
+    void *_event_param;
+    bc_scheduler_task_id_t _task_id;
     bc_tick_t _update_interval;
     bc_hdc2080_state_t _state;
     bool _humidity_valid;
@@ -36,7 +38,7 @@ struct bc_hdc2080_t
 };
 
 void bc_hdc2080_init(bc_hdc2080_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
-void bc_hdc2080_set_event_handler(bc_hdc2080_t *self, void (*event_handler)(bc_hdc2080_t *, bc_hdc2080_event_t));
+void bc_hdc2080_set_event_handler(bc_hdc2080_t *self, void (*event_handler)(bc_hdc2080_t *, bc_hdc2080_event_t, void *), void *event_param);
 void bc_hdc2080_set_update_interval(bc_hdc2080_t *self, bc_tick_t interval);
 bool bc_hdc2080_get_humidity_raw(bc_hdc2080_t *self, uint16_t *raw);
 bool bc_hdc2080_get_humidity_percentage(bc_hdc2080_t *self, float *percentage);

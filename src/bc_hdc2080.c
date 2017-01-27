@@ -1,5 +1,4 @@
 #include <bc_hdc2080.h>
-#include <bc_scheduler.h>
 
 // TODO Clarify timing with TI
 #define BC_HDC2080_DELAY_RUN 50
@@ -15,12 +14,13 @@ void bc_hdc2080_init(bc_hdc2080_t *self, bc_i2c_channel_t i2c_channel, uint8_t i
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
-    bc_scheduler_register(_bc_hdc2080_task, self, BC_HDC2080_DELAY_RUN);
+    self->_task_id = bc_scheduler_register(_bc_hdc2080_task, self, bc_tick_get() + BC_HDC2080_DELAY_RUN);
 }
 
-void bc_hdc2080_set_event_handler(bc_hdc2080_t *self, void (*event_handler)(bc_hdc2080_t *, bc_hdc2080_event_t))
+void bc_hdc2080_set_event_handler(bc_hdc2080_t *self, void (*event_handler)(bc_hdc2080_t *, bc_hdc2080_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
+    self->_event_param = event_param;
 }
 
 void bc_hdc2080_set_update_interval(bc_hdc2080_t *self, bc_tick_t interval)
@@ -73,7 +73,7 @@ start:
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_HDC2080_EVENT_ERROR);
+                self->_event_handler(self, BC_HDC2080_EVENT_ERROR, self->_event_param);
             }
 
             self->_state = BC_HDC2080_STATE_INITIALIZE;
@@ -139,7 +139,7 @@ start:
         {
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_HDC2080_EVENT_UPDATE);
+                self->_event_handler(self, BC_HDC2080_EVENT_UPDATE, self->_event_param);
             }
 
             self->_state = BC_HDC2080_STATE_MEASURE;
