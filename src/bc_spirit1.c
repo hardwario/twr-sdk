@@ -355,14 +355,17 @@ static bc_tick_t _bc_spirit1_check_state_rx(void)
       /* Get the RX FIFO size */
       uint8_t cRxData = SpiritLinearFifoReadNumElementsRxFifo();
 
-      /* Read the RX FIFO */
-      SpiritSpiReadLinearFifo(cRxData, _bc_spirit1.rx_buffer);
-
-      _bc_spirit1.rx_length = cRxData;
-
-      if (_bc_spirit1.event_handler != NULL)
+      if (cRxData <= BC_SPIRIT1_MAX_PACKET_SIZE)
       {
-          _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE);
+          /* Read the RX FIFO */
+          SpiritSpiReadLinearFifo(cRxData, _bc_spirit1.rx_buffer);
+
+          _bc_spirit1.rx_length = cRxData;
+
+          if (_bc_spirit1.event_handler != NULL)
+          {
+              _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE);
+          }
       }
     }
 
