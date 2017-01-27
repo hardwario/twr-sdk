@@ -25,17 +25,17 @@ typedef enum
 
 typedef struct
 {
-	int16_t x_axis;
-	int16_t y_axis;
-	int16_t z_axis;
+    int16_t x_axis;
+    int16_t y_axis;
+    int16_t z_axis;
 
 } bc_lis2dh12_result_raw_t;
 
 typedef struct
 {
-	float x_axis;
-	float y_axis;
-	float z_axis;
+    float x_axis;
+    float y_axis;
+    float z_axis;
 
 } bc_lis2dh12_result_g_t;
 
@@ -49,12 +49,12 @@ struct bc_lis2dh12_t
     bc_tick_t _update_interval;
     bc_lis2dh12_state_t _state;
     bool _accelerometer_valid;
-	uint8_t _out_x_l;
-	uint8_t _out_x_h;
-	uint8_t _out_y_l;
-	uint8_t _out_y_h;
-	uint8_t _out_z_l;
-	uint8_t _out_z_h;
+    uint8_t _out_x_l;
+    uint8_t _out_x_h;
+    uint8_t _out_y_l;
+    uint8_t _out_y_h;
+    uint8_t _out_z_l;
+    uint8_t _out_z_h;
 };
 
 bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
