@@ -93,6 +93,10 @@ bool bc_lis2dh12_get_result_g(bc_lis2dh12_t *self, bc_lis2dh12_result_g_t *resul
     return true;
 }
 
+uint8_t int1_src;
+uint8_t int1_cfg_read;
+uint8_t ctrl_reg3_read;
+
 static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
 {
     bc_lis2dh12_t *self = param;
@@ -118,9 +122,12 @@ start:
         {
             self->_state = BC_LIS2DH12_STATE_ERROR;
 
-            if (!_bc_lis2dh12_continuous_conversion(self))
+            if(!self->_alarm_active)
             {
-                goto start;
+                if (!_bc_lis2dh12_continuous_conversion(self))
+                {
+                    goto start;
+                }
             }
 
             self->_state = BC_LIS2DH12_STATE_READ;
@@ -137,13 +144,13 @@ start:
             }
 
             // Power down only when no alarm is set
-            if(!self->_alarm_active)
+            /*if(!self->_alarm_active)
             {
                 if (!_bc_lis2dh12_power_down(self))
                 {
                     goto start;
                 }
-            }
+            }*/
 
             self->_accelerometer_valid = true;
 
@@ -153,24 +160,43 @@ start:
         }
         case BC_LIS2DH12_STATE_UPDATE:
         {
+            self->_state = BC_LIS2DH12_STATE_ERROR;
+
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_LIS2DH12_EVENT_UPDATE);
+            }
 
-                // Read Alarm bit
-                if(self->_alarm_active)
+            // Read Alarm bit
+            if(self->_alarm_active)
+            {
+
+                if(!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x31, &int1_src))
                 {
-                    uint8_t int1_src;
-                    bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x39, &int1_src);
+                    goto start;
+                }
 
-                    if(int1_src & (1 << 6))
+                if(int1_src & (1 << 6)/* || int1_src & (1 << 1)*/)
+                {
+                    if (self->_event_handler != NULL)
                     {
                         self->_event_handler(self, BC_LIS2DH12_EVENT_ALARM);
                     }
                 }
+
+                if(!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x30, &int1_cfg_read))
+                {
+                    goto start;
+                }
+
+                if(!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x22, &ctrl_reg3_read))
+                {
+                    goto start;
+                }
+
             }
 
-            self->_state = BC_LIS2DH12_STATE_MEASURE;
+            self->_state = BC_LIS2DH12_STATE_UPDATE; //BC_LIS2DH12_STATE_MEASURE;
 
             return tick_now + self->_update_interval;
         }
@@ -263,13 +289,13 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
         self->_alarm_active = true;
 
         // Disable IRQ first to change the registers
-        /*if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x30, 0x00))
+        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x30, 0x00))
         {
             return false;
-        }*/
+        }
 
         // Recalculate threshold to the 4g full-scale setting
-        uint8_t int1_ths = (uint8_t)((alarm->treshold) / 0.016f);
+        uint8_t int1_ths = (uint8_t)((alarm->threshold) / 0.031f);
 
         if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x32, int1_ths))
         {
@@ -282,10 +308,31 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
             return false;
         }
 
+        // CTRL_REG3
+        uint8_t ctrl_reg3 = (1 << 6);
+        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x22, ctrl_reg3))
+        {
+            return false;
+        }
+
+        // CTRL_REG6 - invert interrupt
+        uint8_t ctrl_reg6 = (1 << 1);
+        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x25, ctrl_reg6))
+        {
+            return false;
+        }
+
+        // ctr_reg5
+        uint8_t ctrl_reg5 = (0 << 3); // latch interrupt request
+        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x24, ctrl_reg5))
+        {
+            return false;
+        }
+
         // INT_CFG1
         uint8_t int_cfg1;
 
-        int_cfg1 = (0 << 7) | (1 << 6); // AOI = 0, 6D = 1
+        int_cfg1 = 0; //(1 << 7) | (1 << 6); // AOI = 0, 6D = 1
 
         int_cfg1 |= (alarm->z_high) ? (1 << 5) : 0;
         int_cfg1 |= (alarm->z_low) ? (1 << 4) : 0;
@@ -301,12 +348,7 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
             return false;
         }
 
-        // ctr_reg5
-        /*uint8_t ctrl_reg5 = (1 << 3);
-        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x24, ctrl_reg5))
-        {
-            return false;
-        }*/
+
     }
     else
     {
@@ -318,7 +360,7 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
             return false;
         }
     }
-    
+
     return true;
 }
 
