@@ -42,7 +42,7 @@ typedef struct
 
 typedef struct
 {
-    float treshold;
+    float threshold;
     uint8_t duration;
     bool x_low;
     bool x_high;
