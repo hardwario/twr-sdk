@@ -3,7 +3,7 @@
 #include <stm32l0xx_hal.h>
 #include <stm32l083xx.h>
 
-#define DEBUG_ENABLE    0
+#define DEBUG_ENABLE    1
 
 void SystemClock_Config(void);
 void Error_Handler(void);
@@ -13,16 +13,21 @@ void bc_module_core_init()
     HAL_Init();
 
     __HAL_RCC_SYSCFG_CLK_ENABLE();
+    //RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
     __HAL_RCC_PWR_CLK_ENABLE();
+    //RCC->APB1ENR |= RCC_APB1ENR_PWREN;
 
     HAL_NVIC_SetPriority(SVC_IRQn, 0, 0);
+    //NVIC_SetPriority(SVC_IRQn, 0);
     HAL_NVIC_SetPriority(PendSV_IRQn, 0, 0);
+    //NVIC_SetPriority(PendSV_IRQn, 0);
     HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+    //NVIC_SetPriority(SysTick_IRQn, 0);
 
     SystemClock_Config();
 
-    RCC->APB1ENR    =   RCC_APB1ENR_PWREN |     // Enable power to APB1 (PCLK1)
-                        RCC_APB1ENR_LPTIM1EN;   // Enable low-power timer
+    RCC->APB1ENR    =   RCC_APB1ENR_PWREN/* |     // Enable power to APB1 (PCLK1)
+                        RCC_APB1ENR_LPTIM1EN*/;   // Enable low-power timer
 
     RCC->APB2ENR    =   RCC_APB2ENR_SYSCFGEN |  // System configuration controller clock enabled
                         RCC_APB2ENR_DBGMCUEN;   // DBG clock enable
@@ -44,9 +49,11 @@ void bc_module_core_init()
         /* TODO: Timeout should be implemented here */
     }
 
+    /*
     RCC->CSR        =   RCC_CSR_LSEON |         // Turn LSE on
                         RCC_CSR_LSEDRV_1 |      // viz. DocID025274 Rev 4 (page 221)
                         RCC_CSR_RTCSEL_LSE;     // LSE oscillator clock used as RTC(/LCD) clock
+     */
 
     RCC->IOPENR     =   RCC_IOPENR_GPIOAEN |    // Enable GPIOA clocks
                          RCC_IOPENR_GPIOBEN |   // Enable GPIOB clocks
@@ -95,14 +102,22 @@ void bc_module_core_init()
     GPIOH->ODR      =   0;
     GPIOH->MODER    =   GPIO_MODER_MODE0 | GPIO_MODER_MODE1_0;
 
+    EXTI->RTSR      =   EXTI_FTSR_TR8;
+    EXTI->IMR       =   EXTI_IMR_IM8 | (1 << 29);
+
+    SYSCFG->CFGR2   =   SYSCFG_CFGR2_I2C_PB8_FMP | SYSCFG_CFGR2_I2C_PB9_FMP;
+
     __enable_irq();
 
-    bc_rtc_init();
+    // bc_rtc_init();
 }
 
 void bc_module_core_sleep()
 {
+    /* Use sleep instead of a deep sleep */
     SCB->SCR |= ((uint32_t)SCB_SCR_SLEEPDEEP_Msk);
+
+    /* Wait for interrupt */
     __WFI();
 }
 
