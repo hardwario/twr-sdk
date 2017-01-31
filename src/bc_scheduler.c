@@ -1,4 +1,5 @@
 #include <bc_scheduler.h>
+#include <bc_low_power.h>
 
 static struct
 {
@@ -42,6 +43,7 @@ void bc_scheduler_run(void)
                 }
             }
         }
+        bc_low_power_enter();
     }
 }
 
