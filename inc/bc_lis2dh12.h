@@ -18,9 +18,10 @@ typedef enum
 typedef enum
 {
     BC_LIS2DH12_STATE_ERROR = -1,
-    BC_LIS2DH12_STATE_MEASURE = 0,
-    BC_LIS2DH12_STATE_READ = 1,
-    BC_LIS2DH12_STATE_UPDATE = 2
+    BC_LIS2DH12_STATE_INITIALIZE = 0,
+    BC_LIS2DH12_STATE_MEASURE = 1,
+    BC_LIS2DH12_STATE_READ = 2,
+    BC_LIS2DH12_STATE_UPDATE = 3
 
 } bc_lis2dh12_state_t;
 
@@ -70,6 +71,7 @@ struct bc_lis2dh12_t
     uint8_t _out_z_l;
     uint8_t _out_z_h;
     bool _alarm_active;
+    bool _irq_flag;
 };
 
 bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
@@ -77,8 +79,8 @@ void bc_lis2dh12_set_event_handler(bc_lis2dh12_t *self, void (*event_handler)(bc
 void bc_lis2dh12_set_update_interval(bc_lis2dh12_t *self, bc_tick_t interval);
 bool bc_lis2dh12_get_result_raw(bc_lis2dh12_t *self, bc_lis2dh12_result_raw_t *result_raw);
 bool bc_lis2dh12_get_result_g(bc_lis2dh12_t *self, bc_lis2dh12_result_g_t *result_g);
-
 bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm);
+void bc_lis2dh12_signalize();
 
 // Experimental testing
 //void bc_lis2dh12_set_config(bc_lis2dh12_t *self);

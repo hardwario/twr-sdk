@@ -1,5 +1,6 @@
 #include <bc_lis2dh12.h>
 #include <bc_scheduler.h>
+#include <stm32l0xx.h>
 
 #define BC_LIS2DH12_DELAY_RUN 10
 #define BC_LIS2DH12_DELAY_READ 10
@@ -10,37 +11,36 @@ static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self);
 
+static bc_lis2dh12_t *_bc_lis2dh12_irq_instance;
+
 bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
-    uint8_t who_am_i;
-
     memset(self, 0, sizeof(*self));
 
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
     self->_update_interval = 50;
 
-    // Read WHO_AM_I
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x0f, &who_am_i))
-    {
-        return false;
-    }
+    //PB6
+    // Enable GPIOB clock
+    RCC->IOPENR |= RCC_IOPENR_GPIOBEN; //(1 << 1);
+    // Set input mode
+    GPIOB->MODER &= ~GPIO_MODER_MODE6_Msk;
 
-    // Check WHO_AM_I register
-    if (who_am_i != 0x33)
-    {
-        return false;
-    }
+    // Enable system cfg
+    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+    // Link pin to exti controller
+    SYSCFG->EXTICR[1] |= SYSCFG_EXTICR2_EXTI6_PB;
+    // Falling edge
+    EXTI->FTSR |= EXTI_FTSR_FT6;
+    // Interrupt mask register
+    EXTI->IMR |= EXTI_IMR_IM6;
 
-    if (!_bc_lis2dh12_power_down(self))
-    {
-        return false;
-    }
+    _bc_lis2dh12_irq_instance = self;
 
-    if (!_bc_lis2dh12_continuous_conversion(self))
-    {
-        return false;
-    }
+    // Event mask register
+    EXTI->EMR |= EXTI_EMR_EM6;
+    NVIC_EnableIRQ(EXTI4_15_IRQn);
 
     bc_scheduler_register(_bc_lis2dh12_task, self, BC_LIS2DH12_DELAY_RUN);
 
@@ -101,110 +101,127 @@ static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
 {
     bc_lis2dh12_t *self = param;
 
-start:
-
-    switch (self->_state)
+    while(true)
     {
-        case BC_LIS2DH12_STATE_ERROR:
+        switch (self->_state)
         {
-            self->_accelerometer_valid = false;
-
-            if (self->_event_handler != NULL)
+            case BC_LIS2DH12_STATE_ERROR:
             {
-                self->_event_handler(self, BC_LIS2DH12_EVENT_ERROR);
-            }
+                self->_accelerometer_valid = false;
 
-            self->_state = BC_LIS2DH12_STATE_MEASURE;
-
-            return tick_now + self->_update_interval;
-        }
-        case BC_LIS2DH12_STATE_MEASURE:
-        {
-            self->_state = BC_LIS2DH12_STATE_ERROR;
-
-            if(!self->_alarm_active)
-            {
-                if (!_bc_lis2dh12_continuous_conversion(self))
+                if (self->_event_handler != NULL)
                 {
-                    goto start;
+                    self->_event_handler(self, BC_LIS2DH12_EVENT_ERROR);
                 }
+
+                self->_state = BC_LIS2DH12_STATE_INITIALIZE;
+
+                return tick_now + self->_update_interval;
             }
-
-            self->_state = BC_LIS2DH12_STATE_READ;
-
-            return tick_now + BC_LIS2DH12_DELAY_READ;
-        }
-        case BC_LIS2DH12_STATE_READ:
-        {
-            self->_state = BC_LIS2DH12_STATE_ERROR;
-
-            if (!_bc_lis2dh12_read_result(self))
+            case BC_LIS2DH12_STATE_INITIALIZE:
             {
-                goto start;
-            }
+                self->_state = BC_LIS2DH12_STATE_ERROR;
 
-            // Power down only when no alarm is set
-            /*if(!self->_alarm_active)
-            {
+                // Read and check WHO_AM_I register
+                uint8_t who_am_i;
+                if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x0f, &who_am_i))
+                {
+                    continue;
+                }
+
+                if (who_am_i != 0x33)
+                {
+                    continue;
+                }
+
                 if (!_bc_lis2dh12_power_down(self))
                 {
-                    goto start;
+                    continue;
                 }
-            }*/
 
-            self->_accelerometer_valid = true;
+                self->_state = BC_LIS2DH12_STATE_MEASURE;
 
-            self->_state = BC_LIS2DH12_STATE_UPDATE;
-
-            goto start;
-        }
-        case BC_LIS2DH12_STATE_UPDATE:
-        {
-            self->_state = BC_LIS2DH12_STATE_ERROR;
-
-            if (self->_event_handler != NULL)
-            {
-                self->_event_handler(self, BC_LIS2DH12_EVENT_UPDATE);
+                return tick_now + self->_update_interval;
             }
-
-            // Read Alarm bit
-            if(self->_alarm_active)
+            case BC_LIS2DH12_STATE_MEASURE:
             {
+                self->_state = BC_LIS2DH12_STATE_ERROR;
 
-                if(!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x31, &int1_src))
+                if (!_bc_lis2dh12_continuous_conversion(self))
                 {
-                    goto start;
+                    continue;
                 }
 
-                if(int1_src & (1 << 6)/* || int1_src & (1 << 1)*/)
+                self->_state = BC_LIS2DH12_STATE_READ;
+
+                return tick_now + BC_LIS2DH12_DELAY_READ;
+            }
+            case BC_LIS2DH12_STATE_READ:
+            {
+                self->_state = BC_LIS2DH12_STATE_ERROR;
+
+                if (!_bc_lis2dh12_read_result(self))
                 {
-                    if (self->_event_handler != NULL)
+                    continue;
+                }
+
+                // Power down only when no alarm is set
+                if(!self->_alarm_active)
+                {
+                    if (!_bc_lis2dh12_power_down(self))
                     {
-                        self->_event_handler(self, BC_LIS2DH12_EVENT_ALARM);
+                        continue;
                     }
                 }
 
-                if(!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x30, &int1_cfg_read))
-                {
-                    goto start;
-                }
+                self->_accelerometer_valid = true;
 
-                if(!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x22, &ctrl_reg3_read))
-                {
-                    goto start;
-                }
+                self->_state = BC_LIS2DH12_STATE_UPDATE;
 
+                continue;
             }
+            case BC_LIS2DH12_STATE_UPDATE:
+            {
+                self->_state = BC_LIS2DH12_STATE_ERROR;
 
-            self->_state = BC_LIS2DH12_STATE_UPDATE; //BC_LIS2DH12_STATE_MEASURE;
+                if (self->_event_handler != NULL)
+                {
+                    self->_event_handler(self, BC_LIS2DH12_EVENT_UPDATE);
+                }
 
-            return tick_now + self->_update_interval;
-        }
-        default:
-        {
-            self->_state = BC_LIS2DH12_STATE_ERROR;
+                // Read Alarm bit
+                if(self->_alarm_active)
+                {
 
-            goto start;
+                    if(!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x31, &int1_src))
+                    {
+                        continue;
+                    }
+
+                    // interrupt pin on PB6 low
+                    //if((GPIOB->IDR & (1 << 6)) == 0)
+                    //if(EXTI->SWIER & (1 << 6))
+                    if(self->_irq_flag)
+                    {
+                        self->_irq_flag = 0;
+
+                        if (self->_event_handler != NULL)
+                        {
+                            self->_event_handler(self, BC_LIS2DH12_EVENT_ALARM);
+                        }
+                    }
+                }
+
+                self->_state = BC_LIS2DH12_STATE_MEASURE;
+
+                return tick_now + self->_update_interval;
+            }
+            default:
+            {
+                self->_state = BC_LIS2DH12_STATE_ERROR;
+
+                continue;
+            }
         }
     }
 }
@@ -362,6 +379,11 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
     }
 
     return true;
+}
+
+void bc_lis2dh12_signalize()
+{
+    _bc_lis2dh12_irq_instance->_irq_flag = true;
 }
 
 /*

@@ -87,14 +87,6 @@ static void bc_spirit1_hal_init_timer(void);
 
 static bc_tick_t _bc_spirit1_task(void *param, bc_tick_t tick_now);
 
-void EXTI4_15_IRQHandler(void)
-{
-    // Clear pending interrupt flag for line 7
-    EXTI->PR = EXTI_PR_PIF7;
-
-    bc_scheduler_plan_now(_bc_spirit1.task_id);
-}
-
 void bc_spirit1_init(void)
 {
     memset(&_bc_spirit1, 0, sizeof(_bc_spirit1));
@@ -674,4 +666,9 @@ static void bc_spirit1_hal_init_timer(void)
 
     // Enable one-pulse mode
     TIM7->CR1 |= TIM_CR1_OPM;
+}
+
+void bc_spirit1_signalize()
+{
+    bc_scheduler_plan_now(_bc_spirit1.task_id);
 }

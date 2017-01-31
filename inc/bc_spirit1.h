@@ -33,4 +33,6 @@ void bc_spirit1_rx(void);
 
 void bc_spirit1_sleep(void);
 
+void bc_spirit1_signalize();
+
 #endif /* _BC_SPIRIT1_H */
