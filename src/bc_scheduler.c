@@ -1,6 +1,5 @@
 #include <bc_scheduler.h>
-#include <bc_low_power.h>
-#include <bc_gpio.h>
+#include <bc_module_core.h>
 
 static struct
 {
@@ -35,23 +34,17 @@ void bc_scheduler_run(void)
             {
                 if (tick_now >= bc_scheduler.pool[i].tick)
                 {
-                    bc_gpio_set_output(BC_GPIO_P1, true);
-
                     bc_scheduler.pool[i].tick = bc_scheduler.pool[i].task(bc_scheduler.pool[i].param, tick_now);
 
                     if (bc_scheduler.pool[i].tick > max_tick)
                     {
                         max_tick = bc_scheduler.pool[i].tick;
                     }
-
-                    bc_gpio_set_output(BC_GPIO_P1, false);
                 }
             }
         }
 
-        bc_gpio_set_output(BC_GPIO_P0, false);
-        bc_low_power_enter();
-        bc_gpio_set_output(BC_GPIO_P0, true);
+        bc_module_core_sleep();
     }
 }
 
