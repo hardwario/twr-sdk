@@ -22,8 +22,8 @@ typedef enum
 {
     BC_DAC_FORMAT_8_BIT  = 0L, //!< DAC output format is 8-bit
     BC_DAC_FORMAT_16_BIT = 1L, //!< DAC output format is 16-bit
-    BC_DAC_FORMAT_24_BIT = 1L, //!< DAC output format is 24-bit
-    BC_DAC_FORMAT_32_BIT = 2L, //!< DAC output format is 32-bit
+    BC_DAC_FORMAT_24_BIT = 2L, //!< DAC output format is 24-bit
+    BC_DAC_FORMAT_32_BIT = 3L, //!< DAC output format is 32-bit
 
 } bc_dac_format_t;
 
