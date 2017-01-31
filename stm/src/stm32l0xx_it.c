@@ -35,6 +35,9 @@
 #include "stm32l0xx.h"
 #include "stm32l0xx_it.h"
 
+void bc_lis2dh12_signalize();
+void bc_spirit1_signalize();
+
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
@@ -135,6 +138,24 @@ void USB_IRQHandler(void)
   /* USER CODE BEGIN USB_IRQn 1 */
 
   /* USER CODE END USB_IRQn 1 */
+}
+
+
+void EXTI4_15_IRQHandler(void)
+{
+    if(EXTI->PR & EXTI_PR_PIF6)
+    {
+        // Clear pending interrupt flag for line 6
+        EXTI->PR = EXTI_PR_PIF6;
+        bc_lis2dh12_signalize();
+    }
+
+    if(EXTI->PR & EXTI_PR_PIF7)
+    {
+        // Clear pending interrupt flag for line 7
+        EXTI->PR = EXTI_PR_PIF7;
+        bc_spirit1_signalize();
+    }
 }
 
 /* USER CODE BEGIN 1 */
