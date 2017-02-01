@@ -39,8 +39,9 @@ void bc_tag_temperature_init(bc_tag_temperature_t *self, bc_i2c_channel_t i2c_ch
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address
+//! @param[in] event_param Optional event parameter (can be NULL)
 
-void bc_tag_temperature_set_event_handler(bc_tag_temperature_t *self, void (*event_handler)(bc_tag_temperature_t *, bc_tag_temperature_event_t));
+void bc_tag_temperature_set_event_handler(bc_tag_temperature_t *self, void (*event_handler)(bc_tag_temperature_t *, bc_tag_temperature_event_t, void *), void *event_param);
 
 //! @brief Set measurement interval
 //! @param[in] self Instance

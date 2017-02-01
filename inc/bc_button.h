@@ -19,7 +19,8 @@ struct bc_button_t
     bc_gpio_channel_t _gpio_channel;
     bc_gpio_pull_t _gpio_pull;
     bool _idle_state;
-    void (*_event_handler)(bc_button_t *, bc_button_event_t);
+    void (*_event_handler)(bc_button_t *, bc_button_event_t, void *);
+    void *_event_param;
     bc_tick_t _scan_interval;
     bc_tick_t _debounce_time;
     bc_tick_t _click_timeout;
@@ -32,10 +33,10 @@ struct bc_button_t
 };
 
 void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_pull_t gpio_pull, bool idle_state);
-void bc_button_set_event_handler(bc_button_t *self, void (*event_handler)(bc_button_t *, bc_button_event_t));
+void bc_button_set_event_handler(bc_button_t *self, void (*event_handler)(bc_button_t *, bc_button_event_t, void *), void *event_param);
 void bc_button_set_scan_interval(bc_button_t *self, bc_tick_t scan_interval);
 void bc_button_set_debounce_time(bc_button_t *self, bc_tick_t debounce_time);
 void bc_button_set_click_timeout(bc_button_t *self, bc_tick_t click_timeout);
 void bc_button_set_hold_time(bc_button_t *self, bc_tick_t hold_time);
 
-#endif /* _BC_BUTTON_H */
+#endif // _BC_BUTTON_H

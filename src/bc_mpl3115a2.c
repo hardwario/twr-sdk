@@ -5,7 +5,7 @@
 #define BC_MPL3115A2_DELAY_RESET 1500
 #define BC_MPL3115A2_DELAY_MEASUREMENT 1500
 
-static bc_tick_t _bc_mpl3115a2_task(void *param, bc_tick_t tick_now);
+static void _bc_mpl3115a2_task(void *param);
 
 void bc_mpl3115a2_init(bc_mpl3115a2_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -17,9 +17,10 @@ void bc_mpl3115a2_init(bc_mpl3115a2_t *self, bc_i2c_channel_t i2c_channel, uint8
     bc_scheduler_register(_bc_mpl3115a2_task, self, BC_MPL3115A2_DELAY_RUN);
 }
 
-void bc_mpl3115a2_set_event_handler(bc_mpl3115a2_t *self, void (*event_handler)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t))
+void bc_mpl3115a2_set_event_handler(bc_mpl3115a2_t *self, void (*event_handler)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
+    self->_event_param = event_param;
 }
 
 void bc_mpl3115a2_set_update_interval(bc_mpl3115a2_t *self, bc_tick_t interval)
@@ -55,7 +56,7 @@ bool bc_mpl3115a2_get_pressure_pascal(bc_mpl3115a2_t *self, float *pascal)
     return true;
 }
 
-static bc_tick_t _bc_mpl3115a2_task(void *param, bc_tick_t tick_now)
+static void _bc_mpl3115a2_task(void *param)
 {
     bc_mpl3115a2_t *self = param;
 
@@ -70,12 +71,14 @@ start:
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_MPL3115A2_EVENT_ERROR);
+                self->_event_handler(self, BC_MPL3115A2_EVENT_ERROR, self->_event_param);
             }
 
             self->_state = BC_MPL3115A2_STATE_INITIALIZE;
 
-            return tick_now + self->_update_interval;
+            bc_scheduler_plan_current_relative(self->_update_interval);
+
+            return;
         }
         case BC_MPL3115A2_STATE_INITIALIZE:
         {
@@ -83,7 +86,9 @@ start:
 
             self->_state = BC_MPL3115A2_STATE_MEASURE_ALTITUDE;
 
-            return tick_now + BC_MPL3115A2_DELAY_RESET;
+            bc_scheduler_plan_current_relative(BC_MPL3115A2_DELAY_RESET);
+
+            return;
         }
         case BC_MPL3115A2_STATE_MEASURE_ALTITUDE:
         {
@@ -106,7 +111,9 @@ start:
 
             self->_state = BC_MPL3115A2_STATE_READ_ALTITUDE;
 
-            return tick_now + BC_MPL3115A2_DELAY_MEASUREMENT;
+            bc_scheduler_plan_current_relative(BC_MPL3115A2_DELAY_MEASUREMENT);
+
+            return;
         }
         case BC_MPL3115A2_STATE_READ_ALTITUDE:
         {
@@ -171,7 +178,9 @@ start:
 
             self->_state = BC_MPL3115A2_STATE_READ_PRESSURE;
 
-            return tick_now + BC_MPL3115A2_DELAY_MEASUREMENT;
+            bc_scheduler_plan_current_relative(BC_MPL3115A2_DELAY_MEASUREMENT);
+
+            return;
         }
         case BC_MPL3115A2_STATE_READ_PRESSURE:
         {
@@ -219,12 +228,14 @@ start:
         {
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_MPL3115A2_EVENT_UPDATE);
+                self->_event_handler(self, BC_MPL3115A2_EVENT_UPDATE, self->_event_param);
             }
 
             self->_state = BC_MPL3115A2_STATE_MEASURE_ALTITUDE;
 
-            return tick_now + self->_update_interval;
+            bc_scheduler_plan_current_relative(self->_update_interval);
+
+            return;
         }
         default:
         {

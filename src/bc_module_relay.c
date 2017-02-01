@@ -3,7 +3,7 @@
 #include <bc_module_relay.h>
 #include <bc_scheduler.h>
 
-static bc_tick_t _bc_module_relay_task(void *param, bc_tick_t tick_now);
+static void _bc_module_relay_task(void *param);
 
 #define BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT 0x3B
 #define BC_MODULE_RELAY_I2C_ADDRESS_ALTERNATE 0x3F
@@ -185,11 +185,11 @@ static bc_tick_t bc_module_relay_state_machine(bc_module_relay_t *self, bc_tick_
     }
 }
 
-static bc_tick_t _bc_module_relay_task(void *param, bc_tick_t tick_now)
+static void _bc_module_relay_task(void *param)
 {
     bc_module_relay_t *self = param;
 
-    return bc_module_relay_state_machine(self, tick_now);
+    bc_scheduler_plan_current_absolute(bc_module_relay_state_machine(self, bc_scheduler_get_spin_tick()));
 }
 
 void bc_module_relay_set_state(bc_module_relay_t *self, bool state)

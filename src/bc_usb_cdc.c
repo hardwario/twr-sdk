@@ -20,7 +20,7 @@ static struct
 
 USBD_HandleTypeDef hUsbDeviceFS;
 
-static bc_tick_t _bc_usb_cdc_task(void *param, bc_tick_t tick_now);
+static void _bc_usb_cdc_task(void *param);
 
 void bc_usb_cdc_init(void)
 {
@@ -84,14 +84,14 @@ void bc_usb_cdc_received_data(const void *buffer, size_t length)
     bc_fifo_irq_write(&bc_usb_cdc.receive_fifo, (uint8_t *) buffer, length);
 }
 
-static bc_tick_t _bc_usb_cdc_task(void *param, bc_tick_t tick_now)
+static void _bc_usb_cdc_task(void *param)
 {
     (void) param;
 
     if (bc_usb_cdc.transmit_length == 0)
     {
         // TODO
-        return tick_now;
+        bc_scheduler_plan_current_now();
     }
 
     HAL_NVIC_DisableIRQ(USB_IRQn);
@@ -104,5 +104,5 @@ static bc_tick_t _bc_usb_cdc_task(void *param, bc_tick_t tick_now)
     HAL_NVIC_EnableIRQ(USB_IRQn);
 
     // TODO
-    return tick_now;
+    bc_scheduler_plan_current_now();
 }

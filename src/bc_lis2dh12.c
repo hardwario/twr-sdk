@@ -5,7 +5,7 @@
 #define BC_LIS2DH12_DELAY_RUN 10
 #define BC_LIS2DH12_DELAY_READ 10
 
-static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now);
+static void _bc_lis2dh12_task(void *param);
 
 static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self);
@@ -21,6 +21,7 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     self->_i2c_address = i2c_address;
     self->_update_interval = 50;
 
+    // TODO: move to irq enable or init state
     //PB6
     // Enable GPIOB clock
     RCC->IOPENR |= RCC_IOPENR_GPIOBEN; //(1 << 1);
@@ -47,9 +48,10 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     return true;
 }
 
-void bc_lis2dh12_set_event_handler(bc_lis2dh12_t *self, void (*event_handler)(bc_lis2dh12_t *, bc_lis2dh12_event_t))
+void bc_lis2dh12_set_event_handler(bc_lis2dh12_t *self, void (*event_handler)(bc_lis2dh12_t *, bc_lis2dh12_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
+    self->_event_param = event_param;
 }
 
 void bc_lis2dh12_set_update_interval(bc_lis2dh12_t *self, bc_tick_t interval)
@@ -97,7 +99,7 @@ uint8_t int1_src;
 uint8_t int1_cfg_read;
 uint8_t ctrl_reg3_read;
 
-static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
+static void _bc_lis2dh12_task(void *param)
 {
     bc_lis2dh12_t *self = param;
 
@@ -111,12 +113,14 @@ static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_LIS2DH12_EVENT_ERROR);
+                    self->_event_handler(self, BC_LIS2DH12_EVENT_ERROR, self->_event_param);
                 }
 
                 self->_state = BC_LIS2DH12_STATE_INITIALIZE;
 
-                return tick_now + self->_update_interval;
+                bc_scheduler_plan_current_relative(self->_update_interval);
+
+                return;
             }
             case BC_LIS2DH12_STATE_INITIALIZE:
             {
@@ -141,7 +145,9 @@ static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
 
                 self->_state = BC_LIS2DH12_STATE_MEASURE;
 
-                return tick_now + self->_update_interval;
+                bc_scheduler_plan_current_relative(self->_update_interval);
+
+                return;
             }
             case BC_LIS2DH12_STATE_MEASURE:
             {
@@ -154,7 +160,9 @@ static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
 
                 self->_state = BC_LIS2DH12_STATE_READ;
 
-                return tick_now + BC_LIS2DH12_DELAY_READ;
+                bc_scheduler_plan_current_relative(BC_LIS2DH12_DELAY_READ);
+
+                return;
             }
             case BC_LIS2DH12_STATE_READ:
             {
@@ -186,35 +194,33 @@ static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_LIS2DH12_EVENT_UPDATE);
+                    self->_event_handler(self, BC_LIS2DH12_EVENT_UPDATE, self->_event_param);
                 }
 
-                // Read Alarm bit
+                // When the interrupt alarm is active
                 if(self->_alarm_active)
                 {
-
                     if(!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x31, &int1_src))
                     {
                         continue;
                     }
 
-                    // interrupt pin on PB6 low
-                    //if((GPIOB->IDR & (1 << 6)) == 0)
-                    //if(EXTI->SWIER & (1 << 6))
                     if(self->_irq_flag)
                     {
                         self->_irq_flag = 0;
 
                         if (self->_event_handler != NULL)
                         {
-                            self->_event_handler(self, BC_LIS2DH12_EVENT_ALARM);
+                            self->_event_handler(self, BC_LIS2DH12_EVENT_ALARM, self->_event_param);
                         }
                     }
                 }
 
                 self->_state = BC_LIS2DH12_STATE_MEASURE;
 
-                return tick_now + self->_update_interval;
+                bc_scheduler_plan_current_relative(self->_update_interval);
+
+                return;
             }
             default:
             {
@@ -254,9 +260,11 @@ static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self)
 
 static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self)
 {
+
     /*
      // Dont work yet, needs I2C repeated start reading
      bc_i2c_tranfer_t transfer;
+
 
      transfer.device_address = self->_i2c_address;
      transfer.memory_address = 0x28;
@@ -364,8 +372,6 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
         {
             return false;
         }
-
-
     }
     else
     {
@@ -385,39 +391,3 @@ void bc_lis2dh12_signalize()
 {
     _bc_lis2dh12_irq_instance->_irq_flag = true;
 }
-
-/*
-// ODR 100Hz 0x50, enable XYZ axes 0x07
-uint8_t ctrl_reg1 = 0x57;
-// No filters
-uint8_t ctrl_reg2 = 0x00;
-
-uint8_t click_cfg = 0x01; // X axis single click
-
-
-// 1 LSB = (full scale) / 128 => 2g/128 * 0,5 => 33
-uint8_t click_ths = 33;
-// 1 LSB = 1/ODR => 1/100Hz = 10ms ;  100ms/10ms = 10
-uint8_t time_limit = 10;
-
-// time latency to detect double-click, not used in single click
-uint8_t time_latency = 0;
-// Window for double click detection, not used in single click
-uint8_t time_window = 0;
-
-void bc_lis2dh12_set_config(bc_lis2dh12_t *self)
-{
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x20, ctrl_reg1);
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x21, ctrl_reg2);
-
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x38, click_cfg);
-
-    //bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x39, click_src); // read only
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x3A, click_ths);
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x3B, time_limit);
-
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x3C, time_latency);
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x3D, time_window);
-
-}
-*/

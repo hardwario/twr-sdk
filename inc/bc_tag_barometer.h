@@ -29,8 +29,9 @@ void bc_tag_barometer_init(bc_tag_barometer_t *self, bc_i2c_channel_t i2c_channe
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address
+//! @param[in] event_param Optional event parameter (can be NULL)
 
-void bc_tag_barometer_set_event_handler(bc_tag_barometer_t *self, void (*event_handler)(bc_tag_barometer_t *, bc_tag_barometer_event_t));
+void bc_tag_barometer_set_event_handler(bc_tag_barometer_t *self, void (*event_handler)(bc_tag_barometer_t *, bc_tag_barometer_event_t, void *), void *event_param);
 
 //! @brief Set measurement interval
 //! @param[in] self Instance

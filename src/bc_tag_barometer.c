@@ -5,9 +5,9 @@ void bc_tag_barometer_init(bc_tag_barometer_t *self, bc_i2c_channel_t i2c_channe
     bc_mpl3115a2_init(self, i2c_channel, 0x60);
 }
 
-void bc_tag_barometer_set_event_handler(bc_tag_barometer_t *self, void (*event_handler)(bc_tag_barometer_t *, bc_tag_barometer_event_t))
+void bc_tag_barometer_set_event_handler(bc_tag_barometer_t *self, void (*event_handler)(bc_tag_barometer_t *, bc_tag_barometer_event_t, void *), void *event_param)
 {
-    bc_mpl3115a2_set_event_handler(self, (void (*)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t)) event_handler);
+    bc_mpl3115a2_set_event_handler(self, (void (*)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t, void *)) event_handler, event_param);
 }
 
 void bc_tag_barometer_set_update_interval(bc_tag_barometer_t *self, bc_tick_t interval)
