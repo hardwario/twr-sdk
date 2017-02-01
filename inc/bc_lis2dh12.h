@@ -127,11 +127,6 @@ bool bc_lis2dh12_get_result_raw(bc_lis2dh12_t *self, bc_lis2dh12_result_raw_t *r
 //! @return false When value is invalid
 
 bool bc_lis2dh12_get_result_g(bc_lis2dh12_t *self, bc_lis2dh12_result_g_t *result_g);
-bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm);
-void bc_lis2dh12_signalize();
-
-// Experimental testing
-//void bc_lis2dh12_set_config(bc_lis2dh12_t *self);
 
 //! @brief Enable or disable accelerometer threshold alarm
 //! @param[in] self Instance
