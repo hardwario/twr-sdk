@@ -34,14 +34,8 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     SYSCFG->EXTICR[1] |= SYSCFG_EXTICR2_EXTI6_PB;
     // Falling edge
     EXTI->FTSR |= EXTI_FTSR_FT6;
-    // Interrupt mask register
-    EXTI->IMR |= EXTI_IMR_IM6;
 
     _bc_lis2dh12_irq_instance = self;
-
-    // Event mask register
-    EXTI->EMR |= EXTI_EMR_EM6;
-    NVIC_EnableIRQ(EXTI4_15_IRQn);
 
     bc_scheduler_register(_bc_lis2dh12_task, self, BC_LIS2DH12_DELAY_RUN);
 
@@ -372,6 +366,10 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
         {
             return false;
         }
+
+        // Interrupt mask register, enable EXTI
+        EXTI->IMR |= EXTI_IMR_IM6;
+        NVIC_EnableIRQ(EXTI4_15_IRQn);
     }
     else
     {
@@ -382,6 +380,9 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
         {
             return false;
         }
+
+        // Disable EXTI IRQ
+        EXTI->IMR &= ~EXTI_IMR_IM6;
     }
 
     return true;
