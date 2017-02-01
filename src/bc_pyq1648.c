@@ -50,7 +50,7 @@ static inline void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc
 static void _bc_pyq1648_dev_init(bc_pyq1648_t *self);
 static void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self);
 static void _bc_pyq1648_delay_100us(unsigned int i);
-static bc_tick_t _bc_pyq1648_task(void *param, bc_tick_t tick_now);
+static void _bc_pyq1648_task(void *param);
 static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self);
 static inline void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self);
 static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *PIRval, uint32_t *statcfg);
@@ -323,7 +323,7 @@ static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *
     }
 }
 
-static bc_tick_t _bc_pyq1648_task(void *param, bc_tick_t tick_now)
+static void _bc_pyq1648_task(void *param)
 {
     bc_pyq1648_t *self = param;
 
@@ -342,7 +342,9 @@ start:
 
             self->_state = BC_PYQ1648_STATE_INITIALIZE;
 
-            return tick_now + BC_PYQ1648_UPDATE_INTERVAL;
+            bc_scheduler_plan_current_relative(BC_PYQ1648_UPDATE_INTERVAL);
+
+            return;
         }
         case BC_PYQ1648_STATE_INITIALIZE:
         {
@@ -352,7 +354,9 @@ start:
 
             self->_state = BC_PYQ1648_STATE_IGNORE;
 
-            return tick_now + BC_PYQ1648_DELAY_INITIALIZATION;
+            bc_scheduler_plan_current_relative(BC_PYQ1648_DELAY_INITIALIZATION);
+
+            return;
         }
         case BC_PYQ1648_STATE_IGNORE:
         {
@@ -378,7 +382,9 @@ start:
                 self->_state = BC_PYQ1648_STATE_IGNORE;
             }
 
-            return tick_now + BC_PYQ1648_UPDATE_INTERVAL;
+            bc_scheduler_plan_current_relative(BC_PYQ1648_UPDATE_INTERVAL);
+
+            return;
         }
         case BC_PYQ1648_STATE_CHECK:
         {
@@ -411,7 +417,10 @@ start:
 #endif
 
             self->_state = BC_PYQ1648_STATE_CHECK;
-            return tick_now + BC_PYQ1648_UPDATE_INTERVAL;
+
+            bc_scheduler_plan_current_relative(BC_PYQ1648_UPDATE_INTERVAL);
+
+            return;
         }
         default:
         {

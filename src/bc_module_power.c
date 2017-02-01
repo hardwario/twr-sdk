@@ -6,7 +6,7 @@
 
 #define BIT_BUFFER_LEDS 2
 
-bc_tick_t bc_module_power_task();
+void bc_module_power_task();
 
 // WS2812 framebuffer - buffer for 2 LEDs - two times 32 bits
 uint8_t dma_bit_buffer[8 * 4 * BIT_BUFFER_LEDS];
@@ -422,7 +422,7 @@ void bc_module_power_init()
     bc_scheduler_register(bc_module_power_task, &bc_module_power, 10);
 }
 
-bc_tick_t bc_module_power_task()
+void bc_module_power_task()
 {
     if (ws2812b.transfer_complete)
     {
@@ -447,6 +447,5 @@ bc_tick_t bc_module_power_task()
         GPIOA->BSRR = GPIO_BSRR_BR_0;
     }
 
-    return 10;
-
+    bc_scheduler_plan_current_relative(10);
 }

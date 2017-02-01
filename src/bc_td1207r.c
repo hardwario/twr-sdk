@@ -6,7 +6,7 @@
 #define BC_TD1207R_DELAY_INITIALIZATION_AT_RESPONSE 100
 #define BC_TD1207R_DELAY_SEND_RF_FRAME_RESPONSE 8000
 
-static bc_tick_t _bc_td1207r_task(void *param, bc_tick_t tick_now);
+static void _bc_td1207r_task(void *param);
 
 static bool _bc_td1207r_read_response(bc_td1207r_t *self);
 
@@ -63,7 +63,7 @@ bool bc_td1207r_send_rf_frame(bc_td1207r_t *self, const void *buffer, size_t len
     return true;
 }
 
-static bc_tick_t _bc_td1207r_task(void *param, bc_tick_t tick_now)
+static void _bc_td1207r_task(void *param)
 {
     bc_td1207r_t *self = param;
 
@@ -94,7 +94,9 @@ static bc_tick_t _bc_td1207r_task(void *param, bc_tick_t tick_now)
 
                 self->_state = BC_TD1207R_STATE_INITIALIZE_RESET_H;
 
-                return tick_now + BC_TD1207R_DELAY_INITIALIZATION_RESET_H;
+                bc_scheduler_plan_current_relative(BC_TD1207R_DELAY_INITIALIZATION_RESET_H);
+
+                return;
             }
             case BC_TD1207R_STATE_INITIALIZE_RESET_H:
             {
@@ -102,7 +104,9 @@ static bc_tick_t _bc_td1207r_task(void *param, bc_tick_t tick_now)
 
                 self->_state = BC_TD1207R_STATE_INITIALIZE_AT_COMMAND;
 
-                return tick_now + BC_TD1207R_DELAY_INITIALIZATION_AT_COMMAND;
+                bc_scheduler_plan_current_relative(BC_TD1207R_DELAY_INITIALIZATION_AT_COMMAND);
+
+                return;
             }
             case BC_TD1207R_STATE_INITIALIZE_AT_COMMAND:
             {
@@ -121,7 +125,9 @@ static bc_tick_t _bc_td1207r_task(void *param, bc_tick_t tick_now)
 
                 self->_state = BC_TD1207R_STATE_INITIALIZE_AT_RESPONSE;
 
-                return tick_now + BC_TD1207R_DELAY_INITIALIZATION_AT_RESPONSE;
+                bc_scheduler_plan_current_relative(BC_TD1207R_DELAY_INITIALIZATION_AT_RESPONSE);
+
+                return;
             }
             case BC_TD1207R_STATE_INITIALIZE_AT_RESPONSE:
             {
@@ -153,7 +159,7 @@ static bc_tick_t _bc_td1207r_task(void *param, bc_tick_t tick_now)
             }
             case BC_TD1207R_STATE_IDLE:
             {
-                return BC_TICK_INFINITY;
+                return;
             }
             case BC_TD1207R_STATE_SEND_RF_FRAME_COMMAND:
             {
@@ -202,7 +208,9 @@ static bc_tick_t _bc_td1207r_task(void *param, bc_tick_t tick_now)
                     self->_event_handler(self, BC_TD1207R_EVENT_SEND_RF_FRAME_START, self->_event_param);
                 }
 
-                return tick_now + BC_TD1207R_DELAY_SEND_RF_FRAME_RESPONSE;
+                bc_scheduler_plan_current_relative(BC_TD1207R_DELAY_SEND_RF_FRAME_RESPONSE);
+
+                return;
             }
             case BC_TD1207R_STATE_SEND_RF_FRAME_RESPONSE:
             {
@@ -243,8 +251,6 @@ static bc_tick_t _bc_td1207r_task(void *param, bc_tick_t tick_now)
             }
         }
     }
-
-    return BC_TICK_INFINITY;
 }
 
 static bool _bc_td1207r_read_response(bc_td1207r_t *self)

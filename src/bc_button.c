@@ -8,7 +8,7 @@
 #define BC_BUTTON_CLICK_TIMEOUT 500
 #define BC_BUTTON_HOLD_TIME 2000
 
-static bc_tick_t _bc_button_task(void *param, bc_tick_t tick_now);
+static void _bc_button_task(void *param);
 
 void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_pull_t gpio_pull, bool idle_state)
 {
@@ -55,9 +55,11 @@ void bc_button_set_hold_time(bc_button_t *self, bc_tick_t hold_time)
     self->_hold_time = hold_time;
 }
 
-static bc_tick_t _bc_button_task(void *param, bc_tick_t tick_now)
+static void _bc_button_task(void *param)
 {
     bc_button_t *self = param;
+
+    bc_tick_t tick_now = bc_scheduler_get_spin_tick();
 
     bool pin_state = bc_gpio_get_input(self->_gpio_channel);
 
@@ -116,5 +118,5 @@ static bc_tick_t _bc_button_task(void *param, bc_tick_t tick_now)
         }
     }
 
-    return tick_now + self->_scan_interval;
+    bc_scheduler_plan_current_relative(self->_scan_interval);
 }

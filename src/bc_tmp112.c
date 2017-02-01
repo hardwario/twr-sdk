@@ -4,7 +4,7 @@
 #define BC_TMP112_DELAY_RUN 50
 #define BC_TMP112_DELAY_READ 50
 
-static bc_tick_t _bc_tmp112_task(void *param, bc_tick_t tick_now);
+static void _bc_tmp112_task(void *param);
 
 void bc_tmp112_init(bc_tmp112_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -85,7 +85,7 @@ bool bc_tmp112_get_temperature_kelvin(bc_tmp112_t *self, float *kelvin)
     return true;
 }
 
-static bc_tick_t _bc_tmp112_task(void *param, bc_tick_t tick_now)
+static void _bc_tmp112_task(void *param)
 {
     bc_tmp112_t *self = param;
 
@@ -104,7 +104,9 @@ start:
 
             self->_state = BC_TMP112_STATE_MEASURE;
 
-            return tick_now + self->_update_interval;
+            bc_scheduler_plan_current_relative(self->_update_interval);
+
+            return;
         }
         case BC_TMP112_STATE_MEASURE:
         {
@@ -117,7 +119,9 @@ start:
 
             self->_state = BC_TMP112_STATE_READ;
 
-            return tick_now + BC_TMP112_DELAY_READ;
+            bc_scheduler_plan_current_relative(BC_TMP112_DELAY_READ);
+
+            return;
         }
         case BC_TMP112_STATE_READ:
         {
@@ -155,7 +159,9 @@ start:
 
             self->_state = BC_TMP112_STATE_MEASURE;
 
-            return tick_now + self->_update_interval;
+            bc_scheduler_plan_current_relative(self->_update_interval);
+
+            return;
         }
         default:
         {
