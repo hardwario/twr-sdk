@@ -1,5 +1,6 @@
 #include <bc_scheduler.h>
 #include <bc_module_core.h>
+#include <bc_gpio.h>
 
 static struct
 {
@@ -34,17 +35,77 @@ void bc_scheduler_run(void)
             {
                 if (tick_now >= bc_scheduler.pool[i].tick)
                 {
+                    /*
+                    switch (i)
+                    {
+                    case 0:
+                        bc_gpio_set_output(BC_GPIO_P1, true);
+                        break;
+                    case 1:
+                        bc_gpio_set_output(BC_GPIO_P2, true);
+                        break;
+                    case 2:
+                        bc_gpio_set_output(BC_GPIO_P3, true);
+                        break;
+                    case 3:
+                        bc_gpio_set_output(BC_GPIO_P4, true);
+                        break;
+                    case 4:
+                        bc_gpio_set_output(BC_GPIO_P5, true);
+                        break;
+                    case 5:
+                        bc_gpio_set_output(BC_GPIO_P6, true);
+                        break;
+                    case 6:
+                        bc_gpio_set_output(BC_GPIO_P7, true);
+                        break;
+                        default:
+                            break;
+                    }
+                    */
+
                     bc_scheduler.pool[i].tick = bc_scheduler.pool[i].task(bc_scheduler.pool[i].param, tick_now);
 
                     if (bc_scheduler.pool[i].tick > max_tick)
                     {
                         max_tick = bc_scheduler.pool[i].tick;
                     }
+
+                    /*
+                    switch (i)
+                    {
+                    case 0:
+                        bc_gpio_set_output(BC_GPIO_P1, false);
+                        break;
+                    case 1:
+                        bc_gpio_set_output(BC_GPIO_P2, false);
+                        break;
+                    case 2:
+                        bc_gpio_set_output(BC_GPIO_P3, false);
+                        break;
+                    case 3:
+                        bc_gpio_set_output(BC_GPIO_P4, false);
+                        break;
+                    case 4:
+                        bc_gpio_set_output(BC_GPIO_P5, false);
+                        break;
+                    case 5:
+                        bc_gpio_set_output(BC_GPIO_P6, false);
+                        break;
+                    case 6:
+                        bc_gpio_set_output(BC_GPIO_P7, false);
+                        break;
+                        default:
+                            break;
+                    }
+                    */
                 }
             }
         }
 
+        // bc_gpio_set_output(BC_GPIO_P0, false);
         bc_module_core_sleep();
+        // bc_gpio_set_output(BC_GPIO_P0, true);
     }
 }
 

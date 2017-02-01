@@ -20,6 +20,7 @@ int main(void)
 
 __attribute__((weak)) void application_init(void)
 {
+
 }
 
 __attribute__((weak)) bc_tick_t application_task(void *param, bc_tick_t tick_now)
