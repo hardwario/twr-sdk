@@ -86,11 +86,7 @@ static void bc_spirit1_hal_init_gpio(void);
 static void bc_spirit1_hal_init_spi(void);
 static void bc_spirit1_hal_init_timer(void);
 
-<<<<<<< HEAD
-static bc_tick_t _bc_spirit1_task(void *param, bc_tick_t tick_now);
-=======
 static void _bc_spirit1_task(void *param);
->>>>>>> 5f268b8bbb61f8ec26aa447d78e36213e95c6d75
 
 void bc_spirit1_init(void)
 {
