@@ -251,6 +251,7 @@ static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self)
 
 static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self)
 {
+  
     /*
      // Dont work yet, needs I2C repeated start reading
      bc_i2c_tranfer_t transfer;
