@@ -21,6 +21,7 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     self->_i2c_address = i2c_address;
     self->_update_interval = 50;
 
+    // TODO: move to irq enable or init state
     //PB6
     // Enable GPIOB clock
     RCC->IOPENR |= RCC_IOPENR_GPIOBEN; //(1 << 1);
@@ -189,18 +190,14 @@ static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
                     self->_event_handler(self, BC_LIS2DH12_EVENT_UPDATE);
                 }
 
-                // Read Alarm bit
+                // When the interrupt alarm is active
                 if(self->_alarm_active)
                 {
-
                     if(!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x31, &int1_src))
                     {
                         continue;
                     }
 
-                    // interrupt pin on PB6 low
-                    //if((GPIOB->IDR & (1 << 6)) == 0)
-                    //if(EXTI->SWIER & (1 << 6))
                     if(self->_irq_flag)
                     {
                         self->_irq_flag = 0;
@@ -364,8 +361,6 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
         {
             return false;
         }
-
-
     }
     else
     {
@@ -385,39 +380,3 @@ void bc_lis2dh12_signalize()
 {
     _bc_lis2dh12_irq_instance->_irq_flag = true;
 }
-
-/*
-// ODR 100Hz 0x50, enable XYZ axes 0x07
-uint8_t ctrl_reg1 = 0x57;
-// No filters
-uint8_t ctrl_reg2 = 0x00;
-
-uint8_t click_cfg = 0x01; // X axis single click
-
-
-// 1 LSB = (full scale) / 128 => 2g/128 * 0,5 => 33
-uint8_t click_ths = 33;
-// 1 LSB = 1/ODR => 1/100Hz = 10ms ;  100ms/10ms = 10
-uint8_t time_limit = 10;
-
-// time latency to detect double-click, not used in single click
-uint8_t time_latency = 0;
-// Window for double click detection, not used in single click
-uint8_t time_window = 0;
-
-void bc_lis2dh12_set_config(bc_lis2dh12_t *self)
-{
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x20, ctrl_reg1);
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x21, ctrl_reg2);
-
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x38, click_cfg);
-
-    //bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x39, click_src); // read only
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x3A, click_ths);
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x3B, time_limit);
-
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x3C, time_latency);
-    bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x3D, time_window);
-
-}
-*/
