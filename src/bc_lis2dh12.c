@@ -48,9 +48,10 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     return true;
 }
 
-void bc_lis2dh12_set_event_handler(bc_lis2dh12_t *self, void (*event_handler)(bc_lis2dh12_t *, bc_lis2dh12_event_t))
+void bc_lis2dh12_set_event_handler(bc_lis2dh12_t *self, void (*event_handler)(bc_lis2dh12_t *, bc_lis2dh12_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
+    self->_event_param = event_param;
 }
 
 void bc_lis2dh12_set_update_interval(bc_lis2dh12_t *self, bc_tick_t interval)
@@ -112,7 +113,7 @@ static void _bc_lis2dh12_task(void *param)
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_LIS2DH12_EVENT_ERROR);
+                    self->_event_handler(self, BC_LIS2DH12_EVENT_ERROR, self->_event_param);
                 }
 
                 self->_state = BC_LIS2DH12_STATE_INITIALIZE;
@@ -193,7 +194,7 @@ static void _bc_lis2dh12_task(void *param)
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_LIS2DH12_EVENT_UPDATE);
+                    self->_event_handler(self, BC_LIS2DH12_EVENT_UPDATE, self->_event_param);
                 }
 
                 // When the interrupt alarm is active
@@ -210,7 +211,7 @@ static void _bc_lis2dh12_task(void *param)
 
                         if (self->_event_handler != NULL)
                         {
-                            self->_event_handler(self, BC_LIS2DH12_EVENT_ALARM);
+                            self->_event_handler(self, BC_LIS2DH12_EVENT_ALARM, self->_event_param);
                         }
                     }
                 }

@@ -39,7 +39,8 @@ struct bc_pyq1648_t
 {
     bc_gpio_channel_t _gpio_channel_serin;
     bc_gpio_channel_t _gpio_channel_dl;
-    void (*_event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t);
+    void (*_event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t, void *);
+    void *_event_param;
     bc_pyq1648_state_t _state;
     bool _event_valid;
     uint32_t _config;
@@ -60,8 +61,9 @@ void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, b
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Callback function
+//! @param[in] event_param Optional event parameter (can be NULL)
 
-void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t));
+void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t, void *), void *event_param);
 
 //! @brief Set PIR sensor sensitivity
 //! @param[in] self Instance

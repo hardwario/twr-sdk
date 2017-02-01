@@ -16,9 +16,10 @@ void bc_tmp112_init(bc_tmp112_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c
     bc_scheduler_register(_bc_tmp112_task, self, BC_TMP112_DELAY_RUN);
 }
 
-void bc_tmp112_set_event_handler(bc_tmp112_t *self, void (*event_handler)(bc_tmp112_t *, bc_tmp112_event_t))
+void bc_tmp112_set_event_handler(bc_tmp112_t *self, void (*event_handler)(bc_tmp112_t *, bc_tmp112_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
+    self->_event_param = event_param;
 }
 
 void bc_tmp112_set_update_interval(bc_tmp112_t *self, bc_tick_t interval)
@@ -99,7 +100,7 @@ start:
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_TMP112_EVENT_ERROR);
+                self->_event_handler(self, BC_TMP112_EVENT_ERROR, self->_event_param);
             }
 
             self->_state = BC_TMP112_STATE_MEASURE;
@@ -154,7 +155,7 @@ start:
         {
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_TMP112_EVENT_UPDATE);
+                self->_event_handler(self, BC_TMP112_EVENT_UPDATE, self->_event_param);
             }
 
             self->_state = BC_TMP112_STATE_MEASURE;

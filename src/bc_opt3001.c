@@ -17,9 +17,10 @@ void bc_opt3001_init(bc_opt3001_t *self, bc_i2c_channel_t i2c_channel, uint8_t i
     bc_scheduler_register(_bc_opt3001_task, self, BC_OPT3001_DELAY_RUN);
 }
 
-void bc_opt3001_set_event_handler(bc_opt3001_t *self, void (*event_handler)(bc_opt3001_t *, bc_opt3001_event_t))
+void bc_opt3001_set_event_handler(bc_opt3001_t *self, void (*event_handler)(bc_opt3001_t *, bc_opt3001_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
+    self->_event_param = event_param;
 }
 
 void bc_opt3001_set_update_interval(bc_opt3001_t *self, bc_tick_t interval)
@@ -67,7 +68,7 @@ start:
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_OPT3001_EVENT_ERROR);
+                self->_event_handler(self, BC_OPT3001_EVENT_ERROR, self->_event_param);
             }
 
             self->_state = BC_OPT3001_STATE_INITIALIZE;
@@ -137,7 +138,7 @@ start:
         {
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_OPT3001_EVENT_UPDATE);
+                self->_event_handler(self, BC_OPT3001_EVENT_UPDATE, self->_event_param);
             }
 
             self->_state = BC_OPT3001_STATE_MEASURE;

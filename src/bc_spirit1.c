@@ -15,7 +15,8 @@ typedef enum
 
 typedef struct
 {
-    void (*event_handler)(bc_spirit1_event_t);
+    void (*event_handler)(bc_spirit1_event_t, void *);
+    void *event_param;
     bc_scheduler_task_id_t task_id;
     bc_spirit1_state_t desired_state;
     bc_spirit1_state_t current_state;
@@ -112,9 +113,10 @@ void bc_spirit1_init(void)
     _bc_spirit1.task_id = bc_scheduler_register(_bc_spirit1_task, NULL, BC_TICK_INFINITY);
 }
 
-void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t))
+void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t, void *), void *event_param)
 {
     _bc_spirit1.event_handler = event_handler;
+    _bc_spirit1.event_param = event_param;
 }
 
 void *bc_spirit1_get_tx_buffer(void)
@@ -255,7 +257,7 @@ static void _bc_spirit1_check_state_tx(void)
 
         if (_bc_spirit1.event_handler != NULL)
         {
-            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_TX_DONE);
+            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_TX_DONE, _bc_spirit1.event_param);
         }
 
         if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_RX)
@@ -328,7 +330,7 @@ static void _bc_spirit1_check_state_rx(void)
     {
         if (_bc_spirit1.event_handler != NULL)
         {
-            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_TIMEOUT);
+            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_TIMEOUT, _bc_spirit1.event_param);
         }
     }
 
@@ -359,7 +361,7 @@ static void _bc_spirit1_check_state_rx(void)
 
           if (_bc_spirit1.event_handler != NULL)
           {
-              _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE);
+              _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE, _bc_spirit1.event_param);
           }
       }
     }

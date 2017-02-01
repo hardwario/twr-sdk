@@ -5,9 +5,9 @@ void bc_tag_lux_meter_init(bc_tag_lux_meter_t *self, bc_i2c_channel_t i2c_channe
     bc_opt3001_init(self, i2c_channel, (uint8_t) i2c_address);
 }
 
-void bc_tag_lux_meter_set_event_handler(bc_tag_lux_meter_t *self, void (*event_handler)(bc_tag_lux_meter_t *, bc_tag_lux_meter_event_t))
+void bc_tag_lux_meter_set_event_handler(bc_tag_lux_meter_t *self, void (*event_handler)(bc_tag_lux_meter_t *, bc_tag_lux_meter_event_t, void *), void *event_param)
 {
-    bc_opt3001_set_event_handler(self, (void (*)(bc_opt3001_t *, bc_opt3001_event_t)) event_handler);
+    bc_opt3001_set_event_handler(self, (void (*)(bc_opt3001_t *, bc_opt3001_event_t, void *)) event_handler, event_param);
 }
 
 void bc_tag_lux_meter_set_update_interval(bc_tag_lux_meter_t *self, bc_tick_t interval)

@@ -17,9 +17,10 @@ void bc_mpl3115a2_init(bc_mpl3115a2_t *self, bc_i2c_channel_t i2c_channel, uint8
     bc_scheduler_register(_bc_mpl3115a2_task, self, BC_MPL3115A2_DELAY_RUN);
 }
 
-void bc_mpl3115a2_set_event_handler(bc_mpl3115a2_t *self, void (*event_handler)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t))
+void bc_mpl3115a2_set_event_handler(bc_mpl3115a2_t *self, void (*event_handler)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
+    self->_event_param = event_param;
 }
 
 void bc_mpl3115a2_set_update_interval(bc_mpl3115a2_t *self, bc_tick_t interval)
@@ -70,7 +71,7 @@ start:
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_MPL3115A2_EVENT_ERROR);
+                self->_event_handler(self, BC_MPL3115A2_EVENT_ERROR, self->_event_param);
             }
 
             self->_state = BC_MPL3115A2_STATE_INITIALIZE;
@@ -227,7 +228,7 @@ start:
         {
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_MPL3115A2_EVENT_UPDATE);
+                self->_event_handler(self, BC_MPL3115A2_EVENT_UPDATE, self->_event_param);
             }
 
             self->_state = BC_MPL3115A2_STATE_MEASURE_ALTITUDE;
