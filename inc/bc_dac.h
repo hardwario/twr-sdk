@@ -11,8 +11,9 @@
 
 typedef enum
 {
-    BC_DAC_DAC0 = 0L, //!< DAC channel DAC0
-    BC_DAC_DAC1 = 1L  //!< DAC channel DAC1
+    BC_DAC_CHANNEL_DAC0 = 0L, //!< DAC channel DAC0
+    BC_DAC_CHANNEL_DAC1 = 1L, //!< DAC channel DAC1
+    BC_DAC_CHANNEL_COUNT = 2L  //!< DAC channel count
 
 } bc_dac_channel_t;
 
