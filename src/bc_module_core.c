@@ -1,10 +1,8 @@
 #include <bc_common.h>
 #include <bc_rtc.h>
-#include <bc_irq.h>
 #include <stm32l0xx_hal.h>
-#include <stm32l083xx.h>
 
-#define DEBUG_ENABLE    1
+#define DEBUG_ENABLE 0
 
 void SystemClock_Config(void);
 void Error_Handler(void);
@@ -13,17 +11,35 @@ void bc_module_core_init()
 {
     HAL_Init();
 
-    FLASH->ACR |= FLASH_ACR_PRE_READ;
+    FLASH->ACR |= FLASH_ACR_PRE_READ;   // Enable pre-read
 
-    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN | RCC_APB2ENR_DBGMCUEN;
-    RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+    RCC->APB1ENR |= RCC_APB1ENR_PWREN;  // Enable APB1 clock
 
-    RCC->CFGR = RCC_CFGR_STOPWUCK | RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE1_DIV1 | RCC_CFGR_PPRE2_DIV1 | RCC_CFGR_SW_HSI;
+#if DEBUG_ENABLE
+    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN |  // Enable system configuration controller block
+                    RCC_APB2ENR_DBGMCUEN;   // Enable MCU debug module clock
 
-    DBGMCU->CR = DBGMCU_CR_DBG_SLEEP | DBGMCU_CR_DBG_STOP | DBGMCU_CR_DBG_STANDBY;
-    DBGMCU->APB1FZ = DBGMCU_APB1_FZ_DBG_TIM2_STOP | DBGMCU_APB1_FZ_DBG_TIM6_STOP | DBGMCU_APB1_FZ_DBG_RTC_STOP | DBGMCU_APB1_FZ_DBG_WWDG_STOP |
-    DBGMCU_APB1_FZ_DBG_IWDG_STOP | DBGMCU_APB1_FZ_DBG_I2C1_STOP | DBGMCU_APB1_FZ_DBG_I2C2_STOP | DBGMCU_APB1_FZ_DBG_LPTIMER_STOP;
-    DBGMCU->APB2FZ = DBGMCU_APB2_FZ_DBG_TIM21_STOP | DBGMCU_APB2_FZ_DBG_TIM22_STOP;
+    DBGMCU->CR = DBGMCU_CR_DBG_SLEEP |  // Debug Sleep mode (FCLK=On, HCLK=On)
+                 DBGMCU_CR_DBG_STOP |   // Debug Stop mode (FCLK=On, HCLK=On)
+                 DBGMCU_CR_DBG_STANDBY; // Debug Standby mode (FCLK=On, HCLK=On)
+
+    DBGMCU->APB1FZ = DBGMCU_APB1_FZ_DBG_TIM2_STOP |
+                     DBGMCU_APB1_FZ_DBG_TIM6_STOP |
+                     DBGMCU_APB1_FZ_DBG_RTC_STOP |
+                     DBGMCU_APB1_FZ_DBG_WWDG_STOP |
+                     DBGMCU_APB1_FZ_DBG_IWDG_STOP |
+                     DBGMCU_APB1_FZ_DBG_I2C1_STOP |
+                     DBGMCU_APB1_FZ_DBG_I2C2_STOP |
+                     DBGMCU_APB1_FZ_DBG_LPTIMER_STOP;
+
+    DBGMCU->APB2FZ = DBGMCU_APB2_FZ_DBG_TIM21_STOP |
+                     DBGMCU_APB2_FZ_DBG_TIM22_STOP;
+#else
+    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;   // Enable system configuration controller block
+
+    DBGMCU->APB1FZ = 0;
+    DBGMCU->APB2FZ = 0;
+#endif
 
     HAL_NVIC_SetPriority(SVC_IRQn, 0, 0);
     HAL_NVIC_SetPriority(PendSV_IRQn, 0, 0);
@@ -31,10 +47,12 @@ void bc_module_core_init()
 
     SystemClock_Config();
 
-    PWR->CR =       PWR_CR_DBP |            // Disable backup domain
-                    PWR_CR_VOS_0 |          // Internal regulator setup (1.8V)
-                    PWR_CR_LPSDSR |         // Enable deep-sleep (else only sleep)
-                    PWR_CR_ULP;             // Disable Vrefint in sleep mode
+    RCC->CFGR |= RCC_CFGR_STOPWUCK; // Device is waked up with HSI16 (else MSI ... 64 KHz to 4 MHz)
+
+    PWR->CR =       PWR_CR_DBP |    // Disable backup domain
+                    PWR_CR_VOS_0 |  // Internal regulator setup (1.8V)
+                    PWR_CR_LPSDSR | // Enable deep-sleep (else only sleep)
+                    PWR_CR_ULP;     // Disable Vrefint in sleep mode
 
     RCC->IOPENR =   RCC_IOPENR_GPIOAEN |    // Enable GPIOA clocks
                     RCC_IOPENR_GPIOBEN |    // Enable GPIOB clocks
@@ -43,28 +61,11 @@ void bc_module_core_init()
 
     GPIOA->MODER |= GPIO_MODER_MODE4_1 | GPIO_MODER_MODE4_0;
 
-#if DEBUG_ENABLE    ==  1
-
-#if 0
-    GPIO_MODER_MODE0 | GPIO_MODER_MODE1 | GPIO_MODER_MODE2 | GPIO_MODER_MODE3 | GPIO_MODER_MODE4 | GPIO_MODER_MODE5 | GPIO_MODER_MODE6 |
-    GPIO_MODER_MODE7 | /*GPIO_MODER_MODE8 |*/GPIO_MODER_MODE9 | GPIO_MODER_MODE10 | GPIO_MODER_MODE11 | GPIO_MODER_MODE12 |
-    GPIO_MODER_MODE13_1 | GPIO_MODER_MODE14_1 | GPIO_MODER_MODE15;
+#if !DEBUG_ENABLE
+    GPIOA->MODER = 0xffffffff;
 #endif
 
-#else
-    GPIOA->PUPDR = 0;
-    GPIOA->MODER = GPIO_MODER_MODE0 | GPIO_MODER_MODE1 | GPIO_MODER_MODE2 | GPIO_MODER_MODE3 | GPIO_MODER_MODE4 | GPIO_MODER_MODE5 | GPIO_MODER_MODE6 |
-    GPIO_MODER_MODE7 | GPIO_MODER_MODE8 | GPIO_MODER_MODE9 | GPIO_MODER_MODE10 | GPIO_MODER_MODE11 | GPIO_MODER_MODE12 |
-    GPIO_MODER_MODE13 | GPIO_MODER_MODE14 | GPIO_MODER_MODE15;
-#endif
-
-    bc_rtc_init();
-
-
-/*
-    HAL_PWREx_EnableUltraLowPower();
-    __HAL_RCC_WAKEUPSTOP_CLK_CONFIG(RCC_STOP_WAKEUPCLOCK_HSI);
-    */
+    bc_rtc_init();  // Initialize RTC to get "ClownTick" interrupt for scheduler
 }
 
 void bc_module_core_sleep()
