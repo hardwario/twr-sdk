@@ -5,7 +5,7 @@
 #define BC_LIS2DH12_DELAY_RUN 10
 #define BC_LIS2DH12_DELAY_READ 10
 
-static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now);
+static void _bc_lis2dh12_task(void *param);
 
 static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self);
@@ -98,7 +98,7 @@ uint8_t int1_src;
 uint8_t int1_cfg_read;
 uint8_t ctrl_reg3_read;
 
-static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
+static void _bc_lis2dh12_task(void *param)
 {
     bc_lis2dh12_t *self = param;
 
@@ -117,7 +117,9 @@ static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
 
                 self->_state = BC_LIS2DH12_STATE_INITIALIZE;
 
-                return tick_now + self->_update_interval;
+                bc_scheduler_plan_current_relative(self->_update_interval);
+
+                return;
             }
             case BC_LIS2DH12_STATE_INITIALIZE:
             {
@@ -142,7 +144,9 @@ static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
 
                 self->_state = BC_LIS2DH12_STATE_MEASURE;
 
-                return tick_now + self->_update_interval;
+                bc_scheduler_plan_current_relative(self->_update_interval);
+
+                return;
             }
             case BC_LIS2DH12_STATE_MEASURE:
             {
@@ -155,7 +159,9 @@ static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
 
                 self->_state = BC_LIS2DH12_STATE_READ;
 
-                return tick_now + BC_LIS2DH12_DELAY_READ;
+                bc_scheduler_plan_current_relative(BC_LIS2DH12_DELAY_READ);
+
+                return;
             }
             case BC_LIS2DH12_STATE_READ:
             {
@@ -211,7 +217,9 @@ static bc_tick_t _bc_lis2dh12_task(void *param, bc_tick_t tick_now)
 
                 self->_state = BC_LIS2DH12_STATE_MEASURE;
 
-                return tick_now + self->_update_interval;
+                bc_scheduler_plan_current_relative(self->_update_interval);
+
+                return;
             }
             default:
             {
