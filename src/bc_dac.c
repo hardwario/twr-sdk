@@ -5,14 +5,14 @@
 #define BC_DAC_CHANNEL_DAC1_SET(_CODE_) (DAC1->DHR12L2 = _CODE_)
 
 // Approximate voltage to code constant
-// #define BC_DAC_VOLTAGE_TO_CODE_CONSTANT 0.0000502626747
+#define BC_DAC_VOLTAGE_TO_CODE_CONSTANT 19961; //0.0000502626747
 
-bc_dac_format_t bc_dac_setup[BC_DAC_CHANNEL_COUNT];
+static bc_dac_format_t _bc_dac_setup[2];
 
 void bc_dac_init(bc_dac_channel_t channel, bc_dac_format_t format)
 {
-    /* store channel input format */
-    bc_dac_setup[channel] = format;
+    // Store channel input format
+    _bc_dac_setup[channel] = format;
 
     /* Enable peripheral code */
     RCC->APB1ENR |= RCC_APB1ENR_DACEN;
@@ -23,51 +23,88 @@ void bc_dac_init(bc_dac_channel_t channel, bc_dac_format_t format)
 
 void bc_dac_set_format(bc_dac_channel_t channel, bc_dac_format_t format)
 {
-    /* store channel input format */
-    bc_dac_setup[channel] = format;
+    /* Store channel input format */
+    _bc_dac_setup[channel] = format;
 }
 
 bc_dac_format_t bc_dac_get_format(bc_dac_channel_t channel)
 {
-    return bc_dac_setup[channel];
+    return _bc_dac_setup[channel];
 }
 
-void bc_dac_set_output(bc_dac_channel_t channel, const void *output)
+void bc_dac_set_output_raw(bc_dac_channel_t channel, const void *output)
 {
     uint16_t raw;
 
     /* Handle input format */
-    switch (bc_dac_setup[channel])
+    switch (_bc_dac_setup[channel])
     {
-    case BC_DAC_FORMAT_8_BIT:
-        raw = (*(uint16_t *) output << 8);
-        break;
-    case BC_DAC_FORMAT_16_BIT:
-        raw = *(uint16_t *) output;
-        break;
-    case BC_DAC_FORMAT_24_BIT:
-        raw = ((*(uint32_t *) output >> 8) & 0xffff);
-        break;
-    case BC_DAC_FORMAT_32_BIT:
-        raw = ((*(uint32_t *) output >> 16) & 0xffff);
-        break;
-    default:
-        for (;;);
-        break;
+        case BC_DAC_FORMAT_8_BIT:
+        {
+            raw = *(uint16_t *) output << 8;
+            break;
+        }
+        case BC_DAC_FORMAT_16_BIT:
+        {
+            raw = *(uint16_t *) output;
+            break;
+        }
+        case BC_DAC_FORMAT_24_BIT:
+        {
+            raw = *(uint32_t *) output >> 8;
+            break;
+        }
+        case BC_DAC_FORMAT_32_BIT:
+        {
+            raw = *(uint32_t *) output >> 16;
+            break;
+        }
+        default:
+        {
+            return;
+        }
     }
 
     /* Write raw on channel */
     switch (channel)
     {
-    case BC_DAC_CHANNEL_DAC0:
-        BC_DAC_CHANNEL_DAC0_SET(raw);
-        break;
-    case BC_DAC_CHANNEL_DAC1:
-        BC_DAC_CHANNEL_DAC1_SET(raw);
-        break;
-    case BC_DAC_CHANNEL_COUNT:
-    default:
-        for (;;);
-        break;
+        case BC_DAC_CHANNEL_DAC0:
+        {
+            DAC1->DHR12L1 = raw;
+            break;
+        }
+        case BC_DAC_CHANNEL_DAC1:
+        {
+            DAC1->DHR12L2 = raw;
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+}
+
+void bc_dac_set_output_voltage(bc_dac_channel_t channel, float voltage)
+{
+    uint16_t raw = voltage * BC_DAC_VOLTAGE_TO_CODE_CONSTANT;
+
+    /* Write raw on channel */
+    switch (channel)
+    {
+        case BC_DAC_CHANNEL_DAC0:
+        {
+            DAC1->DHR12L1 = raw;
+            break;
+        }
+        case BC_DAC_CHANNEL_DAC1:
+        {
+            DAC1->DHR12L2 = raw;
+            break;
+        }
+        default:
+        {
+            break;
+        }
     }
 }

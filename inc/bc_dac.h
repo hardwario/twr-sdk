@@ -12,8 +12,7 @@
 typedef enum
 {
     BC_DAC_CHANNEL_DAC0 = 0L, //!< DAC channel DAC0
-    BC_DAC_CHANNEL_DAC1 = 1L, //!< DAC channel DAC1
-    BC_DAC_CHANNEL_COUNT = 2L  //!< DAC channel count
+    BC_DAC_CHANNEL_DAC1 = 1L  //!< DAC channel DAC1
 
 } bc_dac_channel_t;
 
@@ -24,7 +23,7 @@ typedef enum
     BC_DAC_FORMAT_8_BIT  = 0L, //!< DAC output format is 8-bit
     BC_DAC_FORMAT_16_BIT = 1L, //!< DAC output format is 16-bit
     BC_DAC_FORMAT_24_BIT = 2L, //!< DAC output format is 24-bit
-    BC_DAC_FORMAT_32_BIT = 3L, //!< DAC output format is 32-bit
+    BC_DAC_FORMAT_32_BIT = 3L  //!< DAC output format is 32-bit
 
 } bc_dac_format_t;
 
@@ -46,11 +45,17 @@ void bc_dac_set_format(bc_dac_channel_t channel, bc_dac_format_t format);
 
 bc_dac_format_t bc_dac_get_format(bc_dac_channel_t channel);
 
-//! @brief Perform measurement on DAC channel
+//! @brief Perform conversion on DAC channel
 //! @param[in] channel DAC channel
 //! @param[out] output Pointer to source from which DAC output will be set
 
-void bc_dac_set_output(bc_dac_channel_t channel, const void *output);
+void bc_dac_set_output_raw(bc_dac_channel_t channel, const void *output);
+
+//! @brief Perform conversion on DAC channel
+//! @param[in] channel DAC channel
+//! @param[out] voltage Desired voltage
+
+void bc_dac_set_output_voltage(bc_dac_channel_t channel, float voltage);
 
 //! @}
 
