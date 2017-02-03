@@ -75,9 +75,7 @@ void bc_pyq1648_set_sensitivity(bc_pyq1648_t *self, bc_pyq1648_sensitivity_t sen
 //! @param[in] self Instance
 //! @param[in] blank_period Blank period in milliseconds
 
-// TODO Change to bc_tick_t
-
-void bc_pyq1648_set_blank_period(bc_pyq1648_t *self, uint16_t blank_period);
+void bc_pyq1648_set_blank_period(bc_pyq1648_t *self, bc_tick_t blank_period);
 
 //! @}
 

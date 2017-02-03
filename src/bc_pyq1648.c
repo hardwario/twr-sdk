@@ -39,7 +39,7 @@ static bc_pyq1648_t bc_pyq1648_default =
     ._connection_check = 0
 };
 
-#define BC_PYQ1648_CONNECTION_CHECK true
+#define BC_PYQ1648_CONNECTION_CHECK false
 #define BC_PYQ1648_DELAY_RUN 50
 #define BC_PYQ1648_DELAY_INITIALIZATION 10
 #define BC_PYQ1648_UPDATE_INTERVAL 50
@@ -104,7 +104,7 @@ void bc_pyq1648_set_sensitivity(bc_pyq1648_t *self, bc_pyq1648_sensitivity_t sen
     _bc_pyq1648_compose_event_unit_config(self);
 }
 
-void bc_pyq1648_set_blank_period(bc_pyq1648_t *self, uint16_t blank_period)
+void bc_pyq1648_set_blank_period(bc_pyq1648_t *self, bc_tick_t blank_period)
 {
     /* Edit self blank period */
     self->_blank_period = blank_period;
