@@ -39,7 +39,7 @@ static bc_pyq1648_t bc_pyq1648_default =
     ._connection_check = 0
 };
 
-#define BC_PYQ1648_CONNECTION_CHECK false
+#define BC_PYQ1648_CONNECTION_CHECK true
 #define BC_PYQ1648_DELAY_RUN 50
 #define BC_PYQ1648_DELAY_INITIALIZATION 10
 #define BC_PYQ1648_UPDATE_INTERVAL 50
