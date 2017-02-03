@@ -11,22 +11,21 @@ typedef bc_pyq1648_sensitivity_t bc_module_pir_sensitivity_t;
 typedef bc_pyq1648_event_t bc_module_pir_event_t;
 typedef bc_pyq1648_t bc_module_pir_t;
 
-//! @brief Initialize PIR module on channels gpio_channel_setup and gpio_channel_event
+//! @brief Initialize PIR Module
 //! @param[in] self PIR image
-//! @param[in] gpio_channel_setup PIR setup channel
-//! @param[in] gpio_channel_event PIR event channel
 
 void bc_module_pir_init(bc_module_pir_t *self);
 
-//! @brief Set PIR module event handler
-//! @param[in] self PIR image
-//! @param[in] event_handler PIR event handler
+//! @brief Set PIR Module event handler
+//! @param[in] self PIR Module image
+//! @param[in] event_handler PIR Module event handler
+//! @param[in] event_param Optional event parameter (can be NULL)
 
 void bc_module_pir_set_event_handler(bc_module_pir_t *self, void (*event_handler)(bc_module_pir_t *, bc_module_pir_event_t, void*), void *event_param);
 
-//! @brief Set PIR module set sensitivity
-//! @param[in] self PIR module image
-//! @param[in] event_handler PIR module event handler
+//! @brief Set PIR Module sensitivity
+//! @param[in] self PIR Module image
+//! @param[in] sensitivity PIR Module sensitivity
 
 void bc_module_pir_set_sensitivity(bc_pyq1648_t *self, bc_module_pir_sensitivity_t sensitivity);
 //! @}

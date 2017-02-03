@@ -24,21 +24,6 @@ extern uint32_t bc_gpio_32_bit_upper_mask[];
 #define PYQ1648_FILTER_SOURCE_LEN 0x02
 #define PYQ1648_RESERVED_LEN 0x05
 
-static bc_pyq1648_t bc_pyq1648_default =
-{
-    ._gpio_channel_serin = BC_GPIO_P9, // PIR module board (PB2)
-    ._gpio_channel_dl = BC_GPIO_P8, // PIR module board (PB0)
-    ._event_handler = NULL,
-    ._state = BC_PYQ1648_STATE_INITIALIZE,
-    ._event_valid = false,
-    ._config = 0,
-    ._sensitivity = 30,
-    ._blank_period = 1000,
-    ._aware_time = 0,
-    ._ignore_untill = 0,
-    ._connection_check = 0
-};
-
 #define BC_PYQ1648_CONNECTION_CHECK true
 #define BC_PYQ1648_DELAY_RUN 50
 #define BC_PYQ1648_DELAY_INITIALIZATION 10
@@ -66,14 +51,18 @@ extern GPIO_TypeDef * bc_gpio_port[];
 extern uint16_t bc_gpio_16_bit_mask[];
 extern uint32_t bc_gpio_32_bit_upper_mask[];
 
-GPIO_TypeDef **_pyq1648_gpiox_table = bc_gpio_port;
-uint16_t *_pyq1648_set_mask = bc_gpio_16_bit_mask;
-uint32_t *_pyq1648_reset_mask = bc_gpio_32_bit_upper_mask;
+static GPIO_TypeDef **_pyq1648_gpiox_table = bc_gpio_port;
+static uint16_t *_pyq1648_set_mask = bc_gpio_16_bit_mask;
+static uint32_t *_pyq1648_reset_mask = bc_gpio_32_bit_upper_mask;
 
 void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl)
 {
     // Initialize self structure with default values
-    memcpy(self, &bc_pyq1648_default, sizeof(bc_pyq1648_t));
+    memset(self, 0, sizeof(*self));
+
+    // Initialize default values
+    self->_sensitivity = 30;
+    self->_blank_period = 1000;
 
     // Initialize self actually used pins
     self->_gpio_channel_serin = gpio_channel_serin;
@@ -82,7 +71,7 @@ void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, b
     // Initialize self low level
     _bc_pyq1648_msp_init(gpio_channel_serin, gpio_channel_dl);
 
-    // Initialize self event unit configuration register value
+    // Initialize self->event_unit_configuration register value
     _bc_pyq1648_compose_event_unit_config(self);
 
     // Register task
