@@ -8,12 +8,16 @@
 //! @brief Driver for PYQ1648 PIR sensor
 //! @{
 
+//! @brief Callback events
+
 typedef enum
 {
     BC_PYQ1648_EVENT_ERROR = 0,
     BC_PYQ1648_EVENT_MOTION = 1
 
 } bc_pyq1648_event_t;
+
+//! @brief Internal states
 
 typedef enum
 {
@@ -23,6 +27,8 @@ typedef enum
     BC_PYQ1648_STATE_CHECK = 2
 
 } bc_pyq1648_state_t;
+
+//! @brief Possible sensitivities
 
 typedef enum
 {
@@ -34,6 +40,8 @@ typedef enum
 } bc_pyq1648_sensitivity_t;
 
 typedef struct bc_pyq1648_t bc_pyq1648_t;
+
+//! @brief PYQ1648 instance
 
 struct bc_pyq1648_t
 {
@@ -51,7 +59,7 @@ struct bc_pyq1648_t
     bc_tick_t _connection_check;
 };
 
-//! @brief Initialize PIR sensor PYQ1648
+//! @brief Initialize PYQ1648 driver
 //! @param[in] self Instance
 //! @param[in] gpio_channel_serin GPIO channel for SERIN pin
 //! @param[in] gpio_channel_dl GPIO channel for DL pin
@@ -65,9 +73,9 @@ void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, b
 
 void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t, void *), void *event_param);
 
-//! @brief Set PIR sensor sensitivity
+//! @brief Set PYQ1648 sensitivity
 //! @param[in] self Instance
-//! @param[in] sensitivity Desired sensitivity
+//! @param[in] sensitivity sensitivity
 
 void bc_pyq1648_set_sensitivity(bc_pyq1648_t *self, bc_pyq1648_sensitivity_t sensitivity);
 
