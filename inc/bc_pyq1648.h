@@ -39,9 +39,11 @@ typedef enum
 
 } bc_pyq1648_sensitivity_t;
 
+//! @brief PYQ1648 instance
+
 typedef struct bc_pyq1648_t bc_pyq1648_t;
 
-//! @brief PYQ1648 instance
+//! @cond
 
 struct bc_pyq1648_t
 {
@@ -58,6 +60,8 @@ struct bc_pyq1648_t
     bc_tick_t _ignore_untill;
     bc_tick_t _connection_check;
 };
+
+//! @endcond
 
 //! @brief Initialize PYQ1648 driver
 //! @param[in] self Instance
