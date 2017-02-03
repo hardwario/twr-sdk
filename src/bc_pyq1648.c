@@ -26,8 +26,8 @@ extern uint32_t bc_gpio_32_bit_upper_mask[];
 
 static bc_pyq1648_t bc_pyq1648_default =
 {
-    ._gpio_channel_serin = BC_GPIO_P9, /* PIR module board (PB2) */
-    ._gpio_channel_dl = BC_GPIO_P8, /* PIR module board (PB0) */
+    ._gpio_channel_serin = BC_GPIO_P9, // PIR module board (PB2)
+    ._gpio_channel_dl = BC_GPIO_P8, // PIR module board (PB0)
     ._event_handler = NULL,
     ._state = BC_PYQ1648_STATE_INITIALIZE,
     ._event_valid = false,
@@ -72,20 +72,20 @@ uint32_t *_pyq1648_reset_mask = bc_gpio_32_bit_upper_mask;
 
 void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl)
 {
-    /* Initialize self structure with default values */
+    // Initialize self structure with default values
     memcpy(self, &bc_pyq1648_default, sizeof(bc_pyq1648_t));
 
-    /* Initialize self actually used pins */
+    // Initialize self actually used pins
     self->_gpio_channel_serin = gpio_channel_serin;
     self->_gpio_channel_dl = gpio_channel_dl;
 
-    /* Initialize self low level */
+    // Initialize self low level
     _bc_pyq1648_msp_init(gpio_channel_serin, gpio_channel_dl);
 
-    /* Initialize self event unit configuration register value */
+    // Initialize self event unit configuration register value
     _bc_pyq1648_compose_event_unit_config(self);
 
-    /* Register task */
+    // Register task
     bc_scheduler_register(_bc_pyq1648_task, self, BC_PYQ1648_DELAY_RUN);
 }
 
@@ -97,16 +97,16 @@ void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_p
 
 void bc_pyq1648_set_sensitivity(bc_pyq1648_t *self, bc_pyq1648_sensitivity_t sensitivity)
 {
-    /* Edit self sensitivity to desired value */
+    // Edit self sensitivity to desired value
     self->_sensitivity = _bc_pyq1648_sensitivity_table[sensitivity];
 
-    /* Initialize self event unit configuration register value */
+    // Initialize self event unit configuration register value
     _bc_pyq1648_compose_event_unit_config(self);
 }
 
 void bc_pyq1648_set_blank_period(bc_pyq1648_t *self, bc_tick_t blank_period)
 {
-    /* Edit self blank period */
+    // Edit self blank period
     self->_blank_period = blank_period;
 }
 
@@ -115,28 +115,28 @@ void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self)
     self->_config = 0x00000000;
     self->_config |= self->_sensitivity;
     self->_config <<= PYQ1648_BLIND_TIME_LEN + PYQ1648_PULSE_CONTER_LEN + PYQ1648_WINDOW_TIME_LEN + PYQ1648_OPERATION_MODE_LEN;
-    self->_config |= 0x02; /* Event mode */
+    self->_config |= 0x02; // Event mode
     self->_config <<= PYQ1648_FILTER_SOURCE_LEN;
-    // self->_config |= 0x00; /* Band pass filter */
-    self->_config |= 0x01; /* Low pass filter */
+    // self->_config |= 0x00; // Band pass filter
+    self->_config |= 0x01; // Low pass filter
     self->_config <<= PYQ1648_RESERVED_LEN;
     self->_config |= 0x10;
 }
 
 static inline void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl)
 {
-    /* Initialize SerialIn (SERIN) GPIO pin */
+    // Initialize SerialIn (SERIN) GPIO pin
     bc_gpio_init(gpio_channel_serin);
     bc_gpio_set_mode(gpio_channel_serin, BC_GPIO_MODE_OUTPUT);
 
-    /* Initialize DirectLink (DL) GPIO pin */
+    // Initialize DirectLink (DL) GPIO pin
     bc_gpio_init(gpio_channel_dl);
     bc_gpio_set_mode(gpio_channel_dl, BC_GPIO_MODE_INPUT);
 }
 
 static void _bc_pyq1648_clear_event(bc_pyq1648_t *self)
 {
-    /* Clear event by pull DL low */
+    // Clear event by pull DL low
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT);
     bc_gpio_set_output(self->_gpio_channel_dl, false);
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
@@ -144,28 +144,28 @@ static void _bc_pyq1648_clear_event(bc_pyq1648_t *self)
 
 static void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
 {
-    /* Disable interrupts */
+    // Disable interrupts
     bc_irq_disable();
 
-    /* Load desired event unit configuration */
+    // Load desired event unit configuration
     uint32_t regval = self->_config;
     uint32_t regmask = 0x1000000;
 
-    /* Initialize used mask for SERIN pin */
+    // Initialize used mask for SERIN pin
     uint32_t bsrr_mask[2] =
     {
         [0] = _pyq1648_reset_mask[self->_gpio_channel_serin],
         [1] = _pyq1648_set_mask[self->_gpio_channel_serin] };
 
-    /* Initialize pointer to GPIO BSRR register of SERIN pin */
-    /* (very fast operations with pins are needed) */
+    // Initialize pointer to GPIO BSRR register of SERIN pin
+    // (very fast operations with pins are needed)
     GPIO_TypeDef *GPIOx = _pyq1648_gpiox_table[self->_gpio_channel_serin];
     uint32_t *GPIOx_BSRR = (uint32_t *) &GPIOx->BSRR;
 
-    /* Low level pin initialization */
+    // Low level pin initialization
     _bc_pyq1648_msp_init(self->_gpio_channel_serin, self->_gpio_channel_dl);
 
-    /* Transmit event unit configuration */
+    // Transmit event unit configuration
     for (int i = 0; i < 25; i++)
     {
         bool next_bit = (regval & regmask) != 0 ? true : false;
@@ -182,10 +182,10 @@ static void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     // TODO ... replace with wait
     _bc_pyq1648_delay_100us(6);
 
-    /* Clear event that appears almost every time that PIR is initialized */
+    // Clear event that appears almost every time that PIR is initialized
     _bc_pyq1648_clear_event(self);
 
-    /* Enable interrupts */
+    // Enable interrupts
     bc_irq_enable();
 }
 
@@ -205,18 +205,18 @@ static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self)
     bool pir_module_present;
     uint32_t event_unit_config = self->_config;
 
-    /* Set PIR to forced read out mode */
+    // Set PIR to forced read out mode
     _bc_pyq1648_set_dummy_forced_read_out(self);
 
-    /* Check if PIR response is valid */
+    // Check if PIR response is valid
     pir_module_present = _bc_pyq1648_get_forced_read_out(self, &PIRval, &statcfg);
 
     self->_config = event_unit_config;
 
-    /* If PIR present ... */
+    // If PIR present ...
     if (pir_module_present)
     {
-        /* ... restore original configuration */
+        // ... restore original configuration
         _bc_pyq1648_dev_init(self);
     }
 
@@ -225,13 +225,13 @@ static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self)
 
 static inline void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self)
 {
-    /* Store original event unit configuration */
+    // Store original event unit configuration
     uint32_t dummy_event_unit_config = BC_PYQ1648_DUMMY_EVENT_UNIT_CONFIG;
 
-    /* Load dummy event unit configuration (forced read out mode) */
+    // Load dummy event unit configuration (forced read out mode)
     self->_config = dummy_event_unit_config;
 
-    /* Initialize PIR */
+    // Initialize PIR
     _bc_pyq1648_dev_init(self);
 }
 
@@ -244,10 +244,10 @@ static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *
     int32_t PIRval_temp;
     uint32_t statcfg_temp;
 
-    /* Disable interrupts */
+    // Disable interrupts
     bc_irq_disable();
 
-    /* Initialize used masks for DL pin */
+    // Initialize used masks for DL pin
     uint32_t bsrr_mask[2] =
     {
         [0] = _pyq1648_reset_mask[self->_gpio_channel_dl],
@@ -255,8 +255,8 @@ static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *
     };
     uint32_t idr_mask = _pyq1648_set_mask[self->_gpio_channel_dl];
 
-    /* Initialize pointer to GPIO BSRR and IDR registers of DL pin */
-    /* (very fast operations with pins are needed) */
+    // Initialize pointer to GPIO BSRR and IDR registers of DL pin
+    // (very fast operations with pins are needed)
     GPIO_TypeDef *GPIOx = _pyq1648_gpiox_table[self->_gpio_channel_dl];
     uint32_t *GPIOx_BSRR = (uint32_t *) &GPIOx->BSRR;
     uint32_t *GPIOx_IDR = (uint32_t *) &GPIOx->IDR;
