@@ -1,11 +1,8 @@
 #include "bc_dac.h"
 #include "stm32l0xx.h"
 
-#define BC_DAC_CHANNEL_DAC0_SET(_CODE_) (DAC1->DHR12L1 = _CODE_)
-#define BC_DAC_CHANNEL_DAC1_SET(_CODE_) (DAC1->DHR12L2 = _CODE_)
-
 // Approximate voltage to code constant
-#define BC_DAC_VOLTAGE_TO_CODE_CONSTANT 19961; //0.0000502626747
+#define BC_DAC_VOLTAGE_TO_CODE_CONSTANT 19961;
 
 static bc_dac_format_t _bc_dac_setup[2];
 
@@ -14,16 +11,16 @@ void bc_dac_init(bc_dac_channel_t channel, bc_dac_format_t format)
     // Store channel input format
     _bc_dac_setup[channel] = format;
 
-    /* Enable peripheral code */
+    // Enable peripheral code
     RCC->APB1ENR |= RCC_APB1ENR_DACEN;
 
-    /* Software trigger, disable output buffer, enable DACs */
+    // Software trigger, disable output buffer, enable DACs
     DAC1->CR = DAC_CR_BOFF1 | DAC_CR_BOFF2 | DAC_CR_TSEL1 | DAC_CR_TSEL2 | DAC_CR_EN1 | DAC_CR_EN2;
 }
 
 void bc_dac_set_format(bc_dac_channel_t channel, bc_dac_format_t format)
 {
-    /* Store channel input format */
+    // Store channel input format
     _bc_dac_setup[channel] = format;
 }
 
@@ -36,7 +33,7 @@ void bc_dac_set_output_raw(bc_dac_channel_t channel, const void *output)
 {
     uint16_t raw;
 
-    /* Handle input format */
+    // Handle input format
     switch (_bc_dac_setup[channel])
     {
         case BC_DAC_FORMAT_8_BIT:
@@ -65,7 +62,7 @@ void bc_dac_set_output_raw(bc_dac_channel_t channel, const void *output)
         }
     }
 
-    /* Write raw on channel */
+    // Write raw on channel
     switch (channel)
     {
         case BC_DAC_CHANNEL_DAC0:
@@ -87,9 +84,10 @@ void bc_dac_set_output_raw(bc_dac_channel_t channel, const void *output)
 
 void bc_dac_set_output_voltage(bc_dac_channel_t channel, float voltage)
 {
+    // Convert voltage to DAC code
     uint16_t raw = voltage * BC_DAC_VOLTAGE_TO_CODE_CONSTANT;
 
-    /* Write raw on channel */
+    // Write raw on channel
     switch (channel)
     {
         case BC_DAC_CHANNEL_DAC0:
