@@ -7,25 +7,43 @@
 //! @brief Driver for PIR module
 //! @{
 
-typedef bc_pyq1648_sensitivity_t bc_module_pir_sensitivity_t;
-typedef bc_pyq1648_event_t bc_module_pir_event_t;
+//! @brief Possible sensitivities
+
+typedef enum
+{
+    BC_MODULE_PIR_SENSITIVITY_LOW = BC_PYQ1648_SENSITIVITY_LOW,
+    BC_MODULE_PIR_SENSITIVITY_MEDIUM = BC_PYQ1648_SENSITIVITY_MEDIUM,
+    BC_MODULE_PIR_SENSITIVITY_HIGH = BC_PYQ1648_SENSITIVITY_HIGH,
+    BC_MODULE_PIR_SENSITIVITY_VERY_HIGH = BC_PYQ1648_SENSITIVITY_VERY_HIGH
+
+} bc_module_pir_sensitivity_t;
+
+//! @brief Callback events
+
+typedef enum
+{
+    BC_MODULE_PIR_EVENT_ERROR = BC_PYQ1648_EVENT_ERROR,
+    BC_MODULE_PIR_EVENT_UPDATE = BC_PYQ1648_EVENT_MOTION
+
+} bc_module_pir_event_t;
+
 typedef bc_pyq1648_t bc_module_pir_t;
 
 //! @brief Initialize PIR Module
-//! @param[in] self PIR image
+//! @param[in] self Instance
 
 void bc_module_pir_init(bc_module_pir_t *self);
 
-//! @brief Set PIR Module event handler
-//! @param[in] self PIR Module image
-//! @param[in] event_handler PIR Module event handler
+//! @brief Set callback function
+//! @param[in] self Instance
+//! @param[in] event_handler Function address
 //! @param[in] event_param Optional event parameter (can be NULL)
 
 void bc_module_pir_set_event_handler(bc_module_pir_t *self, void (*event_handler)(bc_module_pir_t *, bc_module_pir_event_t, void*), void *event_param);
 
-//! @brief Set PIR Module sensitivity
-//! @param[in] self PIR Module image
-//! @param[in] sensitivity PIR Module sensitivity
+//! @brief Set sensor sensitivity
+//! @param[in] self Instance
+//! @param[in] sensitivity Desired sensitivity
 
 void bc_module_pir_set_sensitivity(bc_pyq1648_t *self, bc_module_pir_sensitivity_t sensitivity);
 //! @}
