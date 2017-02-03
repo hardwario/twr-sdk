@@ -33,7 +33,7 @@ void bc_dac_set_output_raw(bc_dac_channel_t channel, const void *output)
 {
     uint16_t raw;
 
-    /* Handle input format */
+    // Handle input format
     switch (_bc_dac_setup[channel])
     {
         case BC_DAC_FORMAT_8_BIT:
