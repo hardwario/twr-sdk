@@ -14,22 +14,6 @@ typedef struct
     uint32_t CLKPhase;
 } _bc_spi_mode_t;   
 
-
-/*
-    BC_SPI_SPEED_1_MHZ = 0L, //!< SPI communication speed is 1 MHz
-    BC_SPI_SPEED_2_MHZ = 1L, //!< SPI communication speed is 2 MHz
-    BC_SPI_SPEED_4_MHZ = 2L, //!< SPI communication speed is 4 MHz
-    BC_SPI_SPEED_8_MHZ = 3L  //!< SPI communication speed is 8 MHz
-*/
-/*
-static uint32_t _bc_spi_speed_table[4] = {
-    [0] = SPI_CR1_BR_1 | SPI_CR1_BR_0,  // :16
-    [1] = SPI_CR1_BR_1,                 // :8
-    [2] = SPI_CR1_BR_0,                 // :4
-    [3] = 0x00,                         // :2
-};
-*/
-
 static uint32_t _bc_spi_speed_table[4] = {
     [BC_SPI_SPEED_1_MHZ] = 0x18, // :16 (2MHz)
     [BC_SPI_SPEED_2_MHZ] = 0x10, // :8 (4MHz)
@@ -37,12 +21,11 @@ static uint32_t _bc_spi_speed_table[4] = {
     [BC_SPI_SPEED_8_MHZ] = 0x00, // :2 (16MHz)
 };
 
-// TODO ... dirty
 static uint32_t _bc_spi_mode_table[4] = {
-    [BC_SPI_MODE_0] = 0x00 ,
-    [BC_SPI_MODE_1] = 0x01 ,
-    [BC_SPI_MODE_2] = 0x02 ,
-    [BC_SPI_MODE_3] = 0x03
+    [BC_SPI_MODE_0] = 0x00 , // SPI mode of operation is 0 (CPOL = 0, CPHA = 0)
+    [BC_SPI_MODE_1] = 0x01 , // SPI mode of operation is 1 (CPOL = 0, CPHA = 1)
+    [BC_SPI_MODE_2] = 0x02 , // SPI mode of operation is 2 (CPOL = 1, CPHA = 0)
+    [BC_SPI_MODE_3] = 0x03   // SPI mode of operation is 3 (CPOL = 1, CPHA = 1)
 };
 
 /* Stocked API related variables */
@@ -57,27 +40,34 @@ static uint8_t _bc_spi_transfer_byte(uint8_t value);
 
 void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
 {
+    // Initialize GPIO pins
     _bc_spi_init_gpio();
+
+    // Initialize SPI peripheral with specific speed and mode
     _bc_spi_init_spi(speed, mode);
 }
 
 void bc_spi_set_speed(bc_spi_speed_t speed)
 {
+    // Set SPI peripheral speed
     _bc_spi_set_speed(speed);
 }
 
 bc_spi_speed_t bc_spi_get_speed(void)
 {
+    // Return SPI peripheral speed
     return _bc_spi_speed;
 }
 
 void bc_spi_set_mode(bc_spi_mode_t mode)
 {
+    // Set SPI peripheral mode
     _bc_spi_set_mode(mode);
 }
 
 bc_spi_mode_t bc_spi_get_mode(void)
 {
+    // Return SPI peripheral mode
     return _bc_spi_mode;
 }
 
@@ -113,7 +103,7 @@ static uint8_t _bc_spi_transfer_byte(uint8_t value)
 
 static void _bc_spi_init_gpio()
 {
-    // Enable clock for GPIOH, GPIOB and GPIOA
+    // Enable GPIOB clock
     RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
 
     // TODO ... co to sakra >/D
@@ -123,7 +113,7 @@ static void _bc_spi_init_gpio()
     // Pull-down on MISO pin
     GPIOB->PUPDR |= GPIO_PUPDR_PUPD14_1;
 
-    // Very high speed on CS, MOSI and SCLK pins
+    // Very high speed on CS, SCLK, MISO and MOSI pins
     GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEED12 | GPIO_OSPEEDER_OSPEED13 | GPIO_OSPEEDER_OSPEED14 | GPIO_OSPEEDER_OSPEED15;
 
     // General purpose output on CS pin
@@ -138,8 +128,8 @@ static void _bc_spi_init_spi(bc_spi_speed_t speed, bc_spi_mode_t mode)
     // Enable clock for SPI2
     RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
 
-    // Software slave management, baud rate control = fPCLK / 8, master configuration
-    SPI2->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_BR_1 | SPI_CR1_MSTR;
+    // Software slave management, master configuration
+    SPI2->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_MSTR;
 
     _bc_spi_set_speed(speed);
 
