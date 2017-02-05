@@ -88,7 +88,7 @@ static void bc_spirit1_hal_init_spi(void);
 static void bc_spirit1_hal_init_timer(void);
 
 static void _bc_spirit1_task(void *param);
-static void _bc_spirit1_interrupt(bc_exti_line_t line);
+static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param);
 
 void bc_spirit1_init(void)
 {
@@ -228,7 +228,7 @@ static void _bc_spirit1_enter_state_tx(void)
 
     SpiritSpiWriteLinearFifo(_bc_spirit1.tx_length, _bc_spirit1.tx_buffer);
 
-    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt);
+    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt, NULL);
 
     SpiritCmdStrobeTx();
 }
@@ -294,7 +294,7 @@ static void _bc_spirit1_enter_state_rx(void)
     /* IRQ registers blanking */
     SpiritIrqClearStatus();
 
-    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt);
+    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt, NULL);
 
     /* RX command */
     SpiritCmdStrobeRx();
@@ -647,9 +647,10 @@ static void bc_spirit1_hal_init_timer(void)
     TIM7->CR1 |= TIM_CR1_OPM;
 }
 
-static void _bc_spirit1_interrupt(bc_exti_line_t line)
+static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param)
 {
     (void) line;
+    (void) param;
 
     bc_scheduler_plan_now(_bc_spirit1.task_id);
 }

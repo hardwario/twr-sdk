@@ -12,7 +12,7 @@ static void _bc_lis2dh12_task(void *param);
 static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self);
-static void _bc_lis2dh12_interrupt(bc_exti_line_t line);
+static void _bc_lis2dh12_interrupt(bc_exti_line_t line, void *param);
 
 bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -362,7 +362,7 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
             return false;
         }
 
-        bc_exti_register(BC_EXTI_LINE_PB6, BC_EXTI_EDGE_FALLING, _bc_lis2dh12_interrupt);
+        bc_exti_register(BC_EXTI_LINE_PB6, BC_EXTI_EDGE_FALLING, _bc_lis2dh12_interrupt, self);
     }
     else
     {
@@ -380,9 +380,11 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
     return true;
 }
 
-static void _bc_lis2dh12_interrupt(bc_exti_line_t line)
+static void _bc_lis2dh12_interrupt(bc_exti_line_t line, void *param)
 {
     (void) line;
+
+    bc_lis2dh12_t *self = param;
 
     // TODO Task should be scheduled for immediate execution
 
