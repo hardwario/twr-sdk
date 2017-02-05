@@ -136,10 +136,6 @@ bool bc_lis2dh12_get_result_g(bc_lis2dh12_t *self, bc_lis2dh12_result_g_t *resul
 
 bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm);
 
-//! @brief LIS1DH12 interrupt handler
-
-void bc_lis2dh12_signalize();
-
 //! @}
 
 #endif // _BC_LIS2DH12_H

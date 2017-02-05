@@ -1,5 +1,6 @@
 #include <bc_spirit1.h>
 #include <bc_scheduler.h>
+#include <bc_exti.h>
 #include <stm32l0xx.h>
 #include "SPIRIT_Config.h"
 #include "SDK_Configuration_Common.h"
@@ -87,6 +88,7 @@ static void bc_spirit1_hal_init_spi(void);
 static void bc_spirit1_hal_init_timer(void);
 
 static void _bc_spirit1_task(void *param);
+static void _bc_spirit1_interrupt(bc_exti_line_t line);
 
 void bc_spirit1_init(void)
 {
@@ -226,19 +228,7 @@ static void _bc_spirit1_enter_state_tx(void)
 
     SpiritSpiWriteLinearFifo(_bc_spirit1.tx_length, _bc_spirit1.tx_buffer);
 
-    // Interrupt request for EXTI line 7 is masked
-    EXTI->IMR &= ~EXTI_IMR_IM7;
-
-    // Clear pending interrupt flag for EXTI line 7
-    EXTI->PR = EXTI_PR_PIF7;
-
-    // Falling trigger for EXTI line 7 is enabled
-    EXTI->FTSR |= EXTI_FTSR_FT7;
-
-    // Interrupt request for EXTI line 7 is not masked
-    EXTI->IMR |= EXTI_IMR_IM7;
-
-    NVIC_EnableIRQ(EXTI4_15_IRQn);
+    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_SENSITIVITY_FALLING, _bc_spirit1_interrupt);
 
     SpiritCmdStrobeTx();
 }
@@ -304,19 +294,7 @@ static void _bc_spirit1_enter_state_rx(void)
     /* IRQ registers blanking */
     SpiritIrqClearStatus();
 
-    // Interrupt request for EXTI line 7 is masked
-    EXTI->IMR &= ~EXTI_IMR_IM7;
-
-    // Clear pending interrupt flag for EXTI line 7
-    EXTI->PR = EXTI_PR_PIF7;
-
-    // Falling trigger for EXTI line 7 is enabled
-    EXTI->FTSR |= EXTI_FTSR_FT7;
-
-    // Interrupt request for EXTI line 7 is not masked
-    EXTI->IMR |= EXTI_IMR_IM7;
-
-    NVIC_EnableIRQ(EXTI4_15_IRQn);
+    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_SENSITIVITY_FALLING, _bc_spirit1_interrupt);
 
     /* RX command */
     SpiritCmdStrobeRx();
@@ -669,7 +647,9 @@ static void bc_spirit1_hal_init_timer(void)
     TIM7->CR1 |= TIM_CR1_OPM;
 }
 
-void bc_spirit1_signalize()
+static void _bc_spirit1_interrupt(bc_exti_line_t line)
 {
+    (void) line;
+
     bc_scheduler_plan_now(_bc_spirit1.task_id);
 }
