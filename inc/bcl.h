@@ -1,23 +1,35 @@
 #ifndef _BCL_H
 #define _BCL_H
 
-// CORE MODULE STUFF
+// Miscellaneous
+
+#include <bc_irq.h>
 #include <usb_talk.h>
-#include <bc_led.h>
+
+// Peripheral drivers
+
 #include <bc_button.h>
-#include <bc_lis2dh12.h>
-#include <bc_spirit1.h>
+#include <bc_dac.h>
 #include <bc_gpio.h>
 #include <bc_i2c.h>
-#include <bc_irq.h>
+#include <bc_led.h>
+#include <bc_rtc.h>
+#include <bc_uart.h>
 
-// TAGS
+// Chip drivers
+
+#include <bc_lis2dh12.h>
+#include <bc_spirit1.h>
+
+// BigClown tags
+
 #include <bc_tag_barometer.h>
 #include <bc_tag_humidity.h>
 #include <bc_tag_lux_meter.h>
 #include <bc_tag_temperature.h>
 
-// MODULES
+// BigClown modules
+
 #include <bc_module_pir.h>
 #include <bc_module_power.h>
 #include <bc_module_relay.h>
