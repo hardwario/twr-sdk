@@ -21,6 +21,8 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     self->_i2c_address = i2c_address;
     self->_update_interval = 50;
 
+    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+
     // TODO: move to irq enable or init state
     //PB6
     // Enable GPIOB clock
