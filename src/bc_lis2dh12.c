@@ -362,7 +362,7 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
             return false;
         }
 
-        bc_exti_register(BC_EXTI_LINE_PB6, BC_EXTI_SENSITIVITY_FALLING, _bc_lis2dh12_interrupt);
+        bc_exti_register(BC_EXTI_LINE_PB6, BC_EXTI_EDGE_FALLING, _bc_lis2dh12_interrupt);
     }
     else
     {

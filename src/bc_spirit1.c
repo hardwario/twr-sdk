@@ -228,7 +228,7 @@ static void _bc_spirit1_enter_state_tx(void)
 
     SpiritSpiWriteLinearFifo(_bc_spirit1.tx_length, _bc_spirit1.tx_buffer);
 
-    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_SENSITIVITY_FALLING, _bc_spirit1_interrupt);
+    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt);
 
     SpiritCmdStrobeTx();
 }
@@ -294,7 +294,7 @@ static void _bc_spirit1_enter_state_rx(void)
     /* IRQ registers blanking */
     SpiritIrqClearStatus();
 
-    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_SENSITIVITY_FALLING, _bc_spirit1_interrupt);
+    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt);
 
     /* RX command */
     SpiritCmdStrobeRx();

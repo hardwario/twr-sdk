@@ -129,7 +129,61 @@ typedef enum
     BC_EXTI_LINE_PH0 = _BC_EXTI_PORT_H | 0,
 
     //! @brief EXTI line PH1
-    BC_EXTI_LINE_PH1 = _BC_EXTI_PORT_H | 1
+    BC_EXTI_LINE_PH1 = _BC_EXTI_PORT_H | 1,
+
+    //! @brief EXTI line P0
+    BC_EXTI_LINE_P0 = BC_EXTI_LINE_PA0,
+
+    //! @brief EXTI line P1
+    BC_EXTI_LINE_P1 = BC_EXTI_LINE_PA1,
+
+    //! @brief EXTI line P2
+    BC_EXTI_LINE_P2 = BC_EXTI_LINE_PA2,
+
+    //! @brief EXTI line P3
+    BC_EXTI_LINE_P3 = BC_EXTI_LINE_PA3,
+
+    //! @brief EXTI line P4
+    BC_EXTI_LINE_P4 = BC_EXTI_LINE_PA4,
+
+    //! @brief EXTI line P5
+    BC_EXTI_LINE_P5 = BC_EXTI_LINE_PA5,
+
+    //! @brief EXTI line P6
+    BC_EXTI_LINE_P6 = BC_EXTI_LINE_PB1,
+
+    //! @brief EXTI line P7
+    BC_EXTI_LINE_P7 = BC_EXTI_LINE_PA6,
+
+    //! @brief EXTI line P8
+    BC_EXTI_LINE_P8 = BC_EXTI_LINE_PB0,
+
+    //! @brief EXTI line P9
+    BC_EXTI_LINE_P9 = BC_EXTI_LINE_PB2,
+
+    //! @brief EXTI line P10
+    BC_EXTI_LINE_P10 = BC_EXTI_LINE_PA10,
+
+    //! @brief EXTI line P11
+    BC_EXTI_LINE_P11 = BC_EXTI_LINE_PA9,
+
+    //! @brief EXTI line P12
+    BC_EXTI_LINE_P12 = BC_EXTI_LINE_PB14,
+
+    //! @brief EXTI line P13
+    BC_EXTI_LINE_P13 = BC_EXTI_LINE_PB15,
+
+    //! @brief EXTI line P14
+    BC_EXTI_LINE_P14 = BC_EXTI_LINE_PB13,
+
+    //! @brief EXTI line P15
+    BC_EXTI_LINE_P15 = BC_EXTI_LINE_PB12,
+
+    //! @brief EXTI line P16
+    BC_EXTI_LINE_P16 = BC_EXTI_LINE_PB8,
+
+    //! @brief EXTI line P17
+    BC_EXTI_LINE_P17 = BC_EXTI_LINE_PB9
 
 } bc_exti_line_t;
 
@@ -138,22 +192,22 @@ typedef enum
 typedef enum
 {
     //! @brief EXTI line is configured to rising edge sensitivity
-    BC_EXTI_SENSITIVITY_RISING = 0,
+    BC_EXTI_EDGE_RISING = 0,
 
     //! @brief EXTI line is configured to falling edge sensitivity
-    BC_EXTI_SENSITIVITY_FALLING = 1,
+    BC_EXTI_EDGE_FALLING = 1,
 
     //! @brief EXTI line is configured to both rising and falling edge sensitivity
-    BC_EXTI_SENSITIVITY_RISING_AND_FALLING = 2
+    BC_EXTI_EDGE_RISING_AND_FALLING = 2
 
-} bc_exti_sensitivity_t;
+} bc_exti_edge_t;
 
 //! @brief Enable EXTI line interrupt and register callback function
 //! @param[in] line EXTI line
 //! @param[in] sensitivity Desired interrupt edge sensitivity
 //! @param[in] callback Function address (called when interrupt occurs)
 
-void bc_exti_register(bc_exti_line_t line, bc_exti_sensitivity_t sensitivity, void (*callback)(bc_exti_line_t));
+void bc_exti_register(bc_exti_line_t line, bc_exti_edge_t edge, void (*callback)(bc_exti_line_t));
 
 //! @brief Disable EXTI line interrupt
 //! @param[in] line EXTI line
