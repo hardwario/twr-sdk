@@ -17,7 +17,7 @@ static inline void _bc_exti_irq_handler(void);
 void bc_exti_register(bc_exti_line_t line, bc_exti_edge_t edge, void (*callback)(bc_exti_line_t, void *), void *param)
 {
     // Extract port number
-    uint8_t port = (uint8_t) line >> 4 & 7;
+    uint8_t port = ((uint8_t) line >> 4) & 7;
 
     // Extract pin number
     uint8_t pin = (uint8_t) line & 15;
