@@ -73,7 +73,37 @@ bc_spi_mode_t bc_spi_get_mode(void)
 
 void bc_spi_transfer(const void *source, void *destination, size_t length)
 {
+    uint8_t *src = (uint8_t *)source;
+    uint8_t *dst = (uint8_t *)destination;
 
+    if (src == NULL)
+    {
+            // Read byte
+            *dst = _bc_spi_transfer_byte(0x00);
+
+            // Increment destination addresses
+            dst++;
+    }
+    else if (dst == NULL)
+    {
+            // Read byte
+            _bc_spi_transfer_byte(*src);
+
+            // Increment source addresses
+            src++;
+    }
+    else
+    {
+        while(length > 0)
+        {
+            // Read-write byte
+            *dst = _bc_spi_transfer_byte(*src);
+
+            // Increment source and destination addresses
+            dst++;
+            src++;
+        }
+    }
 }
 
 static uint8_t _bc_spi_transfer_byte(uint8_t value)
@@ -81,7 +111,7 @@ static uint8_t _bc_spi_transfer_byte(uint8_t value)
     // TODO ... future trouble
 
     // Wait until transmit buffer is empty
-    while ((SPI1->SR & SPI_SR_TXE) == 0)
+    while ((SPI1->SR & SPI_SR_TXE) == SPI_SR_TXE)
     {
         continue;
     }
@@ -90,7 +120,7 @@ static uint8_t _bc_spi_transfer_byte(uint8_t value)
     SPI1->DR = value;
 
     // Wait until receive buffer is full
-    while ((SPI1->SR & SPI_SR_RXNE) == 0)
+    while ((SPI1->SR & SPI_SR_RXNE) == SPI_SR_RXNE)
     {
         continue;
     }
