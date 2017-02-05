@@ -1,17 +1,18 @@
 #include <bc_lis2dh12.h>
 #include <bc_scheduler.h>
+#include <bc_exti.h>
 #include <stm32l0xx.h>
 
 #define BC_LIS2DH12_DELAY_RUN 10
 #define BC_LIS2DH12_DELAY_READ 10
 
-static void _bc_lis2dh12_task(void *param);
+static bc_lis2dh12_t *_bc_lis2dh12_irq_instance;
 
+static void _bc_lis2dh12_task(void *param);
 static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self);
-
-static bc_lis2dh12_t *_bc_lis2dh12_irq_instance;
+static void _bc_lis2dh12_interrupt(bc_exti_line_t line);
 
 bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -23,19 +24,11 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
 
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 
-    // TODO: move to irq enable or init state
-    //PB6
     // Enable GPIOB clock
-    RCC->IOPENR |= RCC_IOPENR_GPIOBEN; //(1 << 1);
+    RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
+
     // Set input mode
     GPIOB->MODER &= ~GPIO_MODER_MODE6_Msk;
-
-    // Enable system cfg
-    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
-    // Link pin to exti controller
-    SYSCFG->EXTICR[1] |= SYSCFG_EXTICR2_EXTI6_PB;
-    // Falling edge
-    EXTI->FTSR |= EXTI_FTSR_FT6;
 
     _bc_lis2dh12_irq_instance = self;
 
@@ -99,7 +92,7 @@ static void _bc_lis2dh12_task(void *param)
 {
     bc_lis2dh12_t *self = param;
 
-    while(true)
+    while (true)
     {
         switch (self->_state)
         {
@@ -304,7 +297,7 @@ static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self)
 
 bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
 {
-    if(alarm)
+    if (alarm != NULL)
     {
         // Enable alarm
         self->_alarm_active = true;
@@ -369,9 +362,7 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
             return false;
         }
 
-        // Interrupt mask register, enable EXTI
-        EXTI->IMR |= EXTI_IMR_IM6;
-        NVIC_EnableIRQ(EXTI4_15_IRQn);
+        bc_exti_register(BC_EXTI_LINE_PB6, BC_EXTI_SENSITIVITY_FALLING, _bc_lis2dh12_interrupt);
     }
     else
     {
@@ -383,14 +374,17 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
             return false;
         }
 
-        // Disable EXTI IRQ
-        EXTI->IMR &= ~EXTI_IMR_IM6;
+        bc_exti_unregister(BC_EXTI_LINE_PB6);
     }
 
     return true;
 }
 
-void bc_lis2dh12_signalize()
+static void _bc_lis2dh12_interrupt(bc_exti_line_t line)
 {
+    (void) line;
+
+    // TODO Task should be scheduled for immediate execution
+
     _bc_lis2dh12_irq_instance->_irq_flag = true;
 }
