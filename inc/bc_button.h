@@ -5,16 +5,24 @@
 #include <bc_tick.h>
 
 //! @addtogroup bc_button bc_button
-//! @brief Driver for buttons
+//! @brief Driver for generic button
 //! @{
 
-//! @brief button callback events
+//! @brief Callback events
 
 typedef enum
 {
+    //! @brief Event button pressed
     BC_BUTTON_EVENT_PRESS = 0,
-    BC_BUTTON_EVENT_CLICK = 1,
-    BC_BUTTON_EVENT_HOLD = 2
+
+    //! @brief Event button released
+    BC_BUTTON_EVENT_RELEASE = 1,
+
+    //! @brief Event button clicked (pressed and released within certain time)
+    BC_BUTTON_EVENT_CLICK = 2,
+
+    //! @brief Event button hold (pressed for longer time)
+    BC_BUTTON_EVENT_HOLD = 3
 
 } bc_button_event_t;
 
@@ -47,7 +55,7 @@ struct bc_button_t
 //! @brief Initialize button
 //! @param[in] self Instance
 //! @param[in] bc_gpio_channel_t GPIO channel button is connected to
-//! @param[in] bc_gpio_pull_t Enable no-pull, pull-up or pull-down
+//! @param[in] bc_gpio_pull_t GPIO pull-up/pull-down setting
 //! @param[in] idle_state GPIO pin idle state (when button is not pressed)
 
 void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_pull_t gpio_pull, bool idle_state);
@@ -59,9 +67,28 @@ void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_p
 
 void bc_button_set_event_handler(bc_button_t *self, void (*event_handler)(bc_button_t *, bc_button_event_t, void *), void *event_param);
 
+//! @brief Set scan interval (period of button input sampling)
+//! @param[in] self Instance
+//! @param[in] scan_interval Desired scan interval in ticks
+
 void bc_button_set_scan_interval(bc_button_t *self, bc_tick_t scan_interval);
+
+//! @brief Set debounce time (minimum sampling interval during which input cannot change to toggle its state)
+//! @param[in] self Instance
+//! @param[in] debounce_time Desired debounce time in ticks
+
 void bc_button_set_debounce_time(bc_button_t *self, bc_tick_t debounce_time);
+
+//! @brief Set click timeout (maximum interval within which button has to be released to recognize click event)
+//! @param[in] self Instance
+//! @param[in] click_timeout Desired click timeout in ticks
+
 void bc_button_set_click_timeout(bc_button_t *self, bc_tick_t click_timeout);
+
+//! @brief Set hold time (interval after which hold event is recognized when button is steadily pressed)
+//! @param[in] self Instance
+//! @param[in] hold_time Desired hold time in ticks
+
 void bc_button_set_hold_time(bc_button_t *self, bc_tick_t hold_time);
 
 //! @}
