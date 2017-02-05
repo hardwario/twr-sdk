@@ -206,8 +206,9 @@ typedef enum
 //! @param[in] line EXTI line
 //! @param[in] sensitivity Desired interrupt edge sensitivity
 //! @param[in] callback Function address (called when interrupt occurs)
+//! @param[in] param Optional parameter being passed to callback function (can be NULL)
 
-void bc_exti_register(bc_exti_line_t line, bc_exti_edge_t edge, void (*callback)(bc_exti_line_t));
+void bc_exti_register(bc_exti_line_t line, bc_exti_edge_t edge, void (*callback)(bc_exti_line_t, void *), void *param);
 
 //! @brief Disable EXTI line interrupt
 //! @param[in] line EXTI line
