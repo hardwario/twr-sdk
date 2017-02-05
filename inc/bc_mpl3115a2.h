@@ -12,10 +12,19 @@
 
 typedef enum
 {
+    //! @brief Error event
     BC_MPL3115A2_EVENT_ERROR = 0,
+
+    //! @brief Update event
     BC_MPL3115A2_EVENT_UPDATE = 1
 
 } bc_mpl3115a2_event_t;
+
+//! @brief MPL3115A2 instance
+
+typedef struct bc_mpl3115a2_t bc_mpl3115a2_t;
+
+//! @cond
 
 typedef enum
 {
@@ -28,10 +37,6 @@ typedef enum
     BC_MPL3115A2_STATE_UPDATE = 5
 
 } bc_mpl3115a2_state_t;
-
-typedef struct bc_mpl3115a2_t bc_mpl3115a2_t;
-
-//! @brief MPL3115A2 instance
 
 struct bc_mpl3115a2_t
 {
@@ -54,6 +59,8 @@ struct bc_mpl3115a2_t
     uint8_t _reg_out_t_msb_pressure;
     uint8_t _reg_out_t_lsb_pressure;
 };
+
+//! @endcond
 
 //! @brief Initialize MPL3115A2
 //! @param[in] self Instance
@@ -85,7 +92,7 @@ bool bc_mpl3115a2_get_altitude_meter(bc_mpl3115a2_t *self, float *meter);
 
 //! @brief Get measured pressured in Pascal
 //! @param[in] self Instance
-//! @param[in] meter Pointer to variable where result will be stored
+//! @param[in] pascal Pointer to variable where result will be stored
 //! @return true When value is valid
 //! @return false When value is invalid
 

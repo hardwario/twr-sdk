@@ -10,6 +10,7 @@
 
 #include <bc_button.h>
 #include <bc_dac.h>
+#include <bc_eeprom.h>
 #include <bc_gpio.h>
 #include <bc_i2c.h>
 #include <bc_led.h>

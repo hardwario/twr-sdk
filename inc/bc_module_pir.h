@@ -34,6 +34,8 @@ typedef enum
 
 } bc_module_pir_event_t;
 
+//! @brief PIR Module instance
+
 typedef bc_pyq1648_t bc_module_pir_t;
 
 //! @brief Initialize PIR Module

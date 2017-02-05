@@ -4,40 +4,36 @@
 #include <bc_i2c.h>
 #include <bc_tick.h>
 
-
 //! @addtogroup bc_lis2dh12 bc_lis2dh12
-//! @brief Driver for LIS2DH12 accelerometer
+//! @brief Driver for LIS2DH12 3-axis MEMS accelerometer
 //! @{
-
-#define BC_LIS2DH12_ADDRESS_DEFAULT 0x18
-#define BC_LIS2DH12_ADDRESS_ALTERNATE 0x19
 
 //! @brief Callback events
 
 typedef enum
 {
-    BC_LIS2DH12_EVENT_ERROR = 0, //!< Error event
-    BC_LIS2DH12_EVENT_UPDATE = 1, //!< Update event
-    BC_LIS2DH12_EVENT_ALARM = 2 //!< Alarm event
+    //! @brief Error event
+    BC_LIS2DH12_EVENT_ERROR = 0,
+
+    //! @brief Update event
+    BC_LIS2DH12_EVENT_UPDATE = 1,
+
+    //! @brief Alarm event
+    BC_LIS2DH12_EVENT_ALARM = 2
 
 } bc_lis2dh12_event_t;
-
-typedef enum
-{
-    BC_LIS2DH12_STATE_ERROR = -1,
-    BC_LIS2DH12_STATE_INITIALIZE = 0,
-    BC_LIS2DH12_STATE_MEASURE = 1,
-    BC_LIS2DH12_STATE_READ = 2,
-    BC_LIS2DH12_STATE_UPDATE = 3
-
-} bc_lis2dh12_state_t;
 
 //! @brief LIS2DH12 result in raw values
 
 typedef struct
 {
+    //! @brief X-axis
     int16_t x_axis;
+
+    //! @brief Y-axis
     int16_t y_axis;
+
+    //! @brief Z-axis
     int16_t z_axis;
 
 } bc_lis2dh12_result_raw_t;
@@ -46,8 +42,13 @@ typedef struct
 
 typedef struct
 {
+    //! @brief X-axis
     float x_axis;
+
+    //! @brief Y-axis
     float y_axis;
+
+    //! @brief Z-axis
     float z_axis;
 
 } bc_lis2dh12_result_g_t;
@@ -56,6 +57,7 @@ typedef struct
 
 typedef struct
 {
+    //! @brief Alarm threshold in g
     float threshold;
     uint8_t duration;
     bool x_low;
@@ -71,7 +73,17 @@ typedef struct
 
 typedef struct bc_lis2dh12_t bc_lis2dh12_t;
 
-//! @brief LIS2DH12 instance
+//! @cond
+
+typedef enum
+{
+    BC_LIS2DH12_STATE_ERROR = -1,
+    BC_LIS2DH12_STATE_INITIALIZE = 0,
+    BC_LIS2DH12_STATE_MEASURE = 1,
+    BC_LIS2DH12_STATE_READ = 2,
+    BC_LIS2DH12_STATE_UPDATE = 3
+
+} bc_lis2dh12_state_t;
 
 struct bc_lis2dh12_t
 {
@@ -91,6 +103,8 @@ struct bc_lis2dh12_t
     bool _alarm_active;
     bool _irq_flag;
 };
+
+//! @endcond
 
 //! @brief Initialize LIS2DH12
 //! @param[in] self Instance

@@ -204,7 +204,7 @@ typedef enum
 
 //! @brief Enable EXTI line interrupt and register callback function
 //! @param[in] line EXTI line
-//! @param[in] sensitivity Desired interrupt edge sensitivity
+//! @param[in] edge Desired interrupt edge sensitivity
 //! @param[in] callback Function address (called when interrupt occurs)
 //! @param[in] param Optional parameter being passed to callback function (can be NULL)
 

@@ -54,8 +54,8 @@ struct bc_button_t
 
 //! @brief Initialize button
 //! @param[in] self Instance
-//! @param[in] bc_gpio_channel_t GPIO channel button is connected to
-//! @param[in] bc_gpio_pull_t GPIO pull-up/pull-down setting
+//! @param[in] gpio_channel GPIO channel button is connected to
+//! @param[in] gpio_pull GPIO pull-up/pull-down setting
 //! @param[in] idle_state GPIO pin idle state (when button is not pressed)
 
 void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_pull_t gpio_pull, bool idle_state);
