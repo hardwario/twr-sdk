@@ -1,5 +1,5 @@
-#ifndef _BC_H
-#define _BC_H
+#ifndef _BCL_H
+#define _BCL_H
 
 // CORE MODULE STUFF
 #include <usb_talk.h>
@@ -18,9 +18,9 @@
 #include <bc_tag_temperature.h>
 
 // MODULES
+#include <bc_module_pir.h>
 #include <bc_module_power.h>
 #include <bc_module_relay.h>
 #include <bc_module_sigfox.h>
 
-
-#endif /* _BC_H */
+#endif // _BCL_H
