@@ -13,7 +13,7 @@ static struct
 
 static inline void _bc_exti_irq_handler(void);
 
-void bc_exti_register(bc_exti_line_t line, bc_exti_sensitivity_t sensitivity, void (*callback)(bc_exti_line_t))
+void bc_exti_register(bc_exti_line_t line, bc_exti_edge_t edge, void (*callback)(bc_exti_line_t))
 {
     // Extract port number
     uint8_t port = (uint8_t) line >> 4 & 7;
@@ -51,7 +51,7 @@ void bc_exti_register(bc_exti_line_t line, bc_exti_sensitivity_t sensitivity, vo
     // Configure port selection for given line
     SYSCFG->EXTICR[pin >> 2] |= port << ((pin & 3) << 2);
 
-    if (sensitivity == BC_EXTI_SENSITIVITY_RISING)
+    if (edge == BC_EXTI_EDGE_RISING)
     {
         // Enable rising edge trigger
         EXTI->RTSR |= mask;
@@ -59,7 +59,7 @@ void bc_exti_register(bc_exti_line_t line, bc_exti_sensitivity_t sensitivity, vo
         // Disable falling edge trigger
         EXTI->FTSR &= ~mask;
     }
-    else if (sensitivity == BC_EXTI_SENSITIVITY_FALLING)
+    else if (edge == BC_EXTI_EDGE_FALLING)
     {
         // Disable rising edge trigger
         EXTI->RTSR &= ~mask;
@@ -67,7 +67,7 @@ void bc_exti_register(bc_exti_line_t line, bc_exti_sensitivity_t sensitivity, vo
         // Enable falling edge trigger
         EXTI->FTSR |= mask;
     }
-    else if (sensitivity == BC_EXTI_SENSITIVITY_RISING_AND_FALLING)
+    else if (edge == BC_EXTI_EDGE_RISING_AND_FALLING)
     {
         // Enable rising edge trigger
         EXTI->RTSR |= mask;
