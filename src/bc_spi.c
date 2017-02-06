@@ -1,20 +1,12 @@
 #include <bc_spi.h>
 #include <stm32l083xx.h>
 
-#include <stm32l0xx_hal.h>
-
-typedef struct
-{
-    uint32_t CLKPolarity;
-    uint32_t CLKPhase;
-} _bc_spi_mode_t;
-
 static uint32_t _bc_spi_speed_table[4] =
 {
     [BC_SPI_SPEED_1_MHZ] = 0x20, // :16 (1MHz)
     [BC_SPI_SPEED_2_MHZ] = 0x18, // :8  (2MHz)
     [BC_SPI_SPEED_4_MHZ] = 0x10, // :4  (4MHz)
-    [BC_SPI_SPEED_8_MHZ] = 0x08, // :2  (8MHz)
+    [BC_SPI_SPEED_8_MHZ] = 0x08  // :2  (8MHz)
 };
 
 static uint32_t _bc_spi_mode_table[4] =
@@ -87,6 +79,8 @@ void bc_spi_transfer(const void *source, void *destination, size_t length)
         }
         else if (dst == NULL)
         {
+            // TODO ... test
+
             // Read byte
             _bc_spi_transfer_byte(*src);
 
@@ -95,6 +89,8 @@ void bc_spi_transfer(const void *source, void *destination, size_t length)
         }
         else
         {
+            // TODO ... test
+
             // Read-write byte
             *dst = _bc_spi_transfer_byte(*src);
 
@@ -114,6 +110,8 @@ static uint8_t _bc_spi_transfer_byte(uint8_t value)
     // Wait until transmit buffer is empty
     while ((SPI2->SR & SPI_SR_TXE) == 0)
     {
+        // TODO ... m8 tadz v86n2 b7t continue
+
         continue;
     }
 
@@ -123,6 +121,8 @@ static uint8_t _bc_spi_transfer_byte(uint8_t value)
     // Wait until receive buffer is full
     while ((SPI2->SR & SPI_SR_RXNE) == 0)
     {
+        // TODO ... m8 tadz v86n2 b7t continue
+
         continue;
     }
 
