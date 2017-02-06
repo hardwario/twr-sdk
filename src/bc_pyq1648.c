@@ -149,7 +149,7 @@ static void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     // Initialize pointer to GPIO BSRR register of SERIN pin
     // (very fast operations with pins are needed)
     GPIO_TypeDef *GPIOx = _pyq1648_gpiox_table[self->_gpio_channel_serin];
-    uint32_t *GPIOx_BSRR = (uint32_t *) &GPIOx->BSRR;
+    volatile uint32_t *GPIOx_BSRR = &GPIOx->BSRR;
 
     // Low level pin initialization
     _bc_pyq1648_msp_init(self->_gpio_channel_serin, self->_gpio_channel_dl);
@@ -247,8 +247,8 @@ static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *
     // Initialize pointer to GPIO BSRR and IDR registers of DL pin
     // (very fast operations with pins are needed)
     GPIO_TypeDef *GPIOx = _pyq1648_gpiox_table[self->_gpio_channel_dl];
-    uint32_t *GPIOx_BSRR = (uint32_t *) &GPIOx->BSRR;
-    uint32_t *GPIOx_IDR = (uint32_t *) &GPIOx->IDR;
+    volatile uint32_t *GPIOx_BSRR = &GPIOx->BSRR;
+    volatile uint32_t *GPIOx_IDR = &GPIOx->IDR;
 
     *GPIOx_BSRR = bsrr_mask[1]; // Set DL = High, to force fast uC controlled DL read out
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT); // Configure PORT DL as Output
