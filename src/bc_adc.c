@@ -16,7 +16,8 @@ static bc_adc_config_t _bc_adc_config_table[6] =
     [2].chselr = ADC_CHSELR_CHSEL2,
     [3].chselr = ADC_CHSELR_CHSEL3,
     [4].chselr = ADC_CHSELR_CHSEL4,
-    [5].chselr = ADC_CHSELR_CHSEL5 };
+    [5].chselr = ADC_CHSELR_CHSEL5
+};
 
 void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_format_t format)
 {
@@ -27,7 +28,7 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_
     ADC1->CR |= ADC_CR_ADCAL;               // Start calibration
     while ((ADC1->ISR & ADC_ISR_EOCAL) == 0)
     {
-        continue;                           // Wait untill calibration is done
+        continue;                           // Wait until calibration is done
     }
     ADC1->ISR |= ADC_ISR_EOCAL;             // Clear EOCAL
 
@@ -37,8 +38,8 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_
     ADC1->CFGR1 |= ADC_CFGR1_AUTOFF |                   // Select the auto off mode
                    ADC_CFGR1_ALIGN;                     // Left alignment
     ADC1->CFGR2 = (ADC1->CFGR2 & (~ADC_CFGR2_CKMODE)) | // Asynchronous clock mode
-    (ADC_CFGR2_OVSE |                                   // Oversampler Enable
-    ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0);               // Oversampling ratio (16x)
+    (ADC_CFGR2_OVSE |                                   // Over-sampler Enable
+    ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0);               // Over-sampling ratio (16x)
 
     ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2; // Select a sampling mode
 
@@ -47,31 +48,25 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_
 
     // Store desired format
     bc_adc_set_format(channel, format);
-
-    // TODO ... initialize gpio
 }
 
 void bc_adc_set_reference(bc_adc_channel_t channel, bc_adc_reference_t reference)
 {
-    // Store desired reference
     _bc_adc_config_table[channel].reference = reference;
 }
 
 bc_adc_reference_t bc_adc_get_reference(bc_adc_channel_t channel)
 {
-    // Return reference
     return _bc_adc_config_table[channel].reference;
 }
 
 void bc_adc_set_format(bc_adc_channel_t channel, bc_adc_format_t format)
 {
-    // Store desired format
     _bc_adc_config_table[channel].format = format;
 }
 
 bc_adc_format_t bc_adc_get_format(bc_adc_channel_t channel)
 {
-    // Return format
     return _bc_adc_config_table[channel].format;
 }
 
@@ -98,7 +93,6 @@ void bc_adc_measure(bc_adc_channel_t channel, void *result)
 
     // TODO ... take care of reference ...
 
-    // TODO ... maybe float is better
     switch (_bc_adc_config_table[channel].format)
     {
     case BC_ADC_FORMAT_8_BIT:
