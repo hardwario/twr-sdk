@@ -11,12 +11,12 @@
 
 typedef enum
 {
-    BC_ADC_A0 = 0L, //!< ADC channel A0
-    BC_ADC_A1 = 1L, //!< ADC channel A1
-    BC_ADC_A2 = 2L, //!< ADC channel A2
-    BC_ADC_A3 = 3L, //!< ADC channel A3
-    BC_ADC_A4 = 4L, //!< ADC channel A4
-    BC_ADC_A5 = 5L  //!< ADC channel A5
+    BC_ADC_CHANNEL_A0 = 0L, //!< ADC channel A0
+    BC_ADC_CHANNEL_A1 = 1L, //!< ADC channel A1
+    BC_ADC_CHANNEL_A2 = 2L, //!< ADC channel A2
+    BC_ADC_CHANNEL_A3 = 3L, //!< ADC channel A3
+    BC_ADC_CHANNEL_A4 = 4L, //!< ADC channel A4
+    BC_ADC_CHANNEL_A5 = 5L  //!< ADC channel A5
 
 } bc_adc_channel_t;
 
