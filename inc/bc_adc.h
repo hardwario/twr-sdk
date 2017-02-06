@@ -33,10 +33,11 @@ typedef enum
 
 typedef enum
 {
-    BC_ADC_FORMAT_8_BIT  = 0L, //!< ADC result format is 8-bit
-    BC_ADC_FORMAT_16_BIT = 1L, //!< ADC result format is 16-bit
-    BC_ADC_FORMAT_24_BIT = 2L, //!< ADC result format is 24-bit
-    BC_ADC_FORMAT_32_BIT = 3L  //!< ADC result format is 32-bit
+    BC_ADC_FORMAT_8_BIT  = 0L,  //!< ADC result format is 8-bit
+    BC_ADC_FORMAT_16_BIT = 1L,  //!< ADC result format is 16-bit
+    BC_ADC_FORMAT_24_BIT = 2L,  //!< ADC result format is 24-bit
+    BC_ADC_FORMAT_32_BIT = 3L   //!< ADC result format is 32-bit
+    // TODO ... BC_ADC_FORMAT_FLOAT_BIT = 4L//!< ADC result format is float
 
 } bc_adc_format_t;
 
