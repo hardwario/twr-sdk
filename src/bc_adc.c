@@ -106,6 +106,12 @@ void bc_adc_measure(bc_adc_channel_t channel, void *result)
     case BC_ADC_FORMAT_32_BIT:
         *(uint32_t *)result = data << 16;
         break;
+        /*
+    case BC_ADC_FORMAT_FLOAT_BIT:
+        1. measure Vrefint
+        2. *(float *)result = (Vrefint(voltage) / Vrefint(code)) * data;
+        break;
+        */
     default:
         return;
         break;
