@@ -11,10 +11,10 @@
 
 typedef enum
 {
-    BC_SPI_SPEED_1_MHZ = 0L, //!< SPI communication speed is 1 MHz
-    BC_SPI_SPEED_2_MHZ = 1L, //!< SPI communication speed is 2 MHz
-    BC_SPI_SPEED_4_MHZ = 2L, //!< SPI communication speed is 4 MHz
-    BC_SPI_SPEED_8_MHZ = 3L  //!< SPI communication speed is 8 MHz
+    BC_SPI_SPEED_1_MHZ = 0, //!< SPI communication speed is 1 MHz
+    BC_SPI_SPEED_2_MHZ = 1, //!< SPI communication speed is 2 MHz
+    BC_SPI_SPEED_4_MHZ = 2, //!< SPI communication speed is 4 MHz
+    BC_SPI_SPEED_8_MHZ = 3  //!< SPI communication speed is 8 MHz
 
 } bc_spi_speed_t;
 
@@ -22,10 +22,10 @@ typedef enum
 
 typedef enum
 {
-    BC_SPI_MODE_0 = 0L, //!< SPI mode of operation is 0 (CPOL = 0, CPHA = 0)
-    BC_SPI_MODE_1 = 1L, //!< SPI mode of operation is 1 (CPOL = 0, CPHA = 1)
-    BC_SPI_MODE_2 = 2L, //!< SPI mode of operation is 2 (CPOL = 1, CPHA = 0)
-    BC_SPI_MODE_3 = 3L  //!< SPI mode of operation is 3 (CPOL = 1, CPHA = 1)
+    BC_SPI_MODE_0 = 0, //!< SPI mode of operation is 0 (CPOL = 0, CPHA = 0)
+    BC_SPI_MODE_1 = 1, //!< SPI mode of operation is 1 (CPOL = 0, CPHA = 1)
+    BC_SPI_MODE_2 = 2, //!< SPI mode of operation is 2 (CPOL = 1, CPHA = 0)
+    BC_SPI_MODE_3 = 3  //!< SPI mode of operation is 3 (CPOL = 1, CPHA = 1)
 
 } bc_spi_mode_t;
 
