@@ -184,7 +184,10 @@ static void _bc_spi_set_speed(bc_spi_speed_t speed)
     temp = SPI2->CR1;
     temp &= ~SPI_CR1_BR_Msk;
     temp |= _bc_spi_speed_table[speed];
+
+    SPI2->CR1 &= ~SPI_CR1_SPE;
     SPI2->CR1 = temp;
+    SPI2->CR1 |= SPI_CR1_SPE;
 }
 
 static void _bc_spi_set_mode(bc_spi_mode_t mode)
@@ -198,5 +201,9 @@ static void _bc_spi_set_mode(bc_spi_mode_t mode)
     temp = SPI2->CR1;
     temp &= ~(SPI_CR1_CPHA_Msk | SPI_CR1_CPOL_Msk);
     temp |= _bc_spi_mode_table[mode];
+
+    SPI2->CR1 &= ~SPI_CR1_SPE;
     SPI2->CR1 = temp;
+    SPI2->CR1 |= SPI_CR1_SPE;
+
 }
