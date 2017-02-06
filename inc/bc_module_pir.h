@@ -48,14 +48,13 @@ void bc_module_pir_init(bc_module_pir_t *self);
 //! @param[in] event_handler Function address
 //! @param[in] event_param Optional event parameter (can be NULL)
 
-void bc_module_pir_set_event_handler(bc_module_pir_t *self, void (*event_handler)(bc_module_pir_t *, bc_module_pir_event_t, void *), void *event_param);
+void bc_module_pir_set_event_handler(bc_module_pir_t *self, void (*event_handler)(bc_module_pir_t *, bc_module_pir_event_t, void*), void *event_param);
 
 //! @brief Set sensor sensitivity
 //! @param[in] self Instance
 //! @param[in] sensitivity Desired sensitivity
 
 void bc_module_pir_set_sensitivity(bc_pyq1648_t *self, bc_module_pir_sensitivity_t sensitivity);
-
 //! @}
 
 #endif // _BC_MODULE_PIR_H
