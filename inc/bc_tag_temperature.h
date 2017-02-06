@@ -11,8 +11,11 @@
 
 typedef enum
 {
-    BC_TAG_TEMPERATURE_I2C_ADDRESS_DEFAULT = 0x48,  //!< Default I2C address
-    BC_TAG_TEMPERATURE_I2C_ADDRESS_ALTERNATE = 0x49 //!< Alternate I2C address
+    //! @brief Default I2C address
+    BC_TAG_TEMPERATURE_I2C_ADDRESS_DEFAULT = 0x48,
+
+    //! @brief Alternate I2C address
+    BC_TAG_TEMPERATURE_I2C_ADDRESS_ALTERNATE = 0x49
 
 } bc_tag_temperature_i2c_address_t;
 
@@ -20,8 +23,11 @@ typedef enum
 
 typedef enum
 {
-    BC_TAG_TEMPERATURE_EVENT_ERROR = BC_TMP112_EVENT_ERROR,  //!< Error event
-    BC_TAG_TEMPERATURE_EVENT_UPDATE = BC_TMP112_EVENT_UPDATE //!< Update event
+    //! @brief Error event
+    BC_TAG_TEMPERATURE_EVENT_ERROR = BC_TMP112_EVENT_ERROR,
+
+    //! @brief Update event
+    BC_TAG_TEMPERATURE_EVENT_UPDATE = BC_TMP112_EVENT_UPDATE
 
 } bc_tag_temperature_event_t;
 

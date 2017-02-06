@@ -4,16 +4,23 @@
 #include <bc_pyq1648.h>
 
 //! @addtogroup bc_module_pir bc_module_pir
-//! @brief Driver for PIR module
+//! @brief Driver for PIR Module
 //! @{
 
-//! @brief Possible sensitivities
+//! @brief Motion detection sensitivity
 
 typedef enum
 {
+    //! @brief Low sensitivity
     BC_MODULE_PIR_SENSITIVITY_LOW = BC_PYQ1648_SENSITIVITY_LOW,
+
+    //! @brief Medium sensitivity
     BC_MODULE_PIR_SENSITIVITY_MEDIUM = BC_PYQ1648_SENSITIVITY_MEDIUM,
+
+    //! @brief High sensitivity
     BC_MODULE_PIR_SENSITIVITY_HIGH = BC_PYQ1648_SENSITIVITY_HIGH,
+
+    //! @brief Very high sensitivity
     BC_MODULE_PIR_SENSITIVITY_VERY_HIGH = BC_PYQ1648_SENSITIVITY_VERY_HIGH
 
 } bc_module_pir_sensitivity_t;
@@ -26,6 +33,8 @@ typedef enum
     BC_MODULE_PIR_EVENT_MOTION = BC_PYQ1648_EVENT_MOTION
 
 } bc_module_pir_event_t;
+
+//! @brief PIR Module instance
 
 typedef bc_pyq1648_t bc_module_pir_t;
 

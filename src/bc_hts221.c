@@ -57,6 +57,8 @@ void bc_hts221_init(bc_hts221_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
+    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+
     _bc_hts221_load_calibration(self);
 
     self->_task_id = bc_scheduler_register(_bc_hts221_task, self, bc_tick_get() + BC_HTS221_DELAY_RUN);
