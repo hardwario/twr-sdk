@@ -38,25 +38,21 @@ void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
 
 void bc_spi_set_speed(bc_spi_speed_t speed)
 {
-    // Set SPI peripheral speed
     _bc_spi_set_speed(speed);
 }
 
 bc_spi_speed_t bc_spi_get_speed(void)
 {
-    // Return SPI peripheral speed
     return _bc_spi_speed;
 }
 
 void bc_spi_set_mode(bc_spi_mode_t mode)
 {
-    // Set SPI peripheral mode
     _bc_spi_set_mode(mode);
 }
 
 bc_spi_mode_t bc_spi_get_mode(void)
 {
-    // Return SPI peripheral mode
     return _bc_spi_mode;
 }
 
@@ -82,7 +78,7 @@ void bc_spi_transfer(const void *source, void *destination, size_t length)
         }
         else if (dst == NULL)
         {
-            // Read byte
+            // Write byte
             _bc_spi_transfer_byte(*src);
 
             // Increment source address
