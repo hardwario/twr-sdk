@@ -40,8 +40,7 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_
     ADC1->CFGR2 = (ADC1->CFGR2 & (~ADC_CFGR2_CKMODE)) | // Asynchronous clock mode
     (ADC_CFGR2_OVSE |                                   // Over-sampler Enable
     ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0);               // Over-sampling ratio (16x)
-
-    ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2; // Select a sampling mode
+    ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1;      // Sampling time selection (12.5 cycles)
 
     // Store desired reference
     bc_adc_set_reference(channel, reference);
