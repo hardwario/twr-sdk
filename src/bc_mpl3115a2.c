@@ -14,6 +14,8 @@ void bc_mpl3115a2_init(bc_mpl3115a2_t *self, bc_i2c_channel_t i2c_channel, uint8
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
+    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+
     bc_scheduler_register(_bc_mpl3115a2_task, self, BC_MPL3115A2_DELAY_RUN);
 }
 

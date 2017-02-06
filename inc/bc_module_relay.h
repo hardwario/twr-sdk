@@ -37,7 +37,11 @@ typedef enum
 
 } bc_module_relay_state_t;
 
-//! @brief Internal states
+//! @brief BigClown Relay Module instance
+
+typedef struct bc_module_relay_t bc_module_relay_t;
+
+//! @cond
 
 typedef enum
 {
@@ -51,8 +55,6 @@ typedef enum
 
 } bc_module_relay_task_state_t;
 
-//! @brief Internal commands
-
 typedef enum
 {
     BC_MODULE_RELAY_COMMAND_NONE = 0,
@@ -60,10 +62,6 @@ typedef enum
     BC_MODULE_RELAY_COMMAND_PULSE = 2
 
 } bc_module_relay_command_t;
-
-typedef struct bc_module_relay_t bc_module_relay_t;
-
-//! @brief BigClown Relay Module instance
 
 struct bc_module_relay_t
 {
@@ -78,6 +76,8 @@ struct bc_module_relay_t
     bool _task_is_active;
     bool _error;
 };
+
+//! @endcond
 
 //! @brief Initialize BigClown Relay Module
 //! @param[in] self Instance

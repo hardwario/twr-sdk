@@ -13,6 +13,8 @@ void bc_tmp112_init(bc_tmp112_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
+    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+
     bc_scheduler_register(_bc_tmp112_task, self, BC_TMP112_DELAY_RUN);
 }
 
