@@ -24,12 +24,26 @@
 
 typedef enum
 {
-    BC_LED_MODE_OFF = 0,        //!< LED has steady off state
-    BC_LED_MODE_ON = 1,         //!< LED has steady on state
-    BC_LED_MODE_BLINK = 2,      //!< LED blinks
-    BC_LED_MODE_BLINK_SLOW = 3, //!< LED blinks slowly
-    BC_LED_MODE_BLINK_FAST = 4, //!< LED blinks quickly
-    BC_LED_MODE_FLASH = 5       //!< LED flashes repeatedly
+    //! @brief LED toggles between on/off state (this has no effect while processing alternating patterns)
+    BC_LED_MODE_TOGGLE = 0,
+
+    //! @brief LED has steady off state
+    BC_LED_MODE_OFF = 1,
+
+    //! @brief LED has steady on state
+    BC_LED_MODE_ON = 2,
+
+    //! @brief LED blinks
+    BC_LED_MODE_BLINK = 3,
+
+    //! @brief LED blinks slowly
+    BC_LED_MODE_BLINK_SLOW = 4,
+
+    //! @brief LED blinks quickly
+    BC_LED_MODE_BLINK_FAST = 5,
+
+    //! @brief LED flashes repeatedly
+    BC_LED_MODE_FLASH = 6
 
 } bc_led_mode_t;
 
