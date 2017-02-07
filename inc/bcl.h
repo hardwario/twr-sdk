@@ -36,4 +36,7 @@
 #include <bc_module_relay.h>
 #include <bc_module_sigfox.h>
 
+//! @mainpage BigClown firmware SDK
+//! This is API documentation of BigClown SDK
+
 #endif // _BCL_H
