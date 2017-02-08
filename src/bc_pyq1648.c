@@ -4,25 +4,14 @@
 #include <bc_gpio.h>
 #include <stm32l0xx.h>
 
+#define BC_PYQ1648_BPF 0x00
+#define BC_PYQ1648_LPF 0x01
+
+#define BC_PYQ1648_WAKE_UP_MODE 0x02
+
 extern GPIO_TypeDef *bc_gpio_port[];
 extern uint16_t bc_gpio_16_bit_mask[];
 extern uint32_t bc_gpio_32_bit_upper_mask[];
-
-#define PYQ1648_SENSITIVITY_MASK 0xff
-#define PYQ1648_BLIND_TIME_MASK 0x0f
-#define PYQ1648_PULSE_CONTER_MASK 0x03
-#define PYQ1648_WINDOW_TIME_MASK 0x03
-#define PYQ1648_OPERATION_MASK 0x03
-#define PYQ1648_FILTER_SOURCE_MASK 0x03
-#define PYQ1648_RESERVED_MASK 0x1f
-
-#define PYQ1648_SENSITIVITY_LEN 0x08
-#define PYQ1648_BLIND_TIME_LEN 0x04
-#define PYQ1648_PULSE_CONTER_LEN 0x02
-#define PYQ1648_WINDOW_TIME_LEN 0x02
-#define PYQ1648_OPERATION_MODE_LEN 0x02
-#define PYQ1648_FILTER_SOURCE_LEN 0x02
-#define PYQ1648_RESERVED_LEN 0x05
 
 #define BC_PYQ1648_CONNECTION_CHECK true
 #define BC_PYQ1648_DELAY_RUN 50
@@ -37,7 +26,6 @@ static void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self);
 static void _bc_pyq1648_delay_100us(unsigned int i);
 static void _bc_pyq1648_task(void *param);
 static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self);
-static inline void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self);
 static inline bool _bc_pyq1648_is_pir_module_present(bc_pyq1648_t *self);
 
 static const uint8_t _bc_pyq1648_sensitivity_table[4] =
@@ -68,10 +56,6 @@ void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, b
     self->_gpio_channel_serin = gpio_channel_serin;
     self->_gpio_channel_dl = gpio_channel_dl;
 
-    // TODO ... test
-    // Initialize low level
-    // _bc_pyq1648_msp_init(gpio_channel_serin, gpio_channel_dl);
-
     // Initialize self event_unit_configuration register value
     _bc_pyq1648_compose_event_unit_config(self);
 
@@ -90,7 +74,7 @@ void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_p
 
 void bc_pyq1648_set_sensitivity(bc_pyq1648_t *self, bc_pyq1648_sensitivity_t sensitivity)
 {
-    // Edit self sensitivity to desired value
+    // Set self sensitivity to desired value
     self->_sensitivity = _bc_pyq1648_sensitivity_table[sensitivity];
 
     // Initialize self event unit configuration register value
@@ -99,7 +83,7 @@ void bc_pyq1648_set_sensitivity(bc_pyq1648_t *self, bc_pyq1648_sensitivity_t sen
 
 void bc_pyq1648_set_blank_period(bc_pyq1648_t *self, bc_tick_t blank_period)
 {
-    // Edit self blank period
+    // Set self blank period
     self->_blank_period = blank_period;
 }
 
@@ -110,19 +94,11 @@ void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self)
     //  --------------------------------------------------------------------------------------------------------------------------------------
     // | 7bit sensitivity | 4bit blind time | 2bit pulse counter | 2bit window time | 2bit operatin mode | 2bit filter source | 5bit reserved |
     //  --------------------------------------------------------------------------------------------------------------------------------------
-    // |     from self    |  handled by SW  |        0x00        |       0x00       |    wake up mode    |     mode => BPF    | has to be 16  |
+    // |     from self    |  handled by SW  |        0x00        |       0x00       |    wake up mode    |  Band pass filter  | has to be 16  |
     //  --------------------------------------------------------------------------------------------------------------------------------------
 
-    // TODO ... workaround
     self->_config = 0x00000000;
-    self->_config |= self->_sensitivity;
-    self->_config <<= PYQ1648_BLIND_TIME_LEN + PYQ1648_PULSE_CONTER_LEN + PYQ1648_WINDOW_TIME_LEN + PYQ1648_OPERATION_MODE_LEN;
-    self->_config |= 0x02; // Event mode
-    self->_config <<= PYQ1648_FILTER_SOURCE_LEN;
-    // self->_config |= 0x00; // Band pass filter
-    self->_config |= 0x01; // Low pass filter
-    self->_config <<= PYQ1648_RESERVED_LEN;
-    self->_config |= 0x10;
+    self->_config |= (self->_sensitivity << 17) | (BC_PYQ1648_WAKE_UP_MODE << 7) | (BC_PYQ1648_BPF << 5) |0x10;
 }
 
 static inline void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl)
@@ -203,7 +179,6 @@ static void _bc_pyq1648_delay_100us(unsigned int i)
 
 static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self)
 {
-    bool pir_module_present;
     uint32_t event_unit_config = self->_config;
 
     // Set PIR to forced read out mode
@@ -257,7 +232,7 @@ static inline bool _bc_pyq1648_is_pir_module_present(bc_pyq1648_t *self)
 
     // get first 15bit out-off-range and ADC value
     PIRval_temp = 0;
-    for (i = 0; i < 14; i++)
+    for (i = 0; i < 24; i++)
     {
         // Set next BitPos
         PIRval_temp <<= 1;
@@ -281,7 +256,6 @@ static inline bool _bc_pyq1648_is_pir_module_present(bc_pyq1648_t *self)
     // Pull DL down
     *GPIOx_BSRR = bsrr_mask[0];
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT);
-    bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
 
     // Configure DL as Input
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
@@ -290,7 +264,7 @@ static inline bool _bc_pyq1648_is_pir_module_present(bc_pyq1648_t *self)
     bc_irq_enable();
 
     // If readout PIR value and configuration not valid ...
-    if ((PIRval_temp == 0x3fff) || (PIRval_temp == 0x00))
+    if ((PIRval_temp == 0xffffff) || (PIRval_temp == 0x00))
     {
         // ...
         return false;
@@ -388,8 +362,6 @@ start:
                 self->_connection_check = tick_now + BC_PYQ1648_CONNECTION_CHECK_INTERVAL;
                 if (_bc_pyq1648_echo(self) == false)
                 {
-                    // self->_event_valid = false;
-                    // self->_event_handler(self, BC_PYQ1648_EVENT_ERROR, self->_event_param);
                     goto start;
                 }
             }
