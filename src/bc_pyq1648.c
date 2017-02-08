@@ -14,6 +14,7 @@ extern uint16_t bc_gpio_16_bit_mask[];
 extern uint32_t bc_gpio_32_bit_upper_mask[];
 
 #define BC_PYQ1648_CONNECTION_CHECK true
+
 #define BC_PYQ1648_DELAY_RUN 50
 #define BC_PYQ1648_DELAY_INITIALIZATION 10
 #define BC_PYQ1648_UPDATE_INTERVAL 50
