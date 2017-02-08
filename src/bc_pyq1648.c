@@ -38,7 +38,7 @@ static void _bc_pyq1648_delay_100us(unsigned int i);
 static void _bc_pyq1648_task(void *param);
 static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self);
 static inline void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self);
-static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *PIRval, uint32_t *statcfg);
+static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self);
 
 static const uint8_t _bc_pyq1648_sensitivity_table[4] =
 {
@@ -203,8 +203,6 @@ static void _bc_pyq1648_delay_100us(unsigned int i)
 
 static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self)
 {
-    int32_t PIRval;
-    uint32_t statcfg;
     bool pir_module_present;
     uint32_t event_unit_config = self->_config;
 
@@ -212,7 +210,7 @@ static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self)
     _bc_pyq1648_set_dummy_forced_read_out(self);
 
     // Check if PIR response is valid
-    pir_module_present = _bc_pyq1648_get_forced_read_out(self, &PIRval, &statcfg);
+    pir_module_present = _bc_pyq1648_get_forced_read_out(self);
 
     self->_config = event_unit_config;
 
@@ -235,16 +233,13 @@ static inline void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self)
     _bc_pyq1648_dev_init(self);
 }
 
-static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *PIRval, uint32_t *statcfg)
+static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self)
 {
     // TODO ... read shorter sequence 
 
     int32_t i;
-    int32_t uibitmask;
-    uint32_t ulbitmask;
 
     int32_t PIRval_temp;
-    uint32_t statcfg_temp;
 
     // Disable interrupts
     bc_irq_disable();
@@ -269,11 +264,12 @@ static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *
     _bc_pyq1648_delay_100us(1);
 
     // get first 15bit out-off-range and ADC value
-    // Set BitPos
-    uibitmask = 0x4000;
     PIRval_temp = 0;
-    for (i = 0; i < 15; i++)
+    for (i = 0; i < 14; i++)
     {
+        // Set next BitPos
+        PIRval_temp <<= 1;
+
         // create low to high transition
         *GPIOx_BSRR = bsrr_mask[0];
         bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT);
@@ -286,36 +282,8 @@ static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *
         if ((*GPIOx_IDR & idr_mask) != 0)
         {
             // ... set corresponding bit
-            PIRval_temp |= uibitmask;
+            PIRval_temp |= 0x01;
         }
-
-        // Set next BitPos
-        uibitmask >>= 1;
-    }
-
-    // get 25bit status and config
-    // Set BitPos
-    ulbitmask = 0x1000000;
-    statcfg_temp = 0;
-    for (i = 0; i < 25; i++)
-    {
-        // create low to high transition
-        *GPIOx_BSRR = bsrr_mask[0];
-        bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT);
-        *GPIOx_BSRR = bsrr_mask[1];
-
-        // Configure DL as Input
-        bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
-        
-        // If DL is high ...
-        if ((*GPIOx_IDR & idr_mask) != 0)
-        {
-            // ... set corresponding bit
-            statcfg_temp |= ulbitmask;
-        }
-
-        // Set next BitPos
-        ulbitmask >>= 1;
     }
     
     // Pull DL down
@@ -323,38 +291,20 @@ static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self, int32_t *
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT);
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
 
-    // Clear unused bits
-    PIRval_temp &= 0x3FFF;
-
-    // If filter source is band pass filter ...
-    if ((statcfg_temp & 0x60) == 0)
-    {
-        // ... number is in two's comlement'
-
-        // handle two's complement ...
-        if (PIRval_temp & 0x2000)
-        {
-            PIRval_temp -= 0x4000;
-        }
-    }
-
     // Configure DL as Input
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
 
     // If readout PIR value and configuration not valid ...
-    if (((PIRval_temp == 0x3fff) && (statcfg_temp == 0x1ffffff)) || ((PIRval_temp == 0x00) && (statcfg_temp == 0x00)))
+    if ((PIRval_temp == 0x3fff) || (PIRval_temp == 0x00))
     {
         // ...
         return false;
     }
     else
     {
-        // ... copy actual values
-        *PIRval = PIRval_temp;
-        *statcfg = statcfg_temp;
-
         return true;
     }
+
 }
 
 static void _bc_pyq1648_task(void *param)
