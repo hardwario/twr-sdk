@@ -38,7 +38,7 @@ static void _bc_pyq1648_delay_100us(unsigned int i);
 static void _bc_pyq1648_task(void *param);
 static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self);
 static inline void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self);
-static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self);
+static inline bool _bc_pyq1648_is_pir_module_present(bc_pyq1648_t *self);
 
 static const uint8_t _bc_pyq1648_sensitivity_table[4] =
 {
@@ -207,36 +207,28 @@ static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self)
     uint32_t event_unit_config = self->_config;
 
     // Set PIR to forced read out mode
-    _bc_pyq1648_set_dummy_forced_read_out(self);
-
-    // Check if PIR response is valid
-    pir_module_present = _bc_pyq1648_get_forced_read_out(self);
-
-    self->_config = event_unit_config;
-
-    // If PIR present ...
-    if (pir_module_present)
-    {
-        // ... restore original configuration
-        _bc_pyq1648_dev_init(self);
-    }
-
-    return pir_module_present;
-}
-
-static inline void _bc_pyq1648_set_dummy_forced_read_out(bc_pyq1648_t *self)
-{
-    // Load dummy event unit configuration (forced read out mode)
     self->_config = BC_PYQ1648_DUMMY_EVENT_UNIT_CONFIG;
 
     // Initialize PIR
     _bc_pyq1648_dev_init(self);
+
+    self->_config = event_unit_config;
+
+    // If PIR present ...
+    if (_bc_pyq1648_is_pir_module_present(self))
+    {
+        // ... restore original configuration
+        _bc_pyq1648_dev_init(self);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
-static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self)
+static inline bool _bc_pyq1648_is_pir_module_present(bc_pyq1648_t *self)
 {
-    // TODO ... read shorter sequence 
-
     int32_t i;
 
     int32_t PIRval_temp;
@@ -258,7 +250,7 @@ static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self)
     volatile uint32_t *GPIOx_BSRR = &GPIOx->BSRR;
     volatile uint32_t *GPIOx_IDR = &GPIOx->IDR;
 
-    // Pull DL high, to force fast uC controlled DL read out
+    // Pull DL high, to force uC controlled DL read out
     *GPIOx_BSRR = bsrr_mask[1];
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT);
     _bc_pyq1648_delay_100us(1);
@@ -293,6 +285,9 @@ static inline bool _bc_pyq1648_get_forced_read_out(bc_pyq1648_t *self)
 
     // Configure DL as Input
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
+
+    // Enable interrupts
+    bc_irq_enable();
 
     // If readout PIR value and configuration not valid ...
     if ((PIRval_temp == 0x3fff) || (PIRval_temp == 0x00))
@@ -391,10 +386,10 @@ start:
             if (tick_now >= self->_connection_check)
             {
                 self->_connection_check = tick_now + BC_PYQ1648_CONNECTION_CHECK_INTERVAL;
-                if (!_bc_pyq1648_echo(self))
+                if (_bc_pyq1648_echo(self) == false)
                 {
-                    self->_event_valid = false;
-                    self->_event_handler(self, BC_PYQ1648_EVENT_ERROR, self->_event_param);
+                    // self->_event_valid = false;
+                    // self->_event_handler(self, BC_PYQ1648_EVENT_ERROR, self->_event_param);
                     goto start;
                 }
             }
