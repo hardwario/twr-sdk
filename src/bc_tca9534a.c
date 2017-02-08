@@ -12,6 +12,8 @@ bool bc_tca9534a_init(bc_tca9534a_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
+    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+
     uint8_t direction;
 
     if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_CONFIGURATION, &direction))

@@ -12,12 +12,19 @@
 
 typedef enum
 {
-    BC_OPT3001_EVENT_ERROR = 0, //!< Error event
-    BC_OPT3001_EVENT_UPDATE = 1 //!< Update event
+    //! @brief Error event
+    BC_OPT3001_EVENT_ERROR = 0,
+
+    //! @brief Update event
+    BC_OPT3001_EVENT_UPDATE = 1
 
 } bc_opt3001_event_t;
 
-//! @brief Internal states
+//! @brief OPT3001 instance
+
+typedef struct bc_opt3001_t bc_opt3001_t;
+
+//! @cond
 
 typedef enum
 {
@@ -28,10 +35,6 @@ typedef enum
     BC_OPT3001_STATE_UPDATE = 3
 
 } bc_opt3001_state_t;
-
-typedef struct bc_opt3001_t bc_opt3001_t;
-
-//! @brief OPT3001 instance
 
 struct bc_opt3001_t
 {
@@ -44,6 +47,8 @@ struct bc_opt3001_t
     bool _luminosity_valid;
     uint16_t _reg_result;
 };
+
+//! @endcond
 
 //! @brief Initialize OPT3001 driver
 //! @param[in] self Instance

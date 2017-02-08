@@ -11,8 +11,11 @@
 
 typedef enum
 {
-    BC_TAG_BAROMETER_EVENT_ERROR = BC_MPL3115A2_EVENT_ERROR,  //!< Error event
-    BC_TAG_BAROMETER_EVENT_UPDATE = BC_MPL3115A2_EVENT_UPDATE //!< Update event
+    //! @brief Error event
+    BC_TAG_BAROMETER_EVENT_ERROR = BC_MPL3115A2_EVENT_ERROR,
+
+    //! @brief Update event
+    BC_TAG_BAROMETER_EVENT_UPDATE = BC_MPL3115A2_EVENT_UPDATE
 
 } bc_tag_barometer_event_t;
 
@@ -49,7 +52,7 @@ bool bc_tag_barometer_get_altitude_meter(bc_tag_barometer_t *self, float *meter)
 
 //! @brief Get measured pressure in Pascal
 //! @param[in] self Instance
-//! @param[in] meter Pointer to variable where result will be stored
+//! @param[in] pascal Pointer to variable where result will be stored
 //! @return true When value is valid
 //! @return false When value is invalid
 

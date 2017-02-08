@@ -28,8 +28,6 @@ typedef bc_td1207r_t bc_module_sigfox_t;
 
 //! @brief Initialize BigClown SigFox Module
 //! @param[in] self Instance
-//! @param[in] reset_signal GPIO channel where RST signal is connected
-//! @param[in] uart_channel UART channel where TX and RX signals are connected
 
 void bc_module_sigfox_init(bc_module_sigfox_t *self);
 

@@ -86,6 +86,11 @@ static void _bc_button_task(void *param)
             }
             else
             {
+                if (self->_event_handler != NULL)
+                {
+                    self->_event_handler(self, BC_BUTTON_EVENT_RELEASE, self->_event_param);
+                }
+
                 if (tick_now < self->_tick_click_timeout)
                 {
                     if (self->_event_handler != NULL)

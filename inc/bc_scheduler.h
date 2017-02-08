@@ -8,7 +8,10 @@
 //! @{
 
 //! @brief Maximum number of tasks
+
 #define BC_SCHEDULER_MAX_TASKS 32
+
+//! @brief Task ID assigned by scheduler
 
 typedef size_t bc_scheduler_task_id_t;
 
@@ -23,6 +26,7 @@ void bc_scheduler_run(void);
 //! @brief Register task in scheduler
 //! @param[in] task Task function address
 //! @param[in] param Optional parameter which is passed to task function (can be NULL)
+//! @param[in] tick Absolute tick when task will be scheduled
 //! @return Assigned task ID
 
 bc_scheduler_task_id_t bc_scheduler_register(void (*task)(void *), void *param, bc_tick_t tick);
@@ -64,7 +68,6 @@ void bc_scheduler_plan_current_now(void);
 void bc_scheduler_plan_current_absolute(bc_tick_t tick);
 
 //! @brief Schedule current task to tick relative from current spin
-//! @param[in] task_id Task ID to be scheduled
 //! @param[in] tick Tick at which the task will be run as a relative value from current spin
 
 void bc_scheduler_plan_current_relative(bc_tick_t tick);
