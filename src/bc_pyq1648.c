@@ -23,7 +23,7 @@ extern uint32_t bc_gpio_32_bit_upper_mask[];
 static inline void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl);
 static void _bc_pyq1648_dev_init(bc_pyq1648_t *self);
 static void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self);
-static void _bc_pyq1648_delay_100us(unsigned int i);
+static __attribute__((optimize("O0"))) void _bc_pyq1648_delay_100us(unsigned int i);
 static void _bc_pyq1648_task(void *param);
 static inline bool _bc_pyq1648_echo(bc_pyq1648_t *self);
 static inline bool _bc_pyq1648_is_pir_module_present(bc_pyq1648_t *self);
@@ -166,7 +166,7 @@ static void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
 }
 
 // TODO ... workaround !!!
-static void _bc_pyq1648_delay_100us(unsigned int i)
+static __attribute__((optimize("O0"))) void _bc_pyq1648_delay_100us(unsigned int i)
 {
     for (i *= 170; i >= 2; i--)
     {
