@@ -50,7 +50,8 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_param_t *param, bc_fifo_t *
         LPUART1->CR3 = USART_CR3_OVRDIS;
 
         // Configure baudrate
-        LPUART1->BRR = 0x369;
+        // LPUART1->BRR = 0x369;
+        LPUART1->BRR = 0x8ae4;
 
         // Enable LPUART1
         LPUART1->CR1 |= USART_CR1_UE;
