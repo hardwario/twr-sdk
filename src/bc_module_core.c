@@ -2,7 +2,7 @@
 #include <bc_rtc.h>
 #include <stm32l0xx_hal.h>
 
-#define DEBUG_ENABLE 0
+#define DEBUG_ENABLE 1
 
 void SystemClock_Config(void);
 void Error_Handler(void);
