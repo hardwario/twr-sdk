@@ -1,5 +1,6 @@
 #include <bc_spirit1.h>
 #include <bc_scheduler.h>
+#include <bc_exti.h>
 #include <stm32l0xx.h>
 #include "SPIRIT_Config.h"
 #include "SDK_Configuration_Common.h"
@@ -15,7 +16,8 @@ typedef enum
 
 typedef struct
 {
-    void (*event_handler)(bc_spirit1_event_t);
+    void (*event_handler)(bc_spirit1_event_t, void *);
+    void *event_param;
     bc_scheduler_task_id_t task_id;
     bc_spirit1_state_t desired_state;
     bc_spirit1_state_t current_state;
@@ -72,11 +74,11 @@ SGpioInit xGpioIRQ={
 };
 
 
-static bc_tick_t _bc_spirit1_enter_state_tx(void);
-static bc_tick_t _bc_spirit1_check_state_tx(void);
-static bc_tick_t _bc_spirit1_enter_state_rx(void);
-static bc_tick_t _bc_spirit1_check_state_rx(void);
-static bc_tick_t _bc_spirit1_enter_state_sleep(void);
+static void _bc_spirit1_enter_state_tx(void);
+static void _bc_spirit1_check_state_tx(void);
+static void _bc_spirit1_enter_state_rx(void);
+static void _bc_spirit1_check_state_rx(void);
+static void _bc_spirit1_enter_state_sleep(void);
 
 void bc_spirit1_hal_chip_select_low(void);
 void bc_spirit1_hal_chip_select_high(void);
@@ -85,15 +87,8 @@ static void bc_spirit1_hal_init_gpio(void);
 static void bc_spirit1_hal_init_spi(void);
 static void bc_spirit1_hal_init_timer(void);
 
-static bc_tick_t _bc_spirit1_task(void *param, bc_tick_t tick_now);
-
-void EXTI4_15_IRQHandler(void)
-{
-    // Clear pending interrupt flag for line 7
-    EXTI->PR = EXTI_PR_PIF7;
-
-    bc_scheduler_plan_now(_bc_spirit1.task_id);
-}
+static void _bc_spirit1_task(void *param);
+static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param);
 
 void bc_spirit1_init(void)
 {
@@ -120,9 +115,10 @@ void bc_spirit1_init(void)
     _bc_spirit1.task_id = bc_scheduler_register(_bc_spirit1_task, NULL, BC_TICK_INFINITY);
 }
 
-void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t))
+void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t, void *), void *event_param)
 {
     _bc_spirit1.event_handler = event_handler;
+    _bc_spirit1.event_param = event_param;
 }
 
 void *bc_spirit1_get_tx_buffer(void)
@@ -171,42 +167,49 @@ void bc_spirit1_sleep(void)
     bc_scheduler_plan_now(_bc_spirit1.task_id);
 }
 
-static bc_tick_t _bc_spirit1_task(void *param, bc_tick_t tick_now)
+static void _bc_spirit1_task(void *param)
 {
     (void) param;
-    (void) tick_now;
 
     if (_bc_spirit1.desired_state != _bc_spirit1.current_state)
     {
         if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_TX)
         {
-            return _bc_spirit1_enter_state_tx();
+            _bc_spirit1_enter_state_tx();
+
+            return;
         }
         else if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_RX)
         {
-            return _bc_spirit1_enter_state_rx();
+            _bc_spirit1_enter_state_rx();
+
+            return;
         }
         else if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_SLEEP)
         {
-            return _bc_spirit1_enter_state_sleep();
+            _bc_spirit1_enter_state_sleep();
+
+            return;
         }
 
-        return BC_TICK_INFINITY;
+        return;
     }
 
     if (_bc_spirit1.current_state == BC_SPIRIT1_STATE_TX)
     {
-        return _bc_spirit1_check_state_tx();
+        _bc_spirit1_check_state_tx();
+
+        return;
     }
     else if (_bc_spirit1.current_state == BC_SPIRIT1_STATE_RX)
     {
-        return _bc_spirit1_check_state_rx();
-    }
+        _bc_spirit1_check_state_rx();
 
-    return BC_TICK_INFINITY;
+        return;
+    }
 }
 
-static bc_tick_t _bc_spirit1_enter_state_tx(void)
+static void _bc_spirit1_enter_state_tx(void)
 {
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_TX;
 
@@ -225,26 +228,12 @@ static bc_tick_t _bc_spirit1_enter_state_tx(void)
 
     SpiritSpiWriteLinearFifo(_bc_spirit1.tx_length, _bc_spirit1.tx_buffer);
 
-    // Interrupt request for EXTI line 7 is masked
-    EXTI->IMR &= ~EXTI_IMR_IM7;
-
-    // Clear pending interrupt flag for EXTI line 7
-    EXTI->PR = EXTI_PR_PIF7;
-
-    // Falling trigger for EXTI line 7 is enabled
-    EXTI->FTSR |= EXTI_FTSR_FT7;
-
-    // Interrupt request for EXTI line 7 is not masked
-    EXTI->IMR |= EXTI_IMR_IM7;
-
-    NVIC_EnableIRQ(EXTI4_15_IRQn);
+    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt, NULL);
 
     SpiritCmdStrobeTx();
-
-    return BC_TICK_INFINITY;
 }
 
-static bc_tick_t _bc_spirit1_check_state_tx(void)
+static void _bc_spirit1_check_state_tx(void)
 {
     SpiritIrqs xIrqStatus;
 
@@ -258,23 +247,21 @@ static bc_tick_t _bc_spirit1_check_state_tx(void)
 
         if (_bc_spirit1.event_handler != NULL)
         {
-            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_TX_DONE);
+            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_TX_DONE, _bc_spirit1.event_param);
         }
 
         if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_RX)
         {
-            return _bc_spirit1_enter_state_rx();
+            _bc_spirit1_enter_state_rx();
         }
         else if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_SLEEP)
         {
-            return _bc_spirit1_enter_state_sleep();
+            _bc_spirit1_enter_state_sleep();
         }
     }
-
-    return BC_TICK_INFINITY;
 }
 
-static bc_tick_t _bc_spirit1_enter_state_rx(void)
+static void _bc_spirit1_enter_state_rx(void)
 {
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_RX;
 
@@ -307,33 +294,21 @@ static bc_tick_t _bc_spirit1_enter_state_rx(void)
     /* IRQ registers blanking */
     SpiritIrqClearStatus();
 
-    // Interrupt request for EXTI line 7 is masked
-    EXTI->IMR &= ~EXTI_IMR_IM7;
-
-    // Clear pending interrupt flag for EXTI line 7
-    EXTI->PR = EXTI_PR_PIF7;
-
-    // Falling trigger for EXTI line 7 is enabled
-    EXTI->FTSR |= EXTI_FTSR_FT7;
-
-    // Interrupt request for EXTI line 7 is not masked
-    EXTI->IMR |= EXTI_IMR_IM7;
-
-    NVIC_EnableIRQ(EXTI4_15_IRQn);
+    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt, NULL);
 
     /* RX command */
     SpiritCmdStrobeRx();
 
-    return _bc_spirit1.rx_tick_timeout;
+    bc_scheduler_plan_current_absolute(_bc_spirit1.rx_tick_timeout);
 }
 
-static bc_tick_t _bc_spirit1_check_state_rx(void)
+static void _bc_spirit1_check_state_rx(void)
 {
     if (bc_tick_get() >= _bc_spirit1.rx_tick_timeout)
     {
         if (_bc_spirit1.event_handler != NULL)
         {
-            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_TIMEOUT);
+            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_TIMEOUT, _bc_spirit1.event_param);
         }
     }
 
@@ -364,7 +339,7 @@ static bc_tick_t _bc_spirit1_check_state_rx(void)
 
           if (_bc_spirit1.event_handler != NULL)
           {
-              _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE);
+              _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE, _bc_spirit1.event_param);
           }
       }
     }
@@ -374,11 +349,9 @@ static bc_tick_t _bc_spirit1_check_state_rx(void)
 
     /* RX command - to ensure the device will be ready for the next reception */
     SpiritCmdStrobeRx();
-
-    return BC_TICK_INFINITY;
 }
 
-static bc_tick_t _bc_spirit1_enter_state_sleep(void)
+static void _bc_spirit1_enter_state_sleep(void)
 {
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_SLEEP;
 
@@ -387,8 +360,6 @@ static bc_tick_t _bc_spirit1_enter_state_sleep(void)
     SpiritIrqDeInit(NULL);
     SpiritIrqClearStatus();
     SpiritCmdStrobeStandby();
-
-    return BC_TICK_INFINITY;
 }
 
 bc_spirit_status_t bc_spirit1_command(uint8_t command)
@@ -674,4 +645,12 @@ static void bc_spirit1_hal_init_timer(void)
 
     // Enable one-pulse mode
     TIM7->CR1 |= TIM_CR1_OPM;
+}
+
+static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param)
+{
+    (void) line;
+    (void) param;
+
+    bc_scheduler_plan_now(_bc_spirit1.task_id);
 }

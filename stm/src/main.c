@@ -3,7 +3,7 @@
 #include <stm32l0xx.h>
 
 void application_init(void);
-bc_tick_t application_task(void *param, bc_tick_t tick_now);
+void application_task(void *param);
 
 int main(void)
 {
@@ -23,10 +23,7 @@ __attribute__((weak)) void application_init(void)
 
 }
 
-__attribute__((weak)) bc_tick_t application_task(void *param, bc_tick_t tick_now)
+__attribute__((weak)) void application_task(void *param)
 {
     (void) param;
-    (void) tick_now;
-
-    return BC_TICK_INFINITY;
 }

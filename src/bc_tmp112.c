@@ -4,7 +4,7 @@
 #define BC_TMP112_DELAY_RUN 50
 #define BC_TMP112_DELAY_READ 50
 
-static bc_tick_t _bc_tmp112_task(void *param, bc_tick_t tick_now);
+static void _bc_tmp112_task(void *param);
 
 void bc_tmp112_init(bc_tmp112_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -13,12 +13,15 @@ void bc_tmp112_init(bc_tmp112_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
+    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+
     bc_scheduler_register(_bc_tmp112_task, self, BC_TMP112_DELAY_RUN);
 }
 
-void bc_tmp112_set_event_handler(bc_tmp112_t *self, void (*event_handler)(bc_tmp112_t *, bc_tmp112_event_t))
+void bc_tmp112_set_event_handler(bc_tmp112_t *self, void (*event_handler)(bc_tmp112_t *, bc_tmp112_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
+    self->_event_param = event_param;
 }
 
 void bc_tmp112_set_update_interval(bc_tmp112_t *self, bc_tick_t interval)
@@ -85,7 +88,7 @@ bool bc_tmp112_get_temperature_kelvin(bc_tmp112_t *self, float *kelvin)
     return true;
 }
 
-static bc_tick_t _bc_tmp112_task(void *param, bc_tick_t tick_now)
+static void _bc_tmp112_task(void *param)
 {
     bc_tmp112_t *self = param;
 
@@ -99,12 +102,14 @@ start:
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_TMP112_EVENT_ERROR);
+                self->_event_handler(self, BC_TMP112_EVENT_ERROR, self->_event_param);
             }
 
             self->_state = BC_TMP112_STATE_MEASURE;
 
-            return tick_now + self->_update_interval;
+            bc_scheduler_plan_current_relative(self->_update_interval);
+
+            return;
         }
         case BC_TMP112_STATE_MEASURE:
         {
@@ -117,7 +122,9 @@ start:
 
             self->_state = BC_TMP112_STATE_READ;
 
-            return tick_now + BC_TMP112_DELAY_READ;
+            bc_scheduler_plan_current_relative(BC_TMP112_DELAY_READ);
+
+            return;
         }
         case BC_TMP112_STATE_READ:
         {
@@ -150,12 +157,14 @@ start:
         {
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_TMP112_EVENT_UPDATE);
+                self->_event_handler(self, BC_TMP112_EVENT_UPDATE, self->_event_param);
             }
 
             self->_state = BC_TMP112_STATE_MEASURE;
 
-            return tick_now + self->_update_interval;
+            bc_scheduler_plan_current_relative(self->_update_interval);
+
+            return;
         }
         default:
         {

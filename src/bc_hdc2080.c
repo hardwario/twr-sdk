@@ -5,7 +5,7 @@
 #define BC_HDC2080_DELAY_INITIALIZATION 50
 #define BC_HDC2080_DELAY_MEASUREMENT 50
 
-static bc_tick_t _bc_hdc2080_task(void *param, bc_tick_t tick_now);
+static void _bc_hdc2080_task(void *param);
 
 void bc_hdc2080_init(bc_hdc2080_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -13,6 +13,8 @@ void bc_hdc2080_init(bc_hdc2080_t *self, bc_i2c_channel_t i2c_channel, uint8_t i
 
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
+
+    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 
     self->_task_id = bc_scheduler_register(_bc_hdc2080_task, self, bc_tick_get() + BC_HDC2080_DELAY_RUN);
 }
@@ -59,7 +61,7 @@ bool bc_hdc2080_get_humidity_percentage(bc_hdc2080_t *self, float *percentage)
     return true;
 }
 
-static bc_tick_t _bc_hdc2080_task(void *param, bc_tick_t tick_now)
+static void _bc_hdc2080_task(void *param)
 {
     bc_hdc2080_t *self = param;
 
@@ -78,7 +80,9 @@ start:
 
             self->_state = BC_HDC2080_STATE_INITIALIZE;
 
-            return tick_now + self->_update_interval;
+            bc_scheduler_plan_current_relative(self->_update_interval);
+
+            return;
         }
         case BC_HDC2080_STATE_INITIALIZE:
         {
@@ -91,7 +95,9 @@ start:
 
             self->_state = BC_HDC2080_STATE_MEASURE;
 
-            return tick_now + BC_HDC2080_DELAY_INITIALIZATION;
+            bc_scheduler_plan_current_relative(BC_HDC2080_DELAY_INITIALIZATION);
+
+            return;
         }
         case BC_HDC2080_STATE_MEASURE:
         {
@@ -104,7 +110,9 @@ start:
 
             self->_state = BC_HDC2080_STATE_READ;
 
-            return tick_now + BC_HDC2080_DELAY_MEASUREMENT;
+            bc_scheduler_plan_current_relative(BC_HDC2080_DELAY_MEASUREMENT);
+
+            return;
         }
         case BC_HDC2080_STATE_READ:
         {
@@ -144,7 +152,9 @@ start:
 
             self->_state = BC_HDC2080_STATE_MEASURE;
 
-            return tick_now + self->_update_interval;
+            bc_scheduler_plan_current_relative(self->_update_interval);
+
+            return;
         }
         default:
         {

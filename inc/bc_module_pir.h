@@ -4,51 +4,57 @@
 #include <bc_pyq1648.h>
 
 //! @addtogroup bc_module_pir bc_module_pir
-//! @brief Driver for PIR module
+//! @brief Driver for PIR Module
 //! @{
 
-typedef bc_pyq1648_sensitivity_t bc_module_pir_sensitivity_t;
-typedef bc_pyq1648_event_t bc_module_pir_event_t;
+//! @brief Motion detection sensitivity
+
+typedef enum
+{
+    //! @brief Low sensitivity
+    BC_MODULE_PIR_SENSITIVITY_LOW = BC_PYQ1648_SENSITIVITY_LOW,
+
+    //! @brief Medium sensitivity
+    BC_MODULE_PIR_SENSITIVITY_MEDIUM = BC_PYQ1648_SENSITIVITY_MEDIUM,
+
+    //! @brief High sensitivity
+    BC_MODULE_PIR_SENSITIVITY_HIGH = BC_PYQ1648_SENSITIVITY_HIGH,
+
+    //! @brief Very high sensitivity
+    BC_MODULE_PIR_SENSITIVITY_VERY_HIGH = BC_PYQ1648_SENSITIVITY_VERY_HIGH
+
+} bc_module_pir_sensitivity_t;
+
+//! @brief Callback events
+
+typedef enum
+{
+    BC_MODULE_PIR_EVENT_ERROR = BC_PYQ1648_EVENT_ERROR,
+    BC_MODULE_PIR_EVENT_MOTION = BC_PYQ1648_EVENT_MOTION
+
+} bc_module_pir_event_t;
+
+//! @brief PIR Module instance
+
 typedef bc_pyq1648_t bc_module_pir_t;
 
-// TODO Delete this block...
+//! @brief Initialize PIR Module
+//! @param[in] self Instance
 
-/*
- #define bc_module_pir_init(_SELF_, _GPIO_CHANNEL_SETUP_, _GPIO_CHANNEL_EVENT_) (bc_pyq1648_init((_SELF_), (_GPIO_CHANNEL_), (_GPIO_CHANNEL_EVENT_)))
- #define bc_module_pir_set_event_handler(_SELF_, _HANDLER_) (bc_pyq1648_set_event_handler((_SELF_), void (*event_handler)(_HANDLER_)))
- #define bc_module_pir_set_update_interval(_SELF_, _INTERVAL_) (bc_pyq1648_set_update_interval((_SELF_), (_INTERVAL_)));
- */
+void bc_module_pir_init(bc_module_pir_t *self);
 
-//! @brief Initialize PIR module on channels gpio_channel_setup and gpio_channel_event
-//! @param[in] self PIR image
-//! @param[in] gpio_channel_setup PIR setup channel
-//! @param[in] gpio_channel_event PIR event channel
+//! @brief Set callback function
+//! @param[in] self Instance
+//! @param[in] event_handler Function address
+//! @param[in] event_param Optional event parameter (can be NULL)
 
-// TODO Delete there should be no GPIO configuration - this is fixed by hardware
+void bc_module_pir_set_event_handler(bc_module_pir_t *self, void (*event_handler)(bc_module_pir_t *, bc_module_pir_event_t, void*), void *event_param);
 
-inline void bc_module_pir_init(bc_module_pir_t *self, bc_gpio_channel_t gpio_channel_setup, bc_gpio_channel_t gpio_channel_event)
-{
-    bc_pyq1648_init(self, gpio_channel_setup, gpio_channel_event);
-}
+//! @brief Set sensor sensitivity
+//! @param[in] self Instance
+//! @param[in] sensitivity Desired sensitivity
 
-//! @brief Set PIR module event handler
-//! @param[in] self PIR image
-//! @param[in] event_handler PIR event handler
-
-inline void bc_module_pir_set_event_handler(bc_module_pir_t *self, void (*event_handler)(bc_module_pir_t *, bc_module_pir_event_t))
-{
-    bc_pyq1648_set_event_handler(self, event_handler);
-}
-
-//! @brief Set PIR module set sensitivity
-//! @param[in] self PIR module image
-//! @param[in] event_handler PIR module event handler
-
-inline void bc_module_pir_set_sensitivity(bc_pyq1648_t *self, bc_module_pir_sensitivity_t sensitivity)
-{
-    bc_pyq1648_set_sensitivity(self, sensitivity);
-}
-
+void bc_module_pir_set_sensitivity(bc_pyq1648_t *self, bc_module_pir_sensitivity_t sensitivity);
 //! @}
 
 #endif // _BC_MODULE_PIR_H

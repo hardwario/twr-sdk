@@ -15,7 +15,7 @@ typedef enum
 
 void bc_spirit1_init(void);
 
-void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t));
+void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t, void *), void *event_param);
 
 void *bc_spirit1_get_tx_buffer(void);
 

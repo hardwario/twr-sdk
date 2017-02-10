@@ -47,7 +47,7 @@
 #define BC_HTS221_DELAY_INITIALIZATION 50
 #define BC_HTS221_DELAY_MEASUREMENT 50
 
-static bc_tick_t _bc_hts221_task(void *param, bc_tick_t tick_now);
+static void _bc_hts221_task(void *param);
 static bool _bc_hts221_load_calibration(bc_hts221_t *self);
 
 void bc_hts221_init(bc_hts221_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
@@ -56,6 +56,8 @@ void bc_hts221_init(bc_hts221_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c
 
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
+
+    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 
     _bc_hts221_load_calibration(self);
 
@@ -149,7 +151,7 @@ bool bc_hts221_get_humidity_percentage(bc_hts221_t *self, float *percentage)
     return true;
 }
 
-static bc_tick_t _bc_hts221_task(void *param, bc_tick_t tick_now)
+static void _bc_hts221_task(void *param)
 {
     bc_hts221_t *self = param;
 
@@ -168,7 +170,9 @@ start:
 
             self->_state = BC_HTS221_STATE_INITIALIZE;
 
-            return tick_now + self->_update_interval;
+            bc_scheduler_plan_current_relative(self->_update_interval);
+
+            return;
         }
         case BC_HTS221_STATE_INITIALIZE:
         {
@@ -190,7 +194,9 @@ start:
 
             self->_state = BC_HTS221_STATE_MEASURE;
 
-            return tick_now + BC_HTS221_DELAY_INITIALIZATION;
+            bc_scheduler_plan_current_relative(BC_HTS221_DELAY_INITIALIZATION);
+
+            return;
         }
         case BC_HTS221_STATE_MEASURE:
         {
@@ -221,7 +227,9 @@ start:
 
             self->_state = BC_HTS221_STATE_READ;
 
-            return tick_now + BC_HTS221_DELAY_MEASUREMENT;
+            bc_scheduler_plan_current_relative(BC_HTS221_DELAY_MEASUREMENT);
+
+            return;
         }
         case BC_HTS221_STATE_READ:
         {
@@ -281,7 +289,9 @@ start:
 
             self->_state = BC_HTS221_STATE_MEASURE;
 
-            return tick_now + self->_update_interval;
+            bc_scheduler_plan_current_relative(self->_update_interval);
+
+            return;
         }
         default:
         {

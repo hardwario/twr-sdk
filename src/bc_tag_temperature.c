@@ -5,9 +5,9 @@ void bc_tag_temperature_init(bc_tag_temperature_t *self, bc_i2c_channel_t i2c_ch
     bc_tmp112_init(self, i2c_channel, (uint8_t) i2c_address);
 }
 
-void bc_tag_temperature_set_event_handler(bc_tag_temperature_t *self, void (*event_handler)(bc_tag_temperature_t *, bc_tag_temperature_event_t))
+void bc_tag_temperature_set_event_handler(bc_tag_temperature_t *self, void (*event_handler)(bc_tag_temperature_t *, bc_tag_temperature_event_t, void *), void *event_param)
 {
-    bc_tmp112_set_event_handler(self, (void (*)(bc_tmp112_t *, bc_tmp112_event_t)) event_handler);
+    bc_tmp112_set_event_handler(self, (void (*)(bc_tmp112_t *, bc_tmp112_event_t, void *)) event_handler, event_param);
 }
 
 void bc_tag_temperature_set_update_interval(bc_tag_temperature_t *self, bc_tick_t interval)

@@ -1,14 +1,12 @@
 #include <bc_button.h>
 #include <bc_scheduler.h>
 
-// TODO Think about timeout handling and integer overflow tick_now >= timeout versus (tick_now - timeout) > 0
+#define _BC_BUTTON_SCAN_INTERVAL 20
+#define _BC_BUTTON_DEBOUNCE_TIME 50
+#define _BC_BUTTON_CLICK_TIMEOUT 500
+#define _BC_BUTTON_HOLD_TIME 2000
 
-#define BC_BUTTON_SCAN_INTERVAL 20
-#define BC_BUTTON_DEBOUNCE_TIME 50
-#define BC_BUTTON_CLICK_TIMEOUT 500
-#define BC_BUTTON_HOLD_TIME 2000
-
-static bc_tick_t _bc_button_task(void *param, bc_tick_t tick_now);
+static void _bc_button_task(void *param);
 
 void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_pull_t gpio_pull, bool idle_state)
 {
@@ -18,10 +16,10 @@ void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_p
     self->_gpio_pull = gpio_pull;
     self->_idle_state = idle_state;
 
-    self->_scan_interval = BC_BUTTON_SCAN_INTERVAL;
-    self->_debounce_time = BC_BUTTON_DEBOUNCE_TIME;
-    self->_click_timeout = BC_BUTTON_CLICK_TIMEOUT;
-    self->_hold_time = BC_BUTTON_HOLD_TIME;
+    self->_scan_interval = _BC_BUTTON_SCAN_INTERVAL;
+    self->_debounce_time = _BC_BUTTON_DEBOUNCE_TIME;
+    self->_click_timeout = _BC_BUTTON_CLICK_TIMEOUT;
+    self->_hold_time = _BC_BUTTON_HOLD_TIME;
 
     bc_gpio_init(self->_gpio_channel);
     bc_gpio_set_pull(self->_gpio_channel, self->_gpio_pull);
@@ -30,9 +28,10 @@ void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_p
     bc_scheduler_register(_bc_button_task, self, self->_scan_interval);
 }
 
-void bc_button_set_event_handler(bc_button_t *self, void (*event_handler)(bc_button_t *, bc_button_event_t))
+void bc_button_set_event_handler(bc_button_t *self, void (*event_handler)(bc_button_t *, bc_button_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
+    self->_event_param = event_param;
 }
 
 void bc_button_set_scan_interval(bc_button_t *self, bc_tick_t scan_interval)
@@ -55,9 +54,11 @@ void bc_button_set_hold_time(bc_button_t *self, bc_tick_t hold_time)
     self->_hold_time = hold_time;
 }
 
-static bc_tick_t _bc_button_task(void *param, bc_tick_t tick_now)
+static void _bc_button_task(void *param)
 {
     bc_button_t *self = param;
+
+    bc_tick_t tick_now = bc_scheduler_get_spin_tick();
 
     bool pin_state = bc_gpio_get_input(self->_gpio_channel);
 
@@ -80,16 +81,21 @@ static bc_tick_t _bc_button_task(void *param, bc_tick_t tick_now)
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_BUTTON_EVENT_PRESS);
+                    self->_event_handler(self, BC_BUTTON_EVENT_PRESS, self->_event_param);
                 }
             }
             else
             {
+                if (self->_event_handler != NULL)
+                {
+                    self->_event_handler(self, BC_BUTTON_EVENT_RELEASE, self->_event_param);
+                }
+
                 if (tick_now < self->_tick_click_timeout)
                 {
                     if (self->_event_handler != NULL)
                     {
-                        self->_event_handler(self, BC_BUTTON_EVENT_CLICK);
+                        self->_event_handler(self, BC_BUTTON_EVENT_CLICK, self->_event_param);
                     }
                 }
             }
@@ -110,11 +116,11 @@ static bc_tick_t _bc_button_task(void *param, bc_tick_t tick_now)
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_BUTTON_EVENT_HOLD);
+                    self->_event_handler(self, BC_BUTTON_EVENT_HOLD, self->_event_param);
                 }
             }
         }
     }
 
-    return tick_now + self->_scan_interval;
+    bc_scheduler_plan_current_relative(self->_scan_interval);
 }
