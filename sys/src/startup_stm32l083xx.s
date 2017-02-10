@@ -1,0 +1,225 @@
+  .syntax unified
+  .cpu cortex-m0plus
+  .fpu softvfp
+  .thumb
+
+  .global g_pfnVectors
+  .global Default_Handler
+
+  .word _sidata
+  .word _sdata
+  .word _edata
+  .word _sbss
+  .word _ebss
+
+  .section .text.Reset_Handler
+  .weak Reset_Handler
+  .type Reset_Handler, %function
+
+Reset_Handler:
+  ldr r0, =_estack
+  mov sp, r0
+
+  movs r1, #0
+  b LoopCopyDataInit
+CopyDataInit:
+  ldr r3, =_sidata
+  ldr r3, [r3, r1]
+  str r3, [r0, r1]
+  adds r1, r1, #4
+LoopCopyDataInit:
+  ldr r0, =_sdata
+  ldr r3, =_edata
+  adds r2, r0, r1
+  cmp r2, r3
+  bcc CopyDataInit
+  ldr r2, =_sbss
+  b LoopFillZero
+FillZero:
+  movs r3, #0
+  str r3, [r2]
+  adds r2, r2, #4
+LoopFillZero:
+  ldr r3, = _ebss
+  cmp r2, r3
+  bcc FillZero
+
+  bl SystemInit
+  bl __libc_init_array
+  bl main
+
+LoopForever:
+  b LoopForever
+
+  .size Reset_Handler, .-Reset_Handler
+
+  .section .text.Default_Handler, "ax", %progbits
+
+Default_Handler:
+Infinite_Loop:
+  b Infinite_Loop
+
+  .size Default_Handler, .-Default_Handler
+
+  .section .isr_vector, "a", %progbits
+  .type g_pfnVectors, %object
+  .size g_pfnVectors, .-g_pfnVectors
+
+g_pfnVectors:
+
+  .word _estack
+  .word Reset_Handler
+  .word NMI_Handler
+  .word HardFault_Handler
+  .word 0
+  .word 0
+  .word 0
+  .word 0
+  .word 0
+  .word 0
+  .word 0
+  .word SVC_Handler
+  .word 0
+  .word 0
+  .word PendSV_Handler
+  .word SysTick_Handler
+  .word WWDG_IRQHandler                /* Window WatchDog           */
+  .word PVD_IRQHandler                 /* PVD through the EXTI Line */
+  .word RTC_IRQHandler                 /* RTC through the EXTI Line */
+  .word FLASH_IRQHandler               /* FLASH                     */
+  .word RCC_CRS_IRQHandler             /* RCC and CRS               */
+  .word EXTI0_1_IRQHandler             /* EXTI Line 0 and 1         */
+  .word EXTI2_3_IRQHandler             /* EXTI Line 2 and 3         */
+  .word EXTI4_15_IRQHandler            /* EXTI Line 4 to 15         */
+  .word TSC_IRQHandler                 /* TSC                       */
+  .word DMA1_Channel1_IRQHandler       /* DMA1 Channel 1            */
+  .word DMA1_Channel2_3_IRQHandler     /* DMA1 Channel 2/3          */
+  .word DMA1_Channel4_5_6_7_IRQHandler /* DMA1 Channel 4/5/6/7      */
+  .word ADC1_COMP_IRQHandler           /* ADC1, COMP1 and COMP2     */
+  .word LPTIM1_IRQHandler              /* LPTIM1                    */
+  .word USART4_5_IRQHandler            /* USART4 and USART 5        */
+  .word TIM2_IRQHandler                /* TIM2                      */
+  .word TIM3_IRQHandler                /* TIM3                      */
+  .word TIM6_DAC_IRQHandler            /* TIM6 and DAC              */
+  .word TIM7_IRQHandler                /* TIM7                      */
+  .word 0                              /* Reserved                  */
+  .word TIM21_IRQHandler               /* TIM21                     */
+  .word I2C3_IRQHandler                /* I2C3                      */
+  .word TIM22_IRQHandler               /* TIM22                     */
+  .word I2C1_IRQHandler                /* I2C1                      */
+  .word I2C2_IRQHandler                /* I2C2                      */
+  .word SPI1_IRQHandler                /* SPI1                      */
+  .word SPI2_IRQHandler                /* SPI2                      */
+  .word USART1_IRQHandler              /* USART1                    */
+  .word USART2_IRQHandler              /* USART2                    */
+  .word AES_RNG_LPUART1_IRQHandler     /* AES, RNG and LPUART1      */
+  .word LCD_IRQHandler                 /* LCD                       */
+  .word USB_IRQHandler                 /* USB                       */
+
+  .weak NMI_Handler
+  .thumb_set NMI_Handler, Default_Handler
+
+  .weak HardFault_Handler
+  .thumb_set HardFault_Handler, Default_Handler
+
+  .weak SVC_Handler
+  .thumb_set SVC_Handler, Default_Handler
+
+  .weak PendSV_Handler
+  .thumb_set PendSV_Handler, Default_Handler
+
+  .weak SysTick_Handler
+  .thumb_set SysTick_Handler, Default_Handler
+
+  .weak WWDG_IRQHandler
+  .thumb_set WWDG_IRQHandler, Default_Handler
+
+  .weak PVD_IRQHandler
+  .thumb_set PVD_IRQHandler, Default_Handler
+
+  .weak RTC_IRQHandler
+  .thumb_set RTC_IRQHandler, Default_Handler
+
+  .weak FLASH_IRQHandler
+  .thumb_set FLASH_IRQHandler, Default_Handler
+
+  .weak RCC_CRS_IRQHandler
+  .thumb_set RCC_CRS_IRQHandler, Default_Handler
+
+  .weak EXTI0_1_IRQHandler
+  .thumb_set EXTI0_1_IRQHandler, Default_Handler
+
+  .weak EXTI2_3_IRQHandler
+  .thumb_set EXTI2_3_IRQHandler, Default_Handler
+
+  .weak EXTI4_15_IRQHandler
+  .thumb_set EXTI4_15_IRQHandler, Default_Handler
+
+  .weak TSC_IRQHandler
+  .thumb_set TSC_IRQHandler, Default_Handler
+
+  .weak DMA1_Channel1_IRQHandler
+  .thumb_set DMA1_Channel1_IRQHandler, Default_Handler
+
+  .weak DMA1_Channel2_3_IRQHandler
+  .thumb_set DMA1_Channel2_3_IRQHandler, Default_Handler
+
+  .weak DMA1_Channel4_5_6_7_IRQHandler
+  .thumb_set DMA1_Channel4_5_6_7_IRQHandler, Default_Handler
+
+  .weak ADC1_COMP_IRQHandler
+  .thumb_set ADC1_COMP_IRQHandler, Default_Handler
+
+  .weak LPTIM1_IRQHandler
+  .thumb_set LPTIM1_IRQHandler, Default_Handler
+
+  .weak USART4_5_IRQHandler
+  .thumb_set USART4_5_IRQHandler, Default_Handler
+
+  .weak TIM2_IRQHandler
+  .thumb_set TIM2_IRQHandler, Default_Handler
+
+  .weak TIM3_IRQHandler
+  .thumb_set TIM3_IRQHandler, Default_Handler
+
+  .weak TIM6_DAC_IRQHandler
+  .thumb_set TIM6_DAC_IRQHandler, Default_Handler
+
+  .weak TIM7_IRQHandler
+  .thumb_set TIM7_IRQHandler, Default_Handler
+
+  .weak TIM21_IRQHandler
+  .thumb_set TIM21_IRQHandler, Default_Handler
+
+  .weak I2C3_IRQHandler
+  .thumb_set I2C3_IRQHandler, Default_Handler
+
+  .weak TIM22_IRQHandler
+  .thumb_set TIM22_IRQHandler, Default_Handler
+
+  .weak I2C1_IRQHandler
+  .thumb_set I2C1_IRQHandler, Default_Handler
+
+  .weak I2C2_IRQHandler
+  .thumb_set I2C2_IRQHandler, Default_Handler
+
+  .weak SPI1_IRQHandler
+  .thumb_set SPI1_IRQHandler, Default_Handler
+
+  .weak SPI2_IRQHandler
+  .thumb_set SPI2_IRQHandler, Default_Handler
+
+  .weak USART1_IRQHandler
+  .thumb_set USART1_IRQHandler, Default_Handler
+
+  .weak USART2_IRQHandler
+  .thumb_set USART2_IRQHandler, Default_Handler
+
+  .weak AES_RNG_LPUART1_IRQHandler
+  .thumb_set AES_RNG_LPUART1_IRQHandler, Default_Handler
+
+  .weak LCD_IRQHandler
+  .thumb_set LCD_IRQHandler, Default_Handler
+
+  .weak USB_IRQHandler
+  .thumb_set USB_IRQHandler, Default_Handler
