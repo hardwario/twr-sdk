@@ -1,9 +1,6 @@
-#projectname:before {
-  content: url("bigclown-logo.png");
-  margin-right: 20px;
-}
-
 #projectname {
   margin: 10px;
+  background-image: url(bigclown-logo.png);
+  background-repeat: no-repeat;
+  padding-left: 220px;
 }
-
