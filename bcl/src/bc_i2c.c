@@ -22,7 +22,7 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 
     if (channel == BC_I2C_I2C0)
     {
-        if (bc_i2c.i2c0_initialized)
+        if(bc_i2c.i2c0_initialized)
         {
             return;
         }
@@ -42,7 +42,18 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         __HAL_RCC_I2C2_CLK_ENABLE();
 
         bc_i2c.handle_i2c0.Instance = I2C2;
-        bc_i2c.handle_i2c0.Init.Timing = 0x0010061A;
+        if(speed == BC_I2C_SPEED_400_KHZ)
+        {
+            bc_i2c.handle_i2c0.Init.Timing = 0x0010061A;
+        }
+        else if (speed == BC_I2C_SPEED_100_KHZ)
+        {
+            bc_i2c.handle_i2c0.Init.Timing = 0x303d5b;
+        }
+        else
+        {
+            for (;;);
+        }
         bc_i2c.handle_i2c0.Init.OwnAddress1 = 0;
         bc_i2c.handle_i2c0.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
         bc_i2c.handle_i2c0.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -65,7 +76,7 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
     }
     else
     {
-        if (bc_i2c.i2c1_initialized)
+        if(bc_i2c.i2c1_initialized)
         {
             return;
         }
@@ -85,7 +96,18 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         __HAL_RCC_I2C1_CLK_ENABLE();
 
         bc_i2c.handle_i2c1.Instance = I2C1;
-        bc_i2c.handle_i2c0.Init.Timing = 0x0010061A;
+        if(speed == BC_I2C_SPEED_400_KHZ)
+        {
+            bc_i2c.handle_i2c1.Init.Timing = 0x0010061A;
+        }
+        else if (speed == BC_I2C_SPEED_100_KHZ)
+        {
+            bc_i2c.handle_i2c1.Init.Timing = 0x303d5b;
+        }
+        else
+        {
+            for (;;);
+        }
         bc_i2c.handle_i2c1.Init.OwnAddress1 = 0;
         bc_i2c.handle_i2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
         bc_i2c.handle_i2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
