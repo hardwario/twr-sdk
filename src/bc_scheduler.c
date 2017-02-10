@@ -1,4 +1,5 @@
 #include <bc_scheduler.h>
+#include <bc_module_core.h>
 
 static struct
 {
@@ -41,6 +42,7 @@ void bc_scheduler_run(void)
                 }
             }
         }
+        bc_module_core_sleep();
     }
 }
 

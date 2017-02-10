@@ -14,7 +14,7 @@ void bc_rtc_init(void)
 
     RCC->CSR |= RCC_CSR_LSEON | RCC_CSR_LSEDRV_1;
 
-    while((RCC->CSR & RCC_CSR_LSERDY) == 0)
+    while ((RCC->CSR & RCC_CSR_LSERDY) == 0)
     {
         continue;
     }
@@ -35,7 +35,7 @@ void bc_rtc_init(void)
     RTC->ISR |= RTC_ISR_INIT;
 
     // Wait for RTC to be in init mode
-    while((RTC->ISR & RTC_ISR_INITF) == 0)
+    while ((RTC->ISR & RTC_ISR_INITF) == 0)
     {
         continue;
     }
@@ -56,12 +56,13 @@ void bc_rtc_init(void)
     RTC->CR &= ~RTC_CR_WUTE;
 
     // Wait until WUTE is disabled
-    while((RTC->ISR & RTC_ISR_WUTWF) == 0)
+    while ((RTC->ISR & RTC_ISR_WUTWF) == 0)
     {
         continue;
     }
 
-    RTC->WUTR = 63;
+    // RTC->WUTR = 63;
+    RTC->WUTR = 20; // cca 10ms
 
     // Clear WUTF
     RTC->ISR &= ~RTC_ISR_WUTF;
@@ -83,12 +84,12 @@ volatile uint32_t rtcCounter = 0;
 
 void RTC_IRQHandler(void)
 {
-    // WUTR 20 = 10 ms
+    // WUTR == 20 -> 10 ms
 
     // Check IRQ flag
     if (RTC->ISR & RTC_ISR_WUTF)
     {
-        rtcCounter++;
+        rtcCounter += 10;
 
         // Clear WUTF
         RTC->ISR &= ~RTC_ISR_WUTF;
@@ -96,4 +97,9 @@ void RTC_IRQHandler(void)
 
     // Clear EXTI flag
     EXTI->PR = EXTI_IMR_IM20;
+}
+
+uint32_t HAL_GetTick(void)
+{
+    return rtcCounter;
 }
