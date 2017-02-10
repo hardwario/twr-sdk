@@ -23,16 +23,19 @@ ECHO = @echo
 endif
 
 ################################################################################
+# Directories                                                                  #
+################################################################################
+
+APP_DIR = app
+OBJ_DIR = obj
+OUT_DIR = out
+SDK_DIR = sdk
+
+################################################################################
 # Output name                                                                  #
 ################################################################################
 
 OUT = firmware
-
-################################################################################
-# Output directory                                                             #
-################################################################################
-
-OUT_DIR = out
 
 ################################################################################
 # Output extensions                                                            #
@@ -46,31 +49,31 @@ BIN = $(OUT_DIR)/$(OUT).bin
 # Linker script                                                                #
 ################################################################################
 
-LD = sys/lkr/stm32l083cz.ld
+LD = $(SDK_DIR)/sys/lkr/stm32l083cz.ld
 
 ################################################################################
 # Include directories                                                          #
 ################################################################################
 
-INC_DIR += app
-INC_DIR += bcl/inc
-INC_DIR += bcl/stm/inc
-INC_DIR += stm/hal/inc
-INC_DIR += stm/spirit1/inc
-INC_DIR += stm/usb/inc
-INC_DIR += sys/inc
+INC_DIR += $(APP_DIR)
+INC_DIR += $(SDK_DIR)/bcl/inc
+INC_DIR += $(SDK_DIR)/bcl/stm/inc
+INC_DIR += $(SDK_DIR)/stm/hal/inc
+INC_DIR += $(SDK_DIR)/stm/spirit1/inc
+INC_DIR += $(SDK_DIR)/stm/usb/inc
+INC_DIR += $(SDK_DIR)/sys/inc
 
 ################################################################################
 # Source directories                                                           #
 ################################################################################
 
-SRC_DIR += app
-SRC_DIR += bcl/src
-SRC_DIR += bcl/stm/src
-SRC_DIR += stm/hal/src
-SRC_DIR += stm/spirit1/src
-SRC_DIR += stm/usb/src
-SRC_DIR += sys/src
+SRC_DIR += $(APP_DIR)
+SRC_DIR += $(SDK_DIR)/bcl/src
+SRC_DIR += $(SDK_DIR)/bcl/stm/src
+SRC_DIR += $(SDK_DIR)/stm/hal/src
+SRC_DIR += $(SDK_DIR)/stm/spirit1/src
+SRC_DIR += $(SDK_DIR)/stm/usb/src
+SRC_DIR += $(SDK_DIR)/sys/src
 
 ################################################################################
 # Toolchain                                                                    #
@@ -83,12 +86,6 @@ SIZE = $(TOOLCHAIN)size
 OZONE = Ozone
 DFU_UTIL = dfu-util
 DOXYGEN = doxygen
-
-################################################################################
-# Object files directory                                                       #
-################################################################################
-
-OBJ_DIR = obj
 
 ################################################################################
 # Compiler flags for "c" files                                                 #
