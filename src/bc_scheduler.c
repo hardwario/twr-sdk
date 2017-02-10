@@ -1,6 +1,5 @@
 #include <bc_scheduler.h>
 #include <bc_module_core.h>
-#include <bc_gpio.h>
 
 static struct
 {
