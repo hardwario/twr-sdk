@@ -456,7 +456,7 @@ void bc_spirit1_hal_shutdown_low(void)
     // TODO This delay might not exist (maybe poll GPIO?)...
 
     // Set prescaler
-    TIM7->PSC = 32 - 1;
+    TIM7->PSC = 16 - 1;
 
     // Set auto-reload register - period 10 ms
     TIM7->ARR = 10000 - 1;
@@ -483,7 +483,7 @@ void bc_spirit1_hal_shutdown_high(void)
     GPIOB->BSRR = GPIO_BSRR_BS_7;
 
     // Set prescaler
-    TIM7->PSC = 64 - 1;
+    TIM7->PSC = 32 - 1;
 
     // Set auto-reload register - period 100 ms
     TIM7->ARR = 50000 - 1;
@@ -510,7 +510,7 @@ void bc_spirit1_hal_chip_select_low(void)
     TIM7->PSC = 0;
 
     // Set auto-reload register - period 4 us
-    TIM7->ARR = 128 - 1;
+    TIM7->ARR = 32 - 1;
 
     // Generate update of registers
     TIM7->EGR = TIM_EGR_UG;
@@ -531,7 +531,7 @@ void bc_spirit1_hal_chip_select_high(void)
     TIM7->PSC = 0;
 
     // Set auto-reload register - period 4 us
-    TIM7->ARR = 128 - 1;
+    TIM7->ARR = 64 - 1;
 
     // Generate update of registers
     TIM7->EGR = TIM_EGR_UG;
@@ -552,7 +552,7 @@ void bc_spirit1_hal_chip_select_high(void)
     TIM7->PSC = 0;
 
     // Set auto-reload register - period 4 us
-    TIM7->ARR = 128 - 1;
+    TIM7->ARR = 64 - 1;
 
     // Generate update of registers
     TIM7->EGR = TIM_EGR_UG;
@@ -595,7 +595,7 @@ static void bc_spirit1_hal_init_gpio(void)
     // Enable clock for GPIOH, GPIOB and GPIOA
     RCC->IOPENR |= RCC_IOPENR_GPIOHEN | RCC_IOPENR_GPIOBEN | RCC_IOPENR_GPIOAEN;
 
-    // TODO Errata workaround
+    // Errata workaround
     RCC->IOPENR;
 
     // Output log. 1 on SDN pin
@@ -631,8 +631,8 @@ static void bc_spirit1_hal_init_spi(void)
     // Enable clock for SPI1
     RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
 
-    // Software slave management, baud rate control = fPCLK / 8, master configuration
-    SPI1->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_BR_1 | SPI_CR1_MSTR;
+    // Software slave management, baud rate control = fPCLK / 4, master configuration
+    SPI1->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_BR_0 | SPI_CR1_MSTR;
 
     // Enable SPI
     SPI1->CR1 |= SPI_CR1_SPE;
