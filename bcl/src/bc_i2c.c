@@ -42,7 +42,6 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         __HAL_RCC_I2C2_CLK_ENABLE();
 
         bc_i2c.handle_i2c0.Instance = I2C2;
-        // bc_i2c.handle_i2c0.Init.Timing = 0x00707CBB;
         bc_i2c.handle_i2c0.Init.Timing = 0x0010061A;
         bc_i2c.handle_i2c0.Init.OwnAddress1 = 0;
         bc_i2c.handle_i2c0.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -86,7 +85,6 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         __HAL_RCC_I2C1_CLK_ENABLE();
 
         bc_i2c.handle_i2c1.Instance = I2C1;
-        // bc_i2c.handle_i2c1.Init.Timing = 0x00707CBB;
         bc_i2c.handle_i2c0.Init.Timing = 0x0010061A;
         bc_i2c.handle_i2c1.Init.OwnAddress1 = 0;
         bc_i2c.handle_i2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
