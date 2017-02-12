@@ -26,30 +26,30 @@ endif
 # Directories                                                                  #
 ################################################################################
 
-APP_DIR = app
-OBJ_DIR = obj
-OUT_DIR = out
-SDK_DIR = sdk
+APP_DIR ?= app
+OBJ_DIR ?= obj
+OUT_DIR ?= out
+SDK_DIR ?= sdk
 
 ################################################################################
 # Output name                                                                  #
 ################################################################################
 
-OUT = firmware
+OUT ?= firmware
 
 ################################################################################
 # Output extensions                                                            #
 ################################################################################
 
-ELF = $(OUT_DIR)/$(OUT).elf
-MAP = $(OUT_DIR)/$(OUT).map
-BIN = $(OUT_DIR)/$(OUT).bin
+ELF ?= $(OUT_DIR)/$(OUT).elf
+MAP ?= $(OUT_DIR)/$(OUT).map
+BIN ?= $(OUT_DIR)/$(OUT).bin
 
 ################################################################################
 # Linker script                                                                #
 ################################################################################
 
-LD = $(SDK_DIR)/sys/lkr/stm32l083cz.ld
+LINKER_SCRIPT ?= $(SDK_DIR)/sys/lkr/stm32l083cz.ld
 
 ################################################################################
 # Include directories                                                          #
@@ -128,7 +128,7 @@ ASFLAGS_RELEASE += -Os
 LDFLAGS += -mcpu=cortex-m0plus
 LDFLAGS += -mthumb
 LDFLAGS += -mlittle-endian
-LDFLAGS += -T$(LD)
+LDFLAGS += -T$(LINKER_SCRIPT)
 LDFLAGS += -Wl,-lc
 LDFLAGS += -Wl,-lm
 LDFLAGS += -static
