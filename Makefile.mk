@@ -158,8 +158,8 @@ DEP = $(OBJ:%.o=%.d)
 
 .PHONY: debug
 debug:
-	$(Q)$(MAKE) clean-out
-	$(Q)$(MAKE) obj-debug
+	$(Q)$(MAKE) .clean-out
+	$(Q)$(MAKE) .obj-debug
 	$(Q)$(MAKE) elf
 	$(Q)$(MAKE) size
 	$(Q)$(MAKE) bin
@@ -171,11 +171,11 @@ debug:
 .PHONY: release
 release:
 	$(Q)$(MAKE) clean
-	$(Q)$(MAKE) obj-release
+	$(Q)$(MAKE) .obj-release
 	$(Q)$(MAKE) elf
 	$(Q)$(MAKE) size
 	$(Q)$(MAKE) bin
-	$(Q)$(MAKE) clean-obj
+	$(Q)$(MAKE) .clean-obj
 
 ################################################################################
 # Clean target                                                                 #
@@ -183,16 +183,16 @@ release:
 
 .PHONY: clean
 clean:
-	$(Q)$(MAKE) clean-obj
-	$(Q)$(MAKE) clean-out
+	$(Q)$(MAKE) .clean-obj
+	$(Q)$(MAKE) .clean-out
 
-.PHONY: clean-obj
-clean-obj:
+.PHONY: .clean-obj
+.clean-obj:
 	$(Q)$(ECHO) "Removing object directory..."
 	$(Q)rm -rf $(OBJ_DIR)
 
-.PHONY: clean-out
-clean-out:
+.PHONY: .clean-out
+.clean-out:
 	$(Q)$(ECHO) "Removing output directory..."
 	$(Q)rm -rf $(OUT_DIR)
 
@@ -212,7 +212,7 @@ dfu: $(BIN)
 .PHONY: doc
 doc:
 	$(Q)$(ECHO) "Generating documentation..."
-	$(Q)sh -c 'cd bcl && $(DOXYGEN) Doxyfile'
+	$(Q)sh -c 'cd $(SDK_DIR) && $(DOXYGEN) Doxyfile'
 
 ################################################################################
 # Debug firmware using Ozone debugger (from Segger)                            #
@@ -261,15 +261,15 @@ $(BIN): $(ELF)
 # Compile source files                                                         #
 ################################################################################
 
-.PHONY: obj-debug
-obj-debug: CFLAGS += $(CFLAGS_DEBUG)
-obj-debug: ASFLAGS += $(ASFLAGS_DEBUG)
-obj-debug: $(OBJ)
+.PHONY: .obj-debug
+.obj-debug: CFLAGS += $(CFLAGS_DEBUG)
+.obj-debug: ASFLAGS += $(ASFLAGS_DEBUG)
+.obj-debug: $(OBJ)
 
-.PHONY: obj-release
-obj-release: CFLAGS += $(CFLAGS_RELEASE)
-obj-release: ASFLAGS += $(ASFLAGS_RELEASE)
-obj-release: $(OBJ)
+.PHONY: .obj-release
+.obj-release: CFLAGS += $(CFLAGS_RELEASE)
+.obj-release: ASFLAGS += $(ASFLAGS_RELEASE)
+.obj-release: $(OBJ)
 
 ################################################################################
 # Compile "c" files                                                            #
