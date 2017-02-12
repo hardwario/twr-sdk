@@ -1,6 +1,6 @@
 #projectname {
-  margin: 10px;
-  background-image: url(bigclown-logo.png);
-  background-repeat: no-repeat;
-  padding-left: 220px;
+    margin: 10px 10px 2px 10px;
+    background-image: url(bigclown-logo.png);
+    background-repeat: no-repeat;
+    padding: 0 0 10px 220px;
 }
