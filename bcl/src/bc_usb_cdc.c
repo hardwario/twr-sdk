@@ -21,10 +21,13 @@ static struct
 USBD_HandleTypeDef hUsbDeviceFS;
 
 static void _bc_usb_cdc_task(void *param);
+static void _bc_usb_cdc_init_hsi48();
 
 void bc_usb_cdc_init(void)
 {
     memset(&bc_usb_cdc, 0, sizeof(bc_usb_cdc));
+
+    _bc_usb_cdc_init_hsi48();
 
     bc_fifo_init(&bc_usb_cdc.receive_fifo, bc_usb_cdc.receive_buffer, sizeof(bc_usb_cdc.receive_buffer));
 
@@ -105,4 +108,21 @@ static void _bc_usb_cdc_task(void *param)
 
     // TODO
     bc_scheduler_plan_current_now();
+}
+
+static void _bc_usb_cdc_init_hsi48()
+{
+    bc_scheduler_disable_sleep();
+
+    RCC->CRRCR |= RCC_CRRCR_HSI48ON;
+    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+    SYSCFG->CFGR3 |= SYSCFG_CFGR3_ENREF_HSI48;
+
+    while((RCC->CRRCR & RCC_CRRCR_HSI48ON) == 0)
+    {
+        __asm("nop");
+    }
+
+    RCC->CCIPR |= RCC_USBCLKSOURCE_HSI48;
+    RCC->CFGR &= ~RCC_CFGR_STOPWUCK_Msk;
 }
