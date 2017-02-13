@@ -14,6 +14,7 @@ static struct
     bc_tick_t tick_spin;
     bc_scheduler_task_id_t current_task_id;
     bc_scheduler_task_id_t max_task_id;
+    uint8_t disable_sleep;
 
 } _bc_scheduler;
 
@@ -42,7 +43,10 @@ void bc_scheduler_run(void)
                 }
             }
         }
-        bc_module_core_sleep();
+        if (_bc_scheduler.disable_sleep == 0)
+        {
+            bc_module_core_sleep();
+        }
     }
 }
 
@@ -91,6 +95,16 @@ void bc_scheduler_unregister(bc_scheduler_task_id_t task_id)
 bc_tick_t bc_scheduler_get_spin_tick(void)
 {
     return _bc_scheduler.tick_spin;
+}
+
+void bc_scheduler_disable_sleep(void)
+{
+    _bc_scheduler.disable_sleep++;
+}
+
+void bc_scheduler_enable_sleep(void)
+{
+    _bc_scheduler.disable_sleep--;
 }
 
 void bc_scheduler_plan_now(bc_scheduler_task_id_t task_id)

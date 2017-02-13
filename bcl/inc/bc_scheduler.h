@@ -41,6 +41,14 @@ void bc_scheduler_unregister(bc_scheduler_task_id_t task_id);
 
 bc_tick_t bc_scheduler_get_spin_tick(void);
 
+//! @brief Disable sleep mode, implemented as semaphore
+
+void bc_scheduler_disable_sleep(void);
+
+//! @brief Enable sleep mode, implemented as semaphore
+
+void bc_scheduler_enable_sleep(void);
+
 //! @brief Schedule specified task for immediate execution
 //! @param[in] task_id Task ID to be scheduled
 
