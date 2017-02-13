@@ -42,7 +42,7 @@ void bc_scheduler_run(void)
                 }
             }
         }
-        bc_module_core_sleep();
+        //bc_module_core_sleep();
     }
 }
 

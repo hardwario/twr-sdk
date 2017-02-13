@@ -4,6 +4,7 @@
 // Miscellaneous
 
 #include <bc_irq.h>
+#include <bc_radio.h>
 #include <usb_talk.h>
 
 // Peripheral drivers
