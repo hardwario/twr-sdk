@@ -120,7 +120,7 @@ static void _bc_usb_cdc_init_hsi48()
 
     while((RCC->CRRCR & RCC_CRRCR_HSI48ON) == 0)
     {
-        __asm("nop");
+        continue;
     }
 
     RCC->CCIPR |= RCC_USBCLKSOURCE_HSI48;
