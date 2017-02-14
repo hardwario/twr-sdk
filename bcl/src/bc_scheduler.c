@@ -14,7 +14,7 @@ static struct
     bc_tick_t tick_spin;
     bc_scheduler_task_id_t current_task_id;
     bc_scheduler_task_id_t max_task_id;
-    uint8_t sleep_bypass_semaphore;
+    int sleep_bypass_semaphore;
 
 } _bc_scheduler;
 
