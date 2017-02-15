@@ -39,6 +39,8 @@ void bc_module_power_set_relay(bool state);
 
 bool bc_module_power_get_relay();
 
+void bc_module_power_led_strip_set_pixel(uint16_t position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white);
+
 
 //! @}
 

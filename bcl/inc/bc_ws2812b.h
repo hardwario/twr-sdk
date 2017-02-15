@@ -16,10 +16,18 @@ typedef enum
 
 } bc_ws2812b_type_t;
 
+typedef enum
+{
+	BC_WS2812B_SEND_DONE = 0,
+
+} bc_ws2812b_event_t;
+
 
 bool bc_ws2812b_init(void *dma_bit_buffer, bc_ws2812b_type_t type, uint16_t count);
 
-void bc_ws2812b_set_pixel(uint16_t column, uint8_t red, uint8_t green, uint8_t blue, uint8_t white);
+void bc_ws2812b_set_event_handler(void (*event_handler)(bc_ws2812b_event_t, void *), void *event_param);
+
+void bc_ws2812b_set_pixel(uint16_t position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white);
 
 bool bc_ws2812b_send(void);
 
