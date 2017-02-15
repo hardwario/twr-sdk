@@ -1,7 +1,6 @@
 #ifndef _BC_MODULE_POWER_H
 #define _BC_MODULE_POWER_H
 
-#include <bc_common.h>
 #include <bc_ws2812b.h>
 
 
@@ -33,24 +32,16 @@
 //! @brief Set the LED count
 #define BC_MODULE_POWER_MAX_LED_STRIP_COUNT 150
 
-typedef struct
-{
-    bool relay_is_on;
-    bool led_strip_on;
-    uint16_t led_strip_count;
-    bc_ws2812b_type_t led_strip_type;
-    bool test;
-    //uint8_t *frameBuffer; //[4 * BC_MODULE_POWER_MAX_LED_STRIP_COUNT]
-
-} bc_module_power_t;
-
-extern bc_module_power_t bc_module_power;
-
-void bc_module_power_init(void);
+void bc_module_power_init();
 
 void bc_module_power_led_strip_test(void);
 
-bool bc_module_power_print_frame_buffer(uint8_t *frame_buffer, size_t size);
+bool bc_module_power_set_led_strip(const uint8_t *frame_buffer, size_t length);
+
+void bc_module_power_set_relay(bool state);
+
+bool bc_module_power_get_relay();
+
 
 //! @}
 

@@ -1,18 +1,27 @@
 #include "stm32l0xx.h"
 #include <bc_ws2812b.h>
 
-static bc_ws2812b_t _bc_ws2812b;
+#define TIMER_PERIOD 20              // 16000000 / 800000 = 20; 0,125us period (10 times lower the 1,25us period to have fixed math below)
+#define TIMER_RESET_PULSE_PERIOD 833 // 60us just to be sure = (16000000 / (320 * 60))
+#define COMPARE_PULSE_LOGIC_0      5 //(10 * timer_period) / 36
+#define COMPARE_PULSE_LOGIC_1     13 //(10 * timer_period) / 15;
+
+static struct ws2812b_t
+{
+	uint8_t *dma_bit_buffer;
+	size_t dma_bit_buffer_size;
+	bc_ws2812b_type_t type;
+	uint16_t count;
+    bool transfer;
+
+} _bc_ws2812b;
+
 DMA_HandleTypeDef dmaUpdate;
 TIM_HandleTypeDef timer2_handle;
 TIM_OC_InitTypeDef timer2_oc1;
 
 static void dma_transfer_complete_handler(DMA_HandleTypeDef *dma_handle);
 static void dma_transfer_half_handler(DMA_HandleTypeDef *dma_handle);
-
-static uint32_t timer_period;
-static uint32_t timer_reset_pulse_period;
-static uint8_t compare_pulse_logic_0;
-static uint8_t compare_pulse_logic_1;
 
 // Gamma correction table
 const uint8_t bc_module_power_gamma_table[] =
@@ -52,7 +61,7 @@ bool bc_ws2812b_send(void)
     // IMPORTANT: enable the TIM2 DMA requests AFTER enabling the DMA channels!
     __HAL_TIM_ENABLE_DMA(&timer2_handle, TIM_DMA_UPDATE);
 
-    TIM2->CNT = timer_period - 1;
+    TIM2->CNT = TIMER_PERIOD - 1;
 
     // Set zero length for first pulse because the first bit loads after first TIM_UP
     TIM2->CCR2 = 0;
@@ -99,7 +108,7 @@ void dma_transfer_complete_handler(DMA_HandleTypeDef *dma_handle)
 
 	// Set 50us period for Treset pulse
 	//TIM2->PSC = 1000; // For this long period we need prescaler 1000
-	TIM2->ARR = timer_reset_pulse_period;
+	TIM2->ARR = TIMER_RESET_PULSE_PERIOD;
 	// Reset the timer
 	TIM2->CNT = 0;
 
@@ -130,7 +139,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     __HAL_TIM_DISABLE_IT(&timer2_handle, TIM_IT_UPDATE);
 
     // Set back 1,25us period
-    TIM2->ARR = timer_period;
+    TIM2->ARR = TIMER_PERIOD;
 
     // Generate an update event to reload the Prescaler value immediatly
     TIM2->EGR = TIM_EGR_UG;
@@ -141,67 +150,67 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 }
 
-void bc_ws2812b_set_pixel(uint16_t column, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
+void bc_ws2812b_set_pixel(uint16_t position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
 {
 //    red = bc_module_power_gamma_table[red];
 //    green = bc_module_power_gamma_table[green];
 //    blue = bc_module_power_gamma_table[blue];
 //    white = bc_module_power_gamma_table[white];
 
-    uint32_t calculated_column = (column * _bc_ws2812b.type * 8);
+    uint32_t calculated_column = (position * _bc_ws2812b.type * 8);
 
     uint8_t *bit_buffer_offset = &_bc_ws2812b.dma_bit_buffer[calculated_column];
 
-    *bit_buffer_offset++ = (green & 0x80) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (green & 0x40) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (green & 0x20) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (green & 0x10) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (green & 0x08) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (green & 0x04) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (green & 0x02) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (green & 0x01) ? compare_pulse_logic_1 : compare_pulse_logic_0;
+    *bit_buffer_offset++ = (green & 0x80) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (green & 0x40) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (green & 0x20) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (green & 0x10) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (green & 0x08) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (green & 0x04) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (green & 0x02) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (green & 0x01) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
 
-    *bit_buffer_offset++ = (red & 0x80) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (red & 0x40) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (red & 0x20) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (red & 0x10) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (red & 0x08) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (red & 0x04) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (red & 0x02) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (red & 0x01) ? compare_pulse_logic_1 : compare_pulse_logic_0;
+    *bit_buffer_offset++ = (red & 0x80) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (red & 0x40) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (red & 0x20) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (red & 0x10) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (red & 0x08) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (red & 0x04) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (red & 0x02) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (red & 0x01) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
 
-    *bit_buffer_offset++ = (blue & 0x80) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (blue & 0x40) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (blue & 0x20) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (blue & 0x10) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (blue & 0x08) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (blue & 0x04) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (blue & 0x02) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-    *bit_buffer_offset++ = (blue & 0x01) ? compare_pulse_logic_1 : compare_pulse_logic_0;
+    *bit_buffer_offset++ = (blue & 0x80) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (blue & 0x40) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (blue & 0x20) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (blue & 0x10) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (blue & 0x08) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (blue & 0x04) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (blue & 0x02) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+    *bit_buffer_offset++ = (blue & 0x01) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
 
     if (_bc_ws2812b.type == BC_WS2812B_TYPE_RGBW)
     {
-        *bit_buffer_offset++ = (white & 0x80) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-        *bit_buffer_offset++ = (white & 0x40) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-        *bit_buffer_offset++ = (white & 0x20) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-        *bit_buffer_offset++ = (white & 0x10) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-        *bit_buffer_offset++ = (white & 0x08) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-        *bit_buffer_offset++ = (white & 0x04) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-        *bit_buffer_offset++ = (white & 0x02) ? compare_pulse_logic_1 : compare_pulse_logic_0;
-        *bit_buffer_offset++ = (white & 0x01) ? compare_pulse_logic_1 : compare_pulse_logic_0;
+        *bit_buffer_offset++ = (white & 0x80) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+        *bit_buffer_offset++ = (white & 0x40) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+        *bit_buffer_offset++ = (white & 0x20) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+        *bit_buffer_offset++ = (white & 0x10) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+        *bit_buffer_offset++ = (white & 0x08) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+        *bit_buffer_offset++ = (white & 0x04) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+        *bit_buffer_offset++ = (white & 0x02) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
+        *bit_buffer_offset++ = (white & 0x01) ? COMPARE_PULSE_LOGIC_1 : COMPARE_PULSE_LOGIC_0;
     }
 
 }
 
-bool bc_ws2812b_init(bc_ws2812b_type_t type, uint16_t count)
+bool bc_ws2812b_init(void *dma_bit_buffer, bc_ws2812b_type_t type, uint16_t count)
 {
 	_bc_ws2812b.type = type;
 	_bc_ws2812b.count = count;
 
 	_bc_ws2812b.dma_bit_buffer_size = _bc_ws2812b.count * _bc_ws2812b.type * 8;
-	_bc_ws2812b.dma_bit_buffer = malloc(_bc_ws2812b.dma_bit_buffer_size);
+	_bc_ws2812b.dma_bit_buffer = dma_bit_buffer;
 
-	memset(_bc_ws2812b.dma_bit_buffer, compare_pulse_logic_0, _bc_ws2812b.dma_bit_buffer_size);
+	memset(_bc_ws2812b.dma_bit_buffer, COMPARE_PULSE_LOGIC_0, _bc_ws2812b.dma_bit_buffer_size);
 
 	__HAL_RCC_GPIOA_CLK_ENABLE();
 
@@ -223,7 +232,7 @@ bool bc_ws2812b_init(bc_ws2812b_type_t type, uint16_t count)
 	dmaUpdate.Init.MemInc = DMA_MINC_ENABLE;
 	dmaUpdate.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
 	dmaUpdate.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-	dmaUpdate.Init.Mode = DMA_CIRCULAR;
+	dmaUpdate.Init.Mode = DMA_CIRCULAR; //TODO DMA_NORMAL
 	dmaUpdate.Init.Priority = DMA_PRIORITY_VERY_HIGH;
 	dmaUpdate.Instance = DMA1_Channel2;
 	dmaUpdate.Init.Request = DMA_REQUEST_8;
@@ -246,25 +255,8 @@ bool bc_ws2812b_init(bc_ws2812b_type_t type, uint16_t count)
 	 // TIM2 Periph clock enable
 	__HAL_RCC_TIM2_CLK_ENABLE();
 
-	// This computation of pulse length should work ok,
-	// at some slower core speeds it needs some tuning.
-	timer_period = SystemCoreClock / 800000; // 0,125us period (10 times lower the 1,25us period to have fixed math below)
-	timer_reset_pulse_period = (SystemCoreClock / (320 * 60)); // 60us just to be sure
-
-	uint32_t logic_0 = (10 * timer_period) / 36;
-	uint32_t logic_1 = (10 * timer_period) / 15;
-
-	if (logic_0 > 255 || logic_1 > 255)
-	{
-		// Error, compare_pulse_logic_0 or compare_pulse_logic_1 needs to be redefined to uint16_t (but it takes more memory)
-		return false;
-	}
-
-	compare_pulse_logic_0 = logic_0;
-	compare_pulse_logic_1 = logic_1;
-
 	timer2_handle.Instance = TIM2;
-	timer2_handle.Init.Period = timer_period;
+	timer2_handle.Init.Period = TIMER_PERIOD;
 	timer2_handle.Init.Prescaler = 0x00;
 	timer2_handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	timer2_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -275,7 +267,7 @@ bool bc_ws2812b_init(bc_ws2812b_type_t type, uint16_t count)
 
 	timer2_oc1.OCMode = TIM_OCMODE_PWM1;
 	timer2_oc1.OCPolarity = TIM_OCPOLARITY_HIGH;
-	timer2_oc1.Pulse = compare_pulse_logic_0;
+	timer2_oc1.Pulse = COMPARE_PULSE_LOGIC_0;
 	timer2_oc1.OCFastMode = TIM_OCFAST_DISABLE;
 	HAL_TIM_PWM_ConfigChannel(&timer2_handle, &timer2_oc1, TIM_CHANNEL_2);
 
