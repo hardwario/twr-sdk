@@ -3,6 +3,7 @@
 
 #include <bc_tick.h>
 #include <bc_gpio.h>
+#include <bc_scheduler.h>
 
 //! @addtogroup bc_pyq1648 bc_pyq1648
 //! @brief Driver for PYQ1648 PIR sensor
@@ -59,6 +60,7 @@ struct bc_pyq1648_t
     bc_tick_t _aware_time;
     bc_tick_t _ignore_untill;
     bc_tick_t _connection_check;
+    bc_scheduler_task_id_t _task_id;
 };
 
 //! @endcond
