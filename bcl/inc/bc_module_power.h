@@ -3,9 +3,6 @@
 
 #include <bc_ws2812b.h>
 
-
-//TODO rewrite doc
-
 //! @addtogroup bc_module_power bc_module_power
 //! @brief Driver for Power Module
 //! @section example Init and framebuffer example

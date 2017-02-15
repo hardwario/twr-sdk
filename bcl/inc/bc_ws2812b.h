@@ -9,11 +9,6 @@
 
 //! @cond
 
-#define BC_WS2812_RESET_PERIOD 100
-
-#define BC_WS2812B_PORT GPIOA
-#define BC_WS2812B_PIN GPIO_PIN_1
-
 typedef enum
 {
     BC_WS2812B_TYPE_RGBW = 4,
