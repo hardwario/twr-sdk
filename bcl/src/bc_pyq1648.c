@@ -5,12 +5,7 @@
 
 #define BC_PYQ1648_BPF 0x00
 #define BC_PYQ1648_LPF 0x01
-
 #define BC_PYQ1648_WAKE_UP_MODE 0x02
-
-extern GPIO_TypeDef *bc_gpio_port[];
-extern uint16_t bc_gpio_16_bit_mask[];
-extern uint32_t bc_gpio_32_bit_upper_mask[];
 
 #define BC_PYQ1648_DELAY_RUN 50
 #define BC_PYQ1648_DELAY_INITIALIZATION 10
@@ -19,7 +14,7 @@ extern uint32_t bc_gpio_32_bit_upper_mask[];
 static inline void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl);
 static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self);
 static inline void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self);
-void _bc_pyq1648_delay_100us(unsigned int i);
+static inline void _bc_pyq1648_delay_100us();
 static void _bc_pyq1648_task(void *param);
 
 static const uint8_t _bc_pyq1648_sensitivity_table[4] =
@@ -56,7 +51,7 @@ void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, b
     // Register task
     self->_task_id = bc_scheduler_register(_bc_pyq1648_task, self, BC_PYQ1648_DELAY_RUN);
 
-    // Enable clock for TIM7
+    // Enable clock for TIM6
     RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
 
     // Enable one-pulse mode
@@ -156,7 +151,7 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
         *GPIOx_BSRR = bsrr_mask[1];
         __asm("nop");
         *GPIOx_BSRR = bsrr_mask[next_bit];
-        // TODO ... replace with wait
+
         _bc_pyq1648_delay_100us(1);
     }
 
@@ -166,13 +161,13 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     bc_irq_enable();
 }
 
-void _bc_pyq1648_delay_100us(unsigned int i)
+static inline void _bc_pyq1648_delay_100us()
 {
     // Set prescaler
     TIM6->PSC = 0;
 
-    // Set auto-reload register - period 4 us
-    TIM6->ARR = (1516 - 1) * i;
+    // Set auto-reload register - period 100 us
+    TIM6->ARR = 1500;
 
     // Generate update of registers
     TIM6->EGR = TIM_EGR_UG;
