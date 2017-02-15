@@ -1,4 +1,3 @@
-#include "usb_talk.h"
 #include <bc_scheduler.h>
 #include <bc_gpio.h>
 #include <bc_module_power.h>
@@ -7,7 +6,7 @@
 
 void bc_module_power_task();
 
-uint8_t dma_bit_buffer[144 * 4 * 8];
+uint8_t _bc_module_dma_bit_buffer[144 * 4 * 8];
 
 static struct
 {
@@ -36,7 +35,7 @@ void bc_module_power_init()
 	bc_gpio_init(BC_MODULE_POWER_PIN_RELAY);
 	bc_gpio_set_mode(BC_MODULE_POWER_PIN_RELAY, BC_GPIO_MODE_OUTPUT);
 
-	bc_ws2812b_init(dma_bit_buffer, _bc_module_power.led_strip_type, _bc_module_power.led_strip_count);
+	bc_ws2812b_init(_bc_module_dma_bit_buffer, _bc_module_power.led_strip_type, _bc_module_power.led_strip_count);
 
 	bc_scheduler_register(bc_module_power_task, &_bc_module_power, 10);
 
