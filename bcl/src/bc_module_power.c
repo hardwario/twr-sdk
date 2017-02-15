@@ -1,6 +1,7 @@
+#include <bc_module_power.h>
 #include <bc_scheduler.h>
 #include <bc_gpio.h>
-#include <bc_module_power.h>
+
 
 #define BC_MODULE_POWER_PIN_RELAY BC_GPIO_P0
 
@@ -79,6 +80,11 @@ void bc_module_power_set_relay(bool state)
 bool bc_module_power_get_relay()
 {
 	return _bc_module_power.relay_is_on;
+}
+
+void bc_module_power_led_strip_set_pixel(uint16_t position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
+{
+	bc_ws2812b_set_pixel(position, red, green, blue, white);
 }
 
 void bc_module_power_task()

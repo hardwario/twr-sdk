@@ -1,5 +1,6 @@
 #include "stm32l0xx.h"
 #include <bc_ws2812b.h>
+#include <bc_scheduler.h>
 
 #define _BC_WS2812_TIMER_PERIOD 20              // 16000000 / 800000 = 20; 0,125us period (10 times lower the 1,25us period to have fixed math below)
 #define _BC_WS2812_TIMER_RESET_PULSE_PERIOD 833 // 60us just to be sure = (16000000 / (320 * 60))
@@ -12,11 +13,14 @@
 
 static struct ws2812b_t
 {
-	uint8_t *dma_bit_buffer;
+	uint32_t *dma_bit_buffer;
 	size_t dma_bit_buffer_size;
 	bc_ws2812b_type_t type;
 	uint16_t count;
     bool transfer;
+    bc_scheduler_task_id_t task_id;
+    void (*event_handler)(bc_ws2812b_event_t, void *);
+    void *event_param;
 
 } _bc_ws2812b;
 
@@ -26,6 +30,26 @@ TIM_OC_InitTypeDef _bc_ws2812b_timer2_oc1;
 
 static void _bc_ws2812b_dma_transfer_complete_handler(DMA_HandleTypeDef *dma_handle);
 static void _bc_ws2812b_dma_transfer_half_handler(DMA_HandleTypeDef *dma_handle);
+static void _bc_ws2812b_task(void *param);
+
+const uint32_t _bc_ws2812b_pulse_tab[] = {
+		_BC_WS2812_COMPARE_PULSE_LOGIC_0 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_0,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_1 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_0,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_0 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_0,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_1 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_0,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_0 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_0,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_1 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_0,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_0 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_0,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_1 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_0,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_0 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_1,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_1 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_1,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_0 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_1,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_1 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_1,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_0 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_1,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_1 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_0 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_1,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_0 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_1,
+		_BC_WS2812_COMPARE_PULSE_LOGIC_1 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_1,
+};
 
 void DMA1_Channel2_3_IRQHandler(void)
 {
@@ -147,57 +171,70 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     // set transfer_complete flag
     _bc_ws2812b.transfer = false;
 
+    bc_scheduler_plan_now(_bc_ws2812b.task_id);
 }
 
 void bc_ws2812b_set_pixel(uint16_t position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
 {
-//    red = bc_module_power_gamma_table[red];
-//    green = bc_module_power_gamma_table[green];
-//    blue = bc_module_power_gamma_table[blue];
-//    white = bc_module_power_gamma_table[white];
 
-    uint32_t calculated_column = (position * _bc_ws2812b.type * 8);
+	uint32_t calculated_position = (position * _bc_ws2812b.type * 2);
 
-    uint8_t *bit_buffer_offset = &_bc_ws2812b.dma_bit_buffer[calculated_column];
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(green & 0xf0) >> 4];
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[green & 0x0f];
 
-    *bit_buffer_offset++ = (green & 0x80) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (green & 0x40) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (green & 0x20) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (green & 0x10) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (green & 0x08) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (green & 0x04) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (green & 0x02) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (green & 0x01) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(red & 0xf0) >> 4];
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[red & 0x0f];
 
-    *bit_buffer_offset++ = (red & 0x80) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (red & 0x40) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (red & 0x20) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (red & 0x10) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (red & 0x08) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (red & 0x04) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (red & 0x02) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (red & 0x01) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(blue & 0xf0) >> 4];
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[blue & 0x0f];
 
-    *bit_buffer_offset++ = (blue & 0x80) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (blue & 0x40) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (blue & 0x20) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (blue & 0x10) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (blue & 0x08) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (blue & 0x04) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (blue & 0x02) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    *bit_buffer_offset++ = (blue & 0x01) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+	 if (_bc_ws2812b.type == BC_WS2812B_TYPE_RGBW)
+	 {
+		 _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(white & 0xf0) >> 4];
+		 _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[white & 0x0f];
+	 }
 
-    if (_bc_ws2812b.type == BC_WS2812B_TYPE_RGBW)
-    {
-        *bit_buffer_offset++ = (white & 0x80) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-        *bit_buffer_offset++ = (white & 0x40) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-        *bit_buffer_offset++ = (white & 0x20) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-        *bit_buffer_offset++ = (white & 0x10) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-        *bit_buffer_offset++ = (white & 0x08) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-        *bit_buffer_offset++ = (white & 0x04) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-        *bit_buffer_offset++ = (white & 0x02) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-        *bit_buffer_offset++ = (white & 0x01) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
-    }
+//    uint32_t calculated_column = (position * _bc_ws2812b.type * 8);
+//    uint8_t *bit_buffer_offset = &_bc_ws2812b.dma_bit_buffer[calculated_column];
+
+//    *bit_buffer_offset++ = (green & 0x80) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (green & 0x40) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (green & 0x20) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (green & 0x10) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (green & 0x08) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (green & 0x04) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (green & 0x02) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (green & 0x01) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//
+//    *bit_buffer_offset++ = (red & 0x80) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (red & 0x40) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (red & 0x20) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (red & 0x10) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (red & 0x08) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (red & 0x04) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (red & 0x02) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (red & 0x01) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//
+//    *bit_buffer_offset++ = (blue & 0x80) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (blue & 0x40) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (blue & 0x20) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (blue & 0x10) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (blue & 0x08) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (blue & 0x04) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (blue & 0x02) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    *bit_buffer_offset++ = (blue & 0x01) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//
+//    if (_bc_ws2812b.type == BC_WS2812B_TYPE_RGBW)
+//    {
+//        *bit_buffer_offset++ = (white & 0x80) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//        *bit_buffer_offset++ = (white & 0x40) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//        *bit_buffer_offset++ = (white & 0x20) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//        *bit_buffer_offset++ = (white & 0x10) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//        *bit_buffer_offset++ = (white & 0x08) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//        *bit_buffer_offset++ = (white & 0x04) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//        *bit_buffer_offset++ = (white & 0x02) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//        *bit_buffer_offset++ = (white & 0x01) ? _BC_WS2812_COMPARE_PULSE_LOGIC_1 : _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+//    }
 
 }
 
@@ -275,7 +312,23 @@ bool bc_ws2812b_init(void *dma_bit_buffer, bc_ws2812b_type_t type, uint16_t coun
 	TIM2->DCR = TIM_DMABASE_CCR2 | TIM_DMABURSTLENGTH_1TRANSFER;
 
 
+	_bc_ws2812b.task_id = bc_scheduler_register(_bc_ws2812b_task, NULL, BC_TICK_INFINITY);
+
 	_bc_ws2812b.transfer = 0;
 
 	return true;
+}
+
+void bc_ws2812b_set_event_handler(void (*event_handler)(bc_ws2812b_event_t, void *), void *event_param)
+{
+	_bc_ws2812b.event_handler = event_handler;
+	_bc_ws2812b.event_param = event_param;
+}
+
+static void _bc_ws2812b_task(void *param)
+{
+	if (_bc_ws2812b.event_handler != NULL)
+	{
+		_bc_ws2812b.event_handler(BC_WS2812B_SEND_DONE, _bc_ws2812b.event_param);
+	}
 }
