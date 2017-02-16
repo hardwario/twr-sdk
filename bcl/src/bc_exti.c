@@ -23,7 +23,7 @@ void bc_exti_register(bc_exti_line_t line, bc_exti_edge_t edge, void (*callback)
     uint8_t pin = (uint8_t) line & 15;
 
     // Extract mask
-    uint8_t mask = 1 << pin;
+    uint16_t mask = 1 << pin;
 
     // Disable interrupts
     bc_irq_disable();
@@ -93,7 +93,7 @@ void bc_exti_unregister(bc_exti_line_t line)
     uint8_t pin = (uint8_t) line & 15;
 
     // Extract mask
-    uint8_t mask = 1 << pin;
+    uint16_t mask = 1 << pin;
 
     // Disable interrupts
     bc_irq_disable();
