@@ -3,132 +3,120 @@
 #include <bc_exti.h>
 #include <bc_irq.h>
 
-static uint8_t _encoder_get_state();
+static struct
+{
+    bc_scheduler_task_id_t task_id;
+    void (*event_handler)(bc_module_encoder_event_t, void *);
+    void *event_param;
+    bc_button_t button;
+    int samples;
+    int increment;
+    int increment_shadow;
+
+} _bc_module_encoder;
+
 static void _bc_module_encoder_task(void *param);
 
-bc_module_encoder_t _bc_module_encoder;
-static bc_module_encoder_t *self = &_bc_module_encoder;
+static void _bc_module_encoder_exti_handler(bc_exti_line_t line, void *param);
 
-static void _bc_module_power_exti_handler(bc_exti_line_t line, void *param);
-static void _bc_button_event_handler(bc_button_t *self, bc_button_event_t event, void *param);
-
-void bc_module_encoder_init()
+void bc_module_encoder_init(void)
 {
-    memset(self, 0, sizeof(*self));
+    memset(&_bc_module_encoder, 0, sizeof(_bc_module_encoder));
 
-    bc_button_init(&self->_button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN, false);
-    bc_button_set_event_handler(&self->_button, _bc_button_event_handler, self);
+    // Initialize encoder button
+    bc_button_init(&_bc_module_encoder.button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN, false);
 
-    // Init encoder GPIO
+    // Init encoder GPIO pins
     bc_gpio_init(BC_GPIO_P4);
     bc_gpio_init(BC_GPIO_P5);
 
-    // Set encoder GPIO as inputs
+    // Set encoder GPIO pins as inputs
     bc_gpio_set_mode(BC_GPIO_P4, BC_GPIO_MODE_INPUT);
     bc_gpio_set_mode(BC_GPIO_P5, BC_GPIO_MODE_INPUT);
 
-    // Read current initial state
-    self->_encoder_last_state = _encoder_get_state();
+    // Remember initial GPIO states
+    _bc_module_encoder.samples |= bc_gpio_get_input(BC_GPIO_P4) ? 0x1 : 0;
+    _bc_module_encoder.samples |= bc_gpio_get_input(BC_GPIO_P5) ? 0x2 : 0;
 
     // Register interrupts on both GPIO pins
-    bc_exti_register(BC_EXTI_LINE_P4, BC_EXTI_EDGE_RISING_AND_FALLING, _bc_module_power_exti_handler, self);
-    bc_exti_register(BC_EXTI_LINE_P5, BC_EXTI_EDGE_RISING_AND_FALLING, _bc_module_power_exti_handler, self);
+    bc_exti_register(BC_EXTI_LINE_P4, BC_EXTI_EDGE_RISING_AND_FALLING, _bc_module_encoder_exti_handler, NULL);
+    bc_exti_register(BC_EXTI_LINE_P5, BC_EXTI_EDGE_RISING_AND_FALLING, _bc_module_encoder_exti_handler, NULL);
 
     // Register task
-    self->task_id = bc_scheduler_register(_bc_module_encoder_task, self, BC_TICK_INFINITY);
+    _bc_module_encoder.task_id = bc_scheduler_register(_bc_module_encoder_task, NULL, BC_TICK_INFINITY);
 }
 
 void bc_module_encoder_set_event_handler(void (*event_handler)(bc_module_encoder_event_t, void *), void *event_param)
 {
-    self->_event_handler = event_handler;
-    self->_event_param = event_param;
+    _bc_module_encoder.event_handler = event_handler;
+    _bc_module_encoder.event_param = event_param;
 }
 
-static void _bc_module_power_exti_handler(bc_exti_line_t line, void *param)
+bc_button_t *bc_module_encoder_get_button_instance(void)
 {
-    (void)line;
-
-    bc_module_encoder_t *self = param;
-
-    // Read current sttate from GPIO
-    uint8_t encoder_current_state = _encoder_get_state();
-
-    if(self->_encoder_last_state != encoder_current_state)
-    {
-
-        switch((self->_encoder_last_state << 2) | encoder_current_state)
-        {
-            case 0x07:
-                self->value--;
-                bc_scheduler_plan_now(self->task_id);
-                break;
-
-            case 0x0D:
-                self->value++;
-                bc_scheduler_plan_now(self->task_id);
-                break;
-
-            default:
-                break;
-        }
-
-        // Save current state
-        self->_encoder_last_state = encoder_current_state;
-
-    }
+    return &_bc_module_encoder.button;
 }
 
-
-static void _bc_button_event_handler(bc_button_t *self, bc_button_event_t event, void *param)
+int bc_module_encoder_get_increment(void)
 {
-    // Přejmenovat bc_button_t parametr na btnSelf, nebo přetypovat param na encoder?
-    (void)self;
-    bc_module_encoder_t *encoder = param;
-
-    // Pass the buttons event directly because they use the same enum event numbers
-    encoder->_event_handler(event, encoder->_event_param);
-
-}
-
-static uint8_t _encoder_get_state()
-{
-    uint8_t newState;
-
-    newState = bc_gpio_get_input(BC_GPIO_P4) ? 0x01 : 0x00;
-    newState |= bc_gpio_get_input(BC_GPIO_P5) ? 0x02 : 0x00;
-
-    return newState;
+    return _bc_module_encoder.increment_shadow;
 }
 
 static void _bc_module_encoder_task(void *param)
 {
-    bc_module_encoder_t *self = param;
-    uint32_t i;
+    (void) param;
 
-    if(self->value == 0)
-    {
-        // In case user does quick forwward-back encoder motion
-        return;
-    }
-
+    // Disable interrupts
     bc_irq_disable();
 
-    self->eventValue = self->value;
-    self->value = 0;
+    _bc_module_encoder.increment_shadow = _bc_module_encoder.increment;
+    _bc_module_encoder.increment = 0;
 
+    // Enable interrupts
     bc_irq_enable();
 
-    // In case multiple events per task call
-    for(i = 0; i < (uint32_t)abs(self->eventValue); i++)
+    if (_bc_module_encoder.increment_shadow != 0)
     {
-        if (self->_event_handler != NULL)
+        if (_bc_module_encoder.event_handler != NULL)
         {
-            self->_event_handler((self->eventValue > 0) ? BC_MODULE_ENCODER_EVENT_UP : BC_MODULE_ENCODER_EVENT_DOWN, self->_event_param);
+            _bc_module_encoder.event_handler(BC_MODULE_ENCODER_EVENT_UPDATE, _bc_module_encoder.event_param);
         }
     }
 }
 
-int32_t bc_module_encoder_get_increment(void)
+static void _bc_module_encoder_exti_handler(bc_exti_line_t line, void *param)
 {
-    return self->eventValue;
+    (void) line;
+    (void) param;
+
+    // Read current GPIO state
+    _bc_module_encoder.samples <<= 2;
+    _bc_module_encoder.samples |= bc_gpio_get_input(BC_GPIO_P4) ? 0x1 : 0;
+    _bc_module_encoder.samples |= bc_gpio_get_input(BC_GPIO_P5) ? 0x2 : 0;
+    _bc_module_encoder.samples &= 0xf;
+
+    if (_bc_module_encoder.samples == 0x7)
+    {
+        // Disable interrupts
+        bc_irq_disable();
+
+        _bc_module_encoder.increment--;
+
+        // Enable interrupts
+        bc_irq_enable();
+
+        bc_scheduler_plan_now(_bc_module_encoder.task_id);
+    }
+    else if (_bc_module_encoder.samples == 0xd)
+    {
+        // Disable interrupts
+        bc_irq_disable();
+
+        _bc_module_encoder.increment++;
+
+        // Enable interrupts
+        bc_irq_enable();
+
+        bc_scheduler_plan_now(_bc_module_encoder.task_id);
+    }
 }
