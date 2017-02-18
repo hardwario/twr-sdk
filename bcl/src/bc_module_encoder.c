@@ -9,9 +9,9 @@ static struct
     void (*event_handler)(bc_module_encoder_event_t, void *);
     void *event_param;
     bc_button_t button;
-    int samples;
     int increment;
     int increment_shadow;
+    int samples;
 
 } _bc_module_encoder;
 
