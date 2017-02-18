@@ -19,12 +19,15 @@ static void _bc_module_encoder_task(void *param);
 
 static void _bc_module_encoder_exti_handler(bc_exti_line_t line, void *param);
 
+static void _bc_module_encoder_button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param);
+
 void bc_module_encoder_init(void)
 {
     memset(&_bc_module_encoder, 0, sizeof(_bc_module_encoder));
 
     // Initialize encoder button
     bc_button_init(&_bc_module_encoder.button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN, false);
+    bc_button_set_event_handler(&_bc_module_encoder.button, _bc_module_encoder_button_event_handler, NULL);
 
     // Init encoder GPIO pins
     bc_gpio_init(BC_GPIO_P4);
@@ -79,7 +82,7 @@ static void _bc_module_encoder_task(void *param)
     {
         if (_bc_module_encoder.event_handler != NULL)
         {
-            _bc_module_encoder.event_handler(BC_MODULE_ENCODER_EVENT_UPDATE, _bc_module_encoder.event_param);
+            _bc_module_encoder.event_handler(BC_MODULE_ENCODER_EVENT_ROTATION, _bc_module_encoder.event_param);
         }
     }
 }
@@ -97,26 +100,42 @@ static void _bc_module_encoder_exti_handler(bc_exti_line_t line, void *param)
 
     if (_bc_module_encoder.samples == 0x7)
     {
-        // Disable interrupts
-        bc_irq_disable();
-
         _bc_module_encoder.increment--;
-
-        // Enable interrupts
-        bc_irq_enable();
 
         bc_scheduler_plan_now(_bc_module_encoder.task_id);
     }
     else if (_bc_module_encoder.samples == 0xd)
     {
-        // Disable interrupts
-        bc_irq_disable();
-
         _bc_module_encoder.increment++;
 
-        // Enable interrupts
-        bc_irq_enable();
-
         bc_scheduler_plan_now(_bc_module_encoder.task_id);
+    }
+}
+
+static void _bc_module_encoder_button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param)
+{
+    (void) self;
+    (void) event_param;
+
+    if (_bc_module_encoder.event_handler == NULL)
+    {
+        return;
+    }
+
+    if (event == BC_BUTTON_EVENT_PRESS)
+    {
+        _bc_module_encoder.event_handler(BC_MODULE_ENCODER_EVENT_PRESS, _bc_module_encoder.event_param);
+    }
+    else if (event == BC_BUTTON_EVENT_RELEASE)
+    {
+        _bc_module_encoder.event_handler(BC_MODULE_ENCODER_EVENT_RELEASE, _bc_module_encoder.event_param);
+    }
+    else if (event == BC_BUTTON_EVENT_CLICK)
+    {
+        _bc_module_encoder.event_handler(BC_MODULE_ENCODER_EVENT_CLICK, _bc_module_encoder.event_param);
+    }
+    else if (event == BC_BUTTON_EVENT_HOLD)
+    {
+        _bc_module_encoder.event_handler(BC_MODULE_ENCODER_EVENT_HOLD, _bc_module_encoder.event_param);
     }
 }

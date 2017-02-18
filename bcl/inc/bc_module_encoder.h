@@ -11,8 +11,21 @@
 
 typedef enum
 {
-    //! @brief Update event
-    BC_MODULE_ENCODER_EVENT_UPDATE = 0,
+    //! @brief Event rotation
+    BC_MODULE_ENCODER_EVENT_ROTATION = 0,
+
+    //! @brief Event button pressed
+    BC_MODULE_ENCODER_EVENT_PRESS = 1,
+
+    //! @brief Event button released
+    BC_MODULE_ENCODER_EVENT_RELEASE = 2,
+
+    //! @brief Event button clicked (pressed and released within certain time)
+    BC_MODULE_ENCODER_EVENT_CLICK = 3,
+
+    //! @brief Event button hold (pressed for longer time)
+    BC_MODULE_ENCODER_EVENT_HOLD = 4
+
 
 } bc_module_encoder_event_t;
 
