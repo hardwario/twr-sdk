@@ -1,140 +1,183 @@
 #include <bc_module_power.h>
 #include <bc_scheduler.h>
 #include <bc_gpio.h>
-
+#include <bc_ws2812b.h>
 
 #define BC_MODULE_POWER_PIN_RELAY BC_GPIO_P0
 
-void bc_module_power_task();
-
-uint8_t _bc_module_dma_bit_buffer[144 * 4 * 8];
+static uint8_t _bc_module_dma_bit_buffer[144 * 4 * 8];
 
 static struct
 {
-    bool relay_is_on;
-    bool led_strip_on;
-    uint16_t led_strip_count;
-    bc_ws2812b_type_t led_strip_type;
-    bool test;
+    struct
+    {
+        bool on;
+
+    } relay;
+
+    struct
+    {
+        bool initialized;
+        bool on;
+        int count;
+        bc_ws2812b_type_t type;
+
+    } led_strip;
+
+    struct
+    {
+        bool test_is_on;
+        int led;
+        int step;
+
+    } test;
 
 } _bc_module_power;
 
-static struct {
-	uint16_t led;
-	uint8_t step;
-
-} _bc_module_test;
+static void _bc_module_power_led_strip_task(void *param);
 
 void bc_module_power_init(void)
 {
-	bc_scheduler_disable_sleep();
+    memset(&_bc_module_power, 0, sizeof(_bc_module_power));
 
-	_bc_module_power.led_strip_on = true;
-	_bc_module_power.led_strip_count = 144;
-	_bc_module_power.led_strip_type = BC_WS2812B_TYPE_RGBW;
+    bc_gpio_init(BC_MODULE_POWER_PIN_RELAY);
+    bc_gpio_set_mode(BC_MODULE_POWER_PIN_RELAY, BC_GPIO_MODE_OUTPUT);
+}
 
-	bc_gpio_init(BC_MODULE_POWER_PIN_RELAY);
-	bc_gpio_set_mode(BC_MODULE_POWER_PIN_RELAY, BC_GPIO_MODE_OUTPUT);
+void bc_module_power_relay_set_state(bool state)
+{
+    _bc_module_power.relay.on = state;
 
-	bc_ws2812b_init(_bc_module_dma_bit_buffer, _bc_module_power.led_strip_type, _bc_module_power.led_strip_count);
+    bc_gpio_set_output(BC_MODULE_POWER_PIN_RELAY, _bc_module_power.relay.on);
+}
 
-	bc_scheduler_register(bc_module_power_task, &_bc_module_power, 10);
+bool bc_module_power_relay_get_state(void)
+{
+    return _bc_module_power.relay.on;
+}
 
+void bc_module_power_led_strip_init(void)
+{
+    _bc_module_power.led_strip.initialized = true;
+    _bc_module_power.led_strip.on = true;
+    _bc_module_power.led_strip.count = 144;
+    _bc_module_power.led_strip.type = BC_WS2812B_TYPE_RGBW;
+
+    // TODO Disable only while writing data to WS2812B
+    bc_scheduler_disable_sleep();
+
+    // TODO DMA bit buffer is passed as parameter as well as strip type and LED count
+    bc_ws2812b_init(_bc_module_dma_bit_buffer, _bc_module_power.led_strip.type, _bc_module_power.led_strip.count);
+
+    bc_scheduler_register(_bc_module_power_led_strip_task, &_bc_module_power, 10);
 }
 
 void bc_module_power_led_strip_test(void)
 {
-	_bc_module_test.led = 0;
-	_bc_module_test.step = 0;
-	_bc_module_power.test = true;
+    if (!_bc_module_power.led_strip.initialized)
+    {
+        return;
+    }
+
+    _bc_module_power.test.led = 0;
+    _bc_module_power.test.step = 0;
+    _bc_module_power.test.test_is_on = true;
 }
 
-bool bc_module_power_set_led_strip(const uint8_t *frame_buffer, size_t length)
+void bc_module_power_led_strip_set_pixel(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
 {
-	if (length > (size_t)(_bc_module_power.led_strip_type * _bc_module_power.led_strip_count))
-	{
-		return false;
-	}
+    if (!_bc_module_power.led_strip.initialized)
+    {
+        return;
+    }
 
-	uint16_t position = 0;
-	for(uint16_t i = 0; i < length; i += _bc_module_power.led_strip_type)
-	{
-		bc_ws2812b_set_pixel(position++,
-				frame_buffer[i],
-				frame_buffer[i+1],
-				frame_buffer[i+2],
-				_bc_module_power.led_strip_type == BC_WS2812B_TYPE_RGBW ? frame_buffer[i+3] : 0);
-	}
-
-	bc_ws2812b_send();
-
-	return true;
+    bc_ws2812b_set_pixel(position, red, green, blue, white);
 }
 
-void bc_module_power_set_relay(bool state)
+bool bc_module_power_led_strip_set_framebuffer(const uint8_t *framebuffer, size_t length)
 {
-	_bc_module_power.relay_is_on = state;
-	bc_gpio_set_output(BC_MODULE_POWER_PIN_RELAY, _bc_module_power.relay_is_on);
+    if (!_bc_module_power.led_strip.initialized)
+    {
+        return false;
+    }
+
+    if (length > (size_t) (_bc_module_power.led_strip.type * _bc_module_power.led_strip.count))
+    {
+        return false;
+    }
+
+    int position = 0;
+
+    if (_bc_module_power.led_strip.type == BC_WS2812B_TYPE_RGBW)
+    {
+        for (size_t i = 0; i < length; i += _bc_module_power.led_strip.type)
+        {
+            bc_ws2812b_set_pixel(position++, framebuffer[i], framebuffer[i + 1], framebuffer[i + 2], framebuffer[i + 3]);
+        }
+    }
+    else
+    {
+        for (size_t i = 0; i < length; i += _bc_module_power.led_strip.type)
+        {
+            bc_ws2812b_set_pixel(position++, framebuffer[i], framebuffer[i + 1], framebuffer[i + 2], 0);
+        }
+    }
+
+    bc_ws2812b_send();
+
+    return true;
 }
 
-bool bc_module_power_get_relay()
+static void _bc_module_power_led_strip_task(void *param)
 {
-	return _bc_module_power.relay_is_on;
-}
+    (void) param;
 
-void bc_module_power_led_strip_set_pixel(uint16_t position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
-{
-	bc_ws2812b_set_pixel(position, red, green, blue, white);
-}
+    if (bc_ws2812b_send() && _bc_module_power.test.test_is_on)
+    {
+        uint8_t intensity = 0x05;
 
-void bc_module_power_task()
-{
+        if (_bc_module_power.test.step == 0)
+        {
+            bc_ws2812b_set_pixel(_bc_module_power.test.led, intensity, 0, 0, 0);
+        }
+        else if (_bc_module_power.test.step == 1)
+        {
+            bc_ws2812b_set_pixel(_bc_module_power.test.led, 0, intensity, 0, 0);
+        }
+        else if (_bc_module_power.test.step == 2)
+        {
+            bc_ws2812b_set_pixel(_bc_module_power.test.led, 0, 0, intensity, 0);
+        }
+        else if (_bc_module_power.test.step == 3)
+        {
+            if (_bc_module_power.led_strip.type == BC_WS2812B_TYPE_RGB)
+            {
+                bc_ws2812b_set_pixel(_bc_module_power.test.led, intensity, intensity, intensity, 0);
+            }
+            else
+            {
+                bc_ws2812b_set_pixel(_bc_module_power.test.led, 0, 0, 0, intensity);
+            }
+        }
+        else
+        {
+            bc_ws2812b_set_pixel(_bc_module_power.test.led, 0, 0, 0, 0);
+        }
 
-	if (bc_ws2812b_send() & _bc_module_power.test)
-	{
+        _bc_module_power.test.led++;
 
-		uint8_t tint = 255 * (_bc_module_test.led + 1) / (_bc_module_power.led_strip_count + 1);
+        if (_bc_module_power.test.led == _bc_module_power.led_strip.count)
+        {
+            _bc_module_power.test.led = 0;
 
-		if (_bc_module_test.step == 0)
-		{
-			bc_ws2812b_set_pixel( _bc_module_test.led, tint, 0, 0, 0);
-		}
-		else if (_bc_module_test.step == 1)
-		{
-			bc_ws2812b_set_pixel(_bc_module_test.led, 0, tint, 0, 0);
-		}
-		else if (_bc_module_test.step == 2)
-		{
-			bc_ws2812b_set_pixel(_bc_module_test.led, 0, 0, tint, 0);
-		}
-		else if (_bc_module_test.step == 3)
-		{
-			if (_bc_module_power.led_strip_type == BC_WS2812B_TYPE_RGB)
-			{
-				bc_ws2812b_set_pixel(_bc_module_test.led, tint, tint, tint, 0);
-			}
-			else
-			{
-				bc_ws2812b_set_pixel(_bc_module_test.led, 0, 0, 0, tint);
-			}
-		}
-		else
-		{
-			bc_ws2812b_set_pixel(_bc_module_test.led, 0, 0, 0, 0);
-		}
+            _bc_module_power.test.step++;
 
-		_bc_module_test.led++;
+            if (_bc_module_power.test.step == 5)
+            {
+                _bc_module_power.test.test_is_on = false;
+            }
+        }
+    }
 
-		if (_bc_module_test.led == _bc_module_power.led_strip_count)
-		{
-			_bc_module_test.led = 0;
-			_bc_module_test.step++;
-			if (_bc_module_test.step == 5)
-			{
-				_bc_module_power.test = false;
-			}
-		}
-	}
-
-	bc_scheduler_plan_current_relative(10);
+    bc_scheduler_plan_current_relative(10);
 }
