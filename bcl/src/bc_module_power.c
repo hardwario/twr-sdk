@@ -5,8 +5,6 @@
 
 #define BC_MODULE_POWER_PIN_RELAY BC_GPIO_P0
 
-static uint8_t _bc_module_dma_bit_buffer[144 * 4 * 8];
-
 static struct
 {
     struct
@@ -19,8 +17,8 @@ static struct
     {
         bool initialized;
         bool on;
-        int count;
-        bc_ws2812b_type_t type;
+    	bc_led_strip_type_t type;
+    	int count;
 
     } led_strip;
 
@@ -56,18 +54,14 @@ bool bc_module_power_relay_get_state(void)
     return _bc_module_power.relay.on;
 }
 
-void bc_module_power_led_strip_init(void)
+void bc_module_power_led_strip_init(bc_led_strip_t *led_strip)
 {
     _bc_module_power.led_strip.initialized = true;
     _bc_module_power.led_strip.on = true;
-    _bc_module_power.led_strip.count = 144;
-    _bc_module_power.led_strip.type = BC_WS2812B_TYPE_RGBW;
+    _bc_module_power.led_strip.type = led_strip->type;
+    _bc_module_power.led_strip.count = led_strip->count;
 
-    // TODO Disable only while writing data to WS2812B
-    bc_scheduler_disable_sleep();
-
-    // TODO DMA bit buffer is passed as parameter as well as strip type and LED count
-    bc_ws2812b_init(_bc_module_dma_bit_buffer, _bc_module_power.led_strip.type, _bc_module_power.led_strip.count);
+    bc_ws2812b_init(led_strip);
 
     bc_scheduler_register(_bc_module_power_led_strip_task, &_bc_module_power, 10);
 }
@@ -108,7 +102,7 @@ bool bc_module_power_led_strip_set_framebuffer(const uint8_t *framebuffer, size_
 
     int position = 0;
 
-    if (_bc_module_power.led_strip.type == BC_WS2812B_TYPE_RGBW)
+    if (_bc_module_power.led_strip.type == BC_LED_STRIP_TYPE_RGBW)
     {
         for (size_t i = 0; i < length; i += _bc_module_power.led_strip.type)
         {
@@ -117,7 +111,7 @@ bool bc_module_power_led_strip_set_framebuffer(const uint8_t *framebuffer, size_
     }
     else
     {
-        for (size_t i = 0; i < length; i += _bc_module_power.led_strip.type)
+        for (size_t i = 0; i < length; i += _bc_module_power.led_strip.count)
         {
             bc_ws2812b_set_pixel(position++, framebuffer[i], framebuffer[i + 1], framebuffer[i + 2], 0);
         }
@@ -134,7 +128,7 @@ static void _bc_module_power_led_strip_task(void *param)
 
     if (bc_ws2812b_send() && _bc_module_power.test.test_is_on)
     {
-        uint8_t intensity = 0x05;
+        uint8_t intensity = 255 * (_bc_module_power.test.led + 1) / (_bc_module_power.led_strip.count + 1);
 
         if (_bc_module_power.test.step == 0)
         {
@@ -150,7 +144,7 @@ static void _bc_module_power_led_strip_task(void *param)
         }
         else if (_bc_module_power.test.step == 3)
         {
-            if (_bc_module_power.led_strip.type == BC_WS2812B_TYPE_RGB)
+            if (_bc_module_power.led_strip.type == BC_LED_STRIP_TYPE_RGBW)
             {
                 bc_ws2812b_set_pixel(_bc_module_power.test.led, intensity, intensity, intensity, 0);
             }
