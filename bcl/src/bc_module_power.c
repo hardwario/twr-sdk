@@ -88,6 +88,16 @@ void bc_module_power_led_strip_set_pixel(int position, uint8_t red, uint8_t gree
     bc_ws2812b_set_pixel(position, red, green, blue, white);
 }
 
+void bc_module_power_led_strip_set_pixel_uint(int position, uint32_t color)
+{
+    if (!_bc_module_power.led_strip.initialized)
+    {
+        return;
+    }
+
+    bc_ws2812b_set_pixel_uint(position, color);
+}
+
 bool bc_module_power_led_strip_set_framebuffer(const uint8_t *framebuffer, size_t length)
 {
     if (!_bc_module_power.led_strip.initialized)

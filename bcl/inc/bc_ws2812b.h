@@ -21,7 +21,9 @@ bool bc_ws2812b_init(bc_led_strip_t *led_strip);
 
 void bc_ws2812b_set_event_handler(void (*event_handler)(bc_ws2812b_event_t, void *), void *event_param);
 
-void bc_ws2812b_set_pixel(uint16_t position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white);
+void bc_ws2812b_set_pixel(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white);
+
+void bc_ws2812b_set_pixel_uint(int position, uint32_t color);
 
 bool bc_ws2812b_send(void);
 

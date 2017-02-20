@@ -92,8 +92,6 @@ bool bc_ws2812b_send(void)
     // Set zero length for first pulse because the first bit loads after first TIM_UP
     TIM2->CCR2 = 0;
 
-    // Enable PWM Compare 1
-    //(&timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC1M_1;
     // Enable PWM Compare 2
     (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC2M_1;
 
@@ -105,16 +103,9 @@ bool bc_ws2812b_send(void)
     return true;
 }
 
-void _bc_ws2812b_dma_transfer_half_handler(DMA_HandleTypeDef *dma_handle)
-{
-    (void)dma_handle;
-
-}
-
 void _bc_ws2812b_dma_transfer_complete_handler(DMA_HandleTypeDef *dma_handle)
 {
     (void)dma_handle;
-    //_bc_ws2812b.transfer = false;
 
 	// Stop timer
 	TIM2->CR1 &= ~TIM_CR1_CEN;
@@ -124,16 +115,11 @@ void _bc_ws2812b_dma_transfer_complete_handler(DMA_HandleTypeDef *dma_handle)
 	// Disable the DMA requests
 	__HAL_TIM_DISABLE_DMA(&_bc_ws2812b_timer2_handle, TIM_DMA_UPDATE);
 
-	// Disable PWM output compare 1
-	//(&timer2_handle)->Instance->CCMR1 &= ~(TIM_CCMR1_OC1M_Msk);
-	//(&timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC1M_2;
-
 	// Disable PWM output Compare 2
 	(&_bc_ws2812b_timer2_handle)->Instance->CCMR1 &= ~(TIM_CCMR1_OC2M_Msk);
 	(&_bc_ws2812b_timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC2M_2;
 
 	// Set 50us period for Treset pulse
-	//TIM2->PSC = 1000; // For this long period we need prescaler 1000
 	TIM2->ARR = _BC_WS2812_TIMER_RESET_PULSE_PERIOD;
 	// Reset the timer
 	TIM2->CNT = 0;
@@ -178,7 +164,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     bc_scheduler_plan_now(_bc_ws2812b.task_id);
 }
 
-void bc_ws2812b_set_pixel(uint16_t position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
+void bc_ws2812b_set_pixel(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
 {
 
 	uint32_t calculated_position = (position * _bc_ws2812b.type * 2);
@@ -195,7 +181,27 @@ void bc_ws2812b_set_pixel(uint16_t position, uint8_t red, uint8_t green, uint8_t
 	 if (_bc_ws2812b.type == BC_LED_STRIP_TYPE_RGBW)
 	 {
 		 _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(white & 0xf0) >> 4];
-		 _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[white & 0x0f];
+		 _bc_ws2812b.dma_bit_buffer[calculated_position] = _bc_ws2812b_pulse_tab[white & 0x0f];
+	 }
+}
+
+void bc_ws2812b_set_pixel_uint(int position, uint32_t color)
+{
+	uint32_t calculated_position = (position * _bc_ws2812b.type * 2);
+
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x00f00000) >> 20];
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x000f0000) >> 16];
+
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0xf0000000) >> 28];
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x0f000000) >> 24];
+
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x0000f000) >> 12];
+	_bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x00000f00) >>  8];
+
+	 if (_bc_ws2812b.type == BC_LED_STRIP_TYPE_RGBW)
+	 {
+		 _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x000000f0) >> 4];
+		 _bc_ws2812b.dma_bit_buffer[calculated_position] = _bc_ws2812b_pulse_tab[color & 0x0000000f];
 	 }
 }
 
@@ -229,13 +235,12 @@ bool bc_ws2812b_init(bc_led_strip_t *led_strip)
 	_bc_ws2812b_dma_update.Init.MemInc = DMA_MINC_ENABLE;
 	_bc_ws2812b_dma_update.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
 	_bc_ws2812b_dma_update.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-	_bc_ws2812b_dma_update.Init.Mode = DMA_CIRCULAR; //TODO
+	_bc_ws2812b_dma_update.Init.Mode = DMA_CIRCULAR;
 	_bc_ws2812b_dma_update.Init.Priority = DMA_PRIORITY_VERY_HIGH;
 	_bc_ws2812b_dma_update.Instance = DMA1_Channel2;
 	_bc_ws2812b_dma_update.Init.Request = DMA_REQUEST_8;
 
 	_bc_ws2812b_dma_update.XferCpltCallback = _bc_ws2812b_dma_transfer_complete_handler;
-	//dmaUpdate.XferHalfCpltCallback = dma_transfer_half_handler;
 
 	__HAL_LINKDMA(&_bc_ws2812b_timer2_handle, hdma[TIM_DMA_ID_UPDATE], _bc_ws2812b_dma_update);
 
