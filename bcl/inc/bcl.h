@@ -31,6 +31,8 @@
 
 // BigClown modules
 
+#include <bc_module_climate.h>
+#include <bc_module_encoder.h>
 #include <bc_module_pir.h>
 #include <bc_module_power.h>
 #include <bc_module_relay.h>
