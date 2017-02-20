@@ -15,8 +15,7 @@ typedef enum
 
 } bc_ws2812b_event_t;
 
-
-bool bc_ws2812b_init(bc_led_strip_t *led_strip);
+bool bc_ws2812b_init(const bc_led_strip_t *led_strip);
 
 void bc_ws2812b_set_event_handler(void (*event_handler)(bc_ws2812b_event_t, void *), void *event_param);
 
@@ -24,7 +23,7 @@ void bc_ws2812b_set_pixel_from_rgb(int position, uint8_t red, uint8_t green, uin
 
 void bc_ws2812b_set_pixel_from_uint32(int position, uint32_t color);
 
-bool bc_ws2812b_send(void);
+bool bc_ws2812b_write(void);
 
 //! @}
 
