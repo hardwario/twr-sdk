@@ -17,8 +17,8 @@ static struct
     {
         bool initialized;
         bool on;
-    	bc_led_strip_type_t type;
-    	int count;
+        bc_led_strip_type_t type;
+        int count;
 
     } led_strip;
 
@@ -78,24 +78,24 @@ void bc_module_power_led_strip_test(void)
     _bc_module_power.test.test_is_on = true;
 }
 
-void bc_module_power_led_strip_set_pixel(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
+void bc_module_power_led_strip_set_pixel_from_rgb(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
 {
     if (!_bc_module_power.led_strip.initialized)
     {
         return;
     }
 
-    bc_ws2812b_set_pixel(position, red, green, blue, white);
+    bc_ws2812b_set_pixel_from_rgb(position, red, green, blue, white);
 }
 
-void bc_module_power_led_strip_set_pixel_uint(int position, uint32_t color)
+void bc_module_power_led_strip_set_pixel_from_uint32(int position, uint32_t color)
 {
     if (!_bc_module_power.led_strip.initialized)
     {
         return;
     }
 
-    bc_ws2812b_set_pixel_uint(position, color);
+    bc_ws2812b_set_pixel_from_uint32(position, color);
 }
 
 bool bc_module_power_led_strip_set_framebuffer(const uint8_t *framebuffer, size_t length)
@@ -116,18 +116,16 @@ bool bc_module_power_led_strip_set_framebuffer(const uint8_t *framebuffer, size_
     {
         for (size_t i = 0; i < length; i += _bc_module_power.led_strip.type)
         {
-            bc_ws2812b_set_pixel(position++, framebuffer[i], framebuffer[i + 1], framebuffer[i + 2], framebuffer[i + 3]);
+            bc_ws2812b_set_pixel_from_rgb(position++, framebuffer[i], framebuffer[i + 1], framebuffer[i + 2], framebuffer[i + 3]);
         }
     }
     else
     {
         for (size_t i = 0; i < length; i += _bc_module_power.led_strip.count)
         {
-            bc_ws2812b_set_pixel(position++, framebuffer[i], framebuffer[i + 1], framebuffer[i + 2], 0);
+            bc_ws2812b_set_pixel_from_rgb(position++, framebuffer[i], framebuffer[i + 1], framebuffer[i + 2], 0);
         }
     }
-
-    bc_ws2812b_send();
 
     return true;
 }
@@ -142,30 +140,30 @@ static void _bc_module_power_led_strip_task(void *param)
 
         if (_bc_module_power.test.step == 0)
         {
-            bc_ws2812b_set_pixel(_bc_module_power.test.led, intensity, 0, 0, 0);
+            bc_ws2812b_set_pixel_from_rgb(_bc_module_power.test.led, intensity, 0, 0, 0);
         }
         else if (_bc_module_power.test.step == 1)
         {
-            bc_ws2812b_set_pixel(_bc_module_power.test.led, 0, intensity, 0, 0);
+            bc_ws2812b_set_pixel_from_rgb(_bc_module_power.test.led, 0, intensity, 0, 0);
         }
         else if (_bc_module_power.test.step == 2)
         {
-            bc_ws2812b_set_pixel(_bc_module_power.test.led, 0, 0, intensity, 0);
+            bc_ws2812b_set_pixel_from_rgb(_bc_module_power.test.led, 0, 0, intensity, 0);
         }
         else if (_bc_module_power.test.step == 3)
         {
             if (_bc_module_power.led_strip.type == BC_LED_STRIP_TYPE_RGBW)
             {
-                bc_ws2812b_set_pixel(_bc_module_power.test.led, intensity, intensity, intensity, 0);
+                    bc_ws2812b_set_pixel_from_rgb(_bc_module_power.test.led, 0, 0, 0, intensity);
             }
             else
             {
-                bc_ws2812b_set_pixel(_bc_module_power.test.led, 0, 0, 0, intensity);
+                bc_ws2812b_set_pixel_from_rgb(_bc_module_power.test.led, intensity, intensity, intensity, 0);
             }
         }
         else
         {
-            bc_ws2812b_set_pixel(_bc_module_power.test.led, 0, 0, 0, 0);
+            bc_ws2812b_set_pixel_from_rgb(_bc_module_power.test.led, 0, 0, 0, 0);
         }
 
         _bc_module_power.test.led++;

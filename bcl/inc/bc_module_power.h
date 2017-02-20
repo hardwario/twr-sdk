@@ -18,9 +18,9 @@ void bc_module_power_led_strip_init(bc_led_strip_t *led_strip);
 
 void bc_module_power_led_strip_test(void);
 
-void bc_module_power_led_strip_set_pixel(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white);
+void bc_module_power_led_strip_set_pixel_from_rgb(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white);
 
-void bc_module_power_led_strip_set_pixel_uint(int position, uint32_t color);
+void bc_module_power_led_strip_set_pixel_from_uint32(int position, uint32_t color);
 
 bool bc_module_power_led_strip_set_framebuffer(const uint8_t *framebuffer, size_t length);
 
