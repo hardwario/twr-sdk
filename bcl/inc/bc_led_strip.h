@@ -31,11 +31,20 @@ typedef enum
 {
     BC_LED_STRIP_EFFECT_NONE = 0,
     BC_LED_STRIP_EFFECT_TEST,
-    BC_LED_STRIP_EFFECT_RAINBOW_CYCLE
+    BC_LED_STRIP_EFFECT_RAINBOW_CYCLE,
+    BC_LED_STRIP_EFFECT_COLOR_WIPE,
 
 } bc_led_strip_effect_t;
 
-typedef struct
+typedef enum
+{
+    BC_LED_STRIP_EVENT_EFFECT_DONE = 0,
+
+} bc_led_strip_event_t;
+
+typedef struct bc_led_strip_t bc_led_strip_t;
+
+struct bc_led_strip_t
 {
     const bc_led_strip_driver_t *_driver;
     const bc_led_strip_buffer_t *_buffer;
@@ -44,14 +53,19 @@ typedef struct
     {
         bc_led_strip_effect_t name;
         int led;
-        int step;
+        int round;
         bc_tick_t wait;
+        uint32_t color;
 
     } _effect;
+    void (*_event_handler)(bc_led_strip_t *, bc_led_strip_event_t, void *);
+    void *_event_param;
 
-} bc_led_strip_t;
+};
 
 void bc_led_strip_init(bc_led_strip_t *self, const bc_led_strip_driver_t *driver, const bc_led_strip_buffer_t *buffer);
+
+void bc_led_strip_set_event_handler(bc_led_strip_t *self, void (*event_handler)(bc_led_strip_t *, bc_led_strip_event_t, void *), void *event_param);
 
 int bc_led_strip_get_pixel_count(bc_led_strip_t *self);
 
@@ -69,6 +83,8 @@ bool bc_led_strip_write(bc_led_strip_t *self);
 
 void bc_led_strip_test(bc_led_strip_t *self);
 
-void bc_led_strip_effect_rainbow_cycle(bc_led_strip_t *self);
+void bc_led_strip_effect_rainbow_cycle(bc_led_strip_t *self, bc_tick_t wait);
+
+void bc_led_strip_effect_color_wipe(bc_led_strip_t *self, uint32_t color, bc_tick_t wait);
 
 #endif // _BC_LED_STRIP_H
