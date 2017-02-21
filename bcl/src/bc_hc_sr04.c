@@ -2,6 +2,9 @@
 #include <bc_scheduler.h>
 #include <stm32l0xx.h>
 
+// Timer resolution in microseconds
+#define _BC_HC_SR04_RESOLUTION 5
+
 static struct
 {
     bc_scheduler_task_id_t task_id_interval;
@@ -70,8 +73,8 @@ void bc_hc_sr04_init(void)
     // Capture 4 is sensitive on falling edge
     TIM3->CCER |= 1 << TIM_CCER_CC4P_Pos;
 
-    // Set prescaler to 16
-    TIM3->PSC = 16 - 1;
+    // Set prescaler to 5 * 16 (5 microseconds resolution)
+    TIM3->PSC = _BC_HC_SR04_RESOLUTION * 16 - 1;
 
     // Enable TIM3 interrupts
     NVIC_EnableIRQ(TIM3_IRQn);
@@ -107,12 +110,13 @@ bool bc_hc_sr04_measure(void)
     bc_scheduler_disable_sleep();
 
     _bc_hc_sr04.measurement_active = true;
+
     _bc_hc_sr04.measurement_valid = false;
 
     _bc_hc_sr04.task_id_notify = bc_scheduler_register(_bc_hc_sr04_task_notify, NULL, BC_TICK_INFINITY);
 
-    // Set timeout register
-    TIM3->CCR1 = 60000;
+    // Set timeout register (250 milliseconds)
+    TIM3->CCR1 = 250000 / _BC_HC_SR04_RESOLUTION;
 
     // Trigger update
     TIM3->EGR = TIM_EGR_UG;
@@ -145,7 +149,7 @@ bool bc_hc_sr04_get_distance_millimeter(float *millimeter)
         return false;
     }
 
-    *millimeter = (float) _bc_hc_sr04.echo_duration / 5.8;
+    *millimeter = _BC_HC_SR04_RESOLUTION * (float) _bc_hc_sr04.echo_duration / 5.8;
 
     return true;
 }
@@ -178,6 +182,7 @@ static void _bc_hc_sr04_task_notify(void *param)
     }
 
     bc_scheduler_unregister(_bc_hc_sr04.task_id_notify);
+
     bc_scheduler_enable_sleep();
 }
 
@@ -213,8 +218,11 @@ void TIM3_IRQHandler(void)
                     // Calculate echo duration (distance between rising and falling edge)
                     _bc_hc_sr04.echo_duration = falling_capture - rising_capture;
 
-                    // Indicate error (timeout or overcapture occurred)
-                    _bc_hc_sr04.measurement_valid = true;
+                    if (_bc_hc_sr04.echo_duration <= 30000 / _BC_HC_SR04_RESOLUTION)
+                    {
+                        // Indicate success
+                        _bc_hc_sr04.measurement_valid = true;
+                    }
                 }
             }
         }
