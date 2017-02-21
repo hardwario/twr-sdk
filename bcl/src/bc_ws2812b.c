@@ -113,11 +113,15 @@ bool bc_ws2812b_init(const bc_led_strip_t *led_strip)
 
     _bc_ws2812b_timer2_oc1.OCMode = TIM_OCMODE_PWM1;
     _bc_ws2812b_timer2_oc1.OCPolarity = TIM_OCPOLARITY_HIGH;
-    _bc_ws2812b_timer2_oc1.Pulse = _BC_WS2812_COMPARE_PULSE_LOGIC_0;
+    _bc_ws2812b_timer2_oc1.Pulse = 0;
     _bc_ws2812b_timer2_oc1.OCFastMode = TIM_OCFAST_DISABLE;
     HAL_TIM_PWM_ConfigChannel(&_bc_ws2812b_timer2_handle, &_bc_ws2812b_timer2_oc1, TIM_CHANNEL_2);
 
-    HAL_TIM_PWM_Start(&_bc_ws2812b_timer2_handle, TIM_CHANNEL_2);
+    TIM2->CR1 &= ~TIM_CR1_CEN;
+
+    TIM2->CCER |= (uint32_t)(TIM_CCx_ENABLE << TIM_CHANNEL_2);
+
+    //HAL_TIM_PWM_Start(&_bc_ws2812b_timer2_handle, TIM_CHANNEL_2);
 
     TIM2->DCR = TIM_DMABASE_CCR2 | TIM_DMABURSTLENGTH_1TRANSFER;
 
@@ -193,17 +197,11 @@ bool bc_ws2812b_write(void)
     // clear all DMA flags
     __HAL_DMA_CLEAR_FLAG(&_bc_ws2812b_dma_update, DMA_FLAG_TC2 | DMA_FLAG_HT2 | DMA_FLAG_TE2);
 
-    // configure the number of bytes to be transferred by the DMA controller
-    _bc_ws2812b_dma_update.Instance->CNDTR = _bc_ws2812b.dma_bit_buffer_size;
-
     // clear all TIM2 flags
     __HAL_TIM_CLEAR_FLAG(&_bc_ws2812b_timer2_handle, TIM_FLAG_UPDATE | TIM_FLAG_CC1 | TIM_FLAG_CC2 | TIM_FLAG_CC3 | TIM_FLAG_CC4);
 
-    // enable DMA channels
-    __HAL_DMA_ENABLE(&_bc_ws2812b_dma_update);
-
-    // IMPORTANT: enable the TIM2 DMA requests AFTER enabling the DMA channels!
-    __HAL_TIM_ENABLE_DMA(&_bc_ws2812b_timer2_handle, TIM_DMA_UPDATE);
+    // configure the number of bytes to be transferred by the DMA controller
+    _bc_ws2812b_dma_update.Instance->CNDTR = _bc_ws2812b.dma_bit_buffer_size;
 
     TIM2->CNT = _BC_WS2812_TIMER_PERIOD - 1;
 
@@ -213,10 +211,14 @@ bool bc_ws2812b_write(void)
     // Enable PWM Compare 2
     (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC2M_1;
 
-    __HAL_DBGMCU_FREEZE_TIM2();
+    // enable DMA channels
+    __HAL_DMA_ENABLE(&_bc_ws2812b_dma_update);
+
+    // IMPORTANT: enable the TIM2 DMA requests AFTER enabling the DMA channels!
+    __HAL_TIM_ENABLE_DMA(&_bc_ws2812b_timer2_handle, TIM_DMA_UPDATE);
 
     // start TIM2
-    __HAL_TIM_ENABLE(&_bc_ws2812b_timer2_handle);
+    TIM2->CR1 |= TIM_CR1_CEN;
 
     return true;
 }
