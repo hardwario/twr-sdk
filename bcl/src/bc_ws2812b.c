@@ -51,7 +51,7 @@ const uint32_t _bc_ws2812b_pulse_tab[] =
 static void _bc_ws2812b_dma_transfer_complete_handler(DMA_HandleTypeDef *dma_handle);
 static void _bc_ws2812b_task(void *param);
 
-bool bc_ws2812b_init(const bc_led_strip_t *led_strip)
+bool bc_ws2812b_init(const bc_led_strip_buffer_t *led_strip)
 {
     memset(&_bc_ws2812b, 0, sizeof(_bc_ws2812b));
 
@@ -59,7 +59,7 @@ bool bc_ws2812b_init(const bc_led_strip_t *led_strip)
     _bc_ws2812b.count = led_strip->count;
 
     _bc_ws2812b.dma_bit_buffer_size = led_strip->count * led_strip->type * 8;
-    _bc_ws2812b.dma_bit_buffer = led_strip->dma_buffer;
+    _bc_ws2812b.dma_bit_buffer = led_strip->buffer;
 
     memset(_bc_ws2812b.dma_bit_buffer, _BC_WS2812_COMPARE_PULSE_LOGIC_0, _bc_ws2812b.dma_bit_buffer_size);
 
