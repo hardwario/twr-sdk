@@ -10,5 +10,6 @@
 #include <inttypes.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
-#endif /* _BC_COMMON_H */
+#endif // _BC_COMMON_H
