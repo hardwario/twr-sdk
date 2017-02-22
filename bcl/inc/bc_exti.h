@@ -183,7 +183,10 @@ typedef enum
     BC_EXTI_LINE_P16 = BC_EXTI_LINE_PB8,
 
     //! @brief EXTI line P17
-    BC_EXTI_LINE_P17 = BC_EXTI_LINE_PB9
+    BC_EXTI_LINE_P17 = BC_EXTI_LINE_PB9,
+
+	//! @brief EXTI line BUTTON
+	BC_EXTI_LINE_BUTTON = BC_EXTI_LINE_PA8
 
 } bc_exti_line_t;
 
