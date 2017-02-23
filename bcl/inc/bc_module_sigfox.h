@@ -2,6 +2,7 @@
 #define _BC_MODULE_SIGFOX_H
 
 #include <bc_td1207r.h>
+#include <bc_wssfm10r1at.h>
 
 //! @addtogroup bc_module_sigfox bc_module_sigfox
 //! @brief Driver for BigClown SigFox Module
@@ -12,19 +13,19 @@
 typedef enum
 {
     //! @brief Error event
-    BC_MODULE_SIGFOX_EVENT_ERROR = BC_TD1207R_EVENT_ERROR,
+    BC_MODULE_SIGFOX_EVENT_ERROR = BC_WSSFM10R1AT_EVENT_ERROR,
 
     //! @brief RF frame transmission started event
-    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_START = BC_TD1207R_EVENT_SEND_RF_FRAME_START,
+    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_START = BC_WSSFM10R1AT_EVENT_SEND_RF_FRAME_START,
 
     //! @brief RF frame transmission finished event
-    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_DONE = BC_TD1207R_EVENT_SEND_RF_FRAME_DONE
+    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_DONE = BC_WSSFM10R1AT_EVENT_SEND_RF_FRAME_DONE
 
 } bc_module_sigfox_event_t;
 
 //! @brief BigClown SigFox Module instance
 
-typedef bc_td1207r_t bc_module_sigfox_t;
+typedef bc_wssfm10r1at_t bc_module_sigfox_t;
 
 //! @brief Initialize BigClown SigFox Module
 //! @param[in] self Instance
