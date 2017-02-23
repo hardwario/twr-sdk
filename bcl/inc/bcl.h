@@ -5,6 +5,7 @@
 
 #include <bc_irq.h>
 #include <usb_talk.h>
+#include <bc_led_strip.h>
 
 // Peripheral drivers
 
@@ -21,6 +22,7 @@
 
 #include <bc_lis2dh12.h>
 #include <bc_spirit1.h>
+#include <bc_hc_sr04.h>
 
 // BigClown tags
 
