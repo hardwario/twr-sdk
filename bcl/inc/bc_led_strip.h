@@ -29,15 +29,6 @@ typedef struct
 
 typedef enum
 {
-    BC_LED_STRIP_EFFECT_NONE = 0,
-    BC_LED_STRIP_EFFECT_TEST,
-    BC_LED_STRIP_EFFECT_RAINBOW_CYCLE,
-    BC_LED_STRIP_EFFECT_COLOR_WIPE,
-
-} bc_led_strip_effect_t;
-
-typedef enum
-{
     BC_LED_STRIP_EVENT_EFFECT_DONE = 0,
 
 } bc_led_strip_event_t;
@@ -48,14 +39,14 @@ struct bc_led_strip_t
 {
     const bc_led_strip_driver_t *_driver;
     const bc_led_strip_buffer_t *_buffer;
-    bc_scheduler_task_id_t _task_id;
+
     struct
     {
-        bc_led_strip_effect_t name;
         int led;
         int round;
         bc_tick_t wait;
         uint32_t color;
+        bc_scheduler_task_id_t task_id;
 
     } _effect;
     void (*_event_handler)(bc_led_strip_t *, bc_led_strip_event_t, void *);
@@ -81,10 +72,21 @@ void bc_led_strip_fill(bc_led_strip_t *self, uint32_t color);
 
 bool bc_led_strip_write(bc_led_strip_t *self);
 
-void bc_led_strip_test(bc_led_strip_t *self);
+void bc_led_strip_effect_stop();
 
+void bc_led_strip_effect_test(bc_led_strip_t *self);
+
+void bc_led_strip_effect_rainbow(bc_led_strip_t *self, bc_tick_t wait);
+
+// Slightly different, this makes the rainbow equally distributed throughout
 void bc_led_strip_effect_rainbow_cycle(bc_led_strip_t *self, bc_tick_t wait);
 
+// Fill the dots one after the other with a color
 void bc_led_strip_effect_color_wipe(bc_led_strip_t *self, uint32_t color, bc_tick_t wait);
+
+//Theatre-style crawling lights.
+void bc_led_strip_effect_theater_chase(bc_led_strip_t *self, uint32_t color, bc_tick_t wait);
+
+void bc_led_strip_effect_theater_chase_rainbow(bc_led_strip_t *self, bc_tick_t wait);
 
 #endif // _BC_LED_STRIP_H
