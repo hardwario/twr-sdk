@@ -4,7 +4,16 @@
 bc_led_t led;
 bc_led_strip_t led_strip;
 uint32_t color;
-int cnt = 0;
+int effect = -1;
+
+static uint32_t _dma_buffer_rgb_12[12 * sizeof(uint32_t) * 2];
+
+const bc_led_strip_buffer_t _led_strip_buffer_rgb_12 =
+{
+    .type = BC_LED_STRIP_TYPE_RGB,
+    .count = 12,
+    .buffer = _dma_buffer_rgb_12
+};
 
 void application_init(void)
 {
@@ -21,8 +30,11 @@ void application_init(void)
 
 
     bc_module_power_init();
-    bc_module_power_led_strip_init(&led_strip, &bc_module_power_led_strip_buffer_rgb_150);
+    bc_led_strip_init(&led_strip, bc_module_power_get_led_strip_driver(), &bc_module_power_led_strip_buffer_rgb_150);
     bc_led_strip_set_event_handler(&led_strip, led_strip_event_handler, NULL);
+
+    bc_led_strip_fill(&led_strip, 0x00000000);
+    bc_led_strip_write(&led_strip);
 
     bc_led_set_mode(&led, BC_LED_MODE_OFF);
 }
@@ -34,17 +46,38 @@ void button_event_handler(bc_button_t *self, bc_button_event_t event, void *even
 
     if (event == BC_BUTTON_EVENT_PRESS)
     {
-        if (cnt++ % 2)
+        effect++;
+
+        if (effect == 0)
+        {
+            bc_led_strip_effect_rainbow(&led_strip, 25);
+        }
+        else if (effect == 1)
+        {
+            bc_led_strip_effect_rainbow_cycle(&led_strip, 25);
+        }
+        else if (effect == 2)
         {
             color = 0xff000000;
             bc_led_strip_fill(&led_strip, 0x00000000);
             bc_led_strip_effect_color_wipe(&led_strip, color, 50);
         }
-        else
+        else if (effect == 3)
         {
-            color = 0x00000000;
-            bc_led_strip_effect_rainbow_cycle(&led_strip, 25);
+            bc_led_strip_effect_theater_chase(&led_strip, color, 45);
         }
+        else if (effect == 4)
+        {
+            bc_led_strip_effect_theater_chase_rainbow(&led_strip, 45);
+        }
+        else if (effect == 5)
+        {
+            effect = -1;
+            bc_led_strip_effect_stop(&led_strip);
+            bc_led_strip_fill(&led_strip, 0x00000000);
+            bc_led_strip_write(&led_strip);
+        }
+
     }
     else if (event == BC_BUTTON_EVENT_RELEASE)
     {
@@ -52,7 +85,7 @@ void button_event_handler(bc_button_t *self, bc_button_event_t event, void *even
     }
     else if (event == BC_BUTTON_EVENT_HOLD)
     {
-        bc_led_strip_test(&led_strip);
+        bc_led_strip_effect_test(&led_strip);
     }
 
 }
@@ -63,10 +96,15 @@ void led_strip_event_handler(bc_led_strip_t *self, bc_led_strip_event_t event, v
 
     if (event == BC_LED_STRIP_EVENT_EFFECT_DONE)
     {
-        color >>= 8;
-        if (color != 0x00000000)
+        if (effect == 2)
         {
+            color >>= 8;
+            if (color == 0x00000000)
+            {
+                color = 0xff000000;
+            }
             bc_led_strip_effect_color_wipe(self, color, 50);
         }
+
     }
 }
