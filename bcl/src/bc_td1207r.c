@@ -17,8 +17,6 @@ void bc_td1207r_init(bc_td1207r_t *self, bc_gpio_channel_t reset_signal, bc_uart
     self->_reset_signal = reset_signal;
     self->_uart_channel = uart_channel;
 
-    // TODO Initialize UART?
-
     bc_gpio_init(self->_reset_signal);
     bc_gpio_set_output(self->_reset_signal, true);
     bc_gpio_set_mode(self->_reset_signal, BC_GPIO_MODE_OUTPUT);
