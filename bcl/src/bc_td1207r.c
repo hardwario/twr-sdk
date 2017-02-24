@@ -112,6 +112,9 @@ static void _bc_td1207r_task(void *param)
             {
                 self->_state = BC_TD1207R_STATE_ERROR;
 
+                // TODO Purge RX FIFO
+
+                // TODO Add extra CR in the beginning
                 strcpy(self->_command, "AT\r");
 
                 size_t length = strlen(self->_command);

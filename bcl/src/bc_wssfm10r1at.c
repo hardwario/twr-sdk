@@ -7,7 +7,6 @@
 #define BC_WSSFM10R1AT_DELAY_SEND_RF_FRAME_RESPONSE 8000
 #define BC_WSSFM10R1AT_DELAY_READ_ID_RESPONSE 100
 #define BC_WSSFM10R1AT_DELAY_READ_PAC_RESPONSE 100
-//#define BC_WSSFM10R1AT_DELAY_CONTINUOUS_WAVE_RESPONSE 1000
 
 static void _bc_wssfm10r1at_task(void *param);
 
@@ -66,7 +65,7 @@ bool bc_wssfm10r1at_send_rf_frame(bc_wssfm10r1at_t *self, const void *buffer, si
     return true;
 }
 
-bool bc_wssfm10r1at_read_id(bc_wssfm10r1at_t *self)
+bool bc_wssfm10r1at_read_device_id(bc_wssfm10r1at_t *self)
 {
     if (!bc_wssfm10r1at_is_ready(self))
     {
@@ -157,7 +156,9 @@ static void _bc_wssfm10r1at_task(void *param)
             {
                 self->_state = BC_WSSFM10R1AT_STATE_ERROR;
 
-                strcpy(self->_command, "AT\r");
+                // TODO Purge RX FIFO
+
+                strcpy(self->_command, "\rAT\r");
 
                 size_t length = strlen(self->_command);
 
@@ -189,10 +190,6 @@ static void _bc_wssfm10r1at_task(void *param)
                 }
 
                 self->_state = BC_WSSFM10R1AT_STATE_IDLE;
-
-                // TODO Remove
-                bc_wssfm10r1at_continuous_wave(self);
-                //bc_wssfm10r1at_read_id(self);
 
                 continue;
             }
@@ -304,9 +301,6 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 self->_state = BC_WSSFM10R1AT_STATE_IDLE;
 
-                // TODO Remove
-                bc_wssfm10r1at_read_pac(self);
-
                 continue;
             }
 
@@ -359,25 +353,6 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 continue;
             }
-/*
-                bc_scheduler_plan_current_relative(BC_WSSFM10R1AT_DELAY_CONTINUOUS_WAVE_RESPONSE);
-
-                return;
-            }
-            case BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_RESPONSE:
-            {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
-
-                if (!_bc_wssfm10r1at_read_response(self))
-                {
-                    continue;
-                }
-
-                self->_state = BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE;
-
-                continue;
-            }
-            */
             case BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE:
             {
                 return;

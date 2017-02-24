@@ -53,7 +53,6 @@ typedef enum
     BC_WSSFM10R1AT_STATE_READ_PAC_COMMAND = 10,
     BC_WSSFM10R1AT_STATE_READ_PAC_RESPONSE = 11,
     BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_COMMAND = 12,
-    //BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_RESPONSE = 13,
     BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE = 14
 
 } bc_wssfm10r1at_state_t;
@@ -108,7 +107,7 @@ bool bc_wssfm10r1at_is_ready(bc_wssfm10r1at_t *self);
 
 bool bc_wssfm10r1at_send_rf_frame(bc_wssfm10r1at_t *self, const void *buffer, size_t length);
 
-bool bc_wssfm10r1at_read_id(bc_wssfm10r1at_t *self);
+bool bc_wssfm10r1at_read_device_id(bc_wssfm10r1at_t *self);
 
 bool bc_wssfm10r1at_read_pac(bc_wssfm10r1at_t *self);
 

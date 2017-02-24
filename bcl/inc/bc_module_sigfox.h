@@ -8,29 +8,55 @@
 //! @brief Driver for BigClown SigFox Module
 //! @{
 
+//! @brief SigFox Module hardware revision
+
+typedef enum
+{
+    //! @brief Hardware revision R1
+    BC_MODULE_SIGFOX_REVISION_R1 = 0,
+
+    //! @brief Hardware revision R2
+    BC_MODULE_SIGFOX_REVISION_R2 = 1
+
+} bc_module_sigfox_revision_t;
+
 //! @brief Callback events
 
 typedef enum
 {
     //! @brief Error event
-    BC_MODULE_SIGFOX_EVENT_ERROR = BC_WSSFM10R1AT_EVENT_ERROR,
+    BC_MODULE_SIGFOX_EVENT_ERROR = 0,
 
     //! @brief RF frame transmission started event
-    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_START = BC_WSSFM10R1AT_EVENT_SEND_RF_FRAME_START,
+    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_START = 1,
 
     //! @brief RF frame transmission finished event
-    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_DONE = BC_WSSFM10R1AT_EVENT_SEND_RF_FRAME_DONE
+    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_DONE = 2
 
 } bc_module_sigfox_event_t;
 
-//! @brief BigClown SigFox Module instance
+//! @cond
 
-typedef bc_wssfm10r1at_t bc_module_sigfox_t;
+typedef struct bc_module_sigfox_t bc_module_sigfox_t;
+
+struct bc_module_sigfox_t
+{
+    bc_module_sigfox_revision_t _revision;
+    void (*_event_handler)(bc_module_sigfox_t *, bc_module_sigfox_event_t, void *);
+    void *_event_param;
+    union
+    {
+        bc_td1207r_t td1207r;
+        bc_wssfm10r1at_t wssfm10r1at;
+    } _modem;
+};
+
+//! @endcond
 
 //! @brief Initialize BigClown SigFox Module
 //! @param[in] self Instance
 
-void bc_module_sigfox_init(bc_module_sigfox_t *self);
+void bc_module_sigfox_init(bc_module_sigfox_t *self, bc_module_sigfox_revision_t revision);
 
 //! @brief Set callback function
 //! @param[in] self Instance
