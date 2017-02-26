@@ -32,6 +32,8 @@ void bc_td1207r_init(bc_td1207r_t *self, bc_gpio_channel_t reset_signal, bc_uart
     bc_uart_init(self->_uart_channel, &uart_param, &self->_tx_fifo, &self->_rx_fifo);
 
     self->_task_id = bc_scheduler_register(_bc_td1207r_task, self, BC_TD1207R_DELAY_RUN);
+
+    self->_state = BC_TD1207R_STATE_INITIALIZE;
 }
 
 void bc_td1207r_set_event_handler(bc_td1207r_t *self, void (*event_handler)(bc_td1207r_t *, bc_td1207r_event_t, void *), void *event_param)
@@ -42,7 +44,7 @@ void bc_td1207r_set_event_handler(bc_td1207r_t *self, void (*event_handler)(bc_t
 
 bool bc_td1207r_is_ready(bc_td1207r_t *self)
 {
-    return self->_state == BC_TD1207R_STATE_IDLE ? true : false;
+    return self->_state == BC_TD1207R_STATE_READY ? true : false;
 }
 
 bool bc_td1207r_send_rf_frame(bc_td1207r_t *self, const void *buffer, size_t length)
@@ -71,6 +73,15 @@ static void _bc_td1207r_task(void *param)
     {
         switch (self->_state)
         {
+            case BC_TD1207R_STATE_READY:
+            {
+                if (self->_event_handler != NULL)
+                {
+                    self->_event_handler(self, BC_TD1207R_EVENT_READY, self->_event_param);
+                }
+
+                return;
+            }
             case BC_TD1207R_STATE_ERROR:
             {
                 if (self->_event_handler != NULL)
@@ -114,8 +125,7 @@ static void _bc_td1207r_task(void *param)
 
                 // TODO Purge RX FIFO
 
-                // TODO Add extra CR in the beginning
-                strcpy(self->_command, "AT\r");
+                strcpy(self->_command, "\rAT\r");
 
                 size_t length = strlen(self->_command);
 
@@ -156,13 +166,9 @@ static void _bc_td1207r_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_TD1207R_STATE_IDLE;
+                self->_state = BC_TD1207R_STATE_READY;
 
                 continue;
-            }
-            case BC_TD1207R_STATE_IDLE:
-            {
-                return;
             }
             case BC_TD1207R_STATE_SEND_RF_FRAME_COMMAND:
             {
@@ -239,7 +245,7 @@ static void _bc_td1207r_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_TD1207R_STATE_IDLE;
+                self->_state = BC_TD1207R_STATE_READY;
 
                 if (self->_event_handler != NULL)
                 {

@@ -51,6 +51,36 @@ bool bc_module_sigfox_send_rf_frame(bc_module_sigfox_t *self, const void *buffer
     return bc_wssfm10r1at_send_rf_frame(&self->_modem.wssfm10r1at, buffer, length);
 }
 
+bool bc_module_sigfox_read_device_id(bc_module_sigfox_t *self)
+{
+    if (self->_revision == BC_MODULE_SIGFOX_REVISION_R1)
+    {
+        return false;
+    }
+
+    return bc_wssfm10r1at_read_device_id(&self->_modem.wssfm10r1at);
+}
+
+bool bc_module_sigfox_read_device_pac(bc_module_sigfox_t *self)
+{
+    if (self->_revision == BC_MODULE_SIGFOX_REVISION_R1)
+    {
+        return false;
+    }
+
+    return bc_wssfm10r1at_read_device_pac(&self->_modem.wssfm10r1at);
+}
+
+bool bc_module_sigfox_continuous_wave(bc_module_sigfox_t *self)
+{
+    if (self->_revision == BC_MODULE_SIGFOX_REVISION_R1)
+    {
+        return false;
+    }
+
+    return bc_wssfm10r1at_continuous_wave(&self->_modem.wssfm10r1at);
+}
+
 static void _bc_module_sigfox_event_handler_td1207r(bc_td1207r_t *child, bc_td1207r_event_t event, void *event_param)
 {
     (void) child;
@@ -59,7 +89,11 @@ static void _bc_module_sigfox_event_handler_td1207r(bc_td1207r_t *child, bc_td12
 
     if (self->_event_handler != NULL)
     {
-        if (event == BC_TD1207R_EVENT_ERROR)
+        if (event == BC_TD1207R_EVENT_READY)
+        {
+            self->_event_handler(self, BC_MODULE_SIGFOX_EVENT_READY, self->_event_param);
+        }
+        else if (event == BC_TD1207R_EVENT_ERROR)
         {
             self->_event_handler(self, BC_MODULE_SIGFOX_EVENT_ERROR, self->_event_param);
         }
@@ -82,7 +116,11 @@ static void _bc_module_sigfox_event_handler_wssfm10r1at(bc_wssfm10r1at_t *child,
 
     if (self->_event_handler != NULL)
     {
-        if (event == BC_WSSFM10R1AT_EVENT_ERROR)
+        if (event == BC_WSSFM10R1AT_EVENT_READY)
+        {
+            self->_event_handler(self, BC_MODULE_SIGFOX_EVENT_READY, self->_event_param);
+        }
+        else if (event == BC_WSSFM10R1AT_EVENT_ERROR)
         {
             self->_event_handler(self, BC_MODULE_SIGFOX_EVENT_ERROR, self->_event_param);
         }
@@ -93,6 +131,14 @@ static void _bc_module_sigfox_event_handler_wssfm10r1at(bc_wssfm10r1at_t *child,
         else if (event == BC_WSSFM10R1AT_EVENT_SEND_RF_FRAME_DONE)
         {
             self->_event_handler(self, BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_DONE, self->_event_param);
+        }
+        else if (event == BC_WSSFM10R1AT_EVENT_READ_DEVICE_ID)
+        {
+            self->_event_handler(self, BC_MODULE_SIGFOX_EVENT_READ_DEVICE_ID, self->_event_param);
+        }
+        else if (event == BC_WSSFM10R1AT_EVENT_READ_DEVICE_PAC)
+        {
+            self->_event_handler(self, BC_MODULE_SIGFOX_EVENT_READ_DEVICE_PAC, self->_event_param);
         }
     }
 }

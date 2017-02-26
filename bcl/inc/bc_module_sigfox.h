@@ -24,14 +24,23 @@ typedef enum
 
 typedef enum
 {
+    //! @brief Ready event
+    BC_MODULE_SIGFOX_EVENT_READY = 0,
+
     //! @brief Error event
-    BC_MODULE_SIGFOX_EVENT_ERROR = 0,
+    BC_MODULE_SIGFOX_EVENT_ERROR = 1,
 
     //! @brief RF frame transmission started event
-    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_START = 1,
+    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_START = 2,
 
     //! @brief RF frame transmission finished event
-    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_DONE = 2
+    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_DONE = 3,
+
+    //! @brief Device ID has been read event
+    BC_MODULE_SIGFOX_EVENT_READ_DEVICE_ID = 4,
+
+    //! @brief Device PAC has been read event
+    BC_MODULE_SIGFOX_EVENT_READ_DEVICE_PAC = 5
 
 } bc_module_sigfox_event_t;
 
@@ -80,6 +89,27 @@ bool bc_module_sigfox_is_ready(bc_module_sigfox_t *self);
 //! @return false if command was denied for processing
 
 bool bc_module_sigfox_send_rf_frame(bc_module_sigfox_t *self, const void *buffer, size_t length);
+
+//! @brief Read device ID command
+//! @param[in] self Instance
+//! @return true if command was accepted for processing
+//! @return false if command was denied for processing
+
+bool bc_module_sigfox_read_device_id(bc_module_sigfox_t *self);
+
+//! @brief Read device PAC command
+//! @param[in] self Instance
+//! @return true if command was accepted for processing
+//! @return false if command was denied for processing
+
+bool bc_module_sigfox_read_device_pac(bc_module_sigfox_t *self);
+
+//! @brief Generate continuous wave command
+//! @param[in] self Instance
+//! @return true if command was accepted for processing
+//! @return false if command was denied for processing
+
+bool bc_module_sigfox_continuous_wave(bc_module_sigfox_t *self);
 
 //! @}
 
