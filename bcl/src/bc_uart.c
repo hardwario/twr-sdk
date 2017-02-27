@@ -50,10 +50,10 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_param_t *param, bc_fifo_t *
         RCC->APB1ENR;
 
         // Enable transmitter and receiver
-        LPUART1->CR1 = USART_CR1_RXNEIE | USART_CR1_TE | USART_CR1_RE;
+        LPUART1->CR1 = USART_CR1_RXNEIE | USART_CR1_TE | USART_CR1_RE | USART_CR1_UESM;
 
         // Enable clock in stop mode, disable overrun detection
-        LPUART1->CR3 = USART_CR3_UCESM | USART_CR3_OVRDIS;
+        LPUART1->CR3 = USART_CR3_UCESM | USART_CR3_WUFIE | USART_CR3_WUS_1 | USART_CR3_WUS_0 | USART_CR3_OVRDIS;
 
         // Configure baudrate
         LPUART1->BRR = 0x369;
@@ -160,6 +160,11 @@ size_t bc_uart_read(bc_uart_channel_t channel, void *buffer, size_t length, bc_t
 
 void AES_RNG_LPUART1_IRQHandler(void)
 {
+    if ((LPUART1->ISR & USART_ISR_WUF) != 0)
+    {
+        LPUART1->ICR = USART_ICR_WUCF;
+    }
+
     // If it is TX interrupt...
     if ((LPUART1->ISR & USART_ISR_TXE) != 0)
     {
