@@ -10,7 +10,6 @@
 
 extern const bc_led_strip_buffer_t bc_module_power_led_strip_buffer_rgbw_144;
 extern const bc_led_strip_buffer_t bc_module_power_led_strip_buffer_rgb_150;
-extern const bc_led_strip_driver_t bc_module_power_led_strip_driver;
 
 void bc_module_power_init(void);
 
@@ -18,9 +17,7 @@ void bc_module_power_relay_set_state(bool state);
 
 bool bc_module_power_relay_get_state(void);
 
-void bc_module_power_led_strip_init(bc_led_strip_t *led_strip, const bc_led_strip_buffer_t *buffer);
-
-bc_led_strip_t *bc_module_power_get_led_strip(void);
+const bc_led_strip_driver_t *bc_module_power_get_led_strip_driver(void);
 
 //! @}
 

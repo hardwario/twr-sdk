@@ -38,13 +38,6 @@ static struct
 
     } relay;
 
-    struct
-    {
-        bool initialized;
-        bc_led_strip_t *led_strip;
-
-    } led_strip;
-
 } _bc_module_power;
 
 void bc_module_power_init(void)
@@ -67,17 +60,7 @@ bool bc_module_power_relay_get_state(void)
     return _bc_module_power.relay.on;
 }
 
-void bc_module_power_led_strip_init(bc_led_strip_t *led_strip, const bc_led_strip_buffer_t *buffer)
+const bc_led_strip_driver_t *bc_module_power_get_led_strip_driver(void)
 {
-
-    bc_led_strip_init(led_strip, &bc_module_power_led_strip_driver, buffer);
-
-    _bc_module_power.led_strip.initialized = true;
-
-    _bc_module_power.led_strip.led_strip = led_strip;
-}
-
-bc_led_strip_t *bc_module_power_get_led_strip(void)
-{
-    return _bc_module_power.led_strip.led_strip;
+    return &bc_module_power_led_strip_driver;
 }
