@@ -1,6 +1,7 @@
 #include <bc_led_strip.h>
 
-static void _bc_led_strip_task(void *param);
+#define BC_LED_STRIP_NULL_TASK BC_SCHEDULER_MAX_TASKS + 1
+
 uint32_t _bc_led_strip_wheel(int position);
 
 void bc_led_strip_init(bc_led_strip_t *self, const bc_led_strip_driver_t *driver, const bc_led_strip_buffer_t *buffer)
@@ -8,8 +9,7 @@ void bc_led_strip_init(bc_led_strip_t *self, const bc_led_strip_driver_t *driver
     memset(self, 0x00, sizeof(bc_led_strip_t));
     self->_buffer = buffer;
     self->_driver = driver;
-    self->_task_id = bc_scheduler_register(_bc_led_strip_task, self, BC_TICK_INFINITY);
-
+    self->_effect.task_id = BC_LED_STRIP_NULL_TASK;
     self->_driver->init(self->_buffer);
 }
 
@@ -50,14 +50,14 @@ bool bc_led_strip_set_rgbw_framebuffer(bc_led_strip_t *self, const uint8_t *fram
 
     if (self->_buffer->type == BC_LED_STRIP_TYPE_RGBW)
     {
-        for (int i = 0; i < length; i += self->_buffer->type)
+        for (size_t i = 0; i < length; i += self->_buffer->type)
         {
             self->_driver->set_pixel_rgbw(position++, framebuffer[i], framebuffer[i + 1], framebuffer[i + 2], framebuffer[i + 3]);
         }
     }
     else
     {
-        for (int i = 0; i < length; i += self->_buffer->type)
+        for (size_t i = 0; i < length; i += self->_buffer->type)
         {
             self->_driver->set_pixel_rgbw(position++, framebuffer[i], framebuffer[i + 1], framebuffer[i + 2], 0);
         }
@@ -68,7 +68,7 @@ bool bc_led_strip_set_rgbw_framebuffer(bc_led_strip_t *self, const uint8_t *fram
 
 void bc_led_strip_fill(bc_led_strip_t *self, uint32_t color)
 {
-    for (size_t i = 0; i < self->_buffer->count; i++)
+    for (int i = 0; i < self->_buffer->count; i++)
     {
         self->_driver->set_pixel(i, color);
     }
@@ -79,131 +79,246 @@ bool bc_led_strip_write(bc_led_strip_t *self)
     return self->_driver->write();
 }
 
-void bc_led_strip_test(bc_led_strip_t *self)
+
+void bc_led_strip_effect_stop(bc_led_strip_t *self)
 {
-    bc_scheduler_plan_absolute(self->_task_id, BC_TICK_INFINITY);
+    if (self->_effect.task_id != BC_LED_STRIP_NULL_TASK)
+    {
+        bc_scheduler_unregister(self->_effect.task_id);
 
-    self->_effect.led = 0;
-    self->_effect.round = 0;
-    self->_effect.wait = 10;
-    self->_effect.name = BC_LED_STRIP_EFFECT_TEST;
-
-    bc_led_strip_fill(self, 0x00000000);
-
-    bc_scheduler_plan_now(self->_task_id);
+        self->_effect.task_id = BC_LED_STRIP_NULL_TASK;
+    }
 }
 
-void bc_led_strip_effect_rainbow_cycle(bc_led_strip_t *self, bc_tick_t wait)
+static void _bc_led_strip_effect_done(bc_led_strip_t *self)
 {
-    bc_scheduler_plan_absolute(self->_task_id, BC_TICK_INFINITY);
+    bc_led_strip_effect_stop(self);
 
-    self->_effect.round = 0;
-    self->_effect.wait = wait;
-    self->_effect.name = BC_LED_STRIP_EFFECT_RAINBOW_CYCLE;
-
-    bc_scheduler_plan_now(self->_task_id);
+    if (self->_event_handler != NULL)
+    {
+        self->_event_handler(self, BC_LED_STRIP_EVENT_EFFECT_DONE, self->_event_param);
+    }
 }
 
-void bc_led_strip_effect_color_wipe(bc_led_strip_t *self, uint32_t color, bc_tick_t wait)
-{
-    bc_scheduler_plan_absolute(self->_task_id, BC_TICK_INFINITY);
-
-    self->_effect.led = 0;
-    self->_effect.wait = wait;
-    self->_effect.color = color;
-    self->_effect.name = BC_LED_STRIP_EFFECT_COLOR_WIPE;
-
-    bc_scheduler_plan_now(self->_task_id);
-}
-
-static void _bc_led_strip_task(void *param)
+static void _bc_led_strip_effect_test_task(void *param)
 {
     bc_led_strip_t *self = (bc_led_strip_t *)param;
 
-    if (self->_effect.name == BC_LED_STRIP_EFFECT_NONE)
+    uint8_t intensity = 255 * (self->_effect.led + 1) / (self->_buffer->count + 1);
+
+    if (self->_effect.round == 0)
     {
-        bc_scheduler_plan_current_absolute(BC_TICK_INFINITY);
-
-        if (self->_event_handler != NULL)
-        {
-            self->_event_handler(self, BC_LED_STRIP_EVENT_EFFECT_DONE, self->_event_param);
-        }
-
-        return;
+        self->_driver->set_pixel_rgbw(self->_effect.led, intensity, 0, 0, 0);
     }
-
-    if (self->_effect.name == BC_LED_STRIP_EFFECT_TEST)
+    else if (self->_effect.round == 1)
     {
-        uint8_t intensity = 255 * (self->_effect.led + 1) / (self->_buffer->count + 1);
-
-        if (self->_effect.round == 0)
+        self->_driver->set_pixel_rgbw(self->_effect.led, 0, intensity, 0, 0);
+    }
+    else if (self->_effect.round == 2)
+    {
+        self->_driver->set_pixel_rgbw(self->_effect.led, 0, 0, intensity, 0);
+    }
+    else if (self->_effect.round == 3)
+    {
+        if (self->_buffer->type == BC_LED_STRIP_TYPE_RGBW)
         {
-            self->_driver->set_pixel_rgbw(self->_effect.led, intensity, 0, 0, 0);
-        }
-        else if (self->_effect.round == 1)
-        {
-            self->_driver->set_pixel_rgbw(self->_effect.led, 0, intensity, 0, 0);
-        }
-        else if (self->_effect.round == 2)
-        {
-            self->_driver->set_pixel_rgbw(self->_effect.led, 0, 0, intensity, 0);
-        }
-        else if (self->_effect.round == 3)
-        {
-            if (self->_buffer->type == BC_LED_STRIP_TYPE_RGBW)
-            {
-                self->_driver->set_pixel_rgbw(self->_effect.led, 0, 0, 0, intensity);
-            }
-            else
-            {
-                self->_driver->set_pixel_rgbw(self->_effect.led, intensity, intensity, intensity, 0);
-            }
+            self->_driver->set_pixel_rgbw(self->_effect.led, 0, 0, 0, intensity);
         }
         else
         {
-            self->_driver->set_pixel_rgbw(self->_effect.led, 0, 0, 0, 0);
-        }
-
-        self->_effect.led++;
-
-        if (self->_effect.led == self->_buffer->count)
-        {
-            self->_effect.led = 0;
-
-            self->_effect.round++;
-
-            if (self->_effect.round == 5)
-            {
-                self->_effect.name = BC_LED_STRIP_EFFECT_NONE;
-            }
+            self->_driver->set_pixel_rgbw(self->_effect.led, intensity, intensity, intensity, 0);
         }
     }
-    else if (self->_effect.name == BC_LED_STRIP_EFFECT_RAINBOW_CYCLE)
+    else
     {
+        self->_driver->set_pixel_rgbw(self->_effect.led, 0, 0, 0, 0);
+    }
 
-        for(int i = 0; i< self->_buffer->count; i++) {
-            self->_driver->set_pixel(i, _bc_led_strip_wheel(((i * 256 / self->_buffer->count) + self->_effect.round) & 255));
-        }
+    self->_effect.led++;
+
+    if (self->_effect.led == self->_buffer->count)
+    {
+        self->_effect.led = 0;
 
         self->_effect.round++;
-    }
-    else if (self->_effect.name == BC_LED_STRIP_EFFECT_COLOR_WIPE)
-    {
-
-        self->_driver->set_pixel(self->_effect.led++, self->_effect.color);
-
-        if (self->_effect.led == self->_buffer->count)
-        {
-            self->_effect.name = BC_LED_STRIP_EFFECT_NONE;
-        }
-
     }
 
     self->_driver->write();
 
+    if (self->_effect.round == 5)
+    {
+        _bc_led_strip_effect_done(self);
+        return;
+    }
+
+    bc_scheduler_plan_current_relative(self->_effect.wait);
+}
+
+void bc_led_strip_effect_test(bc_led_strip_t *self)
+{
+    bc_led_strip_effect_stop(self);
+
+    self->_effect.led = 0;
+    self->_effect.round = 0;
+    self->_effect.wait = 2000 / self->_buffer->count;
+
+    bc_led_strip_fill(self, 0x00000000);
+
+    self->_effect.task_id = bc_scheduler_register(_bc_led_strip_effect_test_task, self, 0);
+}
+
+static void _bc_led_strip_effect_rainbow_task(void *param)
+{
+    bc_led_strip_t *self = (bc_led_strip_t *)param;
+
+    for(int i = 0; i< self->_buffer->count; i++) {
+        self->_driver->set_pixel(i, _bc_led_strip_wheel((i + self->_effect.round) & 255));
+    }
+
+    self->_effect.round++;
+
+    self->_driver->write();
+
+    bc_scheduler_plan_current_relative(self->_effect.wait);
+}
+
+void bc_led_strip_effect_rainbow(bc_led_strip_t *self, bc_tick_t wait)
+{
+    bc_led_strip_effect_stop(self);
+
+    self->_effect.round = 0;
+    self->_effect.wait = wait;
+
+    self->_effect.task_id = bc_scheduler_register(_bc_led_strip_effect_rainbow_task, self, 0);
+}
+
+static void _bc_led_strip_effect_rainbow_cycle_task(void *param)
+{
+    bc_led_strip_t *self = (bc_led_strip_t *)param;
+
+    for(int i = 0; i< self->_buffer->count; i++) {
+        self->_driver->set_pixel(i, _bc_led_strip_wheel(((i * 256 / self->_buffer->count) + self->_effect.round) & 255));
+    }
+
+    self->_effect.round++;
+
+    self->_driver->write();
+
+    bc_scheduler_plan_current_relative(self->_effect.wait);
+}
+
+void bc_led_strip_effect_rainbow_cycle(bc_led_strip_t *self, bc_tick_t wait)
+{
+    bc_led_strip_effect_stop(self);
+
+    self->_effect.round = 0;
+    self->_effect.wait = wait;
+
+    self->_effect.task_id = bc_scheduler_register(_bc_led_strip_effect_rainbow_cycle_task, self, 0);
+}
+
+static void _bc_led_strip_effect_color_wipe_task(void *param)
+{
+    bc_led_strip_t *self = (bc_led_strip_t *)param;
+
+    self->_driver->set_pixel(self->_effect.led++, self->_effect.color);
+
+    if (self->_effect.led == self->_buffer->count)
+    {
+        _bc_led_strip_effect_done(self);
+        return;
+    }
+
+    self->_driver->write();
 
     bc_scheduler_plan_current_relative(self->_effect.wait);
 
+}
+
+void bc_led_strip_effect_color_wipe(bc_led_strip_t *self, uint32_t color, bc_tick_t wait)
+{
+    bc_led_strip_effect_stop(self);
+
+    self->_effect.led = 0;
+    self->_effect.wait = wait;
+    self->_effect.color = color;
+
+    self->_effect.task_id = bc_scheduler_register(_bc_led_strip_effect_color_wipe_task, self, 0);
+}
+
+static void _bc_led_strip_effect_theater_chase_task(void *param)
+{
+    bc_led_strip_t *self = (bc_led_strip_t *)param;
+
+    for (int i = 0; i < self->_buffer->count; i += 3) {
+        self->_driver->set_pixel(i + self->_effect.led, 0);    //turn every third pixel off
+    }
+
+    self->_effect.led++;
+
+    if (self->_effect.led == 3)
+    {
+        self->_effect.led = 0;
+    }
+
+    for (int i = 0; i < self->_buffer->count; i += 3) {
+        self->_driver->set_pixel(i + self->_effect.led, self->_effect.color);    //turn every third pixel on
+    }
+
+    self->_driver->write();
+
+    bc_scheduler_plan_current_relative(self->_effect.wait);
+
+}
+
+void bc_led_strip_effect_theater_chase(bc_led_strip_t *self, uint32_t color, bc_tick_t wait)
+{
+    bc_led_strip_effect_stop(self);
+
+    self->_effect.led = 0;
+    self->_effect.round = 0;
+    self->_effect.color = color;
+    self->_effect.wait = wait;
+
+    self->_effect.task_id = bc_scheduler_register(_bc_led_strip_effect_theater_chase_task, self, 0);
+}
+
+static void _bc_led_strip_effect_theater_chase_rainbow_task(void *param)
+{
+    bc_led_strip_t *self = (bc_led_strip_t *)param;
+
+    for (int i = 0; i < self->_buffer->count; i += 3) {
+        self->_driver->set_pixel(i + self->_effect.led, 0);    //turn every third pixel off
+    }
+
+    self->_effect.led++;
+
+    if (self->_effect.led == 3)
+    {
+        self->_effect.led = 0;
+    }
+
+    for (int i = 0; i < self->_buffer->count; i += 3) {
+        self->_driver->set_pixel(i + self->_effect.led, _bc_led_strip_wheel((i + self->_effect.round) % 255) );    //turn every third pixel on
+    }
+
+    self->_driver->write();
+
+    self->_effect.round++;
+
+    bc_scheduler_plan_current_relative(self->_effect.wait);
+
+}
+
+void bc_led_strip_effect_theater_chase_rainbow(bc_led_strip_t *self, bc_tick_t wait)
+{
+    bc_led_strip_effect_stop(self);
+
+    self->_effect.led = 0;
+    self->_effect.round = 0;
+    self->_effect.wait = wait;
+
+    self->_effect.task_id = bc_scheduler_register(_bc_led_strip_effect_theater_chase_rainbow_task, self, 0);
 }
 
 uint32_t _bc_led_strip_wheel(int position) {
