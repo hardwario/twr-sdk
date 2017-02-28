@@ -39,6 +39,7 @@
 #include <bc_module_power.h>
 #include <bc_module_relay.h>
 #include <bc_module_sigfox.h>
+#include <bc_module_lcd.h>
 
 //! @mainpage BigClown firmware SDK
 //! This is API documentation of BigClown SDK
