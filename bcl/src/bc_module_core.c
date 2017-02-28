@@ -34,7 +34,6 @@ void bc_module_core_init(void)
 static void _bc_module_core_init_flash(void)
 {
     // Enable prefetch
-    // TODO Test if pre-read helps decreasing power consumption (or disabling both)
     FLASH->ACR |= FLASH_ACR_PRFTEN;
 
     // One wait state is used to read word from NVM

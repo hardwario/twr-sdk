@@ -1,9 +1,6 @@
 #include <bc_scheduler.h>
 #include <bc_module_core.h>
 
-// TODO Remove
-#include <bc_gpio.h>
-
 static struct
 {
     struct
@@ -24,10 +21,6 @@ static struct
 void bc_scheduler_init(void)
 {
     memset(&_bc_scheduler, 0, sizeof(_bc_scheduler));
-
-    // TODO Remove
-    bc_gpio_init(BC_GPIO_P9);
-    bc_gpio_set_mode(BC_GPIO_P9, BC_GPIO_MODE_OUTPUT);
 }
 
 void bc_scheduler_run(void)
@@ -52,8 +45,6 @@ void bc_scheduler_run(void)
         }
         if (_bc_scheduler.sleep_bypass_semaphore == 0)
         {
-            // TODO Remove
-            bc_gpio_toggle_output(BC_GPIO_P9);
             bc_module_core_sleep();
         }
     }

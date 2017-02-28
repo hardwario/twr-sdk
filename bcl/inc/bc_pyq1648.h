@@ -53,13 +53,11 @@ struct bc_pyq1648_t
     void (*_event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t, void *);
     void *_event_param;
     bc_pyq1648_state_t _state;
-    bool _event_valid;
     uint32_t _config;
     uint8_t _sensitivity;
     bc_tick_t _blank_period;
     bc_tick_t _aware_time;
     bc_tick_t _ignore_untill;
-    bc_tick_t _connection_check;
     bc_scheduler_task_id_t _task_id;
 };
 
