@@ -1,7 +1,7 @@
 #include <bc_module_lcd.h>
-
-#include <bc_i2c.h>
 #include <bc_spi.h>
+#include <bc_tca9534a.h>
+#include <bc_scheduler.h>
 
 const unsigned char ext_jpg_128[] = {
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -139,9 +139,13 @@ const unsigned char ext_jpg_128[] = {
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, };
 
-#include <stm32l0xx_hal.h>
+static struct
+{
+    void (*event_handler)(bc_module_lcd_event_t, void *);
+    void *event_param;
+    bc_tca9534a_t tca9534a;
 
-#define BC_MODULE_LCD_I2C_ADDRESS_DEFAULT 0x72
+} _bc_module_lcd;
 
 
 uint8_t reverse(uint8_t b) {
@@ -153,167 +157,35 @@ uint8_t reverse(uint8_t b) {
 
 void bc_module_lcd_init()
 {
-    uint8_t i2c_data[5];
+    bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x39);
+
+    bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x00);
+
+    bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, 0x04);
+
+    bc_spi_init(BC_SPI_SPEED_2_MHZ, BC_SPI_MODE_0);
+
 	uint8_t spi_data[200];
-	uint8_t line;
-	unsigned i;
-	unsigned offs;
+    uint8_t line;
+    unsigned i;
+    unsigned offs;
 
-    I2C_HandleTypeDef hi2c2;
-    GPIO_InitTypeDef GPIO_InitStruct;
+    spi_data[0] = 0xd0;
 
-    SPI_HandleTypeDef hspi2;
+    bc_spi_transfer(spi_data, NULL, 2);
 
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_SYSCFG_CLK_ENABLE();
+    spi_data[0] = 0x80;
 
+    for (line = 0x01, offs = 0; line <= 128; line++, offs += 16) {
+        spi_data[1] = reverse(line);
 
-    // HAL_Init(); //nemá vliv
-
-
-    /*
-        bc_tca9534a_t _tca9534a;
-        bc_tca9534a_init(&_tca9534a, BC_I2C_I2C0, BC_MODULE_LCD_I2C_ADDRESS_DEFAULT);
-        // All outputs
-        bc_tca9534a_set_port_direction(&_tca9534a, 0x00);
-        // Set disp_extmode low, disp_on low, green LED high
-        bc_tca9534a_write_port(&_tca9534a, 0x04);
-    */
-
-
-    //bc_i2c_init(BC_I2C_I2C0, BC_I2C_SPEED_400_KHZ);
-    /**I2C2 GPIO Configuration
-    PB10     ------> I2C2_SCL
-    PB11     ------> I2C2_SDA
-    */
-
-    GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF6_I2C2;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    __HAL_RCC_I2C2_CLK_ENABLE();
-
-    hi2c2.Instance = I2C2;
-    hi2c2.Init.Timing = 0x00000708;
-    hi2c2.Init.OwnAddress1 = 0;
-    hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-    hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-    hi2c2.Init.OwnAddress2 = 0;
-    hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-    hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-    hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-    if (HAL_I2C_Init(&hi2c2) != HAL_OK) {
-        Error_Handler();
-    }
-
-    if (HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE)
-            != HAL_OK) {
-        Error_Handler();
-    }
-
-
-
-    /* Peripheral clock enable */
-    __HAL_RCC_SPI2_CLK_ENABLE();
-
-    /**SPI2 GPIO Configuration
-    no config, its controlled by SW > PB12     ------> SPI2_NSS
-    PB13     ------> SPI2_SCK
-    PB15     ------> SPI2_MOSI
-    */
-    GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_15;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF0_SPI2;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    hspi2.Instance = SPI2;
-    hspi2.Init.Mode = SPI_MODE_MASTER;
-    hspi2.Init.Direction = SPI_DIRECTION_2LINES;
-    hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
-    hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
-    hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
-    hspi2.Init.NSS = SPI_NSS_SOFT;
-    hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
-    hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
-    hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
-    hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-    hspi2.Init.CRCPolynomial = 7;
-    if (HAL_SPI_Init(&hspi2) != HAL_OK) {
-        Error_Handler();
-    }
-
-    //bc_spi_init(BC_SPI_SPEED_1_MHZ, BC_SPI_MODE_0);
-
-    // BC_SPI_MODE_0 nezobrazí nic
-    //BC_SPI_MODE_1 - nezobrazí nic
-    //BC_SPI_MODE_2 zobrazí jen každý druhý řádek z obrázku + nějaké artefakty
-    //BC_SPI_MODE_3 zobrazí každý druhý řádek + zobrazí jen roztaženou 1/2 obrázku
-
-    /*
-    for(;;)
-    {
-        // Wait until transmit buffer is empty...
-        while ((SPI2->SR & SPI_SR_TXE) == 0)
-        {
-            continue;
+        for (i = 0; i < 128; i++) {
+            spi_data[2 + i] = ext_jpg_128[i + offs];
         }
 
-        // Write data register
-        SPI2->DR = 0xaa;
+        bc_spi_transfer(spi_data, NULL, 20);
 
-        // Until receive buffer is empty...
-        while ((SPI2->SR & SPI_SR_RXNE) == 0)
-        {
-            continue;
-        }
-    }*/
-
-    // chip select
-    GPIO_InitStruct.Pin = GPIO_PIN_12;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-
-	// I2C expander init + set disp_extmode + disp_on + green led
-	i2c_data[0] = 0x03;
-	i2c_data[1] = 0x00;
-	HAL_I2C_Master_Transmit(&hi2c2, 0x72, i2c_data, 2, 100);
-	i2c_data[0] = 0x01;
-	i2c_data[1] = 0x04/* | 0x80*/;
-	HAL_I2C_Master_Transmit(&hi2c2, 0x72, i2c_data, 2, 100);
-
-	/* USER CODE END 2 */
-
-	spi_data[0] = 0xd0;
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi2, spi_data, 2, 100);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-
-	while (1) {
-		spi_data[0] = 0x80;
-
-		for (line = 0x01, offs = 0; line <= 128; line++, offs += 16) {
-			spi_data[1] = reverse(line);
-
-			for (i = 0; i < 128; i++) {
-				spi_data[2 + i] = ext_jpg_128[i + offs];
-			}
-
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-			HAL_SPI_Transmit(&hspi2, spi_data, 20, 100);
-            //bc_spi_transfer(spi_data, spi_data, 20);
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-
-		}
-	}
-
+    }
 
 }
 

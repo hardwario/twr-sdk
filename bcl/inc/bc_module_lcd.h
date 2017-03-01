@@ -3,11 +3,20 @@
 
 #include "bc_common.h"
 
-//! @addtogroup bc_rtc bc_rtc
-//! @brief Driver for real-time clock
+//! @addtogroup bc_module_lcd bc_module_lcd
+//! @brief Driver for lcd
 //! @{
 
-//! @brief Initialize real-time clock
+//! @brief Callback events
+
+typedef enum
+{
+    //! @brief Done event
+    BC_MODULE_LCD_EVENT_DONE = 0,
+
+} bc_module_lcd_event_t;
+
+//! @brief Initialize lcd
 
 void bc_module_lcd_init(void);
 void bc_module_lcd_on(void);
