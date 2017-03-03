@@ -10,7 +10,7 @@ typedef struct
     const uint8_t *image;
     uint8_t width;
     uint8_t heigth;
-    uint8_t dont_know;
+    /*uint8_t dont_know;*/
 } tImage;
 
  typedef struct  {

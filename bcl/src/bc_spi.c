@@ -116,8 +116,6 @@ bc_spi_mode_t bc_spi_get_mode(void)
 
 void bc_spi_transfer(const void *source, void *destination, size_t length)
 {
-    bc_scheduler_disable_sleep();
-
     // Set CS to active level
     GPIOB->BSRR = GPIO_BSRR_BR_12;
 
@@ -148,8 +146,6 @@ void bc_spi_transfer(const void *source, void *destination, size_t length)
 
     // Set CS to inactive level
     GPIOB->BSRR = GPIO_BSRR_BS_12;
-
-    bc_scheduler_enable_sleep();
 }
 
 static uint8_t _bc_spi_transfer_byte(uint8_t value)
