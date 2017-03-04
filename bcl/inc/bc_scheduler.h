@@ -36,6 +36,11 @@ bc_scheduler_task_id_t bc_scheduler_register(void (*task)(void *), void *param, 
 
 void bc_scheduler_unregister(bc_scheduler_task_id_t task_id);
 
+//! @brief Get task ID of currently executing task
+//! @return Task ID
+
+bc_scheduler_task_id_t bc_scheduler_get_current_task_id(void);
+
 //! @brief Get current tick of spin in which task has been run
 //! @return Tick of spin
 
