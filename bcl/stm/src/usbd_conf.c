@@ -52,7 +52,6 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 PCD_HandleTypeDef hpcd_USB_FS;
-void Error_Handler(void);
 
 /* USER CODE BEGIN 0 */
 
@@ -64,7 +63,6 @@ void Error_Handler(void);
 static void SystemClockConfig_Resume(void);
 /* USER CODE END 1 */
 void HAL_PCDEx_SetConnectionState(PCD_HandleTypeDef *hpcd, uint8_t state);
-extern void SystemClock_Config(void);
 
 /*******************************************************************************
                        LL Driver Callbacks (PCD -> USB Device Library)
@@ -284,7 +282,8 @@ USBD_StatusTypeDef  USBD_LL_Init (USBD_HandleTypeDef *pdev)
   hpcd_USB_FS.Init.battery_charging_enable = DISABLE;
   if (HAL_PCD_Init(&hpcd_USB_FS) != HAL_OK)
   {
-    Error_Handler();
+      // TODO Replace
+      for (;;);
   }
 
   HAL_PCDEx_PMAConfig((PCD_HandleTypeDef*)pdev->pData , 0x00 , PCD_SNG_BUF, 0x18);
@@ -745,7 +744,6 @@ void USBD_static_free(void *p)
   */
 static void SystemClockConfig_Resume(void)
 {
-  SystemClock_Config();
 }
 /* USER CODE END 5 */
 

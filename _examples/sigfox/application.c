@@ -17,10 +17,6 @@ float temperature;
 
 void application_init(void)
 {
-    // TODO Remove
-    // Initialize RTC
-    bc_rtc_init();
-
     // Initialize LED
     bc_led_init(&led, BC_GPIO_LED, false, false);
 

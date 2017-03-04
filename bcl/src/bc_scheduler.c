@@ -92,6 +92,11 @@ void bc_scheduler_unregister(bc_scheduler_task_id_t task_id)
     }
 }
 
+bc_scheduler_task_id_t bc_scheduler_get_current_task_id(void)
+{
+    return _bc_scheduler.current_task_id;
+}
+
 bc_tick_t bc_scheduler_get_spin_tick(void)
 {
     return _bc_scheduler.tick_spin;

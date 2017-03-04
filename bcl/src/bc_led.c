@@ -137,6 +137,20 @@ void bc_led_set_pattern(bc_led_t *self, uint32_t pattern)
 
 void bc_led_pulse(bc_led_t *self, bc_tick_t duration)
 {
+    if (duration == 0)
+    {
+        if (self->_pulse_active)
+        {
+            _bc_led_off(self);
+
+            self->_pulse_active = false;
+
+            bc_scheduler_unregister(self->_pulse_task_id);
+        }
+
+        return;
+    }
+
     if (self->_pulse_active)
     {
         bc_scheduler_plan_absolute(self->_pulse_task_id, bc_tick_get() + duration);
@@ -149,6 +163,11 @@ void bc_led_pulse(bc_led_t *self, bc_tick_t duration)
     self->_pulse_active = true;
 
     self->_pulse_task_id = bc_scheduler_register(_bc_led_task_pulse, self, bc_tick_get() + duration);
+}
+
+bool bc_led_is_pulse(bc_led_t *self)
+{
+    return self->_pulse_active;
 }
 
 static void _bc_led_task(void *param)
@@ -185,7 +204,7 @@ static void _bc_led_task_pulse(void *param)
 {
     bc_led_t *self = param;
 
-    _bc_led_on(self);
+    _bc_led_off(self);
 
     self->_pulse_active = false;
 

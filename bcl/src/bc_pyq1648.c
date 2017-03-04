@@ -106,6 +106,7 @@ static inline void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc
     // Initialize DirectLink (DL) GPIO pin
     bc_gpio_init(gpio_channel_dl);
     bc_gpio_set_mode(gpio_channel_dl, BC_GPIO_MODE_INPUT);
+    bc_gpio_set_pull(gpio_channel_dl, BC_GPIO_PULL_DOWN);
 }
 
 static void _bc_pyq1648_clear_event(bc_pyq1648_t *self)
@@ -130,7 +131,7 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     uint32_t bsrr_mask[2] =
     {
         [0] = _pyq1648_reset_mask[self->_gpio_channel_serin],
-        [1] = _pyq1648_set_mask[self->_gpio_channel_serin] 
+        [1] = _pyq1648_set_mask[self->_gpio_channel_serin]
     };
     GPIO_TypeDef *GPIOx = _pyq1648_gpiox_table[self->_gpio_channel_serin];
     volatile uint32_t *GPIOx_BSRR = &GPIOx->BSRR;
@@ -192,8 +193,6 @@ start:
     {
         case BC_PYQ1648_STATE_ERROR:
         {
-            self->_event_valid = false;
-
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_PYQ1648_EVENT_ERROR, self->_event_param);
@@ -259,7 +258,6 @@ start:
                 {
                     self->_event_handler(self, BC_PYQ1648_EVENT_MOTION, self->_event_param);
                     self->_aware_time = tick_now + self->_blank_period;
-                    self->_event_valid = true;
                 }
                 _bc_pyq1648_clear_event(self);
             }
