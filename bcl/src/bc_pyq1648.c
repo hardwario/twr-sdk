@@ -106,6 +106,7 @@ static inline void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc
     // Initialize DirectLink (DL) GPIO pin
     bc_gpio_init(gpio_channel_dl);
     bc_gpio_set_mode(gpio_channel_dl, BC_GPIO_MODE_INPUT);
+    bc_gpio_set_pull(gpio_channel_dl, BC_GPIO_PULL_DOWN);
 }
 
 static void _bc_pyq1648_clear_event(bc_pyq1648_t *self)
