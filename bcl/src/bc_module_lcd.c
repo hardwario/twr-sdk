@@ -5,13 +5,7 @@
 #include <bc_tca9534a.h>
 #include <bc_scheduler.h>
 
-
 #include <bc_module_lcd.h>
-
-
-
-//#include <bc_font.h>
-//#include <bc_font_big.h>
 
 typedef struct bc_module_lcd_t
 {
@@ -24,22 +18,10 @@ typedef struct bc_module_lcd_t
 
 bc_module_lcd_t _bc_module_lcd;
 
-
-
-/*
-uint8_t reverse(uint8_t b) {
-	b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
-	b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
-	b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
-	return b;
-}*/
-
 uint8_t reverse2(uint32_t b) {
 
 	return __RBIT(b) >> 24;
 }
-
-
 
 void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 {
@@ -54,8 +36,7 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
     self->framebuffer = framebuffer->framebuffer;
 
     // TODO: remove after passing the font pointer
-    bc_module_lcd_set_font(0);
-
+    // bc_module_lcd_set_font(0);
 
     // Prepare buffer so the background is "white" reflective
     bc_module_lcd_clear();
