@@ -191,12 +191,13 @@ void bc_module_lcd_update(void)
 
     bc_module_lcd_t *self = &_bc_module_lcd;
 
-    uint8_t spi_data[1];
+    uint8_t spi_data[2];
     uint8_t line;
     uint32_t offs;
 
     // Send MODE
     spi_data[0] = 0xd0;
+    spi_data[1] = 0x00;
     bc_spi_transfer(spi_data, NULL, 2);
 
     self->framebuffer[0] = 0x80;

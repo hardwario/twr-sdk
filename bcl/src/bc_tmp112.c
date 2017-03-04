@@ -122,7 +122,7 @@ start:
 
             self->_state = BC_TMP112_STATE_READ;
 
-            bc_scheduler_plan_current_relative(BC_TMP112_DELAY_READ);
+            bc_scheduler_plan_current_absolute(bc_tick_get() + BC_TMP112_DELAY_READ);
 
             return;
         }
