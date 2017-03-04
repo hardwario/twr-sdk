@@ -11,9 +11,9 @@ int main(void)
 
     bc_scheduler_init();
 
-    application_init();
-
     bc_scheduler_register(application_task, NULL, 0);
+
+    application_init();
 
     bc_scheduler_run();
 }
