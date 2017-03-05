@@ -99,6 +99,13 @@ void bc_led_set_pattern(bc_led_t *self, uint32_t pattern);
 
 void bc_led_pulse(bc_led_t *self, bc_tick_t duration);
 
+//! @brief Check if there is ongoing LED pulse
+//! @param[in] self Instance
+//! @return true if pulse is now active
+//! @return false if pulse is now inactive
+
+bool bc_led_is_pulse(bc_led_t *self);
+
 //! @}
 
 #endif // _BC_LED_H

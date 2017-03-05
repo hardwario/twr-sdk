@@ -8,25 +8,16 @@
 //! @brief Driver for Power Module
 //! @{
 
+extern const bc_led_strip_buffer_t bc_module_power_led_strip_buffer_rgbw_144;
+extern const bc_led_strip_buffer_t bc_module_power_led_strip_buffer_rgb_150;
+
 void bc_module_power_init(void);
 
 void bc_module_power_relay_set_state(bool state);
 
 bool bc_module_power_relay_get_state(void);
 
-void bc_module_power_led_strip_init(const bc_led_strip_t *led_strip);
-
-void bc_module_power_led_strip_off(void);
-
-void bc_module_power_led_strip_write(void);
-
-bool bc_module_power_led_strip_set_framebuffer(const uint8_t *framebuffer, size_t length);
-
-void bc_module_power_led_strip_set_pixel_from_rgb(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white);
-
-void bc_module_power_led_strip_set_pixel_from_uint32(int position, uint32_t color);
-
-void bc_module_power_led_strip_test(void);
+const bc_led_strip_driver_t *bc_module_power_get_led_strip_driver(void);
 
 //! @}
 

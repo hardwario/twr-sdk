@@ -7,12 +7,13 @@
 
 #define BC_RADIO_EEPROM_PEER_DEVICE_ADDRESS 0x00
 
+
 typedef enum
 {
     BC_RADIO_HEADER_ENROLL,
     BC_RADIO_HEADER_PUB_PUSH_BUTTON,
     BC_RADIO_HEADER_PUB_THERMOMETER,
-	BC_RADIO_HEADER_PUB_HUMIDITY,
+	  BC_RADIO_HEADER_PUB_HUMIDITY,
 
 } bc_radio_header_t;
 
@@ -55,7 +56,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
 __attribute__((weak)) void bc_radio_on_push_button(uint32_t *peer_device_address, uint16_t *event_count) { (void) peer_device_address; (void) event_count; }
 __attribute__((weak)) void bc_radio_on_thermometer(uint32_t *peer_device_address, uint8_t *i2c, float *temperature) { (void) peer_device_address; (void) i2c; (void) temperature; }
-__attribute__((weak)) void bc_radio_on_humidity(uint32_t *peer_device_address, uint8_t *i2c, float *percentage) { (void) peer_device_address; (void) i2c; (void) percentage; }
+__attribute__((weak)) void bc_radio_on_humidity(uint32_t *peer_device_address, uint8_t *i2c, float *percentage) { (void) peer_device_address; (void) i2c; (void) percentage; }=======
 
 void bc_radio_init(void)
 {
@@ -224,19 +225,20 @@ static void _bc_radio_task(void *param)
         else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_THERMOMETER)
         {
             float temperature;
-
+          
             memcpy(&temperature, &queue_item_buffer[2], sizeof(temperature));
 
             bc_radio_on_thermometer(&_bc_radio.peer_device_address, &queue_item_buffer[1], &temperature);
         }
         else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_HUMIDITY)
-		{
-			float percentage;
+        {
+            float percentage;
 
-			memcpy(&percentage, &queue_item_buffer[2], sizeof(percentage));
+            memcpy(&percentage, &queue_item_buffer[2], sizeof(percentage));
 
-			bc_radio_on_humidity(&_bc_radio.peer_device_address, &queue_item_buffer[1], &percentage);
-		}
+            bc_radio_on_humidity(&_bc_radio.peer_device_address, &queue_item_buffer[1], &percentage);
+        }
+
     }
 
     if (bc_queue_get(&_bc_radio.pub_queue, queue_item_buffer, &queue_item_length))

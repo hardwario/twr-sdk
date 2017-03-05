@@ -28,6 +28,9 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_param_t *param, bc_fifo_t *
         // Enable GPIOA clock
         RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
 
+        // Errata workaround
+        RCC->IOPENR;
+
         // Enable pull-up on RXD1 pin
         GPIOA->PUPDR |= GPIO_PUPDR_PUPD3_0;
 
@@ -43,11 +46,14 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_param_t *param, bc_fifo_t *
         // Enable clock for LPUART1
         RCC->APB1ENR |= RCC_APB1ENR_LPUART1EN;
 
-        // Enable transmitter and receiver
-        LPUART1->CR1 = USART_CR1_RXNEIE | USART_CR1_TE | USART_CR1_RE;
+        // Errata workaround
+        RCC->APB1ENR;
 
-        // Disable overrun detection
-        LPUART1->CR3 = USART_CR3_OVRDIS;
+        // Enable transmitter and receiver
+        LPUART1->CR1 = USART_CR1_RXNEIE | USART_CR1_TE | USART_CR1_RE | USART_CR1_UESM;
+
+        // Enable clock in stop mode, disable overrun detection
+        LPUART1->CR3 = USART_CR3_UCESM | USART_CR3_WUFIE | USART_CR3_WUS_1 | USART_CR3_WUS_0 | USART_CR3_OVRDIS;
 
         // Configure baudrate
         LPUART1->BRR = 0x369;
@@ -154,6 +160,11 @@ size_t bc_uart_read(bc_uart_channel_t channel, void *buffer, size_t length, bc_t
 
 void AES_RNG_LPUART1_IRQHandler(void)
 {
+    if ((LPUART1->ISR & USART_ISR_WUF) != 0)
+    {
+        LPUART1->ICR = USART_ICR_WUCF;
+    }
+
     // If it is TX interrupt...
     if ((LPUART1->ISR & USART_ISR_TXE) != 0)
     {

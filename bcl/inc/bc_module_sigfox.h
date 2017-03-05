@@ -2,34 +2,70 @@
 #define _BC_MODULE_SIGFOX_H
 
 #include <bc_td1207r.h>
+#include <bc_wssfm10r1at.h>
 
 //! @addtogroup bc_module_sigfox bc_module_sigfox
 //! @brief Driver for BigClown SigFox Module
 //! @{
 
+//! @brief SigFox Module hardware revision
+
+typedef enum
+{
+    //! @brief Hardware revision R1
+    BC_MODULE_SIGFOX_REVISION_R1 = 0,
+
+    //! @brief Hardware revision R2
+    BC_MODULE_SIGFOX_REVISION_R2 = 1
+
+} bc_module_sigfox_revision_t;
+
 //! @brief Callback events
 
 typedef enum
 {
+    //! @brief Ready event
+    BC_MODULE_SIGFOX_EVENT_READY = 0,
+
     //! @brief Error event
-    BC_MODULE_SIGFOX_EVENT_ERROR = BC_TD1207R_EVENT_ERROR,
+    BC_MODULE_SIGFOX_EVENT_ERROR = 1,
 
     //! @brief RF frame transmission started event
-    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_START = BC_TD1207R_EVENT_SEND_RF_FRAME_START,
+    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_START = 2,
 
     //! @brief RF frame transmission finished event
-    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_DONE = BC_TD1207R_EVENT_SEND_RF_FRAME_DONE
+    BC_MODULE_SIGFOX_EVENT_SEND_RF_FRAME_DONE = 3,
+
+    //! @brief Device ID has been read event
+    BC_MODULE_SIGFOX_EVENT_READ_DEVICE_ID = 4,
+
+    //! @brief Device PAC has been read event
+    BC_MODULE_SIGFOX_EVENT_READ_DEVICE_PAC = 5
 
 } bc_module_sigfox_event_t;
 
-//! @brief BigClown SigFox Module instance
+//! @cond
 
-typedef bc_td1207r_t bc_module_sigfox_t;
+typedef struct bc_module_sigfox_t bc_module_sigfox_t;
+
+struct bc_module_sigfox_t
+{
+    bc_module_sigfox_revision_t _revision;
+    void (*_event_handler)(bc_module_sigfox_t *, bc_module_sigfox_event_t, void *);
+    void *_event_param;
+    union
+    {
+        bc_td1207r_t td1207r;
+        bc_wssfm10r1at_t wssfm10r1at;
+    } _modem;
+};
+
+//! @endcond
 
 //! @brief Initialize BigClown SigFox Module
 //! @param[in] self Instance
 
-void bc_module_sigfox_init(bc_module_sigfox_t *self);
+void bc_module_sigfox_init(bc_module_sigfox_t *self, bc_module_sigfox_revision_t revision);
 
 //! @brief Set callback function
 //! @param[in] self Instance
@@ -53,6 +89,27 @@ bool bc_module_sigfox_is_ready(bc_module_sigfox_t *self);
 //! @return false if command was denied for processing
 
 bool bc_module_sigfox_send_rf_frame(bc_module_sigfox_t *self, const void *buffer, size_t length);
+
+//! @brief Read device ID command
+//! @param[in] self Instance
+//! @return true if command was accepted for processing
+//! @return false if command was denied for processing
+
+bool bc_module_sigfox_read_device_id(bc_module_sigfox_t *self);
+
+//! @brief Read device PAC command
+//! @param[in] self Instance
+//! @return true if command was accepted for processing
+//! @return false if command was denied for processing
+
+bool bc_module_sigfox_read_device_pac(bc_module_sigfox_t *self);
+
+//! @brief Generate continuous wave command
+//! @param[in] self Instance
+//! @return true if command was accepted for processing
+//! @return false if command was denied for processing
+
+bool bc_module_sigfox_continuous_wave(bc_module_sigfox_t *self);
 
 //! @}
 
