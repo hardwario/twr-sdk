@@ -26,6 +26,8 @@ void bc_radio_enrollment_stop(void);
 
 bool bc_radio_pub_push_button(uint16_t *event_count);
 
-bool bc_radio_pub_thermometer(float *temperature);
+bool bc_radio_pub_thermometer(uint8_t i2c, float *temperature);
+
+bool bc_radio_pub_humidity(uint8_t i2c, float *percentage);
 
 #endif // _BC_RADIO_H
