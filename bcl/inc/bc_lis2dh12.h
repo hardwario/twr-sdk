@@ -3,6 +3,7 @@
 
 #include <bc_i2c.h>
 #include <bc_tick.h>
+#include <bc_scheduler.h>
 
 //! @addtogroup bc_lis2dh12 bc_lis2dh12
 //! @brief Driver for LIS2DH12 3-axis MEMS accelerometer
@@ -102,6 +103,7 @@ struct bc_lis2dh12_t
     uint8_t _out_z_h;
     bool _alarm_active;
     bool _irq_flag;
+    bc_scheduler_task_id_t _task_id;
 };
 
 //! @endcond

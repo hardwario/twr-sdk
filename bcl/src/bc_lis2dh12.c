@@ -6,8 +6,6 @@
 #define BC_LIS2DH12_DELAY_RUN 10
 #define BC_LIS2DH12_DELAY_READ 10
 
-static bc_lis2dh12_t *_bc_lis2dh12_irq_instance;
-
 static void _bc_lis2dh12_task(void *param);
 static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self);
@@ -30,9 +28,7 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     // Set input mode
     GPIOB->MODER &= ~GPIO_MODER_MODE6_Msk;
 
-    _bc_lis2dh12_irq_instance = self;
-
-    bc_scheduler_register(_bc_lis2dh12_task, self, BC_LIS2DH12_DELAY_RUN);
+    self->_task_id = bc_scheduler_register(_bc_lis2dh12_task, self, BC_LIS2DH12_DELAY_RUN);
 
     return true;
 }
@@ -386,7 +382,8 @@ static void _bc_lis2dh12_interrupt(bc_exti_line_t line, void *param)
 
     bc_lis2dh12_t *self = param;
 
-    // TODO Task should be scheduled for immediate execution
+    self->_irq_flag = true;
 
-    _bc_lis2dh12_irq_instance->_irq_flag = true;
+    bc_scheduler_plan_now(self->_task_id);
+
 }
