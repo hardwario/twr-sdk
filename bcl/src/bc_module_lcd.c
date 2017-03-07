@@ -7,11 +7,11 @@
 
 #include <bc_module_lcd.h>
 
-#define BC_MODULE_LCD_DISP_ON   0x04
-#define BC_MODULE_LCD_LED_GREEN 0x10
-#define BC_MODULE_LCD_LED_RED   0x20
-#define BC_MODULE_LCD_LED_BLUE  0x40
-#define BC_MODULE_LCD_DISP_CS   0x80
+#define _BC_MODULE_LCD_DISP_ON   0x04
+#define _BC_MODULE_LCD_LED_GREEN 0x10
+#define _BC_MODULE_LCD_LED_RED   0x20
+#define _BC_MODULE_LCD_LED_BLUE  0x40
+#define _BC_MODULE_LCD_DISP_CS   0x80
 
 typedef struct bc_module_lcd_t
 {
@@ -36,7 +36,7 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 
     bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x39);
     bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x00);
-    _bc_module_lcd.gpio = BC_MODULE_LCD_DISP_CS | BC_MODULE_LCD_DISP_ON;
+    _bc_module_lcd.gpio = _BC_MODULE_LCD_DISP_CS | _BC_MODULE_LCD_DISP_ON;
     bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
 
     bc_spi_init(BC_SPI_SPEED_2_MHZ, BC_SPI_MODE_0);
@@ -52,13 +52,13 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 
 void bc_module_lcd_on(void)
 {
-    _bc_module_lcd.gpio |= BC_MODULE_LCD_DISP_ON;
+    _bc_module_lcd.gpio |= _BC_MODULE_LCD_DISP_ON;
     bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
 }
 
 void bc_module_lcd_off(void)
 {
-    _bc_module_lcd.gpio &= ~BC_MODULE_LCD_DISP_ON;
+    _bc_module_lcd.gpio &= ~_BC_MODULE_LCD_DISP_ON;
     bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
 }
 
@@ -76,9 +76,9 @@ void bc_module_lcd_clear(void)
     }
 }
 
-void bc_module_lcd_draw_pixel(uint8_t x, uint8_t y, bool value)
+void bc_module_lcd_draw_pixel(int x, int y, bool value)
 {
-    if(x > 127 || y > 127)
+    if(x > 127 || y > 127 || x < 0 || y < 0)
     {
         return;
     }
@@ -105,13 +105,13 @@ void bc_module_lcd_draw_pixel(uint8_t x, uint8_t y, bool value)
 }
 
 // Returns width of the character
-uint16_t bc_module_lcd_draw_char(uint16_t left, uint16_t top, uint8_t ch)
+int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
 {
     bc_module_lcd_t *self = &_bc_module_lcd;
 
     const tFont *font = self->font;
 
-    uint8_t w = 0;
+    int w = 0;
     uint8_t h = 0;
 
     uint16_t i;
@@ -165,7 +165,7 @@ uint16_t bc_module_lcd_draw_char(uint16_t left, uint16_t top, uint8_t ch)
     return w;
 }
 
-uint16_t bc_module_lcd_draw_string(uint16_t left, uint16_t top, char *str)
+int bc_module_lcd_draw_string(int left, int top, char *str)
 {
     while(*str)
     {
@@ -210,7 +210,7 @@ void bc_module_lcd_update(void)
     spi_data[0] = 0xd0;
     spi_data[1] = 0x00;
 
-    _bc_module_lcd.gpio &= ~BC_MODULE_LCD_DISP_CS;
+    _bc_module_lcd.gpio &= ~_BC_MODULE_LCD_DISP_CS;
     bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
 
     bc_spi_transfer(spi_data, NULL, 2);
@@ -225,7 +225,7 @@ void bc_module_lcd_update(void)
 
     bc_spi_transfer(&self->framebuffer[0], NULL, BC_LCD_FRAMEBUFFER_SIZE);
 
-    _bc_module_lcd.gpio |= BC_MODULE_LCD_DISP_CS;
+    _bc_module_lcd.gpio |= _BC_MODULE_LCD_DISP_CS;
     bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
 }
 
