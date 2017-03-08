@@ -21,6 +21,7 @@ typedef struct bc_module_lcd_t
     uint8_t *framebuffer;
     const tFont *font;
     uint8_t gpio;
+    bc_module_lcd_rotation_t rotation;
 } bc_module_lcd_t;
 
 bc_module_lcd_t _bc_module_lcd;
@@ -84,6 +85,30 @@ void bc_module_lcd_draw_pixel(int x, int y, bool value)
     }
 
     bc_module_lcd_t *self = &_bc_module_lcd;
+
+    int tmp;
+
+    switch(self->rotation)
+    {
+        case BC_MODULE_LCD_ROTATION_90 :
+            tmp = x;
+            x = 127 - y;
+            y = tmp;
+            break;
+        case BC_MODULE_LCD_ROTATION_180:
+            x = 127 - x;
+            y = 127 - y;
+            break;
+        case BC_MODULE_LCD_ROTATION_270:
+            tmp = y;
+            y = 127 - x;
+            x = tmp;
+            break;
+        case BC_MODULE_LCD_ROTATION_0:
+            break;
+        default:
+            break;
+    }
 
     // Skip mode byte + addr byte
     uint32_t byteIndex = 2;
@@ -233,4 +258,14 @@ void bc_module_lcd_update(void)
 void bc_module_lcd_set_font(const tFont *font)
 {
     _bc_module_lcd.font = font;
+}
+
+void bc_module_lcd_set_rotation(bc_module_lcd_rotation_t rotation)
+{
+    _bc_module_lcd.rotation = rotation;
+}
+
+bc_module_lcd_rotation_t bc_module_lcd_get_rotation(void)
+{
+    return _bc_module_lcd.rotation;
 }
