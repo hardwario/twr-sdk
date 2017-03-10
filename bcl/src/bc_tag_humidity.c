@@ -43,6 +43,30 @@ void bc_tag_humidity_set_update_interval(bc_tag_humidity_t *self, bc_tick_t inte
     }
 }
 
+bool bc_tag_humidity_get_temperature_raw(bc_tag_humidity_t *self, uint16_t *raw)
+{
+    if (self->_revision == BC_TAG_HUMIDITY_REVISION_R1)
+    {
+        return false;
+    }
+    else
+    {
+        return bc_hdc2080_get_temperature_raw(&self->_sensor.hdc2080, raw);
+    }
+}
+
+bool bc_tag_humidity_get_temperature_celsius(bc_tag_humidity_t *self, float *celsius)
+{
+    if (self->_revision == BC_TAG_HUMIDITY_REVISION_R1)
+    {
+        return false;
+    }
+    else
+    {
+        return bc_hdc2080_get_temperature_celsius(&self->_sensor.hdc2080, celsius);
+    }
+}
+
 bool bc_tag_humidity_get_humidity_raw(bc_tag_humidity_t *self, uint16_t *raw)
 {
     if (self->_revision == BC_TAG_HUMIDITY_REVISION_R1)
