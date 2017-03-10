@@ -30,6 +30,18 @@ void bc_hdc2080_set_update_interval(bc_hdc2080_t *self, bc_tick_t interval)
     self->_update_interval = interval;
 }
 
+bool bc_hdc2080_get_temperature_raw(bc_hdc2080_t *self, uint16_t *raw)
+{
+    if (!self->_temperature_valid)
+    {
+        return false;
+    }
+
+    *raw = self->_reg_temperature;
+
+    return true;
+}
+
 bool bc_hdc2080_get_humidity_raw(bc_hdc2080_t *self, uint16_t *raw)
 {
     if (!self->_humidity_valid)
@@ -38,6 +50,20 @@ bool bc_hdc2080_get_humidity_raw(bc_hdc2080_t *self, uint16_t *raw)
     }
 
     *raw = self->_reg_humidity;
+
+    return true;
+}
+
+bool bc_hdc2080_get_temperature_celsius(bc_hdc2080_t *self, float *celsius)
+{
+    uint16_t raw;
+
+    if (!bc_hdc2080_get_temperature_raw(self, &raw))
+    {
+        return false;
+    }
+
+    *celsius = (float) raw / 65536.f * 165.f - 40.f;
 
     return true;
 }
@@ -103,7 +129,7 @@ start:
         {
             self->_state = BC_HDC2080_STATE_ERROR;
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x0f, 0x05))
+            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x0f, 0x07))
             {
                 goto start;
             }
@@ -135,7 +161,16 @@ start:
                 goto start;
             }
 
+            if (!bc_i2c_read_16b(self->_i2c_channel, self->_i2c_address, 0x00, &self->_reg_temperature))
+            {
+                goto start;
+            }
+
+            self->_reg_temperature = self->_reg_temperature << 8 | self->_reg_temperature >> 8;
+
             self->_reg_humidity = self->_reg_humidity << 8 | self->_reg_humidity >> 8;
+
+            self->_temperature_valid = true;
 
             self->_humidity_valid = true;
 
