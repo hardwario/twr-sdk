@@ -30,4 +30,6 @@ bool bc_radio_pub_thermometer(uint8_t i2c, float *temperature);
 
 bool bc_radio_pub_humidity(uint8_t i2c, float *percentage);
 
+bool bc_radio_set_power_relay(bool state);
+
 #endif // _BC_RADIO_H
