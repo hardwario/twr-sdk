@@ -5,8 +5,8 @@
 
 #define BC_MODULE_POWER_PIN_RELAY BC_GPIO_P0
 
-static uint32_t _bc_module_power_led_strip_dma_buffer_rgbw_144[144 * sizeof(uint32_t) * 2];
-static uint32_t _bc_module_power_led_strip_dma_buffer_rgb_150[150 * sizeof(uint32_t) * 2];
+static uint32_t _bc_module_power_led_strip_dma_buffer_rgbw_144[144 * 4 * 2];
+static uint32_t _bc_module_power_led_strip_dma_buffer_rgb_150[150 * 3 * 2];
 
 const bc_led_strip_buffer_t bc_module_power_led_strip_buffer_rgbw_144 =
 {

@@ -2,10 +2,10 @@
 #include <bc_ws2812b.h>
 #include <bc_scheduler.h>
 
-#define _BC_WS2812_TIMER_PERIOD 20              // 16000000 / 800000 = 20; 0,125us period (10 times lower the 1,25us period to have fixed math below)
-#define _BC_WS2812_TIMER_RESET_PULSE_PERIOD 833 // 60us just to be sure = (16000000 / (320 * 60))
-#define _BC_WS2812_COMPARE_PULSE_LOGIC_0      5 //(10 * timer_period) / 36
-#define _BC_WS2812_COMPARE_PULSE_LOGIC_1     13 //(10 * timer_period) / 15;
+#define _BC_WS2812_TIMER_PERIOD 20               // 16000000 / 800000 = 20; 0,125us period (10 times lower the 1,25us period to have fixed math below)
+#define _BC_WS2812_TIMER_RESET_PULSE_PERIOD 833  // 60us just to be sure = (16000000 / (320 * 60))
+#define _BC_WS2812_COMPARE_PULSE_LOGIC_0      5  //(10 * timer_period) / 36
+#define _BC_WS2812_COMPARE_PULSE_LOGIC_1     13  //(10 * timer_period) / 15;
 
 #define _BC_WS2812_BC_WS2812_RESET_PERIOD 100
 #define _BC_WS2812_BC_WS2812B_PORT GPIOA
@@ -14,9 +14,8 @@
 static struct ws2812b_t
 {
     uint32_t *dma_bit_buffer;
-    size_t dma_bit_buffer_size;
-    bc_led_strip_type_t type;
-    uint16_t count;
+    bc_led_strip_buffer_t *buffer;
+
     bool transfer;
     bc_scheduler_task_id_t task_id;
     void (*event_handler)(bc_ws2812b_event_t, void *);
@@ -51,17 +50,17 @@ const uint32_t _bc_ws2812b_pulse_tab[] =
 static void _bc_ws2812b_dma_transfer_complete_handler(DMA_HandleTypeDef *dma_handle);
 static void _bc_ws2812b_task(void *param);
 
-bool bc_ws2812b_init(const bc_led_strip_buffer_t *led_strip)
+bool bc_ws2812b_init(bc_led_strip_buffer_t *led_strip)
 {
     memset(&_bc_ws2812b, 0, sizeof(_bc_ws2812b));
 
-    _bc_ws2812b.type = led_strip->type;
-    _bc_ws2812b.count = led_strip->count;
+    _bc_ws2812b.buffer = led_strip;
 
-    _bc_ws2812b.dma_bit_buffer_size = led_strip->count * led_strip->type * 8;
     _bc_ws2812b.dma_bit_buffer = led_strip->buffer;
 
-    memset(_bc_ws2812b.dma_bit_buffer, _BC_WS2812_COMPARE_PULSE_LOGIC_0, _bc_ws2812b.dma_bit_buffer_size);
+    size_t dma_bit_buffer_size = _bc_ws2812b.buffer->count * _bc_ws2812b.buffer->type * 8;
+
+    memset(_bc_ws2812b.dma_bit_buffer, _BC_WS2812_COMPARE_PULSE_LOGIC_0, dma_bit_buffer_size);
 
     __HAL_RCC_GPIOA_CLK_ENABLE();
 
@@ -96,7 +95,7 @@ bool bc_ws2812b_init(const bc_led_strip_buffer_t *led_strip)
     HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 
-    HAL_DMA_Start_IT(&_bc_ws2812b_dma_update, (uint32_t) _bc_ws2812b.dma_bit_buffer, (uint32_t) &(TIM2->CCR2), _bc_ws2812b.dma_bit_buffer_size);
+    HAL_DMA_Start_IT(&_bc_ws2812b_dma_update, (uint32_t) _bc_ws2812b.dma_bit_buffer, (uint32_t) &(TIM2->CCR2), dma_bit_buffer_size);
 
      // TIM2 Periph clock enable
     __HAL_RCC_TIM2_CLK_ENABLE();
@@ -141,7 +140,7 @@ void bc_ws2812b_set_event_handler(void (*event_handler)(bc_ws2812b_event_t, void
 void bc_ws2812b_set_pixel_from_rgb(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
 {
 
-    uint32_t calculated_position = (position * _bc_ws2812b.type * 2);
+    uint32_t calculated_position = (position * _bc_ws2812b.buffer->type * 2);
 
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(green & 0xf0) >> 4];
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[green & 0x0f];
@@ -152,7 +151,7 @@ void bc_ws2812b_set_pixel_from_rgb(int position, uint8_t red, uint8_t green, uin
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(blue & 0xf0) >> 4];
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[blue & 0x0f];
 
-     if (_bc_ws2812b.type == BC_LED_STRIP_TYPE_RGBW)
+     if (_bc_ws2812b.buffer->type == BC_LED_STRIP_TYPE_RGBW)
      {
          _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(white & 0xf0) >> 4];
          _bc_ws2812b.dma_bit_buffer[calculated_position] = _bc_ws2812b_pulse_tab[white & 0x0f];
@@ -161,7 +160,7 @@ void bc_ws2812b_set_pixel_from_rgb(int position, uint8_t red, uint8_t green, uin
 
 void bc_ws2812b_set_pixel_from_uint32(int position, uint32_t color)
 {
-    uint32_t calculated_position = (position * _bc_ws2812b.type * 2);
+    uint32_t calculated_position = (position * _bc_ws2812b.buffer->type * 2);
 
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x00f00000) >> 20];
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x000f0000) >> 16];
@@ -172,7 +171,7 @@ void bc_ws2812b_set_pixel_from_uint32(int position, uint32_t color)
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x0000f000) >> 12];
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x00000f00) >>  8];
 
-     if (_bc_ws2812b.type == BC_LED_STRIP_TYPE_RGBW)
+     if (_bc_ws2812b.buffer->type == BC_LED_STRIP_TYPE_RGBW)
      {
          _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x000000f0) >> 4];
          _bc_ws2812b.dma_bit_buffer[calculated_position] = _bc_ws2812b_pulse_tab[color & 0x0000000f];
@@ -186,10 +185,10 @@ bool bc_ws2812b_write(void)
         return false;
     }
 
-    bc_scheduler_disable_sleep();
-
     // transmission complete flag
     _bc_ws2812b.transfer = true;
+
+    bc_scheduler_disable_sleep();
 
     HAL_TIM_Base_Stop(&_bc_ws2812b_timer2_handle);
     (&_bc_ws2812b_timer2_handle)->Instance->CR1 &= ~((0x1U << (0U)));
@@ -200,8 +199,10 @@ bool bc_ws2812b_write(void)
     // clear all TIM2 flags
     __HAL_TIM_CLEAR_FLAG(&_bc_ws2812b_timer2_handle, TIM_FLAG_UPDATE | TIM_FLAG_CC1 | TIM_FLAG_CC2 | TIM_FLAG_CC3 | TIM_FLAG_CC4);
 
+    size_t dma_bit_buffer_size = _bc_ws2812b.buffer->count * _bc_ws2812b.buffer->type * 8;
+
     // configure the number of bytes to be transferred by the DMA controller
-    _bc_ws2812b_dma_update.Instance->CNDTR = _bc_ws2812b.dma_bit_buffer_size;
+    _bc_ws2812b_dma_update.Instance->CNDTR = dma_bit_buffer_size;
 
     TIM2->CNT = _BC_WS2812_TIMER_PERIOD - 1;
 

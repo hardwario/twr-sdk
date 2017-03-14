@@ -15,7 +15,7 @@ typedef enum
 
 } bc_ws2812b_event_t;
 
-bool bc_ws2812b_init(const bc_led_strip_buffer_t *led_strip);
+bool bc_ws2812b_init(bc_led_strip_buffer_t *led_strip);
 
 void bc_ws2812b_set_event_handler(void (*event_handler)(bc_ws2812b_event_t, void *), void *event_param);
 

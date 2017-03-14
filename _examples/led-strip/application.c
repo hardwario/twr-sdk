@@ -6,7 +6,7 @@ bc_led_strip_t led_strip;
 uint32_t color;
 int effect = -1;
 
-static uint32_t _dma_buffer_rgb_12[12 * sizeof(uint32_t) * 2];
+static uint32_t _dma_buffer_rgb_12[12 * 3 * 2]; // count * type * 2
 
 const bc_led_strip_buffer_t _led_strip_buffer_rgb_12 =
 {
