@@ -28,7 +28,10 @@ typedef enum
 typedef enum
 {
     //! @brief UART baudrate 9600 Bd
-    BC_UART_BAUDRATE_9600_BD = 0
+    BC_UART_BAUDRATE_9600_BD = 0,
+
+    //! @brief UART baudrate 115200 Bd
+    BC_UART_BAUDRATE_115200_BD = 1
 
 } bc_uart_baudrate_t;
 

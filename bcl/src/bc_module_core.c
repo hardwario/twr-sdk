@@ -1,6 +1,7 @@
 #include <bc_module_core.h>
 #include <bc_tick.h>
 #include <stm32l0xx.h>
+#include <bc_scheduler.h>
 
 #define DEBUG_ENABLE 0
 
@@ -282,11 +283,13 @@ void bc_module_core_pll_enable()
     }
 
     _bc_module_core_pll_enable_semaphore++;
+    bc_scheduler_disable_sleep();
 }
 
 void bc_module_core_pll_disable()
 {
     _bc_module_core_pll_enable_semaphore--;
+    bc_scheduler_enable_sleep();
 
     if (_bc_module_core_pll_enable_semaphore == 0)
     {
