@@ -2,6 +2,7 @@
 #include <bc_irq.h>
 #include <bc_gpio.h>
 #include <stm32l0xx.h>
+#include <bc_module_core.h>
 
 #define BC_PYQ1648_BPF 0x00
 #define BC_PYQ1648_LPF 0x01
@@ -122,6 +123,9 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     // Disable interrupts
     bc_irq_disable();
 
+    // Enable PLL
+    bc_module_core_pll_enable();
+
     // Load desired event unit configuration
     uint32_t regval = self->_config;
     uint32_t regmask = 0x1000000;
@@ -149,7 +153,14 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
         __asm("nop");
         __asm("nop");
         __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
         *GPIOx_BSRR = bsrr_mask[1];
+        __asm("nop");
+        __asm("nop");
         __asm("nop");
         *GPIOx_BSRR = bsrr_mask[next_bit];
 
@@ -158,17 +169,21 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
 
     bc_gpio_set_output(self->_gpio_channel_serin, false);
 
+    // Disable PLL
+    bc_module_core_pll_disable();
+
     // Enable interrupts
     bc_irq_enable();
 }
 
 static inline void _bc_pyq1648_delay_100us()
 {
+    // TODO ... update arr causeof msipll
     // Set prescaler
     TIM6->PSC = 0;
 
     // Set auto-reload register - period 100 us
-    TIM6->ARR = 1500;
+    TIM6->ARR = 3000;
 
     // Generate update of registers
     TIM6->EGR = TIM_EGR_UG;

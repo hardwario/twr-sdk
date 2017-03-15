@@ -115,6 +115,8 @@ bool bc_hc_sr04_measure(void)
 
     _bc_hc_sr04.task_id_notify = bc_scheduler_register(_bc_hc_sr04_task_notify, NULL, BC_TICK_INFINITY);
 
+    // TODO ... update arr causeof msipll
+
     // Set timeout register (250 milliseconds)
     TIM3->CCR1 = 250000 / _BC_HC_SR04_RESOLUTION;
 
@@ -188,6 +190,8 @@ static void _bc_hc_sr04_task_notify(void *param)
 
 void TIM3_IRQHandler(void)
 {
+    // TODO ... update arr causeof msipll
+
     // Disable Capture 4 / Compare 1 interrupt
     TIM3->DIER &= ~(TIM_DIER_CC4IE | TIM_DIER_CC1IE);
 
