@@ -2,10 +2,10 @@
 #include <bc_ws2812b.h>
 #include <bc_scheduler.h>
 
-#define _BC_WS2812_TIMER_PERIOD 20              // 16000000 / 800000 = 20; 0,125us period (10 times lower the 1,25us period to have fixed math below)
-#define _BC_WS2812_TIMER_RESET_PULSE_PERIOD 833 // 60us just to be sure = (16000000 / (320 * 60))
-#define _BC_WS2812_COMPARE_PULSE_LOGIC_0      5 //(10 * timer_period) / 36
-#define _BC_WS2812_COMPARE_PULSE_LOGIC_1     13 //(10 * timer_period) / 15;
+#define _BC_WS2812_TIMER_PERIOD 40               // 32000000 / 800000 = 20; 0,125us period (10 times lower the 1,25us period to have fixed math below)
+#define _BC_WS2812_TIMER_RESET_PULSE_PERIOD 1666 // 60us just to be sure = (32000000 / (320 * 60))
+#define _BC_WS2812_COMPARE_PULSE_LOGIC_0     11  //(10 * timer_period) / 36
+#define _BC_WS2812_COMPARE_PULSE_LOGIC_1     26  //(10 * timer_period) / 15;
 
 #define _BC_WS2812_BC_WS2812_RESET_PERIOD 100
 #define _BC_WS2812_BC_WS2812B_PORT GPIOA
