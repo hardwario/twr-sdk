@@ -178,7 +178,6 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
 
 static inline void _bc_pyq1648_delay_100us()
 {
-    // TODO ... update arr causeof msipll
     // Set prescaler
     TIM6->PSC = 0;
 
