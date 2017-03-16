@@ -14,7 +14,9 @@ typedef enum
     BC_RADIO_HEADER_PUB_PUSH_BUTTON,
     BC_RADIO_HEADER_PUB_THERMOMETER,
     BC_RADIO_HEADER_PUB_HUMIDITY,
-    BC_RADIO_POWER_RELAY
+    BC_RADIO_HEADER_PUB_LUX_METER,
+    BC_RADIO_HEADER_PUB_BAROMETER,
+    BC_RADIO_HEADER_PUB_POWER_RELAY
 
 } bc_radio_header_t;
 
@@ -58,6 +60,8 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 __attribute__((weak)) void bc_radio_on_push_button(uint32_t *peer_device_address, uint16_t *event_count) { (void) peer_device_address; (void) event_count; }
 __attribute__((weak)) void bc_radio_on_thermometer(uint32_t *peer_device_address, uint8_t *i2c, float *temperature) { (void) peer_device_address; (void) i2c; (void) temperature; }
 __attribute__((weak)) void bc_radio_on_humidity(uint32_t *peer_device_address, uint8_t *i2c, float *percentage) { (void) peer_device_address; (void) i2c; (void) percentage; }
+__attribute__((weak)) void bc_radio_on_lux_meter(uint32_t *peer_device_address, uint8_t *i2c, float *illuminance) { (void) peer_device_address; (void) i2c; (void) illuminance; }
+__attribute__((weak)) void bc_radio_on_barometer(uint32_t *peer_device_address, uint8_t *i2c, float *pressure, float *altitude) { (void) peer_device_address; (void) i2c; (void) pressure; (void) altitude; }
 __attribute__((weak)) void bc_radio_on_power_relay(uint32_t *peer_device_address, bool state) { (void) peer_device_address; (void) state; }
 
 void bc_radio_init(void)
@@ -174,8 +178,47 @@ bool bc_radio_set_power_relay(bool state)
 {
     uint8_t buffer[2];
 
-    buffer[0] = BC_RADIO_POWER_RELAY;
+    buffer[0] = BC_RADIO_HEADER_PUB_POWER_RELAY;
     buffer[1] = state;
+
+    if (!bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer)))
+    {
+        return false;
+    }
+
+    bc_scheduler_plan_now(_bc_radio.task_id);
+
+    return true;
+}
+
+bool bc_radio_pub_luminosity(uint8_t i2c, float *lux)
+{
+    uint8_t buffer[2 + sizeof(*lux)];
+
+    buffer[0] = BC_RADIO_HEADER_PUB_LUX_METER;
+    buffer[1] = i2c;
+
+    memcpy(&buffer[2], lux, sizeof(*lux));
+
+    if (!bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer)))
+    {
+        return false;
+    }
+
+    bc_scheduler_plan_now(_bc_radio.task_id);
+
+    return true;
+}
+
+bool bc_radio_pub_barometer(uint8_t i2c, float *pascal, float *meter)
+{
+    uint8_t buffer[2 + sizeof(*pascal) + sizeof(*meter)];
+
+    buffer[0] = BC_RADIO_HEADER_PUB_BAROMETER;
+    buffer[1] = i2c;
+
+    memcpy(&buffer[2], pascal, sizeof(*pascal));
+    memcpy(&buffer[2 + sizeof(*pascal)], meter, sizeof(*meter));
 
     if (!bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer)))
     {
@@ -257,7 +300,25 @@ static void _bc_radio_task(void *param)
 
             bc_radio_on_humidity(&_bc_radio.peer_device_address, &queue_item_buffer[1], &percentage);
         }
-	else if (queue_item_buffer[0] == BC_RADIO_POWER_RELAY)
+        else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_LUX_METER)
+        {
+            float lux;
+
+            memcpy(&lux, &queue_item_buffer[2], sizeof(lux));
+
+            bc_radio_on_lux_meter(&_bc_radio.peer_device_address, &queue_item_buffer[1], &lux);
+        }
+        else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_BAROMETER)
+        {
+            float pascal;
+            float meter;
+
+            memcpy(&pascal, &queue_item_buffer[2], sizeof(pascal));
+            memcpy(&meter, &queue_item_buffer[2 + sizeof(pascal)], sizeof(meter));
+
+            bc_radio_on_barometer(&_bc_radio.peer_device_address, &queue_item_buffer[1], &pascal, &meter);
+        }	
+	else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_POWER_RELAY)
 	{
             bc_radio_on_power_relay(&_bc_radio.peer_device_address, queue_item_buffer[1]);
 	}

@@ -142,3 +142,22 @@ static uint8_t base64_char_index(char c)
 
     return 0xff;
 }
+
+size_t base64_calculate_encode_length(size_t length)
+{
+    size_t n = (int) length;
+    return (n + 2 - ((n + 2) % 3)) / 3 * 4;
+}
+
+size_t base64_calculate_decode_length(const char *input, size_t length)
+{
+    size_t i = 0;
+    size_t num_eq = 0;
+
+    for (i = length - 1; input[i] == '='; i--)
+    {
+        num_eq++;
+    }
+
+    return ((6 * length) / 8) - num_eq;
+}

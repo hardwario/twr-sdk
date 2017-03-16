@@ -4,7 +4,7 @@
 
 uint32_t _bc_led_strip_wheel(int position);
 
-void bc_led_strip_init(bc_led_strip_t *self, const bc_led_strip_driver_t *driver, const bc_led_strip_buffer_t *buffer)
+void bc_led_strip_init(bc_led_strip_t *self, const bc_led_strip_driver_t *driver, bc_led_strip_buffer_t *buffer)
 {
     memset(self, 0x00, sizeof(bc_led_strip_t));
     self->_buffer = buffer;
@@ -39,7 +39,7 @@ void bc_led_strip_set_pixel_rgbw(bc_led_strip_t *self, int position, uint8_t r, 
     self->_driver->set_pixel_rgbw(position, r, g, b, w);
 }
 
-bool bc_led_strip_set_rgbw_framebuffer(bc_led_strip_t *self, const uint8_t *framebuffer, size_t length)
+bool bc_led_strip_set_rgbw_framebuffer(bc_led_strip_t *self, uint8_t *framebuffer, size_t length)
 {
     if (length > (size_t) (self->_buffer->type * self->_buffer->count))
     {
