@@ -1,8 +1,8 @@
 #include <bc_pyq1648.h>
 #include <bc_irq.h>
 #include <bc_gpio.h>
-#include <stm32l0xx.h>
 #include <bc_module_core.h>
+#include <stm32l0xx.h>
 
 #define BC_PYQ1648_BPF 0x00
 #define BC_PYQ1648_LPF 0x01

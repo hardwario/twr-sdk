@@ -1,6 +1,6 @@
 #include <bc_i2c.h>
-#include <stm32l0xx.h>
 #include <bc_module_core.h>
+#include <stm32l0xx.h>
 
 static struct
 {

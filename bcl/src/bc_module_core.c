@@ -1,7 +1,7 @@
 #include <bc_module_core.h>
 #include <bc_tick.h>
-#include <stm32l0xx.h>
 #include <bc_scheduler.h>
+#include <stm32l0xx.h>
 
 #define DEBUG_ENABLE 0
 
@@ -298,14 +298,14 @@ void bc_module_core_pll_disable()
 
         // Turn PLL off
         RCC->CR &= ~RCC_CR_PLLON;
-        while (RCC->CR & RCC_CR_PLLRDY)
+        while ((RCC->CR & RCC_CR_PLLRDY) != 0)
         {
             continue;
         }
 
         // Turn HSI16 off
         RCC->CR &= ~RCC_CR_HSION;
-        while (RCC->CR & RCC_CR_HSIRDY)
+        while ((RCC->CR & RCC_CR_HSIRDY) != 0)
         {
             continue;
         }

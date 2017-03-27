@@ -1,6 +1,6 @@
 #include <bc_spi.h>
-#include <stm32l0xx.h>
 #include <bc_module_core.h>
+#include <stm32l0xx.h>
 
 static const uint32_t _bc_spi_speed_table[5] =
 {
@@ -26,7 +26,7 @@ static uint8_t _bc_spi_transfer_byte(uint8_t value);
 
 void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
 {
-    // Enable PLL and disable sleep
+    // Enable PLL
     bc_module_core_pll_enable();
 
     // Enable GPIOB clock

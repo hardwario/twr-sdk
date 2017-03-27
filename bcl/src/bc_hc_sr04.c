@@ -1,7 +1,7 @@
 #include <bc_hc_sr04.h>
 #include <bc_scheduler.h>
-#include <stm32l0xx.h>
 #include <bc_module_core.h>
+#include <stm32l0xx.h>
 
 // Timer resolution in microseconds
 #define _BC_HC_SR04_RESOLUTION 5

@@ -1,11 +1,11 @@
 #include <bc_spirit1.h>
 #include <bc_scheduler.h>
 #include <bc_exti.h>
+#include <bc_module_core.h>
 #include <stm32l0xx.h>
 #include "SPIRIT_Config.h"
 #include "SDK_Configuration_Common.h"
 #include "MCU_Interface.h"
-#include <bc_module_core.h>
 
 typedef enum
 {
@@ -380,8 +380,8 @@ bc_spirit_status_t bc_spirit1_command(uint8_t command)
     // Set chip select high
     bc_spirit1_hal_chip_select_high();
 
-    // Enable PLL
-    bc_module_core_pll_enable();
+    // Disable PLL
+    bc_module_core_pll_disable();
 
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);
@@ -411,8 +411,8 @@ bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t 
     // Set chip select high
     bc_spirit1_hal_chip_select_high();
 
-    // Enable PLL
-    bc_module_core_pll_enable();
+    // Disable PLL
+    bc_module_core_pll_disable();
 
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);
@@ -442,8 +442,8 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
     // Set chip select high
     bc_spirit1_hal_chip_select_high();
 
-    // Enable PLL
-    bc_module_core_pll_enable();
+    // Disable PLL
+    bc_module_core_pll_disable();
 
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);

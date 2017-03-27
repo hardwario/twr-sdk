@@ -1,7 +1,7 @@
 #include <bc_uart.h>
 #include <bc_irq.h>
-#include <stm32l0xx.h>
 #include <bc_module_core.h>
+#include <stm32l0xx.h>
 
 typedef struct
 {
@@ -28,12 +28,6 @@ typedef struct
     uint32_t brr[2];
     uint32_t UARTx_IRQn;
 } bc_uart_channel_setup_t;
-
-static bool _bc_uart_pll_enabled[3] =
-{
-        [BC_UART_UART0] = false,
-        [BC_UART_UART2] = false
-};
 
 static const bc_uart_channel_setup_t _bc_uart_init_lut[3] =
 {
