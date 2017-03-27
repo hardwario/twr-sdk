@@ -134,8 +134,6 @@ static void _bc_td1207r_task(void *param)
                     continue;
                 }
 
-                bc_gpio_set_output(self->_reset_signal, true);
-
                 self->_state = BC_TD1207R_STATE_INITIALIZE_AT_RESPONSE;
 
                 bc_scheduler_plan_current_relative(BC_TD1207R_DELAY_INITIALIZATION_AT_RESPONSE);
@@ -151,7 +149,7 @@ static void _bc_td1207r_task(void *param)
                     continue;
                 }
 
-                if (strcmp(self->_response, self->_command) != 0)
+                if (strcmp(self->_response, self->_command + 1) != 0)
                 {
                     continue;
                 }

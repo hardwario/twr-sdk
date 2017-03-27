@@ -49,7 +49,7 @@ bool bc_lis2dh12_get_result_raw(bc_lis2dh12_t *self, bc_lis2dh12_result_raw_t *r
     result_raw->x_axis = (int16_t) self->_out_x_h;
     result_raw->x_axis <<= 8;
     result_raw->x_axis >>= 4;
-    result_raw->x_axis |= (int16_t) self->_out_x_l >> 4; // TODO Clarify this
+    result_raw->x_axis |= (int16_t) self->_out_x_l >> 4; // TODO  Clarify this
 
     result_raw->y_axis = (int16_t) self->_out_y_h;
     result_raw->y_axis <<= 8;
@@ -245,50 +245,25 @@ static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self)
 
 static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self)
 {
-
-    /*
-     // Dont work yet, needs I2C repeated start reading
      bc_i2c_tranfer_t transfer;
-
+     uint8_t buffer[6];
 
      transfer.device_address = self->_i2c_address;
-     transfer.memory_address = 0x28;
-     transfer.buffer = &self->_out_x_l;
+     transfer.memory_address = 0x28 | (1 << 7);     // Highest bit set enables address auto-increment
+     transfer.buffer = buffer;
      transfer.length = 6;
 
-     return bc_i2c_read(self->_i2c_channel, &transfer);*/
+     bool return_value = bc_i2c_read(self->_i2c_channel, &transfer);
 
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x28, &self->_out_x_l))
-    {
-        return false;
-    }
+     // Copy bytes to their destination
+     self->_out_x_l = buffer[0];
+     self->_out_x_h = buffer[1];
+     self->_out_y_l = buffer[2];
+     self->_out_y_h = buffer[3];
+     self->_out_z_l = buffer[4];
+     self->_out_z_h = buffer[5];
 
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x29, &self->_out_x_h))
-    {
-        return false;
-    }
-
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x2a, &self->_out_y_l))
-    {
-        return false;
-    }
-
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x2b, &self->_out_y_h))
-    {
-        return false;
-    }
-
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x2c, &self->_out_z_l))
-    {
-        return false;
-    }
-
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x2d, &self->_out_z_h))
-    {
-        return false;
-    }
-
-    return true;
+     return return_value;
 }
 
 bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)

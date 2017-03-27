@@ -55,7 +55,7 @@ bool bc_module_sigfox_read_device_id(bc_module_sigfox_t *self)
 {
     if (self->_revision == BC_MODULE_SIGFOX_REVISION_R1)
     {
-        return false;
+        return true;
     }
 
     return bc_wssfm10r1at_read_device_id(&self->_modem.wssfm10r1at);
@@ -65,7 +65,7 @@ bool bc_module_sigfox_read_device_pac(bc_module_sigfox_t *self)
 {
     if (self->_revision == BC_MODULE_SIGFOX_REVISION_R1)
     {
-        return false;
+        return true;
     }
 
     return bc_wssfm10r1at_read_device_pac(&self->_modem.wssfm10r1at);
