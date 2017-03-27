@@ -1,5 +1,6 @@
 #include <bc_module_core.h>
 #include <bc_tick.h>
+#include <bc_scheduler.h>
 #include <stm32l0xx.h>
 
 #define DEBUG_ENABLE 0
@@ -15,6 +16,8 @@ static void _bc_module_core_init_power(void);
 static void _bc_module_core_init_gpio(void);
 
 static void _bc_module_core_init_rtc(void);
+
+static int _bc_module_core_pll_enable_semaphore;
 
 void bc_module_core_init(void)
 {
@@ -100,35 +103,20 @@ static void _bc_module_core_init_debug(void)
 
 static void _bc_module_core_init_clock(void)
 {
-    // Enable HSI16 oscillator
-    RCC->CR |= RCC_CR_HSION;
-
-    // Wait until HSI16 oscillator is ready...
-    while ((RCC->CR & RCC_CR_HSIRDY) == 0)
-    {
-        continue;
-    }
-
-    // Use HSI16 oscillator as system clock
-    RCC->CFGR |= RCC_CFGR_SW_0;
-
-    // Wait until HSI16 oscillator is used as system clock...
-    while ((RCC->CFGR & (RCC_CFGR_SWS_1 | RCC_CFGR_SWS_0)) != RCC_CFGR_SWS_0)
-    {
-        continue;
-    }
 
     // Update SystemCoreClock variable
-    SystemCoreClock = 16000000;
+    SystemCoreClock = 2097000;
 
-    // Wake-up clock is from HSI16 oscillator
-    RCC->CFGR |= RCC_CFGR_STOPWUCK;
+    RCC->APB1ENR |= RCC_APB1ENR_PWREN;
 
-    // Disable MSI oscillator
-    RCC->CR &= ~RCC_CR_MSION;
+    // Set regulator range to 1.2V
+    PWR->CR |= PWR_CR_VOS;
+
+    // Set PLL divider and multiplier
+    RCC->CFGR = RCC_CFGR_PLLDIV2 | RCC_CFGR_PLLMUL4;
 
     // Set SysTick reload value
-    SysTick->LOAD = 16000 - 1;
+    SysTick->LOAD = 2097 - 1;
 
     // Reset SysTick counter
     SysTick->VAL = 0;
@@ -257,6 +245,88 @@ void bc_module_core_sleep()
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
     __WFI();
+}
+
+void bc_module_core_pll_enable()
+{
+    if (_bc_module_core_pll_enable_semaphore == 0)
+    {
+        // Set regulator range to 1.8V
+        PWR->CR |= PWR_CR_VOS_0;
+        PWR->CR &= ~PWR_CR_VOS_1;
+
+        // Enable flash latency and preread
+        FLASH->ACR |= FLASH_ACR_LATENCY | FLASH_ACR_PRE_READ;
+
+        // Turn HSI16 on
+        RCC->CR |= RCC_CR_HSION;
+        while (!(RCC->CR & RCC_CR_HSIRDY))
+        {
+            continue;
+        }
+
+        // Turn PLL on
+        RCC->CR |= RCC_CR_PLLON;
+        while (!(RCC->CR & RCC_CR_PLLRDY))
+        {
+            continue;
+        }
+
+        // Switch to SYSCLK PLL
+        RCC->CFGR |= RCC_CFGR_SW_PLL;
+
+        // Set SysTick reload value
+        SysTick->LOAD = 32000 - 1;
+
+        // Update SystemCoreClock variable
+        SystemCoreClock = 32000000;
+    }
+
+    _bc_module_core_pll_enable_semaphore++;
+    bc_scheduler_disable_sleep();
+}
+
+void bc_module_core_pll_disable()
+{
+    _bc_module_core_pll_enable_semaphore--;
+    bc_scheduler_enable_sleep();
+
+    if (_bc_module_core_pll_enable_semaphore == 0)
+    {
+        // Switch SYSCLK to MSI (turn PLL off)
+        RCC->CFGR &= ~RCC_CFGR_SW_PLL;
+
+        // Turn PLL off
+        RCC->CR &= ~RCC_CR_PLLON;
+        while ((RCC->CR & RCC_CR_PLLRDY) != 0)
+        {
+            continue;
+        }
+
+        // Turn HSI16 off
+        RCC->CR &= ~RCC_CR_HSION;
+        while ((RCC->CR & RCC_CR_HSIRDY) != 0)
+        {
+            continue;
+        }
+
+        // Set SysTick reload value
+        SysTick->LOAD = 2097 - 1;
+
+        // Update SystemCoreClock variable
+        SystemCoreClock = 2097000;
+
+        // Disable latency
+        FLASH->ACR &= ~(FLASH_ACR_LATENCY | FLASH_ACR_PRE_READ);
+
+        // Set regulator range to 1.2V
+        PWR->CR |= PWR_CR_VOS;
+    }
+}
+
+uint32_t bc_module_core_get_clk()
+{
+    return SystemCoreClock;
 }
 
 void RTC_IRQHandler(void)
