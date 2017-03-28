@@ -1,4 +1,3 @@
-
 #include <stm32l0xx.h>
 
 #include <bc_spi.h>
@@ -37,7 +36,7 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 
     bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x39);
     bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x00);
-    _bc_module_lcd.gpio = _BC_MODULE_LCD_DISP_CS | _BC_MODULE_LCD_DISP_ON;
+    _bc_module_lcd.gpio = _BC_MODULE_LCD_DISP_CS | _BC_MODULE_LCD_DISP_ON | _BC_MODULE_LCD_LED_GREEN | _BC_MODULE_LCD_LED_RED | _BC_MODULE_LCD_LED_BLUE;
     bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
 
     bc_spi_init(BC_SPI_SPEED_2_MHZ, BC_SPI_MODE_0);
@@ -129,7 +128,6 @@ void bc_module_lcd_draw_pixel(int x, int y, bool value)
     }
 }
 
-// Returns width of the character
 int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
 {
     bc_module_lcd_t *self = &_bc_module_lcd;
@@ -186,7 +184,6 @@ int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
         }
     }
 
-    // Return width of printed character
     return w;
 }
 
