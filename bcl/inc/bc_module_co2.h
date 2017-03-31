@@ -51,6 +51,10 @@ bool bc_module_co2_measure(void);
 
 bool bc_module_co2_get_concentration(int16_t *concentration);
 
+//! @brief Set co2 ABC calibration request
+
+void bc_module_co2_calibration();
+
 //! @}
 
 #endif // _BC_MODULE_CO2_H

@@ -17,6 +17,9 @@
 #define BC_MODULE_CO2_INITIAL_MEASUREMENT    0x10
 #define BC_MODULE_CO2_SEQUENTIAL_MEASUREMENT 0x20
 #define BC_MODULE_CO2_RX_ERROR_STATUS0       (3+39)
+#define BC_MODULE_CO2_CALIBRATION_ABC        0x70
+#define BC_MODULE_CO2_CALIBRATION_ABC_RF     0x72
+#define BC_MODULE_CO2_CALIBRATION_TIMEOUT    7 * 27 * 3600
 
 typedef enum
 {
@@ -32,12 +35,17 @@ typedef enum
     BC_MODULE_CO2_STATE_MEASURE,
     BC_MODULE_CO2_STATE_MEASURE_READ,
 
+    BC_MODULE_CO2_STATE_CALIBRATION_START,
+    BC_MODULE_CO2_STATE_CALIBRATION_READ,
+    BC_MODULE_CO2_STATE_CALIBRATION_DONE
+
+
 } bc_module_co2_state_t;
 
 static struct
 {
     bc_scheduler_task_id_t task_id_interval;
-    bc_scheduler_task_id_t task_id;
+    bc_scheduler_task_id_t task_id_measure;
     void (*event_handler)(bc_module_co2_event_t, void *);
     void *event_param;
     bc_tick_t update_interval;
@@ -46,6 +54,7 @@ static struct
     bc_sc16is740_t sc16is740;
     bool first_measurement_done;
     bc_tick_t start;
+    bc_tick_t next_calibration;
     uint8_t rx_buffer[45];
     uint8_t tx_buffer[33];
     uint8_t sensor_state[23];
@@ -68,8 +77,7 @@ void bc_module_co2_init(void)
     _bc_module_co2.pressure = 10124;
 
     _bc_module_co2.task_id_interval = bc_scheduler_register(_bc_module_co2_task_interval, NULL, BC_TICK_INFINITY);
-
-    bc_module_co2_measure();
+    _bc_module_co2.task_id_measure = bc_scheduler_register(_bc_module_co2_task_measure, NULL, 0);
 }
 
 void bc_module_co2_set_event_handler(void (*event_handler)(bc_module_co2_event_t, void *), void *event_param)
@@ -94,18 +102,12 @@ void bc_module_co2_set_update_interval(bc_tick_t interval)
 
 bool bc_module_co2_measure(void)
 {
-    if (_bc_module_co2.task_id == 0)
-    {
-        _bc_module_co2.task_id = bc_scheduler_register(_bc_module_co2_task_measure, NULL, 0);
-        return true;
-    }
-    else if (_bc_module_co2.state == BC_MODULE_CO2_STATE_READY)
+    if (_bc_module_co2.state == BC_MODULE_CO2_STATE_READY)
     {
         _bc_module_co2.state = BC_MODULE_CO2_STATE_CHARGE;
-        bc_scheduler_plan_now(_bc_module_co2.task_id);
+        bc_scheduler_plan_now(_bc_module_co2.task_id_measure);
         return true;
     }
-
     return false;
 }
 
@@ -120,6 +122,12 @@ bool bc_module_co2_get_concentration(int16_t *concentration)
     return true;
 }
 
+void bc_module_co2_calibration()
+{
+    _bc_module_co2.next_calibration = 0;
+    bc_module_co2_measure();
+}
+
 static void _bc_module_co2_task_interval(void *param)
 {
     (void) param;
@@ -132,8 +140,6 @@ static void _bc_module_co2_task_interval(void *param)
 static void _bc_module_co2_task_measure(void *param)
 {
 
-    bc_tick_t now = bc_tick_get();
-
 start:
 
     switch (_bc_module_co2.state)
@@ -141,6 +147,7 @@ start:
         case BC_MODULE_CO2_STATE_ERROR:
         {
             _bc_module_co2.valid = false;
+            _bc_module_co2.first_measurement_done = false;
 
             if (_bc_module_co2.event_handler != NULL)
             {
@@ -200,8 +207,7 @@ start:
             }
 
             _bc_module_co2.state = BC_MODULE_CO2_STATE_PRECHARGE;
-//            bc_scheduler_plan_current_relative(45000);
-            bc_scheduler_plan_current_relative(1000); //TODO
+            bc_scheduler_plan_current_relative(45000);
             return;
         }
         case BC_MODULE_CO2_STATE_PRECHARGE:
@@ -454,10 +460,14 @@ start:
                 _bc_module_co2.concentration |= (int16_t) _bc_module_co2.rx_buffer[30];
                 _bc_module_co2.valid = true;
 
+                bool calibration = _bc_module_co2.next_calibration < bc_tick_get();
 
-                if (!bc_tca9534a_set_port_direction(&_bc_module_co2.tca9534a, 0xFF))
+                if (!calibration)
                 {
-                    goto start;
+                    if (!bc_tca9534a_set_port_direction(&_bc_module_co2.tca9534a, 0xFF))
+                    {
+                        goto start;
+                    }
                 }
 
                 _bc_module_co2.state = BC_MODULE_CO2_STATE_READY;
@@ -467,16 +477,134 @@ start:
                     _bc_module_co2.event_handler(BC_MODULE_CO2_EVENT_UPDATE, _bc_module_co2.event_param);
                 }
 
+                if (calibration)
+                {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_CALIBRATION_START;
+                    goto start;
+                }
+
                 return;
             }
             else
             {
-                if ((_bc_module_co2.start + 500) < bc_tick_get())
+                if ((_bc_module_co2.start + 580) < bc_tick_get())
                 {
                     _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
             }
+            bc_scheduler_plan_current_now();
+            return;
+        }
+        case BC_MODULE_CO2_STATE_CALIBRATION_START:
+        {
+            uint16_t crc16;
+
+            _bc_module_co2.tx_buffer[0] = BC_MODULE_CO2_MODBUS_DEVICE_ADDRESS;
+            _bc_module_co2.tx_buffer[1] = BC_MODULE_CO2_MODBUS_WRITE;
+            _bc_module_co2.tx_buffer[2] = 0x00;
+            _bc_module_co2.tx_buffer[3] = 0x80;
+            _bc_module_co2.tx_buffer[4] = 0x01;
+            _bc_module_co2.tx_buffer[5] = BC_MODULE_CO2_CALIBRATION_ABC;
+
+            crc16 = _bc_module_co2_calculate_crc16(_bc_module_co2.tx_buffer, 6);
+
+            _bc_module_co2.tx_buffer[6] = (uint8_t) crc16;
+            _bc_module_co2.tx_buffer[7] = (uint8_t) (crc16 >> 8);
+
+            if (!bc_sc16is740_reset_fifo(&_bc_module_co2.sc16is740, BC_SC16IS740_FIFO_RX))
+            {
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
+                goto start;
+            }
+
+            if (!bc_sc16is740_write(&_bc_module_co2.sc16is740, _bc_module_co2.tx_buffer, 8))
+            {
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
+                goto start;
+            }
+
+            _bc_module_co2.state = BC_MODULE_CO2_STATE_CALIBRATION_READ;
+            bc_scheduler_plan_current_now();
+            return;
+        }
+        case BC_MODULE_CO2_STATE_CALIBRATION_READ:
+        {
+            uint8_t available;
+            if (!bc_sc16is740_available(&_bc_module_co2.sc16is740, &available))
+            {
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
+                goto start;
+            }
+
+            if (available == 4)
+            {
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
+
+                if (!bc_sc16is740_read(&_bc_module_co2.sc16is740, _bc_module_co2.rx_buffer, 4, 100))
+                {
+                    goto start;
+                }
+
+                if (_bc_module_co2.rx_buffer[0] != BC_MODULE_CO2_MODBUS_DEVICE_ADDRESS)
+                {
+                    goto start;
+                }
+
+                if (_bc_module_co2.rx_buffer[1] != _bc_module_co2.tx_buffer[1])
+                {
+                    goto start;
+                }
+
+                if (_bc_module_co2_calculate_crc16(_bc_module_co2.rx_buffer, 4) != 0)
+                {
+                    goto start;
+                }
+
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_CALIBRATION_DONE;
+            }
+            else
+            {
+                if ((_bc_module_co2.start + 580) < bc_tick_get())
+                {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
+                    goto start;
+                }
+            }
+            bc_scheduler_plan_current_now();
+            return;
+        }
+        case BC_MODULE_CO2_STATE_CALIBRATION_DONE:
+        {
+            bc_tca9534a_state_t rdy_pin_value;
+
+            if (!bc_tca9534a_read_pin(&_bc_module_co2.tca9534a, _BC_MODULE_CO2_RDY_PIN, &rdy_pin_value))
+            {
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
+                goto start;
+            }
+
+            if (rdy_pin_value == BC_TCA9534A_PIN_STATE_LOW)
+            {
+                if ((_bc_module_co2.start + 580) < bc_tick_get())
+                {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
+                    goto start;
+                }
+                else
+                {
+                    bc_scheduler_plan_current_now();
+                    return;
+                }
+            }
+
+            if (!bc_tca9534a_set_port_direction(&_bc_module_co2.tca9534a, 0xFF))
+            {
+                goto start;
+            }
+
+            _bc_module_co2.next_calibration = bc_tick_get() + BC_MODULE_CO2_CALIBRATION_TIMEOUT;
+            _bc_module_co2.state = BC_MODULE_CO2_STATE_CHARGE;
             bc_scheduler_plan_current_now();
             return;
         }
