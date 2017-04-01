@@ -4,10 +4,11 @@
 #include <bc_gpio.h>
 #include <bc_exti.h>
 #include <bc_scheduler.h>
+#include <bc_module_core.h>
 
 #include "bc_ir_rx.h"
 
-#define _BC_IR_RX_DEBUG
+//#define _BC_IR_RX_DEBUG
 
 // IR receiver has to be connected on
 // BC_GPIO_P10
@@ -17,7 +18,6 @@ static struct
 {
     TIM_HandleTypeDef ir_timer;
     uint8_t counter;
-    uint16_t lengths[40];
     uint32_t ir_rx_temp;
     uint32_t ir_rx_value;
 
@@ -26,6 +26,9 @@ static struct
     void (*event_handler)(bc_ir_rx_event_t, void *);
     void *event_param;
 
+    #ifdef _BC_IR_RX_DEBUG
+    uint16_t lengths[40];
+    #endif
 } _bc_ir_rx;
 
 
@@ -33,6 +36,7 @@ void bc_ir_rx_get_code(uint32_t *nec_code)
 {
     *nec_code = _bc_ir_rx.ir_rx_value;
 }
+
 
 static void _bc_ir_rx_task_notify(void *param)
 {
@@ -42,8 +46,6 @@ static void _bc_ir_rx_task_notify(void *param)
     {
         _bc_ir_rx.event_handler(BC_IR_RX_NEC_FORMAT, _bc_ir_rx.event_param);
     }
-
-    //bc_scheduler_enable_sleep();
 }
 
 static void _bc_ir_rx_exti_int(bc_exti_line_t line, void *param)
@@ -72,7 +74,9 @@ static void _bc_ir_rx_exti_int(bc_exti_line_t line, void *param)
     __HAL_TIM_SET_COUNTER(&_bc_ir_rx.ir_timer, 0);
 
     // Array for debugging
+    #ifdef _BC_IR_RX_DEBUG
     _bc_ir_rx.lengths[_bc_ir_rx.counter] = act_len;
+    #endif
 
     // Check start pulse length
     if(_bc_ir_rx.counter == 1)
@@ -133,8 +137,8 @@ void bc_ir_rx_set_event_handler(void (*event_handler)(bc_ir_rx_event_t, void *),
 
 void bc_ir_rx_init()
 {
-    // Needs fix
-    bc_scheduler_disable_sleep();
+    // TODO: Needs fix to allow low power
+    bc_module_core_pll_enable();
 
     // IR input
     bc_gpio_init(BC_GPIO_P10);
@@ -150,27 +154,25 @@ void bc_ir_rx_init()
     #endif
 
     // Used TIM7 so we don't have collision of IRQ handlers functions
-    __TIM7_CLK_ENABLE();
-    _bc_ir_rx.ir_timer.Instance = TIM7;
-    // Running @ 16MHz, set timer to 1us resolution
-    _bc_ir_rx.ir_timer.Init.Prescaler = 16;
+    __TIM6_CLK_ENABLE();
+    _bc_ir_rx.ir_timer.Instance = TIM6;
+    // Running @ 32MHz, set timer to 1us resolution
+    _bc_ir_rx.ir_timer.Init.Prescaler = SystemCoreClock / 1000000;
     _bc_ir_rx.ir_timer.Init.CounterMode = TIM_COUNTERMODE_UP;
     // Period is also the timeout in case the IR code is not complete
     _bc_ir_rx.ir_timer.Init.Period = 16000;
     _bc_ir_rx.ir_timer.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     HAL_TIM_Base_Init(&_bc_ir_rx.ir_timer);
-    HAL_NVIC_EnableIRQ(TIM7_IRQn);
+    HAL_NVIC_EnableIRQ(TIM6_IRQn);
 
     _bc_ir_rx.task_id_notify = bc_scheduler_register(_bc_ir_rx_task_notify, NULL, BC_TICK_INFINITY);
 
 }
 
 
-void TIM7_IRQHandler()
+void TIM6_IRQHandler()
 {
     #ifdef _BC_IR_RX_DEBUG
-    bc_gpio_toggle_output(BC_GPIO_P11);
-    bc_gpio_toggle_output(BC_GPIO_P11);
     bc_gpio_toggle_output(BC_GPIO_P11);
     bc_gpio_toggle_output(BC_GPIO_P11);
     bc_gpio_toggle_output(BC_GPIO_P11);

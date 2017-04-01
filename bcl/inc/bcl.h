@@ -3,10 +3,11 @@
 
 // Miscellaneous
 
+#include <bc_ir_rx.h>
 #include <bc_irq.h>
+#include <bc_led_strip.h>
 #include <bc_radio.h>
 #include <usb_talk.h>
-#include <bc_led_strip.h>
 
 // Peripheral drivers
 
@@ -35,6 +36,7 @@
 // BigClown modules
 
 #include <bc_module_climate.h>
+#include <bc_module_core.h>
 #include <bc_module_encoder.h>
 #include <bc_module_pir.h>
 #include <bc_module_power.h>

@@ -6,7 +6,7 @@ typedef enum
     //! @brief Receiver IR command
     BC_IR_RX_NEC_FORMAT = 0,
 
-    //! @brief REceived repeat command
+    //! @brief Received repeat command
     BC_IR_RX_NEC_FORMAT_REPEAT = 1
 
 } bc_ir_rx_event_t;
