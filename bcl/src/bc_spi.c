@@ -1,12 +1,14 @@
 #include <bc_spi.h>
+#include <bc_module_core.h>
 #include <stm32l0xx.h>
 
-static const uint32_t _bc_spi_speed_table[4] =
+static const uint32_t _bc_spi_speed_table[5] =
 {
-    [BC_SPI_SPEED_1_MHZ] = 0x18, // :8 (1MHz)
-    [BC_SPI_SPEED_2_MHZ] = 0x10, // :4 (2MHz)
-    [BC_SPI_SPEED_4_MHZ] = 0x08, // :2 (4MHz)
-    [BC_SPI_SPEED_8_MHZ] = 0x00  // :1 (8MHz)
+    [BC_SPI_SPEED_1_MHZ] = 0x20, // :16 (1MHz)
+    [BC_SPI_SPEED_2_MHZ] = 0x18, // :8  (2MHz)
+    [BC_SPI_SPEED_4_MHZ] = 0x10, // :4  (4MHz)
+    [BC_SPI_SPEED_8_MHZ] = 0x08, // :2  (8MHz)
+    [BC_SPI_SPEED_16_MHZ] = 0x00 // :1  (16MHz)
 };
 
 static const uint32_t _bc_spi_mode_table[4] =
@@ -24,6 +26,9 @@ static uint8_t _bc_spi_transfer_byte(uint8_t value);
 
 void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
 {
+    // Enable PLL
+    bc_module_core_pll_enable();
+
     // Enable GPIOB clock
     RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
 
@@ -116,6 +121,9 @@ bc_spi_mode_t bc_spi_get_mode(void)
 
 void bc_spi_transfer(const void *source, void *destination, size_t length)
 {
+    // Enable PLL and disable sleep
+    bc_module_core_pll_enable();
+
     // Set CS to active level
     GPIOB->BSRR = GPIO_BSRR_BR_12;
 
@@ -146,6 +154,9 @@ void bc_spi_transfer(const void *source, void *destination, size_t length)
 
     // Set CS to inactive level
     GPIOB->BSRR = GPIO_BSRR_BS_12;
+
+    // Disable PLL and enable sleep
+    bc_module_core_pll_disable();
 }
 
 static uint8_t _bc_spi_transfer_byte(uint8_t value)

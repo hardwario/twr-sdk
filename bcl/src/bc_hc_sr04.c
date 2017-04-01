@@ -1,5 +1,6 @@
 #include <bc_hc_sr04.h>
 #include <bc_scheduler.h>
+#include <bc_module_core.h>
 #include <stm32l0xx.h>
 
 // Timer resolution in microseconds
@@ -59,7 +60,7 @@ void bc_hc_sr04_init(void)
     LPTIM1->CMP = 1;
 
     // Set auto-reload register
-    LPTIM1->ARR = 1 + 160;
+    LPTIM1->ARR = 1 + 320;
 
     // Enable TIM3 clock
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
@@ -73,8 +74,8 @@ void bc_hc_sr04_init(void)
     // Capture 4 is sensitive on falling edge
     TIM3->CCER |= 1 << TIM_CCER_CC4P_Pos;
 
-    // Set prescaler to 5 * 16 (5 microseconds resolution)
-    TIM3->PSC = _BC_HC_SR04_RESOLUTION * 16 - 1;
+    // Set prescaler to 5 * 32 (5 microseconds resolution)
+    TIM3->PSC = _BC_HC_SR04_RESOLUTION * 32 - 1;
 
     // Enable TIM3 interrupts
     NVIC_EnableIRQ(TIM3_IRQn);
@@ -107,7 +108,8 @@ bool bc_hc_sr04_measure(void)
         return false;
     }
 
-    bc_scheduler_disable_sleep();
+    // Enable PLL
+    bc_module_core_pll_enable();
 
     _bc_hc_sr04.measurement_active = true;
 
@@ -167,6 +169,9 @@ static void _bc_hc_sr04_task_notify(void *param)
 {
     (void) param;
 
+    // Disable PLL
+    bc_module_core_pll_disable();
+
     _bc_hc_sr04.measurement_active = false;
 
     if (!_bc_hc_sr04.measurement_valid)
@@ -182,8 +187,6 @@ static void _bc_hc_sr04_task_notify(void *param)
     }
 
     bc_scheduler_unregister(_bc_hc_sr04.task_id_notify);
-
-    bc_scheduler_enable_sleep();
 }
 
 void TIM3_IRQHandler(void)

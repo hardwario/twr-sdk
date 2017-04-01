@@ -1,4 +1,5 @@
 #include <bc_i2c.h>
+#include <bc_module_core.h>
 #include <stm32l0xx.h>
 
 static struct
@@ -17,9 +18,6 @@ static struct
 
 void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 {
-    // TODO Implement speed parameter and remove the line below
-    (void) speed;
-
     if (channel == BC_I2C_I2C0)
     {
         if(bc_i2c.i2c0_initialized)
@@ -44,11 +42,11 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         bc_i2c.handle_i2c0.Instance = I2C2;
         if(speed == BC_I2C_SPEED_400_KHZ)
         {
-            bc_i2c.handle_i2c0.Init.Timing = 0x0010061A;
+            bc_i2c.handle_i2c0.Init.Timing = 0x301110;
         }
         else if (speed == BC_I2C_SPEED_100_KHZ)
         {
-            bc_i2c.handle_i2c0.Init.Timing = 0x303d5b;
+            bc_i2c.handle_i2c0.Init.Timing = 0x707cbb;
         }
         else
         {
@@ -81,6 +79,9 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
             return;
         }
 
+        // Enable PLL and disable sleep
+        bc_module_core_pll_enable();
+
         __HAL_RCC_GPIOB_CLK_ENABLE();
 
         GPIO_InitTypeDef GPIO_InitStruct;
@@ -98,11 +99,11 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         bc_i2c.handle_i2c1.Instance = I2C1;
         if(speed == BC_I2C_SPEED_400_KHZ)
         {
-            bc_i2c.handle_i2c1.Init.Timing = 0x0010061A;
+            bc_i2c.handle_i2c1.Init.Timing = 0x301110;
         }
         else if (speed == BC_I2C_SPEED_100_KHZ)
         {
-            bc_i2c.handle_i2c1.Init.Timing = 0x303d5b;
+            bc_i2c.handle_i2c1.Init.Timing = 0x707cbb;
         }
         else
         {
@@ -132,6 +133,9 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 
 bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
 {
+    // Enable PLL and disable sleep
+    bc_module_core_pll_enable();
+
     if (channel == BC_I2C_I2C0)
     {
         if (!bc_i2c.i2c0_initialized)
@@ -160,10 +164,16 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
 
         return true;
     }
+
+    // Disable PLL and enable sleep
+    bc_module_core_pll_disable();
 }
 
 bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
 {
+    // Enable PLL and disable sleep
+    bc_module_core_pll_enable();
+
     if (channel == BC_I2C_I2C0)
     {
         if (!bc_i2c.i2c0_initialized)
@@ -192,6 +202,9 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
 
         return true;
     }
+
+    // Disable PLL and enable sleep
+    bc_module_core_pll_disable();
 }
 
 bool bc_i2c_write_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t data)

@@ -1,6 +1,7 @@
 #include <bc_spirit1.h>
 #include <bc_scheduler.h>
 #include <bc_exti.h>
+#include <bc_module_core.h>
 #include <stm32l0xx.h>
 #include "SPIRIT_Config.h"
 #include "SDK_Configuration_Common.h"
@@ -364,6 +365,9 @@ static void _bc_spirit1_enter_state_sleep(void)
 
 bc_spirit_status_t bc_spirit1_command(uint8_t command)
 {
+    // Enable PLL
+    bc_module_core_pll_enable();
+
     // Set chip select low
     bc_spirit1_hal_chip_select_low();
 
@@ -376,12 +380,18 @@ bc_spirit_status_t bc_spirit1_command(uint8_t command)
     // Set chip select high
     bc_spirit1_hal_chip_select_high();
 
+    // Disable PLL
+    bc_module_core_pll_disable();
+
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);
 }
 
 bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t length)
 {
+    // Enable PLL
+    bc_module_core_pll_enable();
+
     // Set chip select low
     bc_spirit1_hal_chip_select_low();
 
@@ -401,12 +411,18 @@ bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t 
     // Set chip select high
     bc_spirit1_hal_chip_select_high();
 
+    // Disable PLL
+    bc_module_core_pll_disable();
+
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);
 }
 
 bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
 {
+    // Enable PLL
+    bc_module_core_pll_enable();
+
     // Set chip select low
     bc_spirit1_hal_chip_select_low();
 
@@ -425,6 +441,9 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
 
     // Set chip select high
     bc_spirit1_hal_chip_select_high();
+
+    // Disable PLL
+    bc_module_core_pll_disable();
 
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);
@@ -456,7 +475,7 @@ void bc_spirit1_hal_shutdown_low(void)
     // TODO This delay might not exist (maybe poll GPIO?)...
 
     // Set prescaler
-    TIM7->PSC = 16 - 1;
+    TIM7->PSC = 32 - 1;
 
     // Set auto-reload register - period 10 ms
     TIM7->ARR = 10000 - 1;
@@ -476,6 +495,9 @@ void bc_spirit1_hal_shutdown_low(void)
 
 void bc_spirit1_hal_shutdown_high(void)
 {
+    // Enable PLL
+    bc_module_core_pll_enable();
+
     // Output log. 0 on CS pin
     GPIOA->BSRR = GPIO_BSRR_BR_15;
 
@@ -483,7 +505,7 @@ void bc_spirit1_hal_shutdown_high(void)
     GPIOB->BSRR = GPIO_BSRR_BS_7;
 
     // Set prescaler
-    TIM7->PSC = 32 - 1;
+    TIM7->PSC = 64 - 1;
 
     // Set auto-reload register - period 100 ms
     TIM7->ARR = 50000 - 1;
@@ -499,6 +521,9 @@ void bc_spirit1_hal_shutdown_high(void)
     {
         continue;
     }
+
+    // Disable PLL
+    bc_module_core_pll_disable();
 }
 
 void bc_spirit1_hal_chip_select_low(void)
@@ -510,7 +535,7 @@ void bc_spirit1_hal_chip_select_low(void)
     TIM7->PSC = 0;
 
     // Set auto-reload register - period 4 us
-    TIM7->ARR = 32 - 1;
+    TIM7->ARR = 64 - 1;
 
     // Generate update of registers
     TIM7->EGR = TIM_EGR_UG;
@@ -631,8 +656,8 @@ static void bc_spirit1_hal_init_spi(void)
     // Enable clock for SPI1
     RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
 
-    // Software slave management, baud rate control = fPCLK / 4, master configuration
-    SPI1->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_BR_0 | SPI_CR1_MSTR;
+    // Software slave management, baud rate control = fPCLK / 8, master configuration
+    SPI1->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_BR_1 | SPI_CR1_MSTR;
 
     // Enable SPI
     SPI1->CR1 |= SPI_CR1_SPE;
