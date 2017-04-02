@@ -1,0 +1,27 @@
+<script src="https://use.typekit.net/psm4xcw.js"></script>
+<script>try{Typekit.load({async:false});}catch(e){}</script>
+
+<div id = "navigation">
+	<span class = "showNavigation" onclick="myFunction()">
+		<span class = "icon icon-hamburger"></span>
+	</span>
+	<a class = "icon logo" href = "https://www.bigclown.cz"></a>
+	<ul class = "primaryNavigation">
+		<li><a href = "https://www.bigclown.cz/project">Inspirace</a></li>
+		<li><a href = "https://obchod.bigclown.cz/">Obchod</a></li>
+		<li class = "selected"><a href = "/">Dokumentace</a></li>
+		<li><a href = "https://github.com/bigclownlabs" target="_blank">GitHub</a></li>
+		<li><a href = "https://www.bigclown.cz/contact">Kontakt</a></li>
+	</ul>
+</div>
+
+<script type="text/javascript">
+function myFunction() {
+	if ($('.primaryNavigation').css('display') == "none"){
+		$('.primaryNavigation').css("display", "block");
+	}
+	else{
+		$('.primaryNavigation').css("display", "none");
+	}
+}
+</script>
