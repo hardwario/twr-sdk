@@ -1,6 +1,8 @@
 #ifndef _BC_IR_RX_H
 #define _BC_IR_RX_H
 
+#include <bc_common.h>
+
 typedef enum
 {
     //! @brief Receiver IR command
