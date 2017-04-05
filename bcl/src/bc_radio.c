@@ -16,6 +16,7 @@ typedef enum
     BC_RADIO_HEADER_PUB_HUMIDITY,
     BC_RADIO_HEADER_PUB_LUX_METER,
     BC_RADIO_HEADER_PUB_BAROMETER,
+    BC_RADIO_HEADER_PUB_CO2
 
 } bc_radio_header_t;
 
@@ -61,6 +62,9 @@ __attribute__((weak)) void bc_radio_on_thermometer(uint32_t *peer_device_address
 __attribute__((weak)) void bc_radio_on_humidity(uint32_t *peer_device_address, uint8_t *i2c, float *percentage) { (void) peer_device_address; (void) i2c; (void) percentage; }
 __attribute__((weak)) void bc_radio_on_lux_meter(uint32_t *peer_device_address, uint8_t *i2c, float *illuminance) { (void) peer_device_address; (void) i2c; (void) illuminance; }
 __attribute__((weak)) void bc_radio_on_barometer(uint32_t *peer_device_address, uint8_t *i2c, float *pressure, float *altitude) { (void) peer_device_address; (void) i2c; (void) pressure; (void) altitude; }
+__attribute__((weak)) void bc_radio_on_co2(uint32_t *peer_device_address, int16_t *concentration) { (void) peer_device_address; (void) concentration; }
+__attribute__((weak)) void bc_radio_on_buffer(uint32_t *peer_device_address, void *buffer, size_t *length) { (void) peer_device_address; (void) buffer; (void) length; }
+
 
 void bc_radio_init(void)
 {
@@ -211,6 +215,24 @@ bool bc_radio_pub_barometer(uint8_t i2c, float *pascal, float *meter)
     return true;
 }
 
+bool bc_radio_pub_co2(int16_t *concentration)
+{
+    uint8_t buffer[1 + sizeof(*concentration)];
+
+    buffer[0] = BC_RADIO_HEADER_PUB_CO2;
+
+    memcpy(&buffer[1], concentration, sizeof(*concentration));
+
+    if (!bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer)))
+    {
+        return false;
+    }
+
+    bc_scheduler_plan_now(_bc_radio.task_id);
+
+    return true;
+}
+
 static void _bc_radio_task(void *param)
 {
     (void) param;
@@ -298,6 +320,18 @@ static void _bc_radio_task(void *param)
             memcpy(&meter, &queue_item_buffer[2 + sizeof(pascal)], sizeof(meter));
 
             bc_radio_on_barometer(&_bc_radio.peer_device_address, &queue_item_buffer[1], &pascal, &meter);
+        }
+        else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_CO2)
+        {
+            int16_t concentration;
+
+            memcpy(&concentration, &queue_item_buffer[1], sizeof(concentration));
+
+            bc_radio_on_co2(&_bc_radio.peer_device_address, &concentration);
+        }
+        else
+        {
+            bc_radio_on_buffer(&_bc_radio.peer_device_address, queue_item_buffer, &queue_item_length);
         }
 
     }
