@@ -3,6 +3,9 @@
 
 #include <bc_tca9534a.h>
 
+#define BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT 0x3B
+#define BC_MODULE_RELAY_I2C_ADDRESS_ALTERNATE 0x3F
+
 //! @addtogroup bc_module_relay bc_module_relay
 //! @brief Driver for BigClown Relay Module
 //! @section example How to use this driver
@@ -65,6 +68,7 @@ typedef enum
 
 struct bc_module_relay_t
 {
+    uint8_t _i2c_address;
     bc_tca9534a_t _tca9534a;
     bc_module_relay_state_t _relay_state;
     bc_tick_t _timestamp;
@@ -82,7 +86,7 @@ struct bc_module_relay_t
 //! @brief Initialize BigClown Relay Module
 //! @param[in] self Instance
 
-bool bc_module_relay_init(bc_module_relay_t *self);
+bool bc_module_relay_init(bc_module_relay_t *self, uint8_t i2c_address);
 
 //! @brief Set relay to specified state
 //! @param[in] self Instance

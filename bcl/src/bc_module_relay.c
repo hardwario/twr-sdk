@@ -5,18 +5,15 @@
 
 static void _bc_module_relay_task(void *param);
 
-#define BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT 0x3B
-#define BC_MODULE_RELAY_I2C_ADDRESS_ALTERNATE 0x3F
-
-#define BC_MODULE_RELAY_POLARITY_T      ((1 << 6) | (1 << 7))
-#define BC_MODULE_RELAY_POLARITY_F      ((1 << 4) | (1 << 5))
+#define BC_MODULE_RELAY_POLARITY_F      ((1 << 6) | (1 << 7))
+#define BC_MODULE_RELAY_POLARITY_T      ((1 << 4) | (1 << 5))
 #define BC_MODULE_RELAY_POLARITY_NONE   ((1 << 6) | (1 << 4))
 
 
 static bool _bc_module_relay_hardware_init(bc_module_relay_t *self)
 {
     // Init i2C expander driver
-    if (!bc_tca9534a_init(&self->_tca9534a, BC_I2C_I2C0, BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT))
+    if (!bc_tca9534a_init(&self->_tca9534a, BC_I2C_I2C0, self->_i2c_address))
     {
         return false;
     }
@@ -30,10 +27,11 @@ static bool _bc_module_relay_hardware_init(bc_module_relay_t *self)
     return true;
 }
 
-bool bc_module_relay_init(bc_module_relay_t *self)
+bool bc_module_relay_init(bc_module_relay_t *self, uint8_t i2c_address)
 {
     // Init instance, set state machine initial state
     memset(self, 0, sizeof(*self));
+    self->_i2c_address = i2c_address;
     return _bc_module_relay_hardware_init(self);
 }
 
