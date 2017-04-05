@@ -7,7 +7,6 @@
 #include <bc_irq.h>
 #include <bc_led_strip.h>
 #include <bc_radio.h>
-#include <usb_talk.h>
 
 // Peripheral drivers
 
@@ -43,6 +42,7 @@
 #include <bc_module_relay.h>
 #include <bc_module_sigfox.h>
 #include <bc_module_lcd.h>
+#include <bc_module_co2.h>
 
 //! @mainpage BigClown firmware SDK
 //! This is API documentation of BigClown SDK
