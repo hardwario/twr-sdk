@@ -1,7 +1,4 @@
-#include <bc_module_power.h>
-#include <bc_scheduler.h>
 #include <bc_module_relay.h>
-#include <bc_scheduler.h>
 
 static void _bc_module_relay_task(void *param);
 

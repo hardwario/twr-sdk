@@ -2,6 +2,7 @@
 #define _BC_MODULE_RELAY_H
 
 #include <bc_tca9534a.h>
+#include <bc_scheduler.h>
 
 #define BC_MODULE_RELAY_I2C_ADDRESS_DEFAULT 0x3B
 #define BC_MODULE_RELAY_I2C_ADDRESS_ALTERNATE 0x3F
