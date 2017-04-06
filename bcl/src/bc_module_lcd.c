@@ -54,6 +54,14 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 
     _bc_module_lcd.font = &Font;
 
+    // Address lines
+    uint8_t line;
+    uint32_t offs;
+    for (line = 0x01, offs = 1; line <= 128; line++, offs += 18) {
+        // Fill the gate line addresses on the exact place in the buffer
+        self->framebuffer[offs] = reverse2(line);
+    }
+
     // Prepare buffer so the background is "white" reflective
     bc_module_lcd_clear();
 
@@ -146,42 +154,30 @@ int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
 
     int w = 0;
     uint8_t h = 0;
-
     uint16_t i;
-    for( i = 0; i < font->length; i++)
+    uint16_t x;
+    uint16_t y;
+    uint8_t bytes;
+
+    for (i = 0; i < font->length; i++)
     {
-        if(font->chars[i].code == ch)
+        if (font->chars[i].code == ch)
         {
             w = font->chars[i].image->width;
             h = font->chars[i].image->heigth;
 
-            // TODO: Optimize
-            uint8_t bytes;
-            if(w > 24)
-            {
-                bytes = 4;
-            }
-            else if(w > 16)
-            {
-                bytes = 3;
-            } else if(w > 8) {
-                bytes = 2;
-            } else {
-                bytes = 1;
-            }
+            bytes = (w + 7) / 8;
 
-            uint16_t x;
-            uint16_t y;
-            for(y = 0; y < h; y++)
+            for (y = 0; y < h; y++)
             {
-                for(x = 0; x < w; x++)
+                for (x = 0; x < w; x++)
                 {
                     uint32_t byteIndex = x / 8;
                     byteIndex += y * bytes;
 
                     uint8_t bitMask = 1 << (7 - (x % 8));
 
-                    if(font->chars[i].image->image[byteIndex] & bitMask)
+                    if (font->chars[i].image->image[byteIndex] & bitMask)
                     {
                         bc_module_lcd_draw_pixel(left + x, top + y, false);
                     }
@@ -232,16 +228,7 @@ Framebuffer format for updating multiple lines, ideal for later DMA TX:
 void bc_module_lcd_update(void)
 {
     bc_module_lcd_t *self = &_bc_module_lcd;
-    uint8_t line;
-    uint32_t offs;
-
     self->framebuffer[0] = 0x80 | self->vcom;
-
-    // Address lines
-    for (line = 0x01, offs = 1; line <= 128; line++, offs += 18) {
-        // Fill the gate line addresses on the exact place in the buffer
-        self->framebuffer[offs] = reverse2(line);
-    }
 
     _bc_module_lcd_spi_transfer(self->framebuffer, BC_LCD_FRAMEBUFFER_SIZE);
 
