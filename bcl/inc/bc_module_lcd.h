@@ -89,6 +89,10 @@ int bc_module_lcd_draw_string(int left, int top, char *str);
 
 void bc_module_lcd_update(void);
 
+//! @brief Send Lcd clear memory command
+
+void bc_module_lcd_clear_memory_command(void);
+
 //! @brief Lcd set font
 //! @param[in] tFont *font
 

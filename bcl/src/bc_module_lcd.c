@@ -250,6 +250,13 @@ void bc_module_lcd_update(void)
     bc_scheduler_plan_relative(self->task_id, _BC_MODULE_LCD_VCOM_PERIOD);
 }
 
+void bc_module_lcd_clear_memory_command(void)
+{
+    uint8_t spi_data[2] = {0x20, 0x00};
+
+    _bc_module_lcd_spi_transfer(spi_data, sizeof(spi_data));
+}
+
 // TODO: pass pointer
 void bc_module_lcd_set_font(const tFont *font)
 {
