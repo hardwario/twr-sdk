@@ -139,6 +139,7 @@ static void _bc_module_co2_task_interval(void *param)
 
 static void _bc_module_co2_task_measure(void *param)
 {
+    (void) param;
 
 start:
 
@@ -606,6 +607,10 @@ start:
             _bc_module_co2.next_calibration = bc_tick_get() + BC_MODULE_CO2_CALIBRATION_TIMEOUT;
             _bc_module_co2.state = BC_MODULE_CO2_STATE_CHARGE;
             bc_scheduler_plan_current_now();
+            return;
+        }
+        default:
+        {
             return;
         }
     }

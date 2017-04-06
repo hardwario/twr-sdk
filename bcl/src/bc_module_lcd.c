@@ -273,6 +273,8 @@ static void _bc_module_lcd_spi_transfer(uint8_t *buffer, size_t length)
 
 static void _bc_module_lcd_task(void *param)
 {
+    (void) param;
+
     uint8_t spi_data[2] = {_bc_module_lcd.vcom, 0x00};
 
     _bc_module_lcd_spi_transfer(spi_data, sizeof(spi_data));

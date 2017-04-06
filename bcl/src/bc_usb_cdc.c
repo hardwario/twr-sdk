@@ -14,7 +14,7 @@ static struct
 {
     bc_fifo_t receive_fifo;
     uint8_t receive_buffer[1024];
-    uint8_t transmit_buffer[1024];
+    uint8_t transmit_buffer[512];
     size_t transmit_length;
     bc_scheduler_task_id_t task_id;
 
