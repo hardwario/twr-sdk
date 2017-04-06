@@ -34,4 +34,6 @@ bool bc_radio_pub_luminosity(uint8_t i2c, float *lux);
 
 bool bc_radio_pub_barometer(uint8_t i2c, float *pascal, float *meter);
 
+bool bc_radio_set_power_relay(bool state);
+
 #endif // _BC_RADIO_H
