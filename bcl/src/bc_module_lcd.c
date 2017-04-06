@@ -1,3 +1,7 @@
+// http://www.mouser.com/ds/2/365/LS013B7DH03%20SPEC_SMA-224806.pdf
+// https://www.embeddedartists.com/sites/default/files/support/datasheet/Memory_LCD_Programming.pdf
+// https://www.silabs.com/documents/public/application-notes/AN0048.pdf
+
 #include <stm32l0xx.h>
 
 #include <bc_spi.h>
@@ -21,6 +25,8 @@ typedef struct bc_module_lcd_t
     const tFont *font;
     uint8_t gpio;
     bc_module_lcd_rotation_t rotation;
+    uint8_t vcom;
+
 } bc_module_lcd_t;
 
 bc_module_lcd_t _bc_module_lcd;
@@ -224,20 +230,19 @@ void bc_module_lcd_update(void)
 
     bc_module_lcd_t *self = &_bc_module_lcd;
 
-    uint8_t spi_data[2];
     uint8_t line;
     uint32_t offs;
-
-    // Send MODE
-    spi_data[0] = 0xd0;
-    spi_data[1] = 0x00;
 
     _bc_module_lcd.gpio &= ~_BC_MODULE_LCD_DISP_CS;
     bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
 
-    bc_spi_transfer(spi_data, NULL, 2);
+//    Clear command
+//    uint8_t spi_data[2];
+//    spi_data[0] = 0x20; // clear memory command
+//    spi_data[1] = 0x00;
+//    bc_spi_transfer(spi_data, NULL, 2);
 
-    self->framebuffer[0] = 0x80;
+    self->framebuffer[0] = 0x80 | _bc_module_lcd.vcom;
 
     // Address lines
     for (line = 0x01, offs = 1; line <= 128; line++, offs += 18) {
@@ -249,6 +254,9 @@ void bc_module_lcd_update(void)
 
     _bc_module_lcd.gpio |= _BC_MODULE_LCD_DISP_CS;
     bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
+
+    _bc_module_lcd.vcom ^= 0x40;
+
 }
 
 // TODO: pass pointer
