@@ -106,6 +106,7 @@ CFLAGS += -D'USE_HAL_DRIVER'
 CFLAGS += -D'STM32L083xx'
 CFLAGS += -ffunction-sections
 CFLAGS += -fdata-sections
+CFLAGS += -std=c11
 CFLAGS_DEBUG += -g3
 CFLAGS_DEBUG += -Og
 CFLAGS_RELEASE += -Os
