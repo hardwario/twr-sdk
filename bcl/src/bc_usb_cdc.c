@@ -22,6 +22,7 @@ static struct
 
 USBD_HandleTypeDef hUsbDeviceFS;
 
+static void _bc_usb_cdc_task_start(void *param);
 static void _bc_usb_cdc_task(void *param);
 static void _bc_usb_cdc_init_hsi48();
 
@@ -39,12 +40,7 @@ void bc_usb_cdc_init(void)
     USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC);
     USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS);
 
-    _bc_usb_cdc.task_id = bc_scheduler_register(_bc_usb_cdc_task, NULL, BC_TICK_INFINITY);
-}
-
-void bc_usb_cdc_start(void)
-{
-    USBD_Start(&hUsbDeviceFS);
+    _bc_usb_cdc.task_id = bc_scheduler_register(_bc_usb_cdc_task_start, NULL, 0);
 }
 
 bool bc_usb_cdc_write(const void *buffer, size_t length)
@@ -95,6 +91,15 @@ void bc_usb_cdc_received_data(const void *buffer, size_t length)
     bc_fifo_irq_write(&_bc_usb_cdc.receive_fifo, (uint8_t *) buffer, length);
 }
 
+static void _bc_usb_cdc_task_start(void *param)
+{
+    bc_scheduler_unregister(_bc_usb_cdc.task_id);
+
+    _bc_usb_cdc.task_id = bc_scheduler_register(_bc_usb_cdc_task, NULL, 0);
+
+    USBD_Start(&hUsbDeviceFS);
+}
+
 static void _bc_usb_cdc_task(void *param)
 {
     (void) param;
@@ -113,7 +118,6 @@ static void _bc_usb_cdc_task(void *param)
 
     HAL_NVIC_EnableIRQ(USB_IRQn);
 
-    // TODO
     bc_scheduler_plan_current_now();
 }
 
