@@ -1,4 +1,4 @@
-# SigFox Example
+# LCD Module Example
 
 
 This example demonstrates writing the text to the LCD Module
