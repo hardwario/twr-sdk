@@ -64,6 +64,8 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 
     // Prepare buffer so the background is "white" reflective
     bc_module_lcd_clear();
+    // Set default font
+    bc_module_lcd_set_font(&Font);
 
     _bc_module_lcd.task_id = bc_scheduler_register(_bc_module_lcd_task, NULL, _BC_MODULE_LCD_VCOM_PERIOD);
 }
@@ -244,7 +246,6 @@ void bc_module_lcd_clear_memory_command(void)
     _bc_module_lcd_spi_transfer(spi_data, sizeof(spi_data));
 }
 
-// TODO: pass pointer
 void bc_module_lcd_set_font(const tFont *font)
 {
     _bc_module_lcd.font = font;
