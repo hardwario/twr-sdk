@@ -64,7 +64,7 @@ __attribute__((weak)) void bc_radio_on_humidity(uint32_t *peer_device_address, u
 __attribute__((weak)) void bc_radio_on_lux_meter(uint32_t *peer_device_address, uint8_t *i2c, float *illuminance) { (void) peer_device_address; (void) i2c; (void) illuminance; }
 __attribute__((weak)) void bc_radio_on_barometer(uint32_t *peer_device_address, uint8_t *i2c, float *pressure, float *altitude) { (void) peer_device_address; (void) i2c; (void) pressure; (void) altitude; }
 __attribute__((weak)) void bc_radio_on_co2(uint32_t *peer_device_address, int16_t *concentration) { (void) peer_device_address; (void) concentration; }
-__attribute__((weak)) void bc_radio_on_buffer(uint32_t *peer_device_address, uint8_t *buffer, size_t *length) { (void) peer_device_address; (void) buffer; (void) length; }
+__attribute__((weak)) void bc_radio_on_buffer(uint32_t *peer_device_address, void *buffer, size_t *length) { (void) peer_device_address; (void) buffer; (void) length; }
 
 
 void bc_radio_init(void)
@@ -234,7 +234,7 @@ bool bc_radio_pub_co2(int16_t *concentration)
     return true;
 }
 
-bool bc_radio_pub_buffer(uint8_t *buffer, size_t length)
+bool bc_radio_pub_buffer(void *buffer, size_t length)
 {
     uint8_t qbuffer[1 + BC_SPIRIT1_MAX_PACKET_SIZE - 6];
 
