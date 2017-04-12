@@ -34,7 +34,7 @@ bool bc_radio_pub_luminosity(uint8_t i2c, float *lux);
 
 bool bc_radio_pub_barometer(uint8_t i2c, float *pascal, float *meter);
 
-bool bc_radio_pub_co2(int16_t *concentration);
+bool bc_radio_pub_co2(float *concentration);
 
 bool bc_radio_pub_buffer(void *buffer, size_t length);
 
