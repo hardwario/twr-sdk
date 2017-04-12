@@ -36,4 +36,6 @@ bool bc_radio_pub_barometer(uint8_t i2c, float *pascal, float *meter);
 
 bool bc_radio_pub_co2(int16_t *concentration);
 
+bool bc_radio_pub_buffer(uint8_t *buffer, size_t length);
+
 #endif // _BC_RADIO_H
