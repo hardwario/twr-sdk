@@ -49,7 +49,7 @@ bool bc_module_co2_measure(void);
 //! @return true on success
 //! @return false on failure
 
-bool bc_module_co2_get_concentration(int16_t *concentration);
+bool bc_module_co2_get_concentration(float *concentration);
 
 //! @brief Set co2 ABC calibration request
 

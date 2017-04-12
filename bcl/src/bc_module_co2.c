@@ -111,14 +111,14 @@ bool bc_module_co2_measure(void)
     return false;
 }
 
-bool bc_module_co2_get_concentration(int16_t *concentration)
+bool bc_module_co2_get_concentration(float *concentration)
 {
     if (!_bc_module_co2.valid)
     {
         return false;
     }
 
-    *concentration = _bc_module_co2.concentration;
+    *concentration = (float) _bc_module_co2.concentration;
     return true;
 }
 
