@@ -53,7 +53,8 @@ static struct
     bc_tca9534a_t tca9534a;
     bc_sc16is740_t sc16is740;
     bool first_measurement_done;
-    bc_tick_t start;
+    bc_tick_t tick_start;
+    bc_tick_t tick_timeout;
     bc_tick_t next_calibration;
     uint8_t rx_buffer[45];
     uint8_t tx_buffer[33];
@@ -156,26 +157,26 @@ start:
             }
 
             _bc_module_co2.state = BC_MODULE_CO2_STATE_INITIALIZE;
-//            bc_scheduler_plan_current_relative(_bc_module_co2.update_interval);
-            bc_scheduler_plan_current_relative(0);
+            bc_scheduler_plan_current_relative(_bc_module_co2.update_interval);
             return;
         }
         case BC_MODULE_CO2_STATE_INITIALIZE:
         {
-            _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
-
             if (!bc_tca9534a_init(&_bc_module_co2.tca9534a, BC_I2C_I2C0, BC_MODULE_CO2_I2C_GPIO_EXPANDER_ADDRESS))
             {
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                 goto start;
             }
 
             if (!bc_tca9534a_write_port(&_bc_module_co2.tca9534a, 0x00))
             {
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                 goto start;
             }
 
             if (!bc_tca9534a_set_port_direction(&_bc_module_co2.tca9534a, ~_BC_MODULE_CO2_UART_RESET_PIN))
             {
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                 goto start;
             }
 
@@ -187,6 +188,7 @@ start:
         {
             if (!bc_tca9534a_set_port_direction(&_bc_module_co2.tca9534a, 0xFF))
             {
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                 goto start;
             }
 
@@ -199,11 +201,13 @@ start:
         {
             if (!bc_tca9534a_set_port_direction(&_bc_module_co2.tca9534a, ~(_BC_MODULE_CO2_VDD2_PIN | _BC_MODULE_CO2_BOOST_PIN)))
             {
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                 goto start;
             }
 
             if (!bc_sc16is740_init(&_bc_module_co2.sc16is740, BC_I2C_I2C0, BC_MODULE_CO2_I2C_UART_ADDRESS))
             {
+                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                 goto start;
             }
 
@@ -221,7 +225,6 @@ start:
 
             _bc_module_co2.state = BC_MODULE_CO2_STATE_CHARGE;
             goto start;
-            return;
         }
         case BC_MODULE_CO2_STATE_READY:
         {
@@ -236,8 +239,9 @@ start:
             }
 
             _bc_module_co2.state = BC_MODULE_CO2_STATE_BOOT;
-            _bc_module_co2.start = bc_tick_get();
-            bc_scheduler_plan_current_relative(134);
+            _bc_module_co2.tick_start = bc_tick_get();
+            _bc_module_co2.tick_timeout = _bc_module_co2.tick_start + 250;
+            bc_scheduler_plan_current_relative(100);
             return;
         }
         case BC_MODULE_CO2_STATE_BOOT:
@@ -253,7 +257,7 @@ start:
 
             if (rdy_pin_value == BC_TCA9534A_PIN_STATE_HIGH)
             {
-                if ((_bc_module_co2.start + 205) < bc_tick_get())
+                if (bc_tick_get() >= _bc_module_co2.tick_timeout)
                 {
                     _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
@@ -316,6 +320,7 @@ start:
             }
 
             _bc_module_co2.state = BC_MODULE_CO2_STATE_BOOT_READ;
+            _bc_module_co2.tick_timeout = _bc_module_co2.tick_start + 350;
             bc_scheduler_plan_current_now();
             return;
         }
@@ -330,35 +335,39 @@ start:
 
             if (available == 4)
             {
-                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
 
                 if (!bc_sc16is740_read(&_bc_module_co2.sc16is740, _bc_module_co2.rx_buffer, 4, 100))
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
                 if (_bc_module_co2.rx_buffer[0] != BC_MODULE_CO2_MODBUS_DEVICE_ADDRESS)
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
                 if (_bc_module_co2.rx_buffer[1] != _bc_module_co2.tx_buffer[1])
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
                 if (_bc_module_co2_calculate_crc16(_bc_module_co2.rx_buffer, 4) != 0)
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
                 _bc_module_co2.state = BC_MODULE_CO2_STATE_MEASURE;
-                bc_scheduler_plan_current_relative(310 - (bc_tick_get() - _bc_module_co2.start));
+                _bc_module_co2.tick_timeout = _bc_module_co2.tick_start + 400;
+                bc_scheduler_plan_current_relative(310 - (bc_tick_get() - _bc_module_co2.tick_start));
                 return;
             }
             else
             {
-                if ((_bc_module_co2.start + 310) < bc_tick_get())
+                if (bc_tick_get() >= _bc_module_co2.tick_timeout)
                 {
                     _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
@@ -380,7 +389,7 @@ start:
 
             if (rdy_pin_value == BC_TCA9534A_PIN_STATE_LOW)
             {
-                if ((_bc_module_co2.start + 355) < bc_tick_get())
+                if (bc_tick_get() >= _bc_module_co2.tick_timeout)
                 {
                     _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
@@ -413,6 +422,7 @@ start:
             }
 
             _bc_module_co2.state = BC_MODULE_CO2_STATE_MEASURE_READ;
+            _bc_module_co2.tick_timeout = _bc_module_co2.tick_start + 630;
             bc_scheduler_plan_current_now();
             return;
         }
@@ -426,30 +436,33 @@ start:
             }
             if (available == 45)
             {
-                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
-
                 if (!bc_sc16is740_read(&_bc_module_co2.sc16is740, _bc_module_co2.rx_buffer, 45, 100))
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
                 if (_bc_module_co2.rx_buffer[0] != BC_MODULE_CO2_MODBUS_DEVICE_ADDRESS)
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
                 if (_bc_module_co2.rx_buffer[1] != _bc_module_co2.tx_buffer[1])
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
                 if (_bc_module_co2_calculate_crc16(_bc_module_co2.rx_buffer, 45) != 0)
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
                 if (_bc_module_co2.rx_buffer[BC_MODULE_CO2_RX_ERROR_STATUS0] != 0)
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
@@ -467,6 +480,7 @@ start:
                 {
                     if (!bc_tca9534a_set_port_direction(&_bc_module_co2.tca9534a, 0xFF))
                     {
+                        _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                         goto start;
                     }
                 }
@@ -488,7 +502,7 @@ start:
             }
             else
             {
-                if ((_bc_module_co2.start + 580) < bc_tick_get())
+                if (bc_tick_get() >= _bc_module_co2.tick_timeout)
                 {
                     _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
@@ -526,6 +540,7 @@ start:
             }
 
             _bc_module_co2.state = BC_MODULE_CO2_STATE_CALIBRATION_READ;
+            _bc_module_co2.tick_timeout = bc_tick_get() + 600;
             bc_scheduler_plan_current_now();
             return;
         }
@@ -540,25 +555,27 @@ start:
 
             if (available == 4)
             {
-                _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
-
                 if (!bc_sc16is740_read(&_bc_module_co2.sc16is740, _bc_module_co2.rx_buffer, 4, 100))
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
                 if (_bc_module_co2.rx_buffer[0] != BC_MODULE_CO2_MODBUS_DEVICE_ADDRESS)
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
                 if (_bc_module_co2.rx_buffer[1] != _bc_module_co2.tx_buffer[1])
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
                 if (_bc_module_co2_calculate_crc16(_bc_module_co2.rx_buffer, 4) != 0)
                 {
+                    _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
                 }
 
@@ -566,7 +583,7 @@ start:
             }
             else
             {
-                if ((_bc_module_co2.start + 580) < bc_tick_get())
+                if (bc_tick_get() >= _bc_module_co2.tick_timeout)
                 {
                     _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
@@ -587,7 +604,7 @@ start:
 
             if (rdy_pin_value == BC_TCA9534A_PIN_STATE_LOW)
             {
-                if ((_bc_module_co2.start + 580) < bc_tick_get())
+                if (bc_tick_get() >= _bc_module_co2.tick_timeout)
                 {
                     _bc_module_co2.state = BC_MODULE_CO2_STATE_ERROR;
                     goto start;
@@ -605,8 +622,7 @@ start:
             }
 
             _bc_module_co2.next_calibration = bc_tick_get() + BC_MODULE_CO2_CALIBRATION_TIMEOUT;
-            _bc_module_co2.state = BC_MODULE_CO2_STATE_CHARGE;
-            bc_scheduler_plan_current_now();
+            _bc_module_co2.state = BC_MODULE_CO2_STATE_READY;
             return;
         }
         default:
