@@ -40,11 +40,19 @@ static void _bc_uart_irq_handler(bc_uart_channel_t channel);
 
 void bc_uart_init(bc_uart_channel_t channel, bc_uart_param_t *param, bc_fifo_t *tx_fifo, bc_fifo_t *rx_fifo)
 {
-    // If channel is UART1 (LPUART) and invalid baudrate desired ...
-    if ((channel == BC_UART_UART1) && (param->baudrate != BC_UART_BAUDRATE_9600_BD))
+    // If channel is UART1 (LPUART) ...
+    if ((channel == BC_UART_UART1))
     {
-        // ... don t do anything
-        return;
+        // ... disable deep sleep
+        bc_module_core_deep_sleep_disable();
+
+        // if invalid baudrate desired ...
+        if (param->baudrate != BC_UART_BAUDRATE_9600_BD)
+        {
+            // ... enable deep sleep again and return
+            bc_module_core_deep_sleep_enable();
+            return;
+        }
     }
 
 
