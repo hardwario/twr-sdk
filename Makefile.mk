@@ -79,13 +79,13 @@ SRC_DIR += $(SDK_DIR)/sys/src
 # Toolchain                                                                    #
 ################################################################################
 
-TOOLCHAIN = arm-none-eabi-
+TOOLCHAIN ?= arm-none-eabi-
 CC = $(TOOLCHAIN)gcc
 OBJCOPY = $(TOOLCHAIN)objcopy
 SIZE = $(TOOLCHAIN)size
-OZONE = Ozone
-DFU_UTIL = dfu-util
-DOXYGEN = doxygen
+OZONE ?= Ozone
+DFU_UTIL ?= dfu-util
+DOXYGEN ?= doxygen
 
 ################################################################################
 # Compiler flags for "c" files                                                 #
