@@ -17,8 +17,7 @@ typedef enum
 
 } bc_module_lcd_event_t;
 
-extern const tFont Font;
-extern const tFont FontBig;
+
 
 // See app note https://www.silabs.com/documents/public/application-notes/AN0048.pdf
 // Figure 3.1
