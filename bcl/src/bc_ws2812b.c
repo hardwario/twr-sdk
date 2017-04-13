@@ -1,5 +1,6 @@
 #include "stm32l0xx.h"
 #include <bc_ws2812b.h>
+#include <bc_module_core.h>
 #include <bc_scheduler.h>
 
 #define _BC_WS2812_TIMER_PERIOD 40               // 32000000 / 800000 = 20; 0,125us period (10 times lower the 1,25us period to have fixed math below)
@@ -14,7 +15,7 @@
 static struct ws2812b_t
 {
     uint32_t *dma_bit_buffer;
-    bc_led_strip_buffer_t *buffer;
+    const bc_led_strip_buffer_t *buffer;
 
     bool transfer;
     bc_scheduler_task_id_t task_id;
@@ -50,7 +51,7 @@ const uint32_t _bc_ws2812b_pulse_tab[] =
 static void _bc_ws2812b_dma_transfer_complete_handler(DMA_HandleTypeDef *dma_handle);
 static void _bc_ws2812b_task(void *param);
 
-bool bc_ws2812b_init(bc_led_strip_buffer_t *led_strip)
+bool bc_ws2812b_init(const bc_led_strip_buffer_t *led_strip)
 {
     memset(&_bc_ws2812b, 0, sizeof(_bc_ws2812b));
 
@@ -188,7 +189,7 @@ bool bc_ws2812b_write(void)
     // transmission complete flag
     _bc_ws2812b.transfer = true;
 
-    bc_scheduler_disable_sleep();
+    bc_module_core_pll_enable();
 
     HAL_TIM_Base_Stop(&_bc_ws2812b_timer2_handle);
     (&_bc_ws2812b_timer2_handle)->Instance->CR1 &= ~((0x1U << (0U)));
@@ -280,7 +281,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     // set transfer_complete flag
     _bc_ws2812b.transfer = false;
 
-    bc_scheduler_enable_sleep();
     bc_scheduler_plan_now(_bc_ws2812b.task_id);
 }
 
@@ -292,6 +292,8 @@ void DMA1_Channel2_3_IRQHandler(void)
 static void _bc_ws2812b_task(void *param)
 {
     (void) param;
+
+    bc_module_core_pll_disable();
 
     if (_bc_ws2812b.event_handler != NULL)
     {
