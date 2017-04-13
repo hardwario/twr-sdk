@@ -52,8 +52,6 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 
     self->framebuffer = framebuffer->framebuffer;
 
-    _bc_module_lcd.font = &Font;
-
     // Address lines
     uint8_t line;
     uint32_t offs;
@@ -64,8 +62,6 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 
     // Prepare buffer so the background is "white" reflective
     bc_module_lcd_clear();
-    // Set default font
-    bc_module_lcd_set_font(&Font);
 
     _bc_module_lcd.task_id = bc_scheduler_register(_bc_module_lcd_task, NULL, _BC_MODULE_LCD_VCOM_PERIOD);
 }
