@@ -1,24 +1,24 @@
 #include <application.h>
 #include <bcl.h>
 
+#define COUNT 11
+
 bc_led_t led;
 bc_led_strip_t led_strip;
 uint32_t color;
 int effect = -1;
 
-static uint32_t _dma_buffer_rgb_12[12 * 3 * 2]; // count * type * 2
+static uint32_t _dma_buffer[COUNT * 3 * 2]; // count * type * 2
 
-const bc_led_strip_buffer_t _led_strip_buffer_rgb_12 =
+const bc_led_strip_buffer_t _led_strip_buffer =
 {
-    .type = BC_LED_STRIP_TYPE_RGB,
-    .count = 12,
-    .buffer = _dma_buffer_rgb_12
+    .type = BC_LED_STRIP_TYPE_RGBW,
+    .count = COUNT,
+    .buffer = _dma_buffer
 };
 
 void application_init(void)
 {
-    usb_talk_init();
-    bc_rtc_init();
 
     bc_led_init(&led, BC_GPIO_LED, false, false);
     bc_led_set_mode(&led, BC_LED_MODE_ON);
@@ -28,12 +28,11 @@ void application_init(void)
     bc_button_init(&button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN, false);
     bc_button_set_event_handler(&button, button_event_handler, NULL);
 
-
     bc_module_power_init();
-    bc_led_strip_init(&led_strip, bc_module_power_get_led_strip_driver(), &bc_module_power_led_strip_buffer_rgb_150);
+    bc_led_strip_init(&led_strip, bc_module_power_get_led_strip_driver(), &_led_strip_buffer);
     bc_led_strip_set_event_handler(&led_strip, led_strip_event_handler, NULL);
 
-    bc_led_strip_fill(&led_strip, 0x00000000);
+    bc_led_strip_fill(&led_strip, 0x10000000);
     bc_led_strip_write(&led_strip);
 
     bc_led_set_mode(&led, BC_LED_MODE_OFF);
