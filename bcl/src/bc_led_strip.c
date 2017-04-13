@@ -4,7 +4,7 @@
 
 uint32_t _bc_led_strip_wheel(int position);
 
-void bc_led_strip_init(bc_led_strip_t *self, const bc_led_strip_driver_t *driver, bc_led_strip_buffer_t *buffer)
+void bc_led_strip_init(bc_led_strip_t *self, const bc_led_strip_driver_t *driver, const bc_led_strip_buffer_t *buffer)
 {
     memset(self, 0x00, sizeof(bc_led_strip_t));
     self->_buffer = buffer;

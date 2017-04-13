@@ -20,7 +20,7 @@ typedef struct
 
 typedef struct
 {
-    bool (*init)(bc_led_strip_buffer_t *buffer);
+    bool (*init)(const bc_led_strip_buffer_t *buffer);
     void (*set_pixel)(int position, uint32_t color);
     void (*set_pixel_rgbw)(int position, uint8_t r, uint8_t g, uint8_t b, uint8_t w);
     bool (*write)(void);
@@ -38,7 +38,7 @@ typedef struct bc_led_strip_t bc_led_strip_t;
 struct bc_led_strip_t
 {
     const bc_led_strip_driver_t *_driver;
-    bc_led_strip_buffer_t *_buffer;
+    const bc_led_strip_buffer_t *_buffer;
 
     struct
     {
@@ -54,7 +54,7 @@ struct bc_led_strip_t
 
 };
 
-void bc_led_strip_init(bc_led_strip_t *self, const bc_led_strip_driver_t *driver, bc_led_strip_buffer_t *buffer);
+void bc_led_strip_init(bc_led_strip_t *self, const bc_led_strip_driver_t *driver, const bc_led_strip_buffer_t *buffer);
 
 void bc_led_strip_set_event_handler(bc_led_strip_t *self, void (*event_handler)(bc_led_strip_t *, bc_led_strip_event_t, void *), void *event_param);
 
