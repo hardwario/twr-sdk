@@ -7,6 +7,8 @@ void bc_module_core_init();
 void bc_module_core_sleep();
 void bc_module_core_pll_enable();
 void bc_module_core_pll_disable();
+void bc_module_core_deep_sleep_disable(void);
+void bc_module_core_deep_sleep_enable(void);
 uint32_t bc_module_core_get_clk();
 
 #endif /* INC_BC_MODULE_CORE_H_ */

@@ -19,6 +19,8 @@ static void _bc_module_core_init_rtc(void);
 
 static int _bc_module_core_pll_enable_semaphore;
 
+static int _bc_module_core_deep_sleep_disable_semaphore;
+
 void bc_module_core_init(void)
 {
     _bc_module_core_init_flash();
@@ -150,6 +152,9 @@ static void _bc_module_core_init_power(void)
 
     // Enable regulator low-power mode
     PWR->CR |= PWR_CR_LPSDSR;
+
+    // Enable deep-sleep
+    SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 }
 
 static void _bc_module_core_init_gpio(void)
@@ -242,9 +247,25 @@ static void _bc_module_core_init_rtc(void)
 
 void bc_module_core_sleep()
 {
-    SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
-
     __WFI();
+}
+
+void bc_module_core_deep_sleep_enable()
+{
+    _bc_module_core_deep_sleep_disable_semaphore--;
+    if (_bc_module_core_deep_sleep_disable_semaphore == 0)
+    {
+        SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+    }
+}
+
+void bc_module_core_deep_sleep_disable()
+{
+    if (_bc_module_core_deep_sleep_disable_semaphore == 0)
+    {
+        SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
+    }
+    _bc_module_core_deep_sleep_disable_semaphore++;
 }
 
 void bc_module_core_pll_enable()
