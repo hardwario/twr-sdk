@@ -34,6 +34,7 @@
 
 // BigClown modules
 
+#include <bc_module_battery.h>
 #include <bc_module_climate.h>
 #include <bc_module_core.h>
 #include <bc_module_encoder.h>
