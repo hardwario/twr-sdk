@@ -93,6 +93,8 @@ void bc_usb_cdc_received_data(const void *buffer, size_t length)
 
 static void _bc_usb_cdc_task_start(void *param)
 {
+    (void) param;
+
     bc_scheduler_unregister(_bc_usb_cdc.task_id);
 
     _bc_usb_cdc.task_id = bc_scheduler_register(_bc_usb_cdc_task, NULL, 0);
