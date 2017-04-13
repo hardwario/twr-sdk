@@ -21,7 +21,7 @@ typedef struct bc_module_lcd_t
     void *event_param;
     bc_tca9534a_t tca9534a;
     uint8_t *framebuffer;
-    const tFont *font;
+    const bc_font_t *font;
     uint8_t gpio;
     bc_module_lcd_rotation_t rotation;
     uint8_t vcom;
@@ -148,7 +148,7 @@ int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
 {
     bc_module_lcd_t *self = &_bc_module_lcd;
 
-    const tFont *font = self->font;
+    const bc_font_t *font = self->font;
 
     int w = 0;
     uint8_t h = 0;
@@ -242,7 +242,7 @@ void bc_module_lcd_clear_memory_command(void)
     _bc_module_lcd_spi_transfer(spi_data, sizeof(spi_data));
 }
 
-void bc_module_lcd_set_font(const tFont *font)
+void bc_module_lcd_set_font(const bc_font_t *font)
 {
     _bc_module_lcd.font = font;
 }

@@ -93,9 +93,9 @@ void bc_module_lcd_update(void);
 void bc_module_lcd_clear_memory_command(void);
 
 //! @brief Lcd set font
-//! @param[in] tFont *font
+//! @param[in] bc_font_t *font
 
-void bc_module_lcd_set_font(const tFont *font);
+void bc_module_lcd_set_font(const bc_font_t *font);
 
 //! @brief Lcd set rotation
 //! @param[in] bc_module_lcd_rotation_t rotation

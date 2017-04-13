@@ -34,12 +34,12 @@ $(start_block_images_table)
 static const uint$(img_data_block_size)_t image_data_$(doc_name_ws)_0x$(out_char_code)[$(out_blocks_count)] = {
     $(out_image_data)
 };
-static const tImage $(doc_name_ws)_0x$(out_char_code) = { image_data_$(doc_name_ws)_0x$(out_char_code),
+static const bc_font_image_t $(doc_name_ws)_0x$(out_char_code) = { image_data_$(doc_name_ws)_0x$(out_char_code),
     $(out_image_width), $(out_image_height)/*, $(img_data_block_size)*/};
 #endif
 $(end_block_images_table)
 
-static const tChar $(doc_name_ws)_array[] = {
+static const bc_font_char_t $(doc_name_ws)_array[] = {
 $(start_block_images_table)
 #if (0x0$(out_char_code_sim) == 0x0)
   // character: '$(out_char_text)'
@@ -52,5 +52,5 @@ $(end_block_images_table)
 };
 
 $(start_block_font_def)
-const tFont $(doc_name_ws) = { $(out_images_count), $(doc_name_ws)_array };
+const bc_font_t $(doc_name_ws) = { $(out_images_count), $(doc_name_ws)_array };
 $(end_block_font_def)
