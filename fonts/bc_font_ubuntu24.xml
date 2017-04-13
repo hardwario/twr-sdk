@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<data name="bc_font_ubuntu24" type="font">
+<data name="bc_font_ubuntu_24" type="font">
     <family>Ubuntu</family>
     <size>24</size>
     <ascent>27</ascent>
@@ -10,7 +10,7 @@
     <foreground>ff000000</foreground>
     <background>ffffffff</background>
     <string> !"#$%&amp;'()*+,-./0123456789:;&lt;=>?\x0040ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~°ěščřžýáíéúůťďň</string>
-    <converted>C:/Users/mhubacek/Documents/Dev/BigClown/github/bc-lcd-fonts/sdk/bcl/src/bc_font_ubuntu24.c</converted>
+    <converted>C:/Users/mhubacek/Documents/Dev/BigClown/github/bc-lcd-fonts/sdk/bcl/src/bc_font_ubuntu_24.c</converted>
     <chars>
         <char character=" " code="0020">
             <picture format="png">iVBORw0KGgoAAAANSUhEUgAAAAYAAAAYCAYAAADZEIyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAGUlEQVQokWP8////fwYsgAmb4KjEqARxEgCHyQQsTVSF3gAAAABJRU5ErkJggg==</picture>
