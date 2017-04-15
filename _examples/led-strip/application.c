@@ -1,14 +1,14 @@
 #include <application.h>
 #include <bcl.h>
 
-#define COUNT 11
+#define COUNT 144
 
 bc_led_t led;
 bc_led_strip_t led_strip;
 uint32_t color;
 int effect = -1;
 
-static uint32_t _dma_buffer[COUNT * 3 * 2]; // count * type * 2
+static uint32_t _dma_buffer[COUNT * 4 * 2]; // count * type * 2
 
 const bc_led_strip_buffer_t _led_strip_buffer =
 {
