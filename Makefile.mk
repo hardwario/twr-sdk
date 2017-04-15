@@ -223,7 +223,7 @@ doc:
 .PHONY: gdb
 gdb: debug
 	$(Q)$(ECHO) "Launching GDB debugger..."
-	$(Q)$(GDB) -x tools/gdb/gdbinit $(ELF)
+	$(Q)$(GDB) -x $(SDK_DIR)/tools/gdb/gdbinit $(ELF)
 
 ################################################################################
 # Debug firmware using Ozone debugger (from Segger)                            #
@@ -232,7 +232,7 @@ gdb: debug
 .PHONY: ozone
 ozone: debug
 	$(Q)$(ECHO) "Launching Ozone debugger..."
-	$(Q)$(OZONE) tools/ozone/ozone.jdebug
+	$(Q)$(OZONE) $(SDK_DIR)/tools/ozone/ozone.jdebug
 
 ################################################################################
 # Link object files                                                            #
