@@ -81,6 +81,7 @@ SRC_DIR += $(SDK_DIR)/sys/src
 
 TOOLCHAIN ?= arm-none-eabi-
 CC = $(TOOLCHAIN)gcc
+GDB = $(TOOLCHAIN)gdb
 OBJCOPY = $(TOOLCHAIN)objcopy
 SIZE = $(TOOLCHAIN)size
 OZONE ?= Ozone
@@ -214,6 +215,15 @@ dfu: $(BIN)
 doc:
 	$(Q)$(ECHO) "Generating documentation..."
 	$(Q)sh -c 'cd $(SDK_DIR) && $(DOXYGEN) Doxyfile'
+
+################################################################################
+# Debug firmware using GDB debugger (using Segger J-Link probe)                #
+################################################################################
+
+.PHONY: gdb
+gdb: debug
+	$(Q)$(ECHO) "Launching GDB debugger..."
+	$(Q)$(GDB) -x tools/gdb/gdbinit $(ELF)
 
 ################################################################################
 # Debug firmware using Ozone debugger (from Segger)                            #
