@@ -20,7 +20,7 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 {
     if (channel == BC_I2C_I2C0)
     {
-        if(bc_i2c.i2c0_initialized)
+        if (bc_i2c.i2c0_initialized)
         {
             return;
         }
@@ -40,6 +40,7 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         __HAL_RCC_I2C2_CLK_ENABLE();
 
         bc_i2c.handle_i2c0.Instance = I2C2;
+
         if(speed == BC_I2C_SPEED_400_KHZ)
         {
             bc_i2c.handle_i2c0.Init.Timing = 0x301110;
@@ -50,8 +51,10 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         }
         else
         {
+            // TODO Replace this
             for (;;);
         }
+
         bc_i2c.handle_i2c0.Init.OwnAddress1 = 0;
         bc_i2c.handle_i2c0.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
         bc_i2c.handle_i2c0.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -62,11 +65,13 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 
         if (HAL_I2C_Init(&bc_i2c.handle_i2c0) != HAL_OK)
         {
+            // TODO Replace this
             for (;;);
         }
 
         if (HAL_I2CEx_ConfigAnalogFilter(&bc_i2c.handle_i2c0, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
         {
+            // TODO Replace this
             for (;;);
         }
 
@@ -74,13 +79,10 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
     }
     else
     {
-        if(bc_i2c.i2c1_initialized)
+        if (bc_i2c.i2c1_initialized)
         {
             return;
         }
-
-        // Enable PLL and disable sleep
-        bc_module_core_pll_enable();
 
         __HAL_RCC_GPIOB_CLK_ENABLE();
 
@@ -97,7 +99,8 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         __HAL_RCC_I2C1_CLK_ENABLE();
 
         bc_i2c.handle_i2c1.Instance = I2C1;
-        if(speed == BC_I2C_SPEED_400_KHZ)
+
+        if (speed == BC_I2C_SPEED_400_KHZ)
         {
             bc_i2c.handle_i2c1.Init.Timing = 0x301110;
         }
@@ -107,8 +110,10 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         }
         else
         {
+            // TODO Replace this
             for (;;);
         }
+
         bc_i2c.handle_i2c1.Init.OwnAddress1 = 0;
         bc_i2c.handle_i2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
         bc_i2c.handle_i2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -119,11 +124,13 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 
         if (HAL_I2C_Init(&bc_i2c.handle_i2c1) != HAL_OK)
         {
+            // TODO Replace this
             for (;;);
         }
 
         if (HAL_I2CEx_ConfigAnalogFilter(&bc_i2c.handle_i2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
         {
+            // TODO Replace this
             for (;;);
         }
 
@@ -133,9 +140,6 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 
 bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
 {
-    // Enable PLL and disable sleep
-    bc_module_core_pll_enable();
-
     if (channel == BC_I2C_I2C0)
     {
         if (!bc_i2c.i2c0_initialized)
@@ -143,10 +147,19 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
             return false;
         }
 
+        // Enable PLL and disable sleep
+        bc_module_core_pll_enable();
+
         if (HAL_I2C_Mem_Write(&bc_i2c.handle_i2c0, transfer->device_address << 1, transfer->memory_address, (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? I2C_MEMADD_SIZE_16BIT : I2C_MEMADD_SIZE_8BIT, transfer->buffer, transfer->length, 0xFFFFFFFF) != HAL_OK)
         {
+            // Disable PLL and enable sleep
+            bc_module_core_pll_disable();
+
             return false;
         }
+
+        // Disable PLL and enable sleep
+        bc_module_core_pll_disable();
 
         return true;
     }
@@ -157,23 +170,26 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
             return false;
         }
 
+        // Enable PLL and disable sleep
+        bc_module_core_pll_enable();
+
         if (HAL_I2C_Mem_Write(&bc_i2c.handle_i2c1, transfer->device_address << 1, transfer->memory_address, (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? I2C_MEMADD_SIZE_16BIT : I2C_MEMADD_SIZE_8BIT, transfer->buffer, transfer->length, 0xFFFFFFFF) != HAL_OK)
         {
+            // Disable PLL and enable sleep
+            bc_module_core_pll_disable();
+
             return false;
         }
 
+        // Disable PLL and enable sleep
+        bc_module_core_pll_disable();
+
         return true;
     }
-
-    // Disable PLL and enable sleep
-    bc_module_core_pll_disable();
 }
 
 bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
 {
-    // Enable PLL and disable sleep
-    bc_module_core_pll_enable();
-
     if (channel == BC_I2C_I2C0)
     {
         if (!bc_i2c.i2c0_initialized)
@@ -181,10 +197,19 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
             return false;
         }
 
+        // Enable PLL and disable sleep
+        bc_module_core_pll_enable();
+
         if (HAL_I2C_Mem_Read(&bc_i2c.handle_i2c0, transfer->device_address << 1, transfer->memory_address, (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? I2C_MEMADD_SIZE_16BIT : I2C_MEMADD_SIZE_8BIT, transfer->buffer, transfer->length, 0xFFFFFFFF) != HAL_OK)
         {
+            // Disable PLL and enable sleep
+            bc_module_core_pll_disable();
+
             return false;
         }
+
+        // Disable PLL and enable sleep
+        bc_module_core_pll_disable();
 
         return true;
     }
@@ -195,16 +220,22 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
             return false;
         }
 
+        // Enable PLL and disable sleep
+        bc_module_core_pll_enable();
+
         if (HAL_I2C_Mem_Read(&bc_i2c.handle_i2c1, transfer->device_address << 1, transfer->memory_address, (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? I2C_MEMADD_SIZE_16BIT : I2C_MEMADD_SIZE_8BIT, transfer->buffer, transfer->length, 0xFFFFFFFF) != HAL_OK)
         {
+            // Disable PLL and enable sleep
+            bc_module_core_pll_disable();
+
             return false;
         }
 
+        // Disable PLL and enable sleep
+        bc_module_core_pll_disable();
+
         return true;
     }
-
-    // Disable PLL and enable sleep
-    bc_module_core_pll_disable();
 }
 
 bool bc_i2c_write_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t data)
