@@ -1,5 +1,7 @@
 #include <bc_td1207r.h>
 
+#if 0
+
 #define BC_TD1207R_DELAY_RUN 100
 #define BC_TD1207R_DELAY_INITIALIZATION_RESET_H 100
 #define BC_TD1207R_DELAY_INITIALIZATION_AT_COMMAND 3000
@@ -302,3 +304,5 @@ static bool _bc_td1207r_read_response(bc_td1207r_t *self)
 
     return true;
 }
+
+#endif

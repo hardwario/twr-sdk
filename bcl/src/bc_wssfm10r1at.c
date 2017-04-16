@@ -1,5 +1,7 @@
 #include <bc_wssfm10r1at.h>
 
+#if 0
+
 #define BC_WSSFM10R1AT_DELAY_RUN 100
 #define BC_WSSFM10R1AT_DELAY_INITIALIZATION_RESET_H 100
 #define BC_WSSFM10R1AT_DELAY_INITIALIZATION_AT_COMMAND 100
@@ -562,3 +564,5 @@ static bool _bc_wssfm10r1at_read_response(bc_wssfm10r1at_t *self)
 
     return true;
 }
+
+#endif

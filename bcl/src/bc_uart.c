@@ -1,237 +1,136 @@
 #include <bc_uart.h>
-#include <bc_irq.h>
 #include <bc_module_core.h>
 #include <stm32l0xx.h>
 
-typedef struct
+static void bc_uart_init_uart1(bc_uart_config_t config);
+
+static size_t bc_uart_write_uart1(const void *buffer, size_t length);
+
+static size_t bc_uart_read_uart1(void *buffer, size_t length, bc_tick_t timeout);
+
+void bc_uart_init(bc_uart_channel_t channel, bc_uart_config_t config)
 {
-    struct
+    if (channel == BC_UART_UART1)
     {
-        bc_fifo_t *tx_fifo;
-        bc_fifo_t *rx_fifo;
-
-    } channel[3];
-
-} bc_uart_t;
-
-static bc_uart_t _bc_uart;
-
-typedef struct
-{
-    USART_TypeDef *USARTx;
-    uint32_t pupdr_mask;
-    uint32_t moder_mask;
-    uint32_t afr_mask[2];
-    uint32_t ccipr_mask;
-    uint32_t apb1enr_mask;
-    uint32_t apb2enr_mask;
-    uint32_t brr[2];
-    uint32_t UARTx_IRQn;
-} bc_uart_channel_setup_t;
-
-static const bc_uart_channel_setup_t _bc_uart_init_lut[3] =
-{
-        [BC_UART_UART0] = { USART4, 0x04, 0xfffffffa, { 0x66, 0 }, 0, RCC_APB1ENR_USART4EN, 0, { 0xd05, 0x116 }, USART4_5_IRQn },
-        [BC_UART_UART1] = { LPUART1, 0x40, 0xffffffaf, { 0x6600, 0 }, 0x0c00, RCC_APB1ENR_LPUART1EN, 0, { 0x369, 0x00 }, LPUART1_IRQn },
-        [BC_UART_UART2] = { USART1, 0x100000, 0xffebffff, { 0, 0x0440 }, 0, 0, RCC_APB2ENR_USART1EN, { 0xd05, 0x116 }, USART1_IRQn }
-};
-
-static void _bc_uart_irq_handler(bc_uart_channel_t channel);
-
-void bc_uart_init(bc_uart_channel_t channel, bc_uart_param_t *param, bc_fifo_t *tx_fifo, bc_fifo_t *rx_fifo)
-{
-    // If channel is UART1 (LPUART) ...
-    if ((channel == BC_UART_UART1))
-    {
-        // ... disable deep sleep
-        bc_module_core_deep_sleep_disable();
-
-        // if invalid baudrate desired ...
-        if (param->baudrate != BC_UART_BAUDRATE_9600_BD)
-        {
-            // ... enable deep sleep again and return
-            bc_module_core_deep_sleep_enable();
-            return;
-        }
+        bc_uart_init_uart1(config);
     }
-
-
-    const bc_uart_channel_setup_t *channel_setup = &_bc_uart_init_lut[channel];
-
-    _bc_uart.channel[channel].tx_fifo = tx_fifo;
-    _bc_uart.channel[channel].rx_fifo = rx_fifo;
-
-    // Enable GPIOA clock
-    RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
-
-    // Enable pull-up on RXD pin
-    GPIOA->PUPDR |= channel_setup->pupdr_mask;
-
-    // Configure TXD and RXD pins as alternate function
-    GPIOA->MODER &= channel_setup->moder_mask;
-
-    // Select alternate function for TXD and RXD pins
-    GPIOA->AFR[0] |= channel_setup->afr_mask[0];
-    GPIOA->AFR[1] |= channel_setup->afr_mask[1];
-
-    // Set clock source
-    RCC->CCIPR |= channel_setup->ccipr_mask;
-
-    // Enable clock for UART
-    RCC->APB1ENR |= channel_setup->apb1enr_mask;
-    RCC->APB2ENR |= channel_setup->apb2enr_mask;
-
-    // Enable transmitter and receiver
-    channel_setup->USARTx->CR1 = USART_CR1_RXNEIE | USART_CR1_TE | USART_CR1_RE;
-
-    // Disable overrun detection
-    channel_setup->USARTx->CR3 = USART_CR3_OVRDIS;
-
-    // Configure baudrate
-    channel_setup->USARTx->BRR = channel_setup->brr[param->baudrate];
-
-    // Enable UART
-    channel_setup->USARTx->CR1 |= USART_CR1_UE;
-
-    // Enable UART interrupts
-    NVIC_EnableIRQ(channel_setup->UARTx_IRQn);
 }
 
-size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t length, bc_tick_t timeout)
+size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t length)
 {
-    // Enable PLL and disable sleep
-    bc_module_core_pll_enable();
-
-    size_t bytes_written = 0;
-
-    USART_TypeDef *USARTx = _bc_uart_init_lut[channel].USARTx;
-
-    if (timeout == 0)
+    if (channel == BC_UART_UART1)
     {
-        // Write buffer to FIFO
-        bytes_written = bc_fifo_write(_bc_uart.channel[channel].tx_fifo, buffer, length);
-
-        // Disable interrupts
-        bc_irq_disable();
-
-        // Enable transmit interrupts of ...
-        USARTx->CR1 |= USART_CR1_TXEIE;
-
-        // Enable interrupts
-        bc_irq_enable();
-    }
-    else
-    {
-        // TODO Implement timeout
-
-        // Write buffer to FIFO
-        bytes_written = bc_fifo_write(_bc_uart.channel[channel].tx_fifo, buffer, length);
-
-        // Disable interrupts
-        bc_irq_disable();
-
-        // Enable transmit interrupts
-        USARTx->CR1 |= USART_CR1_TXEIE;
-
-        // Enable interrupts
-        bc_irq_enable();
-
-        while ((USARTx->CR1 & USART_CR1_TXEIE) != 0)
-        {
-            continue;
-        }
-
-        while ((USARTx->ISR & USART_ISR_TC) == 0)
-        {
-            continue;
-        }
-
+        return bc_uart_write_uart1(buffer, length);
     }
 
-    return bytes_written;
+    return 0;
 }
 
 size_t bc_uart_read(bc_uart_channel_t channel, void *buffer, size_t length, bc_tick_t timeout)
 {
-    // TODO ... implement read on other channels
-
-    if (timeout == 0)
+    if (channel == BC_UART_UART1)
     {
-        return bc_fifo_read(_bc_uart.channel[channel].rx_fifo, buffer, length);
-
-        return 0;
+        return bc_uart_read_uart1(buffer, length, timeout);
     }
 
-    bc_tick_t tick_timeout = bc_tick_get() + timeout;
-    
+    return 0;
+}
+
+static void bc_uart_init_uart1(bc_uart_config_t config)
+{
+    // Enable GPIOA clock
+    RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
+
+    // Errata workaround
+    RCC->IOPENR;
+
+    // Enable pull-up on RXD1 pin
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPD3_0;
+
+    // Configure TXD1 and RXD1 pins as alternate function
+    GPIOA->MODER &= ~(1 << GPIO_MODER_MODE3_Pos | 1 << GPIO_MODER_MODE2_Pos);
+
+    // Select AF6 alternate function for TXD1 and RXD1 pins
+    GPIOA->AFR[0] |= GPIO_AF6_LPUART1 << GPIO_AFRL_AFRL3_Pos | GPIO_AF6_LPUART1 << GPIO_AFRL_AFRL2_Pos;
+
+    // Set LSE as LPUART1 clock source
+    RCC->CCIPR |= RCC_CCIPR_LPUART1SEL_1 | RCC_CCIPR_LPUART1SEL_0;
+
+    // Enable clock for LPUART1
+    RCC->APB1ENR |= RCC_APB1ENR_LPUART1EN;
+
+    // Errata workaround
+    RCC->APB1ENR;
+
+    // Enable transmitter and receiver
+    LPUART1->CR1 = USART_CR1_TE | USART_CR1_RE;
+
+    // Disable overrun detection
+    LPUART1->CR3 = USART_CR3_OVRDIS;
+
+    // Configure baudrate
+    LPUART1->BRR = 0x369;
+
+    // Enable LPUART1
+    LPUART1->CR1 |= USART_CR1_UE;
+}
+
+static size_t bc_uart_write_uart1(const void *buffer, size_t length)
+{
+    size_t bytes_written = 0;
+
+    bc_module_core_pll_enable();
+
+    while (bytes_written != length)
+    {
+        // Until transmit data register is not empty...
+        while ((LPUART1->ISR & USART_ISR_TXE) == 0)
+        {
+            continue;
+        }
+
+        // Load transmit data register
+        LPUART1->TDR = *((uint8_t *) buffer + bytes_written++);
+    }
+
+    // Until transmission is not complete...
+    while ((LPUART1->ISR & USART_ISR_TC) == 0)
+    {
+        continue;
+    }
+
+    bc_module_core_pll_disable();
+
+    return bytes_written;
+}
+
+static size_t bc_uart_read_uart1(void *buffer, size_t length, bc_tick_t timeout)
+{
     size_t bytes_read = 0;
 
-    while (length != 0)
+    bc_module_core_pll_enable();
+
+    bc_tick_t tick_timeout = timeout == BC_TICK_INFINITY ? BC_TICK_INFINITY : bc_tick_get() + timeout;
+
+    while (bytes_read != length)
     {
-        size_t n_bytes = bc_fifo_read(_bc_uart.channel[channel].rx_fifo, (uint8_t *) buffer + bytes_read, length);
-
-        bytes_read += n_bytes;
-
-        length -= n_bytes;
-
+        // If timeout condition is met...
         if (bc_tick_get() >= tick_timeout)
         {
             break;
         }
 
-        // TODO Sleep here
+        // If receive data register is empty...
+        if ((LPUART1->ISR & USART_ISR_RXNE) == 0)
+        {
+            continue;
+        }
+
+        // Read receive data register
+        *((uint8_t *) buffer + bytes_read++) = LPUART1->RDR;
     }
+
+    bc_module_core_pll_disable();
 
     return bytes_read;
-}
-
-static void _bc_uart_irq_handler(bc_uart_channel_t channel)
-{
-    USART_TypeDef *USARTx = _bc_uart_init_lut[channel].USARTx;
-
-    // If it is TX interrupt...
-    if ((USARTx->ISR & USART_ISR_TXE) != 0)
-    {
-        uint8_t character;
-
-        // If there are still data in FIFO...
-        if (bc_fifo_irq_read(_bc_uart.channel[channel].tx_fifo, &character, 1) != 0)
-        {
-            // Load TX buffer
-            USARTx->TDR = character;
-        }
-        else
-        {
-            // Disable TX interrupts
-            USARTx->CR1 &= ~USART_CR1_TXEIE;
-
-            // Disable PLL and enable sleep
-            bc_module_core_pll_disable();
-        }
-    }
-
-    // If it is RX interrupt...
-    if ((USARTx->ISR & USART_ISR_RXNE) != 0)
-    {
-        uint8_t character;
-
-        character = USARTx->RDR;
-
-        bc_fifo_irq_write(_bc_uart.channel[channel].rx_fifo, &character, 1);
-    }
-}
-
-void AES_RNG_LPUART1_IRQHandler(void)
-{
-    _bc_uart_irq_handler(BC_UART_UART1);
-}
-
-void USART1_IRQHandler(void)
-{
-    _bc_uart_irq_handler(BC_UART_UART2);
-}
-
-void USART4_5_IRQHandler(void)
-{
-    _bc_uart_irq_handler(BC_UART_UART0);
 }
