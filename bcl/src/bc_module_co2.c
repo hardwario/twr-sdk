@@ -17,8 +17,6 @@
 #define BC_MODULE_CO2_INITIAL_MEASUREMENT    0x10
 #define BC_MODULE_CO2_SEQUENTIAL_MEASUREMENT 0x20
 #define BC_MODULE_CO2_RX_ERROR_STATUS0       (3+39)
-#define BC_MODULE_CO2_CALIBRATION_ABC        0x70
-#define BC_MODULE_CO2_CALIBRATION_ABC_RF     0x72
 #define BC_MODULE_CO2_CALIBRATION_TIMEOUT    7 * 27 * 3600
 
 typedef enum
@@ -56,6 +54,7 @@ static struct
     bc_tick_t tick_start;
     bc_tick_t tick_timeout;
     bc_tick_t next_calibration;
+    bc_module_co2_calibration_t calibration;
     uint8_t rx_buffer[45];
     uint8_t tx_buffer[33];
     uint8_t sensor_state[23];
@@ -76,6 +75,7 @@ void bc_module_co2_init(void)
     memset(&_bc_module_co2, 0, sizeof(_bc_module_co2));
 
     _bc_module_co2.pressure = 10124;
+    _bc_module_co2.calibration = BC_MODULE_CO2_CALIBRATION_ABC;
 
     _bc_module_co2.task_id_interval = bc_scheduler_register(_bc_module_co2_task_interval, NULL, BC_TICK_INFINITY);
     _bc_module_co2.task_id_measure = bc_scheduler_register(_bc_module_co2_task_measure, NULL, 0);
@@ -109,6 +109,10 @@ bool bc_module_co2_measure(void)
         bc_scheduler_plan_now(_bc_module_co2.task_id_measure);
         return true;
     }
+    else if (_bc_module_co2.state == BC_MODULE_CO2_STATE_INITIALIZE)
+    {
+        bc_scheduler_plan_now(_bc_module_co2.task_id_measure);
+    }
     return false;
 }
 
@@ -123,8 +127,9 @@ bool bc_module_co2_get_concentration(float *concentration)
     return true;
 }
 
-void bc_module_co2_calibration()
+void bc_module_co2_calibration(bc_module_co2_calibration_t calibration)
 {
+    _bc_module_co2.calibration = calibration;
     _bc_module_co2.next_calibration = 0;
     bc_module_co2_measure();
 }
@@ -520,7 +525,7 @@ start:
             _bc_module_co2.tx_buffer[2] = 0x00;
             _bc_module_co2.tx_buffer[3] = 0x80;
             _bc_module_co2.tx_buffer[4] = 0x01;
-            _bc_module_co2.tx_buffer[5] = BC_MODULE_CO2_CALIBRATION_ABC;
+            _bc_module_co2.tx_buffer[5] = _bc_module_co2.calibration;
 
             crc16 = _bc_module_co2_calculate_crc16(_bc_module_co2.tx_buffer, 6);
 
@@ -621,6 +626,7 @@ start:
                 goto start;
             }
 
+            _bc_module_co2.calibration = BC_MODULE_CO2_CALIBRATION_ABC;
             _bc_module_co2.next_calibration = bc_tick_get() + BC_MODULE_CO2_CALIBRATION_TIMEOUT;
             _bc_module_co2.state = BC_MODULE_CO2_STATE_READY;
             return;
