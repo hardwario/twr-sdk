@@ -1,6 +1,6 @@
 #include <bc_sc16is740.h>
 
-#define _BC_SC16IS740_CRYSTCAL_FREQ (13560000UL)
+#define _BC_SC16IS740_CRYSTCAL_FREQ           (13560000UL)
 #define _BC_SC16IS740_FIFO_SIZE               64
 #define _BC_SC16IS740_REG_RHR                 0x00
 #define _BC_SC16IS740_REG_THR                 0x00
@@ -29,107 +29,51 @@ bool bc_sc16is740_init(bc_sc16is740_t *self, bc_i2c_channel_t i2c_channel, uint8
 
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 
-    uint32_t baudrate = 9600;
-
-    uint8_t register_lcr;
-    uint8_t register_mcr;
-    uint8_t register_efr;
-    uint8_t register_fcr;
-    uint8_t register_ier;
-    uint8_t register_spr;
-
-    uint8_t prescaler;
-    uint16_t divisor;
-
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_MCR, &register_mcr))
-    {
-        return false;
-    }
-    if ((register_mcr & 0x80) == 0x00)
-    {
-        prescaler = 1;
-    }
-    else
-    {
-        prescaler = 4;
-    }
-
-    divisor = (_BC_SC16IS740_CRYSTCAL_FREQ / prescaler) / (baudrate * 16);
-
-    //baudrate
-    register_lcr = _BC_SC16IS740_LCR_SPECIAL_REGISTER; //switch to access Special register
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, register_lcr))
-    {
-        return false;
-    }
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_SPECIAL_REG_DLL, (uint8_t) divisor))
-    {
-        return false;
-    }
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_SPECIAL_REG_DLH, (uint8_t) (divisor >> 8)))
+    // Switch to access Special register
+    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, _BC_SC16IS740_LCR_SPECIAL_REGISTER))
     {
         return false;
     }
 
-    //no transmit flow control
-    register_lcr = _BC_SC16IS740_LCR_SPECIAL_ENHANCED_REGISTER; //switch to access Enhanced register
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, register_lcr))
-    {
-        return false;
-    }
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_ENHANCED_REG_EFR, &register_efr))
-    {
-        return false;
-    }
-    register_efr &= 0xf0;
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_ENHANCED_REG_EFR, register_efr))
+    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_SPECIAL_REG_DLL, 0x58))
     {
         return false;
     }
 
-    register_lcr = 0x07; //General register set
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, register_lcr))
+    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_SPECIAL_REG_DLH, 0x00))
     {
         return false;
     }
 
-    // fifo enabled
-    register_fcr = _BC_SC16IS740_BIT_FIFO_ENABLE;
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_FCR, register_fcr))
+    // Switch to access Enhanced register
+    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, _BC_SC16IS740_LCR_SPECIAL_ENHANCED_REGISTER))
     {
         return false;
     }
 
-    // Polled mode operation
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_IER, &register_ier))
-    {
-        return false;
-    }
-    register_ier &= 0xf0;
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_IER, register_ier))
+    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_ENHANCED_REG_EFR, 0x10))
     {
         return false;
     }
 
-    // no break, no parity, 2 stop bits, 8 data bits
-    register_lcr = 0x07;
-
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, register_lcr))
+    // No break, no parity, 2 stop bits, 8 data bits
+    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, 0x07))
     {
         return false;
     }
 
-    // TEST
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_SPR, 0x48))
-    {
-        return false;
-    }
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_SPR, &register_spr))
+    // FIFO enabled, FIFO reset RX and TX
+    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_FCR, 0x07))
     {
         return false;
     }
 
-    return register_spr == 0x48;
+    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_IER, 0x11))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool bc_sc16is740_reset_fifo(bc_sc16is740_t *self, bc_sc16is740_fifo_t fifo)
@@ -203,6 +147,7 @@ uint8_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length,
         {
             transfer.buffer = buffer + read_length;
             transfer.length = length - read_length;
+
             if (transfer.length > available)
             {
                 transfer.length = available;
