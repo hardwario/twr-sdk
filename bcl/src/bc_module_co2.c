@@ -25,7 +25,6 @@ typedef enum
     BC_MODULE_CO2_STATE_INITIALIZE = 0,
     BC_MODULE_CO2_STATE_INITIALIZE1,
     BC_MODULE_CO2_STATE_INITIALIZE2,
-    BC_MODULE_CO2_STATE_PRECHARGE,
     BC_MODULE_CO2_STATE_READY,
     BC_MODULE_CO2_STATE_CHARGE,
     BC_MODULE_CO2_STATE_BOOT,
@@ -529,6 +528,7 @@ start:
             bc_scheduler_plan_current_now();
             return;
         }
+
         default:
         {
             return;
