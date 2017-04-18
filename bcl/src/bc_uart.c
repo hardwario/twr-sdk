@@ -129,6 +129,8 @@ size_t bc_uart_async_read(bc_uart_channel_t channel, void *buffer, size_t length
 
 static void _bc_uart1_init(bc_uart_config_t config)
 {
+    (void) config;
+
     memset(&_bc_uart1, 0, sizeof(_bc_uart1));
 
     // Enable GPIOA clock
