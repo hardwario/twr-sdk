@@ -21,11 +21,11 @@ static struct
 
 static void _bc_uart1_init(bc_uart_config_t config);
 
-static void _bc_uart1_set_event_handler(void (*event_handler)(bc_uart_channel_t, bc_uart_event_t, void *), void *event_param);
-
 static size_t _bc_uart1_write(const void *buffer, size_t length);
 
 static size_t _bc_uart1_read(void *buffer, size_t length, bc_tick_t timeout);
+
+static void _bc_uart1_set_event_handler(void (*event_handler)(bc_uart_channel_t, bc_uart_event_t, void *), void *event_param);
 
 static void _bc_uart1_set_async_fifo(bc_fifo_t *write_fifo, bc_fifo_t *read_fifo);
 
@@ -155,11 +155,11 @@ static void _bc_uart1_init(bc_uart_config_t config)
     // Errata workaround
     RCC->APB1ENR;
 
-    // Enable transmitter and receiver
-    LPUART1->CR1 = USART_CR1_TE | USART_CR1_RE;
+    // Enable transmitter and receiver, peripheral enabled in stop mode
+    LPUART1->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UESM;
 
-    // Disable overrun detection
-    LPUART1->CR3 = USART_CR3_OVRDIS;
+    // Clock enabled in stop mode, disable overrun detection, one bit sampling method
+    LPUART1->CR3 = USART_CR3_UCESM | USART_CR3_OVRDIS | USART_CR3_ONEBIT;
 
     // Configure baudrate
     LPUART1->BRR = 0x369;
@@ -181,6 +181,7 @@ static size_t _bc_uart1_write(const void *buffer, size_t length)
 
     size_t bytes_written = 0;
 
+    // TODO Not needed anymore?
     bc_module_core_pll_enable();
 
     while (bytes_written != length)
@@ -201,6 +202,7 @@ static size_t _bc_uart1_write(const void *buffer, size_t length)
         continue;
     }
 
+    // TODO Not needed anymore?
     bc_module_core_pll_disable();
 
     return bytes_written;
@@ -215,6 +217,7 @@ static size_t _bc_uart1_read(void *buffer, size_t length, bc_tick_t timeout)
 
     size_t bytes_read = 0;
 
+    // TODO Not needed anymore?
     bc_module_core_pll_enable();
 
     bc_tick_t tick_timeout = timeout == BC_TICK_INFINITY ? BC_TICK_INFINITY : bc_tick_get() + timeout;
@@ -237,6 +240,7 @@ static size_t _bc_uart1_read(void *buffer, size_t length, bc_tick_t timeout)
         *((uint8_t *) buffer + bytes_read++) = LPUART1->RDR;
     }
 
+    // TODO Not needed anymore?
     bc_module_core_pll_disable();
 
     return bytes_read;
@@ -269,6 +273,7 @@ static size_t _bc_uart1_async_write(const void *buffer, size_t length)
         {
             _bc_uart1.async_write_task_id = bc_scheduler_register(_bc_uart1_async_write_task, NULL, BC_TICK_INFINITY);
 
+            // TODO Better replace with disable sleep?
             bc_module_core_pll_enable();
         }
         else
@@ -316,8 +321,6 @@ static bool _bc_uart1_async_read_start(bc_tick_t timeout)
 
     _bc_uart1.async_read_task_id = bc_scheduler_register(_bc_uart1_async_read_task, NULL, _bc_uart1.async_timeout);
 
-    bc_module_core_pll_enable();
-
     bc_irq_disable();
 
     // Enable receive interrupt
@@ -332,7 +335,21 @@ static bool _bc_uart1_async_read_start(bc_tick_t timeout)
 
 static bool _bc_uart1_async_read_cancel(void)
 {
-    // TODO Implement
+    if (!_bc_uart1.initialized || !_bc_uart1.async_read_in_progress)
+    {
+        return false;
+    }
+
+    _bc_uart1.async_read_in_progress = false;
+
+    bc_irq_disable();
+
+    // Disable receive interrupt
+    LPUART1->CR1 &= ~USART_CR1_RXNEIE;
+
+    bc_irq_enable();
+
+    bc_scheduler_unregister(_bc_uart1.async_read_task_id);
 
     return false;
 }
