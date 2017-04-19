@@ -87,6 +87,7 @@ SIZE = $(TOOLCHAIN)size
 OZONE ?= Ozone
 DFU_UTIL ?= dfu-util
 DOXYGEN ?= doxygen
+VSCODE ?= code
 
 ################################################################################
 # Compiler flags for "c" files                                                 #
@@ -161,7 +162,7 @@ DEP = $(OBJ:%.o=%.d)
 .PHONY: code
 code:
 	$(Q)$(ECHO) "Opening project in Visual Code..."
-	$(Q)code .
+	$(Q)$(VSCODE) .
 
 ################################################################################
 # Debug target                                                                 #
