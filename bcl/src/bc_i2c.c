@@ -69,11 +69,9 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         I2C2->CR2 = I2C_CR2_AUTOEND;
         I2C2->OAR1 = I2C_OAR1_OA1EN;
         I2C2->TIMINGR = bc_i2c.handle_i2c0.Init.Timing;
-        // Filter is set to analog, after reset
-        bc_i2c.handle_i2c0.State = HAL_I2C_STATE_READY;
         I2C2->CR1 |= I2C_CR1_PE;
 
-        // Update
+        // Update state
         bc_i2c.i2c0_initialized = true;
     }
     else
@@ -115,11 +113,9 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         I2C1->CR2 = I2C_CR2_AUTOEND;
         I2C1->OAR1 = I2C_OAR1_OA1EN;
         I2C1->TIMINGR = bc_i2c.handle_i2c0.Init.Timing;
-        // Filter is set to analog, after reset
-        bc_i2c.handle_i2c1.State = HAL_I2C_STATE_READY;
         I2C1->CR1 |= I2C_CR1_PE;
 
-        // Update
+        // Update state
         bc_i2c.i2c1_initialized = true;
     }
 }
@@ -289,12 +285,6 @@ bool bc_i2c_read_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t 
 
     return true;
 }
-
-
-
-
-
-
 
 static bool _I2C_Mem_Write(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint8_t *pData, uint16_t Size, uint32_t Timeout)
 {
@@ -516,12 +506,9 @@ static bool _watch_flag_txis(I2C_TypeDef *I2Cx, uint32_t Timeout, uint32_t Ticks
         }
 
         /* Check for the Timeout */
-        if (Timeout != HAL_MAX_DELAY)
+        if ((Timeout == 0U) || ((bc_tick_get() - Tickstart) > Timeout))
         {
-            if ((Timeout == 0U) || ((bc_tick_get() - Tickstart) > Timeout))
-            {
-                return false;
-            }
+            return false;
         }
     }
     return true;
@@ -532,12 +519,9 @@ static bool _watch_flag(I2C_TypeDef *I2Cx, uint32_t Flag, FlagStatus Status, uin
     while ((I2Cx->ISR & Flag) == Status)
     {
         /* Check for the Timeout */
-        if (Timeout != HAL_MAX_DELAY)
+        if ((Timeout == 0U) || ((bc_tick_get() - Tickstart) > Timeout))
         {
-            if ((Timeout == 0U) || ((bc_tick_get() - Tickstart) > Timeout))
-            {
-                return false;
-            }
+            return false;
         }
     }
     return true;
@@ -545,21 +529,21 @@ static bool _watch_flag(I2C_TypeDef *I2Cx, uint32_t Flag, FlagStatus Status, uin
 
 static bool _watch_flag_stop(I2C_TypeDef *I2Cx, uint32_t Timeout, uint32_t Tickstart)
 {
-   while((I2Cx->ISR & I2C_ISR_STOPF) == 0)
-  {
-    /* Check if a NACK is detected */
-    if(_ack_failed(I2Cx, Timeout, Tickstart) != true)
+    while ((I2Cx->ISR & I2C_ISR_STOPF) == 0)
     {
-      return false;
-    }
+        /* Check if a NACK is detected */
+        if (_ack_failed(I2Cx, Timeout, Tickstart) != true)
+        {
+            return false;
+        }
 
-    /* Check for the Timeout */
-    if((Timeout == 0U)||((bc_tick_get() - Tickstart) > Timeout))
-    {
-      return false;
+        /* Check for the Timeout */
+        if ((Timeout == 0U) || ((bc_tick_get() - Tickstart) > Timeout))
+        {
+            return false;
+        }
     }
-  }
-  return true;
+    return true;
 }
 
 static bool _ack_failed(I2C_TypeDef *I2Cx, uint32_t Timeout, uint32_t Tickstart)
@@ -570,14 +554,10 @@ static bool _ack_failed(I2C_TypeDef *I2Cx, uint32_t Timeout, uint32_t Tickstart)
         /* AutoEnd should be initiate after AF */
         while ((I2Cx->ISR & I2C_ISR_STOPF) == 0)
         {
-            /* Check for the Timeout */
-            if (Timeout != HAL_MAX_DELAY)
-            {
                 if ((Timeout == 0U) || ((bc_tick_get() - Tickstart) > Timeout))
                 {
                     return false;
                 }
-            }
         }
 
         /* Clear NACKF Flag */
