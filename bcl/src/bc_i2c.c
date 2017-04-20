@@ -3,8 +3,8 @@
 #include <bc_tick.h>
 #include <stm32l0xx.h>
 
-static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout);
-static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout);
+static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *data, uint16_t size, uint32_t timeout);
+static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *data, uint16_t size, uint32_t timeout);
 static inline bool _bc_i2c_req_mem_write(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint32_t Timeout, uint32_t Tickstart);
 static inline bool _bc_i2c_req_mem_read(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint32_t Timeout, uint32_t Tickstart);
 static void _bc_i2c_config(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint8_t Size, uint32_t Mode, uint32_t Request);
@@ -59,7 +59,7 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
             for (;;);
         }
 
-        // Initialize I2C2 peripheral
+        // Initialize I2C0 peripheral
         I2C2->CR1 &= I2C_CR1_PE;
         I2C2->CR2 = I2C_CR2_AUTOEND;
         I2C2->OAR1 = I2C_OAR1_OA1EN;
@@ -85,6 +85,7 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         GPIOB->AFR[1] &= 0xffffff00;
         GPIOB->AFR[1] |= 0x44;
 
+        // Enable I2C1 peripheral
         RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
 
         if (speed == BC_I2C_SPEED_400_KHZ)
@@ -101,7 +102,7 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
             for (;;);
         }
 
-        // Initialize I2C2 peripheral
+        // Initialize I2C1 peripheral
         I2C1->CR1 &= I2C_CR1_PE;
         I2C1->CR2 = I2C_CR2_AUTOEND;
         I2C1->OAR1 = I2C_OAR1_OA1EN;
@@ -279,7 +280,7 @@ bool bc_i2c_read_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t 
     return true;
 }
 
-static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout)
+static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *data, uint16_t size, uint32_t timeout)
 {
     /* Init tickstart for timeout management*/
     uint32_t tickstart = bc_tick_get();
@@ -308,7 +309,7 @@ static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address,
         }
 
         /* Write data to TXDR */
-        I2Cx->TXDR = (*pData++);
+        I2Cx->TXDR = (*data++);
         size--;
 
     } while (size > 0U);
@@ -329,7 +330,7 @@ static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address,
     return true;
 }
 
-static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout)
+static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *data, uint16_t size, uint32_t timeout)
 {
     /* Init tickstart for timeout management*/
     uint32_t tickstart = bc_tick_get();
@@ -357,7 +358,7 @@ static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, 
       }
 
       /* Read data from RXDR */
-      (*pData++) = I2Cx->RXDR;
+      (*data++) = I2Cx->RXDR;
       size--;
 
     }while(size > 0U);
@@ -423,7 +424,6 @@ static inline bool _bc_i2c_req_mem_read(I2C_TypeDef *I2Cx, uint16_t DevAddress, 
 {
     _bc_i2c_config(I2Cx, DevAddress, MemAddSize, I2C_SOFTEND_MODE, I2C_GENERATE_START_WRITE);
 
-    // TODO tady
     /* Wait until TXIS flag is set */
     if (_bc_i2c_watch_flag(I2Cx, I2C_ISR_TXIS, RESET, Timeout, Tickstart) != true)
     {
