@@ -3,13 +3,18 @@
 #include <bc_tick.h>
 #include <stm32l0xx.h>
 
+static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout);
+static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout);
+static inline bool _bc_i2c_req_mem_write(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint32_t Timeout, uint32_t Tickstart);
+static inline bool _bc_i2c_req_mem_read(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint32_t Timeout, uint32_t Tickstart);
+static void _bc_i2c_config(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint8_t Size, uint32_t Mode, uint32_t Request);
+static bool _bc_i2c_watch_flag(I2C_TypeDef *I2Cx, uint32_t Flag, FlagStatus Status, uint32_t Timeout, uint32_t Tickstart);
+static inline bool _bc_i2c_ack_failed(I2C_TypeDef *I2Cx, uint32_t Timeout, uint32_t Tickstart);
+
 static struct
 {
     bool i2c0_initialized;
     bool i2c1_initialized;
-
-    I2C_HandleTypeDef handle_i2c0;
-    I2C_HandleTypeDef handle_i2c1;
 
 } bc_i2c =
         {
@@ -17,16 +22,10 @@ static struct
                 .i2c1_initialized = false
         };
 
-static bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout);
-static bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout);
-static bool _bc_i2c_req_mem_write(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint32_t Timeout, uint32_t Tickstart);
-static bool _bc_i2c_req_mem_read(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint32_t Timeout, uint32_t Tickstart);
-static void _bc_i2c_config(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint8_t Size, uint32_t Mode, uint32_t Request);
-static bool _bc_i2c_watch_flag(I2C_TypeDef *I2Cx, uint32_t Flag, FlagStatus Status, uint32_t Timeout, uint32_t Tickstart);
-static inline bool _bc_i2c_ack_failed(I2C_TypeDef *I2Cx, uint32_t Timeout, uint32_t Tickstart);
-
 void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 {
+    uint32_t timingr;
+
     if (channel == BC_I2C_I2C0)
     {
         if (bc_i2c.i2c0_initialized)
@@ -38,35 +37,33 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
         GPIOB->MODER &= ~(GPIO_MODER_MODE10_0 | GPIO_MODER_MODE11_0);
         GPIOB->OTYPER |= GPIO_OTYPER_OT_10 | GPIO_OTYPER_OT_11;
-        GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEED10 | GPIO_OSPEEDER_OSPEED11; // TODO Mask by 0 first
+        GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEED10 | GPIO_OSPEEDER_OSPEED11;
         GPIOB->PUPDR |= GPIO_PUPDR_PUPD10_0 | GPIO_PUPDR_PUPD11_0;
-        GPIOB->AFR[1] |= 0x6600;    // TODO ... mask by ffff00ff first
+        GPIOB->AFR[1] &= 0xffff00ff;
+        GPIOB->AFR[1] |= 0x6600;
 
         // Enable I2C0 peripheral
         RCC->APB1ENR |= RCC_APB1ENR_I2C2EN;
 
-        bc_i2c.handle_i2c0.Instance = I2C2;
-
         if (speed == BC_I2C_SPEED_400_KHZ)
         {
-            bc_i2c.handle_i2c0.Init.Timing = 0x301110;
+            timingr = 0x301110;
         }
         else if (speed == BC_I2C_SPEED_100_KHZ)
         {
-            bc_i2c.handle_i2c0.Init.Timing = 0x707cbb;
+            timingr = 0x707cbb;
         }
         else
         {
             // TODO Replace this
-            for (;;)
-                ;
+            for (;;);
         }
 
         // Initialize I2C2 peripheral
         I2C2->CR1 &= I2C_CR1_PE;
         I2C2->CR2 = I2C_CR2_AUTOEND;
         I2C2->OAR1 = I2C_OAR1_OA1EN;
-        I2C2->TIMINGR = bc_i2c.handle_i2c0.Init.Timing;
+        I2C2->TIMINGR = timingr;
         I2C2->CR1 |= I2C_CR1_PE;
 
         // Update state
@@ -83,34 +80,32 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
         GPIOB->MODER &= ~(GPIO_MODER_MODE8_0 | GPIO_MODER_MODE9_0);
         GPIOB->OTYPER |= GPIO_OTYPER_OT_8 | GPIO_OTYPER_OT_9;
-        GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEED8 | GPIO_OSPEEDER_OSPEED9; // TODO Mask by 0 first
+        GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEED8 | GPIO_OSPEEDER_OSPEED9;
         GPIOB->PUPDR |= GPIO_PUPDR_PUPD8_0 | GPIO_PUPDR_PUPD9_0;
-        GPIOB->AFR[1] |= 0x44;    // TODO ... mask by ffffff00 first
+        GPIOB->AFR[1] &= 0xffffff00;
+        GPIOB->AFR[1] |= 0x44;
 
         RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
 
-        bc_i2c.handle_i2c1.Instance = I2C1;
-
         if (speed == BC_I2C_SPEED_400_KHZ)
         {
-            bc_i2c.handle_i2c1.Init.Timing = 0x301110;
+            timingr = 0x301110;
         }
         else if (speed == BC_I2C_SPEED_100_KHZ)
         {
-            bc_i2c.handle_i2c1.Init.Timing = 0x707cbb;
+            timingr = 0x707cbb;
         }
         else
         {
             // TODO Replace this
-            for (;;)
-                ;
+            for (;;);
         }
 
         // Initialize I2C2 peripheral
         I2C1->CR1 &= I2C_CR1_PE;
         I2C1->CR2 = I2C_CR2_AUTOEND;
         I2C1->OAR1 = I2C_OAR1_OA1EN;
-        I2C1->TIMINGR = bc_i2c.handle_i2c0.Init.Timing;
+        I2C1->TIMINGR = timingr;
         I2C1->CR1 |= I2C_CR1_PE;
 
         // Update state
@@ -284,7 +279,7 @@ bool bc_i2c_read_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t 
     return true;
 }
 
-static bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout)
+static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout)
 {
     /* Init tickstart for timeout management*/
     uint32_t tickstart = bc_tick_get();
@@ -334,7 +329,7 @@ static bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address, uint16
     return true;
 }
 
-static bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout)
+static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *pData, uint16_t size, uint32_t timeout)
 {
     /* Init tickstart for timeout management*/
     uint32_t tickstart = bc_tick_get();
@@ -383,7 +378,7 @@ static bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_
     return true;
 }
 
-static bool _bc_i2c_req_mem_write(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint32_t Timeout, uint32_t Tickstart)
+static inline bool _bc_i2c_req_mem_write(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint32_t Timeout, uint32_t Tickstart)
 {
     _bc_i2c_config(I2Cx, DevAddress, MemAddSize, I2C_RELOAD_MODE, I2C_GENERATE_START_WRITE);
 
@@ -424,10 +419,11 @@ static bool _bc_i2c_req_mem_write(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16
     return true;
 }
 
-static bool _bc_i2c_req_mem_read(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint32_t Timeout, uint32_t Tickstart)
+static inline bool _bc_i2c_req_mem_read(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint32_t Timeout, uint32_t Tickstart)
 {
     _bc_i2c_config(I2Cx, DevAddress, MemAddSize, I2C_SOFTEND_MODE, I2C_GENERATE_START_WRITE);
 
+    // TODO tady
     /* Wait until TXIS flag is set */
     if (_bc_i2c_watch_flag(I2Cx, I2C_ISR_TXIS, RESET, Timeout, Tickstart) != true)
     {
