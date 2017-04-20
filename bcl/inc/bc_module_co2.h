@@ -23,6 +23,30 @@ typedef enum
 } bc_module_co2_event_t;
 
 
+//! @brief Calibration
+
+typedef enum
+{
+    //! @brief Background calibration using unfiltered data
+    BC_MODULE_CO2_CALIBRATION_BACKGROUND_UNFILTERED = 0x50,
+
+    //! @brief Background calibration using filtered data
+    BC_MODULE_CO2_CALIBRATION_BACKGROUND_FILTERED = 0x51,
+
+    //! @brief Background calibration using unfiltered data + reset filters
+    BC_MODULE_CO2_CALIBRATION_BACKGROUND_UNFILTERED_RF = 0x52,
+
+    //! @brief Background calibration using filtered data + reset filters
+    BC_MODULE_CO2_CALIBRATION_BACKGROUND_FILTERED_RF = 0x53,
+
+    //! @brief ABC (based on filtered data)
+    BC_MODULE_CO2_CALIBRATION_ABC = 0x70,
+
+    //! @brief ABC (based on filtered data)  + reset filters
+    BC_MODULE_CO2_CALIBRATION_ABC_RF = 0x72,
+
+} bc_module_co2_calibration_t;
+
 //! @brief Initialize BigClown CO2 Module
 
 void bc_module_co2_init(void);
@@ -51,9 +75,10 @@ bool bc_module_co2_measure(void);
 
 bool bc_module_co2_get_concentration(float *concentration);
 
-//! @brief Set co2 ABC calibration request
+//! @brief Set calibration request
+//! @param[in] calibration type
 
-void bc_module_co2_calibration();
+void bc_module_co2_calibration(bc_module_co2_calibration_t calibration);
 
 //! @}
 

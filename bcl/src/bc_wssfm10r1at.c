@@ -1,7 +1,5 @@
 #include <bc_wssfm10r1at.h>
 
-#if 0
-
 #define BC_WSSFM10R1AT_DELAY_RUN 100
 #define BC_WSSFM10R1AT_DELAY_INITIALIZATION_RESET_H 100
 #define BC_WSSFM10R1AT_DELAY_INITIALIZATION_AT_COMMAND 100
@@ -33,12 +31,9 @@ void bc_wssfm10r1at_init(bc_wssfm10r1at_t *self, bc_gpio_channel_t reset_signal,
     bc_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
     bc_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
 
-    bc_uart_param_t uart_param =
-    {
-        .baudrate = BC_UART_BAUDRATE_9600_BD
-    };
-
-    bc_uart_init(self->_uart_channel, &uart_param, &self->_tx_fifo, &self->_rx_fifo);
+    bc_uart_init(self->_uart_channel, BC_UART_CONFIG_9600_8N1);
+    bc_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
+    bc_uart_async_read_start(self->_uart_channel, BC_TICK_INFINITY);
 
     self->_task_id = bc_scheduler_register(_bc_wssfm10r1at_task, self, BC_WSSFM10R1AT_DELAY_RUN);
 
@@ -198,7 +193,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_write(self->_uart_channel, self->_command, length, 0) != length)
+                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -237,7 +232,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_write(self->_uart_channel, self->_command, length, 0) != length)
+                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -301,7 +296,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_write(self->_uart_channel, self->_command, length, 0) != length)
+                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -348,7 +343,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_write(self->_uart_channel, self->_command, length, 0) != length)
+                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -385,7 +380,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_write(self->_uart_channel, self->_command, length, 0) != length)
+                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -422,7 +417,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_write(self->_uart_channel, self->_command, length, 0) != length)
+                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -463,7 +458,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_write(self->_uart_channel, self->_command, length, 0) != length)
+                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -530,7 +525,7 @@ static bool _bc_wssfm10r1at_read_response(bc_wssfm10r1at_t *self)
     {
         char rx_character;
 
-        if (bc_uart_read(self->_uart_channel, &rx_character, 1, 0) == 0)
+        if (bc_uart_async_read(self->_uart_channel, &rx_character, 1) == 0)
         {
             return false;
         }
@@ -564,5 +559,3 @@ static bool _bc_wssfm10r1at_read_response(bc_wssfm10r1at_t *self)
 
     return true;
 }
-
-#endif
