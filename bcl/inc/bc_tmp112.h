@@ -32,8 +32,6 @@ typedef enum
 
 } bc_tmp112_state_t;
 
-//! @brief TMP112 instance
-
 struct bc_tmp112_t
 {
     bc_i2c_channel_t _i2c_channel;
