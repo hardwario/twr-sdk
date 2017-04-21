@@ -234,15 +234,6 @@ gdb: debug
 ozone: debug
 	$(Q)$(ECHO) "Launching Ozone debugger..."
 	$(Q)$(OZONE) $(SDK_DIR)/tools/ozone/ozone.jdebug
-	
-################################################################################
-# Open project in Visual Studio Code                                           #
-################################################################################
-
-.PHONY: code
-code:
-	$(Q)$(ECHO) "Opening project in Visual Code..."
-	$(Q)$(VSCODE) .
 
 ################################################################################
 # Open project in Visual Studio Code                                           #
