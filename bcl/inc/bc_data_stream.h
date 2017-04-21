@@ -9,13 +9,14 @@
 
 //! @brief Macro for float data stream buffer declaration
 
-#define BC_DATA_STREAM_FLOAT(NAME, NUMBER_OF_SAMPLES) float (NAME)[(2 * NUMBER_OF_SAMPLES)];
+#define BC_DATA_STREAM_FLOAT_BUFFER(NAME, NUMBER_OF_SAMPLES) float (NAME)[(2 * (NUMBER_OF_SAMPLES))];
 
 //! @brief Data stream type
 
 typedef enum
 {
-    BC_DATA_STREAM_TYPE_FLOAT = 0
+    BC_DATA_STREAM_TYPE_FLOAT = 0,
+    BC_DATA_STREAM_TYPE_INT = 1
 
 } bc_data_stream_type_t;
 
@@ -25,15 +26,17 @@ typedef struct bc_data_stream_t bc_data_stream_t;
 
 //! @cond
 
-struct
+struct bc_data_stream_t
 {
     bc_data_stream_type_t _type;
     void *_buffer;
     size_t _buffer_size;
-    void *_buffer_head;
-    void *_buffer_tail;
+    void *_fifo_head;
+    void *_temp_head;
+    int _counter;
+    int _length;
 
-} bc_data_stream_t;
+};
 
 //! @endcond
 

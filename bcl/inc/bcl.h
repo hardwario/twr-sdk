@@ -45,6 +45,10 @@
 #include <bc_module_lcd.h>
 #include <bc_module_co2.h>
 
+// Other
+
+#include <bc_data_stream.h>
+
 //! @mainpage BigClown firmware SDK
 //! This is API documentation of BigClown SDK
 
