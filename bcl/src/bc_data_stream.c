@@ -12,7 +12,7 @@ void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, voi
     self->_type = type;
     self->_fifo_head = buffer;
     self->_counter = 0;
-    self->_temp_head = buffer + (buffer_size / 2);
+    self->_temp_head = (uint8_t *)buffer + (buffer_size / 2);
     self->_number_of_samples = buffer_size / 2;
 
     switch (self->_type)
@@ -41,13 +41,13 @@ void bc_data_stream_feed(bc_data_stream_t *self, void *data)
         case BC_DATA_STREAM_TYPE_FLOAT:
         {
             *(float *) self->_fifo_head = *(float *) data;
-            self->_fifo_head += sizeof(float);
+            self->_fifo_head = (uint8_t *)self->_fifo_head + sizeof(float);
             break;
         }
         case BC_DATA_STREAM_TYPE_INT:
         {
             *(int *) self->_fifo_head = *(int *) data;
-            self->_fifo_head += sizeof(int);
+            self->_fifo_head = (uint8_t *)self->_fifo_head + sizeof(int);
             break;
         }
         default:
@@ -218,13 +218,13 @@ bool bc_data_stream_get_last(bc_data_stream_t *self, void *result)
     {
         case BC_DATA_STREAM_TYPE_FLOAT:
         {
-            pointer -= sizeof(float);
+            pointer = (uint8_t *)pointer - sizeof(float);
             *(float *) result = *(float *) pointer;
             break;
         }
         case BC_DATA_STREAM_TYPE_INT:
         {
-            pointer -= sizeof(int);
+            pointer = (uint8_t *)pointer - sizeof(int);
             *(int *) result = *(int *) pointer;
             break;
         }
