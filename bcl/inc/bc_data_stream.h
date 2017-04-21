@@ -34,7 +34,7 @@ struct bc_data_stream_t
     void *_fifo_head;
     void *_temp_head;
     int _counter;
-    int _length;
+    int _number_of_samples;
 
 };
 
