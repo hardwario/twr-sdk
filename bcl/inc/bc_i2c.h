@@ -100,6 +100,24 @@ bool bc_i2c_read_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t m
 
 bool bc_i2c_read_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint16_t *data);
 
+//! @brief Write to I2C channel in async mode
+//! @param[in] channel I2C channel
+//! @param[in] transfer Pointer to I2C transfer parameters instance // TODO pozor na static
+//! @return true on success
+//! @return false on failure
+
+bool bc_i2c_async_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer);
+
+//! @brief Write 1 byte to I2C channel in async mode
+//! @param[in] channel I2C channel
+//! @param[in] device_address 7-bit I2C device address
+//! @param[in] memory_address 8-bit I2C memory address (it can be extended to 16-bit format if OR-ed with BC_I2C_MEMORY_ADDRESS_16_BIT)
+//! @param[in] data Input data to be written
+//! @return true on success
+//! @return false on failure
+
+bool bc_i2c_async_write_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t data);
+
 //! @}
 
 #endif // _BC_I2C_H

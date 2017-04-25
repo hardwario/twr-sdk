@@ -280,6 +280,34 @@ bool bc_i2c_read_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t 
     return true;
 }
 
+bool bc_i2c_async_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
+{
+    // TODO ...
+
+    // PLL
+
+    // BUSY
+
+    // tady by se mìl nastavit handler podle kanáu, ale mi to bude me mít fixní
+
+    // konfigurovat cr2
+
+    // povolit pøerušení
+
+    // TODO
+    return false;
+}
+
+bool bc_i2c_async_write_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t data)
+{
+    // kontrolda jestli p5enos u6 neprob9h8
+
+    // TODO Sestavit transfer do alok prostoru a poslat bc_i2c_async_write
+
+    // TODO
+    return false;
+}
+
 static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *data, uint16_t size, uint32_t timeout)
 {
     /* Init tickstart for timeout management*/
@@ -541,4 +569,9 @@ static inline bool _bc_i2c_ack_failed(I2C_TypeDef *I2Cx, uint32_t Timeout, uint3
         return false;
     }
     return true;
+}
+
+void I2C2_IRQHandler()
+{
+
 }
