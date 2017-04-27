@@ -13,29 +13,28 @@
 
 typedef enum
 {
+    //! @brief Error event
     BC_PYQ1648_EVENT_ERROR = 0,
+
+    //! @brief Update event
     BC_PYQ1648_EVENT_MOTION = 1
 
 } bc_pyq1648_event_t;
-
-//! @brief Internal states
-
-typedef enum
-{
-    BC_PYQ1648_STATE_ERROR = -1,
-    BC_PYQ1648_STATE_INITIALIZE = 0,
-    BC_PYQ1648_STATE_IGNORE = 1,
-    BC_PYQ1648_STATE_CHECK = 2
-
-} bc_pyq1648_state_t;
 
 //! @brief Possible sensitivities
 
 typedef enum
 {
+    //! @brief Low sensitivity
     BC_PYQ1648_SENSITIVITY_LOW = 0,
+
+    //! @brief Medium sensitivity
     BC_PYQ1648_SENSITIVITY_MEDIUM = 1,
+
+    //! @brief High sensitivity
     BC_PYQ1648_SENSITIVITY_HIGH = 2,
+
+    //! @brief Very high sensitivity
     BC_PYQ1648_SENSITIVITY_VERY_HIGH = 3
 
 } bc_pyq1648_sensitivity_t;
@@ -45,6 +44,15 @@ typedef enum
 typedef struct bc_pyq1648_t bc_pyq1648_t;
 
 //! @cond
+
+typedef enum
+{
+    BC_PYQ1648_STATE_ERROR = -1,
+    BC_PYQ1648_STATE_INITIALIZE = 0,
+    BC_PYQ1648_STATE_IGNORE = 1,
+    BC_PYQ1648_STATE_CHECK = 2
+
+} bc_pyq1648_state_t;
 
 struct bc_pyq1648_t
 {
