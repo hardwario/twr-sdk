@@ -483,7 +483,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
                         if (_bc_radio.event_handler != NULL)
                         {
-                            _bc_radio.event_handler(BC_RADIO_EVENT_UNPAIR_SUCCESS, _bc_radio.event_param);
+                            _bc_radio.event_handler(BC_RADIO_EVENT_DETACH, _bc_radio.event_param);
                         }
 
                         return;
@@ -499,7 +499,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                 {
                     if (_bc_radio.event_handler != NULL)
                     {
-                        _bc_radio.event_handler(BC_RADIO_EVENT_PAIR_FAILURE, _bc_radio.event_param);
+                        _bc_radio.event_handler(BC_RADIO_EVENT_ATTACH_FAILURE, _bc_radio.event_param);
                     }
                     return;
                 }
@@ -511,7 +511,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
                 if (_bc_radio.event_handler != NULL)
                 {
-                    _bc_radio.event_handler(BC_RADIO_EVENT_PAIR_SUCCESS, _bc_radio.event_param);
+                    _bc_radio.event_handler(BC_RADIO_EVENT_ATTACH, _bc_radio.event_param);
                 }
             }
 
