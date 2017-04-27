@@ -5,9 +5,9 @@
 
 typedef enum
 {
-    BC_RADIO_EVENT_PAIR_SUCCESS   = 0,
-    BC_RADIO_EVENT_PAIR_FAILURE   = 1,
-    BC_RADIO_EVENT_UNPAIR_SUCCESS = 2,
+    BC_RADIO_EVENT_ATTACH         = 0,
+    BC_RADIO_EVENT_ATTACH_FAILURE = 1,
+    BC_RADIO_EVENT_DETACH         = 2,
 
 } bc_radio_event_t;
 
