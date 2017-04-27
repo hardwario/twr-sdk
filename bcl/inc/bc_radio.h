@@ -3,11 +3,13 @@
 
 #include <bc_common.h>
 
+#define BC_RADIO_MAX_DEVICES 8
+
 typedef enum
 {
-    BC_RADIO_EVENT_ATTACH         = 0,
+    BC_RADIO_EVENT_ATTACH = 0,
     BC_RADIO_EVENT_ATTACH_FAILURE = 1,
-    BC_RADIO_EVENT_DETACH         = 2,
+    BC_RADIO_EVENT_DETACH = 2,
 
 } bc_radio_event_t;
 
