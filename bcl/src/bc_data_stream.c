@@ -3,7 +3,7 @@
 static int _bc_data_stream_compare_float(const void * a, const void * b);
 static int _bc_data_stream_compare_int(const void * a, const void * b);
 
-void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, void *buffer, size_t buffer_size)
+void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, int min_number_of_samples, void *buffer, size_t buffer_size)
 {
     memset(self, 0, sizeof(*self));
 
@@ -14,6 +14,7 @@ void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, voi
     self->_counter = 0;
     self->_temp_head = (uint8_t *)buffer + (buffer_size / 2);
     self->_number_of_samples = buffer_size / 2;
+    self->_min_number_of_samples = min_number_of_samples;
 
     switch (self->_type)
     {
@@ -83,7 +84,7 @@ void bc_data_stream_reset(bc_data_stream_t *self)
 
 bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
 {
-    if (self->_counter == 0)
+    if (self->_counter < self->_min_number_of_samples)
     {
         return false;
     }
@@ -131,7 +132,7 @@ bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
 
 bool bc_data_stream_get_median(bc_data_stream_t *self, void *result)
 {
-    if (self->_counter == 0)
+    if (self->_counter < self->_min_number_of_samples)
     {
         return false;
     }

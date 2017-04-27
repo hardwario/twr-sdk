@@ -35,6 +35,7 @@ struct bc_data_stream_t
     void *_temp_head;
     int _counter;
     int _number_of_samples;
+    int _min_number_of_samples;
 
 };
 
@@ -43,10 +44,11 @@ struct bc_data_stream_t
 //! @brief Initialize data stream instance
 //! @param[in] self Instance
 //! @param[in] type Type of data stream values
+//! @param[in] int min_number_of_samples minimal number of samples for calculation avarage, median ...
 //! @param[in] buffer Buffer holding data stream content
 //! @param[in] buffer_size Size of buffer holding data stream content
 
-void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, void *buffer, size_t buffer_size);
+void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, int min_number_of_samples, void *buffer, size_t buffer_size);
 
 //! @brief Initialize data stream instance
 //! @param[in] self Instance
