@@ -6,7 +6,7 @@
 #include <bc_eeprom.h>
 
 #define BC_RADIO_EEPROM_PEER_DEVICE_ADDRESS 0x00
-
+#define BC_RADIO_MAX_PEERS 8
 
 typedef enum
 {
@@ -29,6 +29,13 @@ typedef enum
 
 } bc_radio_state_t;
 
+typedef struct {
+    uint32_t address;
+    uint16_t message_id;
+    bool message_id_synced;
+
+} bc_redio_peer_device_t;
+
 static struct
 {
     bc_radio_state_t state;
@@ -46,10 +53,8 @@ static struct
     uint8_t pub_queue_buffer[128];
     uint8_t rx_queue_buffer[128];
 
-    bool peer_enrolled;
-    uint32_t peer_device_address;
-    uint16_t peer_message_id;
-    bool peer_message_id_synced;
+    bc_redio_peer_device_t peer_devices[BC_RADIO_MAX_PEERS];
+    int peer_devices_length;
 
     bool listening;
 
@@ -66,7 +71,6 @@ __attribute__((weak)) void bc_radio_on_barometer(uint32_t *peer_device_address, 
 __attribute__((weak)) void bc_radio_on_co2(uint32_t *peer_device_address, float *concentration) { (void) peer_device_address; (void) concentration; }
 __attribute__((weak)) void bc_radio_on_buffer(uint32_t *peer_device_address, void *buffer, size_t *length) { (void) peer_device_address; (void) buffer; (void) length; }
 
-
 void bc_radio_init(void)
 {
     memset(&_bc_radio, 0, sizeof(_bc_radio));
@@ -79,7 +83,29 @@ void bc_radio_init(void)
     bc_spirit1_init();
     bc_spirit1_set_event_handler(_bc_radio_spirit1_event_handler, NULL);
 
-    bc_eeprom_read(BC_RADIO_EEPROM_PEER_DEVICE_ADDRESS, &_bc_radio.peer_device_address, sizeof(_bc_radio.peer_device_address));
+    uint32_t buffer[BC_RADIO_MAX_PEERS + 1];
+    bc_eeprom_read(BC_RADIO_EEPROM_PEER_DEVICE_ADDRESS, buffer, sizeof(buffer));
+
+    uint32_t check_sum = buffer[BC_RADIO_MAX_PEERS];
+
+    for (int i = 0; i < BC_RADIO_MAX_PEERS; i++)
+    {
+        check_sum ^= buffer[i];
+    }
+
+    if (check_sum == 0)
+    {
+        for (int i = 0; i < BC_RADIO_MAX_PEERS; i++)
+        {
+            if (buffer[i] == 0)
+            {
+                break;
+            }
+            _bc_radio.peer_devices[_bc_radio.peer_devices_length].address = buffer[i];
+            _bc_radio.peer_devices[_bc_radio.peer_devices_length].message_id_synced = false;
+            _bc_radio.peer_devices_length++;
+        }
+    }
 
     _bc_radio.task_id = bc_scheduler_register(_bc_radio_task, NULL, BC_TICK_INFINITY);
 }
@@ -301,63 +327,70 @@ static void _bc_radio_task(void *param)
 
     uint8_t queue_item_buffer[sizeof(_bc_radio.pub_queue_buffer)];
     size_t queue_item_length;
+    uint32_t device_address;
 
     while (bc_queue_get(&_bc_radio.rx_queue, queue_item_buffer, &queue_item_length))
     {
-        if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_PUSH_BUTTON)
+
+        device_address  = (uint32_t) queue_item_buffer[0];
+        device_address |= (uint32_t) queue_item_buffer[1] << 8;
+        device_address |= (uint32_t) queue_item_buffer[2] << 16;
+        device_address |= (uint32_t) queue_item_buffer[3] << 24;
+
+        if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_PUSH_BUTTON)
         {
             uint16_t event_count;
 
-            memcpy(&event_count, &queue_item_buffer[1], sizeof(event_count));
+            memcpy(&event_count, &queue_item_buffer[6 + 1], sizeof(event_count));
 
-            bc_radio_on_push_button(&_bc_radio.peer_device_address, &event_count);
+            bc_radio_on_push_button(&device_address, &event_count);
         }
-        else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_THERMOMETER)
+        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_THERMOMETER)
         {
             float temperature;
 
-            memcpy(&temperature, &queue_item_buffer[2], sizeof(temperature));
+            memcpy(&temperature, &queue_item_buffer[6 + 2], sizeof(temperature));
 
-            bc_radio_on_thermometer(&_bc_radio.peer_device_address, &queue_item_buffer[1], &temperature);
+            bc_radio_on_thermometer(&device_address, &queue_item_buffer[6 + 1], &temperature);
         }
-        else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_HUMIDITY)
+        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_HUMIDITY)
         {
             float percentage;
 
-            memcpy(&percentage, &queue_item_buffer[2], sizeof(percentage));
+            memcpy(&percentage, &queue_item_buffer[6 + 2], sizeof(percentage));
 
-            bc_radio_on_humidity(&_bc_radio.peer_device_address, &queue_item_buffer[1], &percentage);
+            bc_radio_on_humidity(&device_address, &queue_item_buffer[6 + 1], &percentage);
         }
-        else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_LUX_METER)
+        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_LUX_METER)
         {
             float lux;
 
-            memcpy(&lux, &queue_item_buffer[2], sizeof(lux));
+            memcpy(&lux, &queue_item_buffer[6 + 2], sizeof(lux));
 
-            bc_radio_on_lux_meter(&_bc_radio.peer_device_address, &queue_item_buffer[1], &lux);
+            bc_radio_on_lux_meter(&device_address, &queue_item_buffer[6 + 1], &lux);
         }
-        else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_BAROMETER)
+        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_BAROMETER)
         {
             float pascal;
             float meter;
 
-            memcpy(&pascal, &queue_item_buffer[2], sizeof(pascal));
-            memcpy(&meter, &queue_item_buffer[2 + sizeof(pascal)], sizeof(meter));
+            memcpy(&pascal, &queue_item_buffer[6 + 2], sizeof(pascal));
+            memcpy(&meter, &queue_item_buffer[6 + 2 + sizeof(pascal)], sizeof(meter));
 
-            bc_radio_on_barometer(&_bc_radio.peer_device_address, &queue_item_buffer[1], &pascal, &meter);
+            bc_radio_on_barometer(&device_address, &queue_item_buffer[6 + 1], &pascal, &meter);
         }
-        else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_CO2)
+        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_CO2)
         {
             float concentration;
 
-            memcpy(&concentration, &queue_item_buffer[1], sizeof(concentration));
+            memcpy(&concentration, &queue_item_buffer[6 + 1], sizeof(concentration));
 
-            bc_radio_on_co2(&_bc_radio.peer_device_address, &concentration);
+            bc_radio_on_co2(&device_address, &concentration);
         }
-        else if (queue_item_buffer[0] == BC_RADIO_HEADER_PUB_BUFFER)
+        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_BUFFER)
         {
             queue_item_length -= 1;
-            bc_radio_on_buffer(&_bc_radio.peer_device_address, &queue_item_buffer[1], &queue_item_length);
+            bc_radio_on_buffer(&device_address, &queue_item_buffer[6 + 1], &queue_item_length);
         }
 
     }
@@ -434,12 +467,25 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
             if (_bc_radio.enrollment_mode && length == 7 && buffer[6] == BC_RADIO_HEADER_ENROLL)
             {
-                _bc_radio.peer_enrolled = true;
-                _bc_radio.peer_device_address = device_address;
-                _bc_radio.peer_message_id_synced = false;
+
+                if (_bc_radio.peer_devices_length < BC_RADIO_MAX_PEERS)
+                {
+                    _bc_radio.peer_devices[_bc_radio.peer_devices_length].address = device_address;
+                    _bc_radio.peer_devices[_bc_radio.peer_devices_length].message_id_synced = false;
+                    _bc_radio.peer_devices_length++;
+                }
+
                 _bc_radio.enrollment_mode = false;
 
-                bc_eeprom_write(BC_RADIO_EEPROM_PEER_DEVICE_ADDRESS, &_bc_radio.peer_device_address, sizeof(_bc_radio.peer_device_address));
+                uint32_t buffer[BC_RADIO_MAX_PEERS + 1];
+                buffer[BC_RADIO_MAX_PEERS] = 0;
+
+                for (int i = 0; i < BC_RADIO_MAX_PEERS; i++){
+                    buffer[BC_RADIO_MAX_PEERS] ^= _bc_radio.peer_devices[i].address;
+                    buffer[i] = _bc_radio.peer_devices[i].address;
+                }
+
+                bc_eeprom_write(BC_RADIO_EEPROM_PEER_DEVICE_ADDRESS, buffer, sizeof(buffer));
 
                 if (_bc_radio.event_handler != NULL)
                 {
@@ -447,24 +493,26 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                 }
             }
 
-            if (device_address == _bc_radio.peer_device_address)
-            {
-                uint16_t message_id;
-
-                message_id = (uint16_t) buffer[4];
-                message_id |= (uint16_t) buffer[5] << 8;
-
-                if (_bc_radio.peer_message_id != message_id || !_bc_radio.peer_message_id_synced)
+            for (int i = 0; i < BC_RADIO_MAX_PEERS; i++){
+                if (device_address == _bc_radio.peer_devices[i].address)
                 {
-                    _bc_radio.peer_message_id = message_id;
+                    uint16_t message_id;
 
-                    _bc_radio.peer_message_id_synced = true;
+                    message_id = (uint16_t) buffer[4];
+                    message_id |= (uint16_t) buffer[5] << 8;
 
-                    if (length > 6)
+                    if (_bc_radio.peer_devices[i].message_id != message_id || !_bc_radio.peer_devices[i].message_id_synced)
                     {
-                        bc_queue_put(&_bc_radio.rx_queue, buffer + 6, length - 6);
+                        _bc_radio.peer_devices[i].message_id = message_id;
 
-                        bc_scheduler_plan_now(_bc_radio.task_id);
+                        _bc_radio.peer_devices[i].message_id_synced = true;
+
+                        if (length > 6)
+                        {
+                            bc_queue_put(&_bc_radio.rx_queue, buffer, length);
+
+                            bc_scheduler_plan_now(_bc_radio.task_id);
+                        }
                     }
                 }
             }
