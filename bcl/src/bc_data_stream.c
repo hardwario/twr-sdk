@@ -36,10 +36,21 @@ void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, voi
 
 void bc_data_stream_feed(bc_data_stream_t *self, void *data)
 {
+    if (data == NULL)
+    {
+        bc_data_stream_reset(self);
+        return;
+    }
+
     switch (self->_type)
     {
         case BC_DATA_STREAM_TYPE_FLOAT:
         {
+            if ((*(float *)data == NAN) || (*(float *)data == INFINITY))
+            {
+                bc_data_stream_reset(self);
+                return;
+            }
             *(float *) self->_fifo_head = *(float *) data;
             self->_fifo_head = (uint8_t *)self->_fifo_head + sizeof(float);
             break;
