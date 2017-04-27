@@ -25,23 +25,48 @@ typedef enum
 
 } bc_module_pir_sensitivity_t;
 
+//! @brief Module revision
+
+typedef enum
+{
+    //! @brief Hardware revision R1.1 and R1.2
+    BC_MODULE_PIR_REVISION_R1_1_2,
+
+    //! @brief Hardware revision R1.3
+    BC_MODULE_PIR_REVISION_R1_3
+
+} bc_module_pir_revision_t;
+
 //! @brief Callback events
 
 typedef enum
 {
+    //! @brief Error event
     BC_MODULE_PIR_EVENT_ERROR = BC_PYQ1648_EVENT_ERROR,
+
+    //! @brief Motion event
     BC_MODULE_PIR_EVENT_MOTION = BC_PYQ1648_EVENT_MOTION
 
 } bc_module_pir_event_t;
 
-//! @brief PIR Module instance
+//! @brief BigClown PIR Module instance
 
-typedef bc_pyq1648_t bc_module_pir_t;
+typedef struct bc_module_pir_t bc_module_pir_t;
+
+//! @cond
+
+struct bc_module_pir_t
+{
+    bc_module_pir_revision_t _revision;
+    bc_pyq1648_t _bc_pyq1648;
+};
+
+//! @endcond
 
 //! @brief Initialize PIR Module
 //! @param[in] self Instance
 
-void bc_module_pir_init(bc_module_pir_t *self);
+void bc_module_pir_init(bc_module_pir_t *self, bc_module_pir_revision_t revision);
 
 //! @brief Set callback function
 //! @param[in] self Instance
@@ -54,7 +79,7 @@ void bc_module_pir_set_event_handler(bc_module_pir_t *self, void (*event_handler
 //! @param[in] self Instance
 //! @param[in] sensitivity Desired sensitivity
 
-void bc_module_pir_set_sensitivity(bc_pyq1648_t *self, bc_module_pir_sensitivity_t sensitivity);
+void bc_module_pir_set_sensitivity(bc_module_pir_t *self, bc_module_pir_sensitivity_t sensitivity);
 //! @}
 
 #endif // _BC_MODULE_PIR_H
