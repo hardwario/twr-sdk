@@ -25,18 +25,6 @@ typedef enum
 
 } bc_module_pir_sensitivity_t;
 
-//! @brief Module revision
-
-typedef enum
-{
-    //! @brief Hardware revision R1.1 and R1.2
-    BC_MODULE_PIR_REVISION_R1_1_2,
-
-    //! @brief Hardware revision R1.3
-    BC_MODULE_PIR_REVISION_R1_3
-
-} bc_module_pir_revision_t;
-
 //! @brief Callback events
 
 typedef enum
@@ -51,22 +39,12 @@ typedef enum
 
 //! @brief BigClown PIR Module instance
 
-typedef struct bc_module_pir_t bc_module_pir_t;
-
-//! @cond
-
-struct bc_module_pir_t
-{
-    bc_module_pir_revision_t _revision;
-    bc_pyq1648_t _bc_pyq1648;
-};
-
-//! @endcond
+typedef struct bc_pyq1648_t bc_module_pir_t;
 
 //! @brief Initialize PIR Module
 //! @param[in] self Instance
 
-void bc_module_pir_init(bc_module_pir_t *self, bc_module_pir_revision_t revision);
+void bc_module_pir_init(bc_module_pir_t *self);
 
 //! @brief Set callback function
 //! @param[in] self Instance
