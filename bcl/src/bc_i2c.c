@@ -3,6 +3,8 @@
 #include <bc_tick.h>
 #include <stm32l0xx.h>
 
+#define ACK_TIMEOUT
+
 static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *data, uint16_t size, uint32_t timeout);
 static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, uint16_t memory_address, uint16_t memadd_size, uint8_t *data, uint16_t size, uint32_t timeout);
 static inline bool _bc_i2c_req_mem_write(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint16_t MemAddress, uint16_t MemAddSize, uint32_t Timeout, uint32_t Tickstart);
@@ -363,6 +365,7 @@ static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint16_t device_address, 
     /* Init tickstart for timeout management*/
     uint32_t tickstart = bc_tick_get();
 
+    // Wait till I2Cx is busy
     if(_bc_i2c_watch_flag(I2Cx, I2C_ISR_BUSY, SET, 25, tickstart) != true)
     {
       return false;
