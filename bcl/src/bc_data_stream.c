@@ -17,12 +17,12 @@ void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, int
     {
         case BC_DATA_STREAM_TYPE_FLOAT:
         {
-            self->_fifo_end = (float *)self->_fifo_head + self->_buffer->number_of_samples;
+            self->_fifo_end = (float *) self->_fifo_head + self->_buffer->number_of_samples;
             break;
         }
         case BC_DATA_STREAM_TYPE_INT:
         {
-            self->_fifo_end = (int *)self->_fifo_head + self->_buffer->number_of_samples;
+            self->_fifo_end = (int *) self->_fifo_head + self->_buffer->number_of_samples;
             break;
         }
         default:
@@ -44,19 +44,19 @@ void bc_data_stream_feed(bc_data_stream_t *self, void *data)
     {
         case BC_DATA_STREAM_TYPE_FLOAT:
         {
-            if ((*(float *)data == NAN) || (*(float *)data == INFINITY))
+            if ((*(float *) data == NAN) || (*(float *) data == INFINITY))
             {
                 bc_data_stream_reset(self);
                 return;
             }
             *(float *) self->_fifo_head = *(float *) data;
-            self->_fifo_head = (float *)self->_fifo_head + 1;
+            self->_fifo_head = (float *) self->_fifo_head + 1;
             break;
         }
         case BC_DATA_STREAM_TYPE_INT:
         {
             *(int *) self->_fifo_head = *(int *) data;
-            self->_fifo_head = (int *)self->_fifo_head + 1;
+            self->_fifo_head = (int *) self->_fifo_head + 1;
             break;
         }
         default:
@@ -227,13 +227,13 @@ bool bc_data_stream_get_last(bc_data_stream_t *self, void *result)
     {
         case BC_DATA_STREAM_TYPE_FLOAT:
         {
-            pointer = (float *)pointer + move;
+            pointer = (float *) pointer + move;
             *(float *) result = *(float *) pointer;
             break;
         }
         case BC_DATA_STREAM_TYPE_INT:
         {
-            pointer = (int *)pointer + move;
+            pointer = (int *) pointer + move;
             *(int *) result = *(int *) pointer;
             break;
         }
