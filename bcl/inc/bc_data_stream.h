@@ -9,7 +9,10 @@
 
 //! @brief Macro for float data stream buffer declaration
 
-#define BC_DATA_STREAM_FLOAT_BUFFER(NAME, NUMBER_OF_SAMPLES) float (NAME)[(2 * (NUMBER_OF_SAMPLES))];
+#define BC_DATA_STREAM_FLOAT_BUFFER(NAME, NUMBER_OF_SAMPLES) \
+    float NAME##_feed[NUMBER_OF_SAMPLES]; \
+    float NAME##_sort[NUMBER_OF_SAMPLES]; \
+    bc_data_stream_buffer_t NAME = {.feed = NAME##_feed, .sort = NAME##_sort, .number_of_samples = NUMBER_OF_SAMPLES};
 
 //! @brief Data stream type
 
@@ -20,6 +23,17 @@ typedef enum
 
 } bc_data_stream_type_t;
 
+//! @brief Buffer for data stream
+
+typedef struct
+{
+    void *feed;
+    void *sort;
+    int number_of_samples;
+
+} bc_data_stream_buffer_t;
+
+
 //! @brief Data stream instance
 
 typedef struct bc_data_stream_t bc_data_stream_t;
@@ -29,13 +43,16 @@ typedef struct bc_data_stream_t bc_data_stream_t;
 struct bc_data_stream_t
 {
     bc_data_stream_type_t _type;
-    void *_buffer;
+    bc_data_stream_buffer_t *_buffer;
+    int _counter;
+    int _min_number_of_samples;
     size_t _buffer_size;
     void *_fifo_head;
-    void *_temp_head;
-    int _counter;
-    int _number_of_samples;
-    int _min_number_of_samples;
+    void *_fifo_end;
+
+
+//    void *_temp_head;
+//    int _number_of_samples;
 
 };
 
@@ -48,7 +65,7 @@ struct bc_data_stream_t
 //! @param[in] buffer Buffer holding data stream content
 //! @param[in] buffer_size Size of buffer holding data stream content
 
-void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, int min_number_of_samples, void *buffer, size_t buffer_size);
+void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, int min_number_of_samples, bc_data_stream_buffer_t *buffer);
 
 //! @brief Initialize data stream instance
 //! @param[in] self Instance
