@@ -221,6 +221,78 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
     }
 }
 
+bool bc_i2c_read_raw(bc_i2c_channel_t channel, uint8_t device_address, void *buffer, size_t length)
+{
+    I2C_TypeDef *I2Cx;
+
+    if (channel == BC_I2C_I2C0)
+    {
+        if (!bc_i2c.i2c0_initialized)
+        {
+            return false;
+        }
+
+        I2Cx = I2C2;
+    }
+    else
+    {
+        if (!bc_i2c.i2c1_initialized)
+        {
+            return false;
+        }
+
+        I2Cx = I2C1;
+    }
+
+    // Enable PLL and disable sleep
+    bc_module_core_pll_enable();
+
+    /* Init tickstart for timeout management*/
+    uint32_t tickstart = bc_tick_get();
+
+    if  (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_BUSY, SET, 25, tickstart))
+    {
+        bc_module_core_pll_disable();
+        return false;
+    }
+
+    // Set size of data to read
+    _bc_i2c_config(I2Cx, device_address << 1, length, I2C_CR2_AUTOEND, (uint32_t)(I2C_CR2_START | I2C_CR2_RD_WRN));
+
+    while(length > 0U)
+    {
+        /* Wait until RXNE flag is set */
+        if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_RXNE, RESET, 10, tickstart))
+        {
+            bc_module_core_pll_disable();
+            return false;
+        }
+
+        /* Read data from RXDR */
+        (*(uint8_t *)buffer++) = I2Cx->RXDR;
+        length--;
+    }
+
+    /* No need to Check TC flag, with AUTOEND mode the stop is automatically generated */
+    /* Wait until STOPF flag is reset */
+    if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_STOPF, RESET, 10, tickstart))
+    {
+        bc_module_core_pll_disable();
+        return false;
+    }
+
+    /* Clear STOP Flag */
+    I2Cx->ICR = I2C_ISR_STOPF;
+
+    /* Clear Configuration Register 2 */
+    I2Cx->CR2 &= (uint32_t)~((uint32_t)(I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN));
+
+    // Disable PLL and enable sleep
+    bc_module_core_pll_disable();
+
+    return true;
+}
+
 bool bc_i2c_write_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t data)
 {
     bc_i2c_tranfer_t transfer;
@@ -545,3 +617,4 @@ static inline bool _bc_i2c_ack_failed(I2C_TypeDef *I2Cx, uint32_t Timeout, uint3
     }
     return true;
 }
+
