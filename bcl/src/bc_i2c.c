@@ -24,8 +24,6 @@ static struct
 
 void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 {
-    uint32_t timingr;
-
     if (channel == BC_I2C_I2C0)
     {
         if (bc_i2c.i2c0_initialized)
@@ -45,26 +43,12 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         // Enable I2C0 peripheral
         RCC->APB1ENR |= RCC_APB1ENR_I2C2EN;
 
-        if (speed == BC_I2C_SPEED_400_KHZ)
-        {
-            timingr = 0x301110;
-        }
-        else if (speed == BC_I2C_SPEED_100_KHZ)
-        {
-            timingr = 0x707cbb;
-        }
-        else
-        {
-            // TODO Replace this
-            for (;;);
-        }
-
         // Initialize I2C0 peripheral
         I2C2->CR1 &= I2C_CR1_PE;
         I2C2->CR2 = I2C_CR2_AUTOEND;
         I2C2->OAR1 = I2C_OAR1_OA1EN;
-        I2C2->TIMINGR = timingr;
-        I2C2->CR1 |= I2C_CR1_PE;
+
+        bc_i2c_set_speed(channel, speed);
 
         // Update state
         bc_i2c.i2c0_initialized = true;
@@ -88,30 +72,49 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         // Enable I2C1 peripheral
         RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
 
-        if (speed == BC_I2C_SPEED_400_KHZ)
-        {
-            timingr = 0x301110;
-        }
-        else if (speed == BC_I2C_SPEED_100_KHZ)
-        {
-            timingr = 0x707cbb;
-        }
-        else
-        {
-            // TODO Replace this
-            for (;;);
-        }
-
         // Initialize I2C1 peripheral
         I2C1->CR1 &= I2C_CR1_PE;
         I2C1->CR2 = I2C_CR2_AUTOEND;
         I2C1->OAR1 = I2C_OAR1_OA1EN;
-        I2C1->TIMINGR = timingr;
-        I2C1->CR1 |= I2C_CR1_PE;
+
+        bc_i2c_set_speed(channel, speed);
 
         // Update state
         bc_i2c.i2c1_initialized = true;
     }
+}
+
+bool bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
+{
+    uint32_t timingr;
+
+    if (speed == BC_I2C_SPEED_400_KHZ)
+    {
+        timingr = 0x301110;
+    }
+    else if (speed == BC_I2C_SPEED_100_KHZ)
+    {
+        timingr = 0x707cbb;
+    }
+    else
+    {
+        return false;
+    }
+
+    if (channel == BC_I2C_I2C0)
+    {
+        I2C2->CR1 &= ~I2C_CR1_PE;
+        I2C2->TIMINGR = timingr;
+        I2C2->CR1 |= I2C_CR1_PE;
+    }
+    else
+    {
+        I2C1->CR1 &= ~I2C_CR1_PE;
+        I2C1->TIMINGR = timingr;
+        I2C1->CR1 |= I2C_CR1_PE;
+    }
+
+    return true;
 }
 
 bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
@@ -300,7 +303,7 @@ static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address,
     // Set size of data to write
     _bc_i2c_config(I2Cx, device_address, size, I2C_AUTOEND_MODE, I2C_NO_STARTSTOP);
 
-    do
+    while (size > 0U)
     {
         /* Wait until TXIS flag is set */
         if (_bc_i2c_watch_flag(I2Cx, I2C_ISR_TXIS, RESET, timeout, tickstart) != true)
@@ -312,7 +315,7 @@ static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint16_t device_address,
         I2Cx->TXDR = (*data++);
         size--;
 
-    } while (size > 0U);
+    }
 
     /* No need to Check TC flag, with AUTOEND mode the stop is automatically generated */
     /* Wait until STOPF flag is reset */
