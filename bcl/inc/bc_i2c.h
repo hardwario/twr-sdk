@@ -66,6 +66,14 @@ bool bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed);
 
 bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer);
 
+//! @brief Write to I2C channel
+//! @param[in] channel I2C channel
+//! @param[in] device_address 7-bit I2C device address
+//! @param[in] buffer Pointer to buffer which is being write
+//! @param[in] length Length of buffer which is being write
+
+bool bc_i2c_write_raw(bc_i2c_channel_t channel, uint8_t device_address, void *buffer, size_t length);
+
 //! @brief Read from I2C channel
 //! @param[in] channel I2C channel
 //! @param[in] transfer Pointer to I2C transfer parameters instance
