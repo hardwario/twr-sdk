@@ -52,6 +52,12 @@ typedef struct
 
 void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed);
 
+//! @brief Set speed I2C channel
+//! @param[in] channel I2C channel
+//! @param[in] speed I2C communication speed
+
+bool bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed);
+
 //! @brief Write to I2C channel
 //! @param[in] channel I2C channel
 //! @param[in] transfer Pointer to I2C transfer parameters instance
@@ -60,6 +66,14 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed);
 
 bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer);
 
+//! @brief Write to I2C channel
+//! @param[in] channel I2C channel
+//! @param[in] device_address 7-bit I2C device address
+//! @param[in] buffer Pointer to buffer which is being write
+//! @param[in] length Length of buffer which is being write
+
+bool bc_i2c_write_raw(bc_i2c_channel_t channel, uint8_t device_address, void *buffer, size_t length);
+
 //! @brief Read from I2C channel
 //! @param[in] channel I2C channel
 //! @param[in] transfer Pointer to I2C transfer parameters instance
@@ -67,6 +81,14 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer);
 //! @return false on failure
 
 bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer);
+
+//! @brief Read from I2C channel
+//! @param[in] channel I2C channel
+//! @param[in] device_address 7-bit I2C device address
+//! @param[in] buffer Pointer to buffer which is being read
+//! @param[in] length Length of buffer which is being read
+
+bool bc_i2c_read_raw(bc_i2c_channel_t channel, uint8_t device_address, void *buffer, size_t length);
 
 //! @brief Write 1 byte to I2C channel
 //! @param[in] channel I2C channel
