@@ -41,6 +41,14 @@ typedef enum
 
 } bc_adc_format_t;
 
+//! @brief ADC event
+
+typedef enum
+{
+    BC_ADC_EVENT_DONE   //!< ADC event
+
+} bc_adc_event_t;
+
 //! @brief Initialize ADC channel
 //! @param[in] channel ADC channel
 //! @param[in] reference ADC voltage reference
@@ -75,8 +83,31 @@ bc_adc_format_t bc_adc_get_format(bc_adc_channel_t channel);
 //! @brief Perform measurement on ADC channel
 //! @param[in] channel ADC channel
 //! @param[out] result Pointer to destination where ADC conversion will be stored
+//! @return Success if measure has been started // TODO
 
-void bc_adc_measure(bc_adc_channel_t channel, void *result);
+bool bc_adc_measure(bc_adc_channel_t channel, void *result);
+
+//! @brief Set callback function
+//! @param[in] channel ADC channel
+//! @param[in] event_handler Function address
+//! @param[in] event_param Optional event parameter (can be NULL)
+//! @return Success of changing handler
+
+bool bc_adc_async_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *), void *event_param);
+
+//! @brief Perform async measurement on ADC channel
+//! @param[in] channel ADC channel
+//! @param[out] result Pointer to destination where ADC conversion will be stored
+//! @return Success if measure has been started // TODO
+
+bool bc_adc_async_measure(bc_adc_channel_t channel);
+
+//! @brief Perform measurement on ADC channel
+//! @param[in] channel ADC channel
+//! @param[out] result Pointer to destination where ADC conversion will be stored
+
+void bc_adc_get_result(bc_adc_channel_t channel, void *result);
+
 
 //! @}
 
