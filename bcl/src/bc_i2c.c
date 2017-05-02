@@ -15,7 +15,7 @@ static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint8_t device_address, 
 static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, uint8_t *buffer, uint16_t length);
 static inline bool _bc_i2c_req_mem_write(I2C_TypeDef *I2Cx, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, bc_tick_t timeout, bc_tick_t *tick_start);
 static inline bool _bc_i2c_req_mem_read(I2C_TypeDef *I2Cx, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, bc_tick_t timeout, bc_tick_t *tick_start);
-static void _bc_i2c_config(I2C_TypeDef *I2Cx, uint8_t device_address, uint8_t Size, uint32_t mode, uint32_t Request);
+static void _bc_i2c_config(I2C_TypeDef *I2Cx, uint8_t device_address, uint8_t length, uint32_t mode, uint32_t Request);
 static bool _bc_i2c_watch_flag(I2C_TypeDef *I2Cx, uint32_t flag, FlagStatus status, bc_tick_t timeout, bc_tick_t *tick_start);
 static inline bool _bc_i2c_ack_failed(I2C_TypeDef *I2Cx, bc_tick_t timeout, bc_tick_t *tick_start);
 static inline bool _bc_i2c_read(I2C_TypeDef *I2Cx, uint8_t device_address, uint8_t *buffer, size_t length, bc_tick_t *tick_start);
@@ -497,7 +497,7 @@ static inline bool _bc_i2c_req_mem_read(I2C_TypeDef *I2Cx, uint8_t device_addres
     return true;
 }
 
-static void _bc_i2c_config(I2C_TypeDef *I2Cx, uint8_t device_address, uint8_t Size, uint32_t mode, uint32_t Request)
+static void _bc_i2c_config(I2C_TypeDef *I2Cx, uint8_t device_address, uint8_t length, uint32_t mode, uint32_t Request)
 {
     uint32_t reg = 0U;
 
@@ -508,7 +508,7 @@ static void _bc_i2c_config(I2C_TypeDef *I2Cx, uint8_t device_address, uint8_t Si
     reg &= (uint32_t) ~((uint32_t) (I2C_CR2_SADD | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_AUTOEND | I2C_CR2_RD_WRN | I2C_CR2_START | I2C_CR2_STOP));
 
     /* update tmpreg */
-    reg |= (uint32_t) (((uint32_t) device_address & I2C_CR2_SADD) | (((uint32_t) Size << 16) & I2C_CR2_NBYTES) |
+    reg |= (uint32_t) (((uint32_t) device_address & I2C_CR2_SADD) | (((uint32_t) length << 16) & I2C_CR2_NBYTES) |
             (uint32_t) mode | (uint32_t) Request);
 
     /* update CR2 register */
