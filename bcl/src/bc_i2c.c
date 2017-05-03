@@ -10,23 +10,25 @@
 #define _BC_I2C_SOFTEND_MODE               (0x00000000U)
 #define _BC_I2C_NO_STARTSTOP               (0x00000000U)
 #define _BC_I2C_GENERATE_START_WRITE       I2C_CR2_START
-
-static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, uint8_t *buffer, uint16_t length);
-static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, uint8_t *buffer, uint16_t length);
-static inline bool _bc_i2c_req_mem_write(I2C_TypeDef *I2Cx, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, bc_tick_t timeout, bc_tick_t *tick_start);
-static inline bool _bc_i2c_req_mem_read(I2C_TypeDef *I2Cx, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, bc_tick_t timeout, bc_tick_t *tick_start);
-static void _bc_i2c_config(I2C_TypeDef *I2Cx, uint8_t device_address, uint8_t length, uint32_t mode, uint32_t Request);
-static bool _bc_i2c_watch_flag(I2C_TypeDef *I2Cx, uint32_t flag, FlagStatus status, bc_tick_t timeout, bc_tick_t *tick_start);
-static inline bool _bc_i2c_ack_failed(I2C_TypeDef *I2Cx, bc_tick_t timeout, bc_tick_t *tick_start);
-static inline bool _bc_i2c_read(I2C_TypeDef *I2Cx, uint8_t device_address, uint8_t *buffer, size_t length, bc_tick_t *tick_start);
-static inline bool _bc_i2c_write(I2C_TypeDef *I2Cx, uint8_t *buffer, size_t length, bc_tick_t *tick_start);
+#define _BC_I2C_FLAG_TIMEOUT 1
+#define _BC_I2C_ACK_TIMEOUT 1
 
 static struct
 {
     bool i2c0_initialized;
     bool i2c1_initialized;
 
-} _bc_i2c = {.i2c0_initialized = false, .i2c1_initialized = false};
+} _bc_i2c = { .i2c0_initialized = false, .i2c1_initialized = false };
+
+static bool _bc_i2c_mem_write(I2C_TypeDef *i2c, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, uint8_t *buffer, uint16_t length);
+static bool _bc_i2c_mem_read(I2C_TypeDef *i2c, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, uint8_t *buffer, uint16_t length);
+static inline bool _bc_i2c_req_mem_write(I2C_TypeDef *i2c, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length);
+static inline bool _bc_i2c_req_mem_read(I2C_TypeDef *i2c, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length);
+static void _bc_i2c_config(I2C_TypeDef *i2c, uint8_t device_address, uint8_t length, uint32_t mode, uint32_t Request);
+static bool _bc_i2c_watch_flag(I2C_TypeDef *i2c, uint32_t flag, FlagStatus status);
+static inline bool _bc_i2c_ack_failed(I2C_TypeDef *i2c);
+static bool _bc_i2c_read(I2C_TypeDef *i2c, uint8_t device_address, const void *buffer, size_t length);
+static bool _bc_i2c_write(I2C_TypeDef *i2c, const void *buffer, size_t length);
 
 void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 {
@@ -37,22 +39,26 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
             return;
         }
 
-        // Initialize I2C0 pins
+        // Initialize I2C2 pins
         RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
+
+        // Errata workaround
+        RCC->IOPENR;
+
         GPIOB->MODER &= ~(GPIO_MODER_MODE10_0 | GPIO_MODER_MODE11_0);
         GPIOB->OTYPER |= GPIO_OTYPER_OT_10 | GPIO_OTYPER_OT_11;
         GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEED10 | GPIO_OSPEEDER_OSPEED11;
         GPIOB->PUPDR |= GPIO_PUPDR_PUPD10_0 | GPIO_PUPDR_PUPD11_0;
-        GPIOB->AFR[1] &= 0xffff00ff;
-        GPIOB->AFR[1] |= 0x6600;
+        GPIOB->AFR[1] |= 6 << GPIO_AFRH_AFRH3_Pos | 6 << GPIO_AFRH_AFRH2_Pos;
 
-        // Enable I2C0 peripheral
+        // Enable I2C2 peripheral clock
         RCC->APB1ENR |= RCC_APB1ENR_I2C2EN;
 
-        // Initialize I2C0 peripheral
-        I2C2->CR1 &= I2C_CR1_PE;
-        I2C2->CR2 = I2C_CR2_AUTOEND;
-        I2C2->OAR1 = I2C_OAR1_OA1EN;
+        // Errata workaround
+        RCC->APB1ENR;
+
+        // Enable I2C2 peripheral
+        I2C2->CR1 |= I2C_CR1_PE;
 
         bc_i2c_set_speed(channel, speed);
 
@@ -68,20 +74,24 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 
         // Initialize I2C1 pins
         RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
+
+        // Errata workaround
+        RCC->IOPENR;
+
         GPIOB->MODER &= ~(GPIO_MODER_MODE8_0 | GPIO_MODER_MODE9_0);
         GPIOB->OTYPER |= GPIO_OTYPER_OT_8 | GPIO_OTYPER_OT_9;
         GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEED8 | GPIO_OSPEEDER_OSPEED9;
         GPIOB->PUPDR |= GPIO_PUPDR_PUPD8_0 | GPIO_PUPDR_PUPD9_0;
-        GPIOB->AFR[1] &= 0xffffff00;
-        GPIOB->AFR[1] |= 0x44;
+        GPIOB->AFR[1] |= 4 << GPIO_AFRH_AFRH1_Pos | 4 << GPIO_AFRH_AFRH0_Pos;
 
-        // Enable I2C1 peripheral
+        // Enable I2C1 peripheral clock
         RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
 
-        // Initialize I2C1 peripheral
-        I2C1->CR1 &= I2C_CR1_PE;
-        I2C1->CR2 = I2C_CR2_AUTOEND;
-        I2C1->OAR1 = I2C_OAR1_OA1EN;
+        // Errata workaround
+        RCC->APB1ENR;
+
+        // Enable I2C1 peripheral
+        I2C1->CR1 |= I2C_CR1_PE;
 
         bc_i2c_set_speed(channel, speed);
 
@@ -90,7 +100,7 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
     }
 }
 
-bool bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
+void bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 {
     uint32_t timingr;
 
@@ -98,13 +108,9 @@ bool bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
     {
         timingr = 0x301110;
     }
-    else if (speed == BC_I2C_SPEED_100_KHZ)
-    {
-        timingr = 0x707cbb;
-    }
     else
     {
-        return false;
+        timingr = 0x707cbb;
     }
 
     if (channel == BC_I2C_I2C0)
@@ -119,12 +125,12 @@ bool bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         I2C1->TIMINGR = timingr;
         I2C1->CR1 |= I2C_CR1_PE;
     }
-
-    return true;
 }
 
 bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
 {
+    uint16_t transfer_memory_address_length;
+
     if (channel == BC_I2C_I2C0)
     {
         if (!_bc_i2c.i2c0_initialized)
@@ -135,8 +141,9 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
         // Enable PLL and disable sleep
         bc_module_core_pll_enable();
 
-        if (!_bc_i2c_mem_write(I2C2, transfer->device_address << 1, transfer->memory_address,
-                (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT : _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT, transfer->buffer, transfer->length))
+        transfer_memory_address_length = (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT : _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT;
+
+        if (!_bc_i2c_mem_write(I2C2, transfer->device_address << 1, transfer->memory_address, transfer_memory_address_length, transfer->buffer, transfer->length))
         {
             // Disable PLL and enable sleep
             bc_module_core_pll_disable();
@@ -159,8 +166,9 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
         // Enable PLL and disable sleep
         bc_module_core_pll_enable();
 
-        if (!_bc_i2c_mem_write(I2C1, transfer->device_address << 1, transfer->memory_address,
-                (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT : _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT, transfer->buffer, transfer->length))
+        transfer_memory_address_length = (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT : _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT;
+
+        if (!_bc_i2c_mem_write(I2C1, transfer->device_address << 1, transfer->memory_address, transfer_memory_address_length, transfer->buffer, transfer->length))
         {
             // Disable PLL and enable sleep
             bc_module_core_pll_disable();
@@ -175,9 +183,9 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
     }
 }
 
-bool bc_i2c_write_raw(bc_i2c_channel_t channel, uint8_t device_address, void *buffer, size_t length)
+bool bc_i2c_write_raw(bc_i2c_channel_t channel, uint8_t device_address, const void *buffer, size_t length)
 {
-    I2C_TypeDef *I2Cx;
+    I2C_TypeDef *i2c;
 
     if (channel == BC_I2C_I2C0)
     {
@@ -186,7 +194,7 @@ bool bc_i2c_write_raw(bc_i2c_channel_t channel, uint8_t device_address, void *bu
             return false;
         }
 
-        I2Cx = I2C2;
+        i2c = I2C2;
     }
     else
     {
@@ -195,26 +203,27 @@ bool bc_i2c_write_raw(bc_i2c_channel_t channel, uint8_t device_address, void *bu
             return false;
         }
 
-        I2Cx = I2C1;
+        i2c = I2C1;
     }
 
     bool status = false;
 
-    bc_tick_t tick_start = bc_tick_get();
-
     bc_module_core_pll_enable();
 
-    if  (_bc_i2c_watch_flag(I2Cx, I2C_ISR_BUSY, SET, 25, &tick_start))
+    // Wait until bus is not busy
+    if (_bc_i2c_watch_flag(i2c, I2C_ISR_BUSY, SET))
     {
-        _bc_i2c_config(I2Cx, device_address << 1, length, I2C_CR2_AUTOEND, _BC_I2C_GENERATE_START_WRITE);
+        _bc_i2c_config(i2c, device_address << 1, length, I2C_CR2_AUTOEND, _BC_I2C_GENERATE_START_WRITE);
 
-        /* Wait until TXIS flag is set */
-        if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_TXIS, RESET, 10, &tick_start))
+        // Wait until TXIS flag is set
+        if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
         {
+            bc_module_core_pll_disable();
+
             return false;
         }
 
-        status = _bc_i2c_write(I2Cx, buffer, length, &tick_start);
+        status = _bc_i2c_write(i2c, buffer, length);
     }
 
     bc_module_core_pll_disable();
@@ -224,6 +233,8 @@ bool bc_i2c_write_raw(bc_i2c_channel_t channel, uint8_t device_address, void *bu
 
 bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
 {
+    uint16_t transfer_memory_address_length;
+
     if (channel == BC_I2C_I2C0)
     {
         if (!_bc_i2c.i2c0_initialized)
@@ -234,8 +245,9 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
         // Enable PLL and disable sleep
         bc_module_core_pll_enable();
 
-        if (!_bc_i2c_mem_read(I2C2, transfer->device_address << 1, transfer->memory_address,
-                (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT : _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT, transfer->buffer, transfer->length))
+        transfer_memory_address_length = (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT : _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT;
+
+        if (!_bc_i2c_mem_read(I2C2, transfer->device_address << 1, transfer->memory_address, transfer_memory_address_length, transfer->buffer, transfer->length))
         {
             // Disable PLL and enable sleep
             bc_module_core_pll_disable();
@@ -258,8 +270,9 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
         // Enable PLL and disable sleep
         bc_module_core_pll_enable();
 
-        if (!_bc_i2c_mem_read(I2C1, transfer->device_address << 1, transfer->memory_address,
-                (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT : _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT, transfer->buffer, transfer->length))
+        transfer_memory_address_length = (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT : _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT;
+
+        if (!_bc_i2c_mem_read(I2C1, transfer->device_address << 1, transfer->memory_address, transfer_memory_address_length, transfer->buffer, transfer->length))
         {
             // Disable PLL and enable sleep
             bc_module_core_pll_disable();
@@ -274,9 +287,9 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
     }
 }
 
-bool bc_i2c_read_raw(bc_i2c_channel_t channel, uint8_t device_address, void *buffer, size_t length)
+bool bc_i2c_read_raw(bc_i2c_channel_t channel, uint8_t device_address, const void *buffer, size_t length)
 {
-    I2C_TypeDef *I2Cx;
+    I2C_TypeDef *i2c;
 
     if (channel == BC_I2C_I2C0)
     {
@@ -285,7 +298,7 @@ bool bc_i2c_read_raw(bc_i2c_channel_t channel, uint8_t device_address, void *buf
             return false;
         }
 
-        I2Cx = I2C2;
+        i2c = I2C2;
     }
     else
     {
@@ -294,18 +307,17 @@ bool bc_i2c_read_raw(bc_i2c_channel_t channel, uint8_t device_address, void *buf
             return false;
         }
 
-        I2Cx = I2C1;
+        i2c = I2C1;
     }
-
-    bc_tick_t tick_start = bc_tick_get();
 
     bool status = false;
 
     bc_module_core_pll_enable();
 
-    if  (_bc_i2c_watch_flag(I2Cx, I2C_ISR_BUSY, SET, 25, &tick_start))
+    // Wait until bus is not busy
+    if (_bc_i2c_watch_flag(i2c, I2C_ISR_BUSY, SET))
     {
-        status = _bc_i2c_read(I2Cx, device_address << 1, buffer, length, &tick_start);
+        status = _bc_i2c_read(i2c, device_address << 1, buffer, length);
     }
 
     bc_module_core_pll_disable();
@@ -375,80 +387,73 @@ bool bc_i2c_read_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t 
     return true;
 }
 
-static inline bool _bc_i2c_mem_write(I2C_TypeDef *I2Cx, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, uint8_t *buffer, uint16_t length)
+static bool _bc_i2c_mem_write(I2C_TypeDef *i2c, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, uint8_t *buffer, uint16_t length)
 {
-    bc_tick_t tick_start = bc_tick_get();
-
-    // Wait till I2Cx is busy
-    if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_BUSY, SET, 25, &tick_start))
+    // Wait until bus is not busy
+    if (!_bc_i2c_watch_flag(i2c, I2C_ISR_BUSY, SET))
     {
         return false;
     }
 
-    // Send Slave Address and Memory Address
-    if (!_bc_i2c_req_mem_write(I2Cx, device_address, memory_address, memory_address_length, 10, &tick_start))
+    // Send slave address and memory address
+    if (!_bc_i2c_req_mem_write(i2c, device_address, memory_address, memory_address_length))
     {
         return false;
     }
 
     // Set size of data to write
-    _bc_i2c_config(I2Cx, device_address, length, _BC_I2C_AUTOEND_MODE, _BC_I2C_NO_STARTSTOP);
+    _bc_i2c_config(i2c, device_address, length, _BC_I2C_AUTOEND_MODE, _BC_I2C_NO_STARTSTOP);
 
-    return _bc_i2c_write(I2Cx, buffer, length, &tick_start);
+    // Perform I2C transfer
+    return _bc_i2c_write(i2c, buffer, length);
 }
 
-static inline bool _bc_i2c_mem_read(I2C_TypeDef *I2Cx, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, uint8_t *buffer, uint16_t length)
+static bool _bc_i2c_mem_read(I2C_TypeDef *i2c, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, uint8_t *buffer, uint16_t length)
 {
-    bc_tick_t tick_start = bc_tick_get();
-
-    if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_BUSY, SET, 25, &tick_start))
+    // Wait until bus is not busy
+    if (!_bc_i2c_watch_flag(i2c, I2C_ISR_BUSY, SET))
     {
         return false;
     }
 
-    /* Send Slave Address and Memory Address */
-    if (!_bc_i2c_req_mem_read(I2Cx, device_address, memory_address, memory_address_length, 10, &tick_start))
+    // Send slave address and memory address
+    if (!_bc_i2c_req_mem_read(i2c, device_address, memory_address, memory_address_length))
     {
         return false;
     }
 
-    return _bc_i2c_read(I2Cx, device_address, buffer, length, &tick_start);
+    // Perform I2C transfer
+    return _bc_i2c_read(i2c, device_address, buffer, length);
 }
 
-static inline bool _bc_i2c_req_mem_write(I2C_TypeDef *I2Cx, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, bc_tick_t timeout, bc_tick_t *tick_start)
+static inline bool _bc_i2c_req_mem_write(I2C_TypeDef *i2c, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length)
 {
-    _bc_i2c_config(I2Cx, device_address, memory_address_length, _BC_I2C_RELOAD_MODE, _BC_I2C_GENERATE_START_WRITE);
+    _bc_i2c_config(i2c, device_address, memory_address_length, _BC_I2C_RELOAD_MODE, _BC_I2C_GENERATE_START_WRITE);
 
-    /* Wait until TXIS flag is set */
-    if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_TXIS, RESET, timeout, tick_start))
+    // Wait until TXIS flag is set
+    if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
     {
         return false;
     }
 
-    /* If Memory address size is 8Bit */
-    if (memory_address_length == _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT)
+    // If memory address size is 16Bit
+    if (memory_address_length == _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT)
     {
-        /* Send Memory Address */
-        I2Cx->TXDR = memory_address & 0xff;
-    }
-    /* If Memory address size is 16Bit */
-    else
-    {
-        /* Send MSB of Memory Address */
-        I2Cx->TXDR = (memory_address >> 8) & 0xff;
+        // Send MSB of memory address
+        i2c->TXDR = (memory_address >> 8) & 0xff;
 
-        /* Wait until TXIS flag is set */
-        if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_TXIS, RESET, timeout, tick_start))
+        // Wait until TXIS flag is set
+        if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
         {
             return false;
         }
-
-        /* Send LSB of Memory Address */
-        I2Cx->TXDR = memory_address & 0xff;
     }
 
-    /* Wait until TCR flag is set */
-    if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_TCR, RESET, timeout, tick_start))
+    // Send LSB of memory address
+    i2c->TXDR = memory_address & 0xff;
+
+    // Wait until TCR flag is set
+    if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TCR, RESET))
     {
         return false;
     }
@@ -456,40 +461,34 @@ static inline bool _bc_i2c_req_mem_write(I2C_TypeDef *I2Cx, uint8_t device_addre
     return true;
 }
 
-static inline bool _bc_i2c_req_mem_read(I2C_TypeDef *I2Cx, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, bc_tick_t timeout, bc_tick_t *tick_start)
+static inline bool _bc_i2c_req_mem_read(I2C_TypeDef *i2c, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length)
 {
-    _bc_i2c_config(I2Cx, device_address, memory_address_length, _BC_I2C_SOFTEND_MODE, _BC_I2C_GENERATE_START_WRITE);
+    _bc_i2c_config(i2c, device_address, memory_address_length, _BC_I2C_SOFTEND_MODE, _BC_I2C_GENERATE_START_WRITE);
 
-    /* Wait until TXIS flag is set */
-    if (_bc_i2c_watch_flag(I2Cx, I2C_ISR_TXIS, RESET, timeout, tick_start) != true)
+    // Wait until TXIS flag is set
+    if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
     {
         return false;
     }
 
-    /* If Memory address size is 8Bit */
-    if (memory_address_length == _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT)
+    // If memory address size is 16Bit
+    if (memory_address_length == _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT)
     {
-        /* Send Memory Address */
-        I2Cx->TXDR = memory_address & 0xff;
-    }
-    /* If Memory address size is 16Bit */
-    else
-    {
-        /* Send MSB of Memory Address */
-        I2Cx->TXDR = (memory_address >> 8) & 0xff;
+        // Send MSB of memory address
+        i2c->TXDR = (memory_address >> 8) & 0xff;
 
-        /* Wait until TXIS flag is set */
-        if (_bc_i2c_watch_flag(I2Cx, I2C_ISR_TXIS, RESET, timeout, tick_start) != true)
+        // Wait until TXIS flag is set
+        if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
         {
             return false;
         }
-
-        /* Send LSB of Memory Address */
-        I2Cx->TXDR = memory_address & 0xff;
     }
 
-    /* Wait until TC flag is set */
-    if (_bc_i2c_watch_flag(I2Cx, I2C_ISR_TC, RESET, timeout, tick_start) != true)
+    // Send LSB of memory address
+    i2c->TXDR = memory_address & 0xff;
+
+    // Wait until TC flag is set
+    if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TC, RESET))
     {
         return false;
     }
@@ -497,41 +496,39 @@ static inline bool _bc_i2c_req_mem_read(I2C_TypeDef *I2Cx, uint8_t device_addres
     return true;
 }
 
-static void _bc_i2c_config(I2C_TypeDef *I2Cx, uint8_t device_address, uint8_t length, uint32_t mode, uint32_t Request)
+static void _bc_i2c_config(I2C_TypeDef *i2c, uint8_t device_address, uint8_t length, uint32_t mode, uint32_t Request)
 {
-    uint32_t reg = 0U;
+    uint32_t reg;
 
-    /* Get the CR2 register value */
-    reg = I2Cx->CR2;
+    // Get the CR2 register value
+    reg = i2c->CR2;
 
-    /* clear tmpreg specific bits */
-    reg &= (uint32_t) ~((uint32_t) (I2C_CR2_SADD | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_AUTOEND | I2C_CR2_RD_WRN | I2C_CR2_START | I2C_CR2_STOP));
+    // clear tmpreg specific bits
+    reg &= ~(I2C_CR2_SADD | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_AUTOEND | I2C_CR2_RD_WRN | I2C_CR2_START | I2C_CR2_STOP);
 
-    /* update tmpreg */
-    reg |= (uint32_t) (((uint32_t) device_address & I2C_CR2_SADD) | (((uint32_t) length << 16) & I2C_CR2_NBYTES) |
-            (uint32_t) mode | (uint32_t) Request);
+    // update tmpreg
+    reg |= (device_address & I2C_CR2_SADD) | (length << I2C_CR2_NBYTES_Pos) | mode | Request;
 
-    /* update CR2 register */
-    I2Cx->CR2 = reg;
+    // update CR2 register
+    i2c->CR2 = reg;
 }
 
-static bool _bc_i2c_watch_flag(I2C_TypeDef *I2Cx, uint32_t flag, FlagStatus status, bc_tick_t timeout, bc_tick_t *tick_start)
+static bool _bc_i2c_watch_flag(I2C_TypeDef *i2c, uint32_t flag, FlagStatus status)
 {
+    bc_tick_t tick_last = bc_tick_get() + _BC_I2C_FLAG_TIMEOUT;
 
-    timeout += *tick_start;
-
-    while ((I2Cx->ISR & flag) == status)
+    while ((i2c->ISR & flag) == status)
     {
         if ((flag == I2C_ISR_STOPF) || (flag == I2C_ISR_TXIS))
         {
-            /* Check if a NACK is detected */
-            if (_bc_i2c_ack_failed(I2Cx, timeout, tick_start) != true)
+            // Check if a NACK is detected
+            if (!_bc_i2c_ack_failed(i2c))
             {
                 return false;
             }
         }
 
-        if (bc_tick_get() > timeout)
+        if (bc_tick_get() > tick_last)
         {
             return false;
         }
@@ -539,113 +536,119 @@ static bool _bc_i2c_watch_flag(I2C_TypeDef *I2Cx, uint32_t flag, FlagStatus stat
     return true;
 }
 
-static inline bool _bc_i2c_ack_failed(I2C_TypeDef *I2Cx, bc_tick_t timeout, bc_tick_t *tick_start)
+static inline bool _bc_i2c_ack_failed(I2C_TypeDef *i2c)
 {
-    timeout += *tick_start;
+    bc_tick_t tick_last = bc_tick_get() + _BC_I2C_ACK_TIMEOUT;
 
-    if ((I2Cx->ISR & I2C_ISR_NACKF) == true)
+    if ((i2c->ISR & I2C_ISR_NACKF) != 0)
     {
-        /* Wait until STOP Flag is reset */
-        /* AutoEnd should be initiate after AF */
-        while ((I2Cx->ISR & I2C_ISR_STOPF) == 0)
+        // Wait until STOP flag is reset
+        // AutoEnd should be initialized after AF
+        while ((i2c->ISR & I2C_ISR_STOPF) == 0)
         {
-            if (bc_tick_get() > timeout)
+            if (bc_tick_get() > tick_last)
             {
                 return false;
             }
         }
 
-        /* Clear NACKF Flag */
-        I2Cx->ICR = I2C_ISR_NACKF;
+        // Clear NACKF flag
+        i2c->ICR = I2C_ISR_NACKF;
 
-        /* Clear STOP Flag */
-        I2Cx->ICR = I2C_ISR_STOPF;
+        // Clear STOP flag
+        i2c->ICR = I2C_ISR_STOPF;
 
-        /* Flush TX register */
-        /* If a pending TXIS flag is set */
-        /* Write a dummy data in TXDR to clear it */
-        if ((I2Cx->ISR & I2C_ISR_TXIS) != 0)
+        // If a pending TXIS flag is set ...
+        if ((i2c->ISR & I2C_ISR_TXIS) != 0)
         {
-            I2Cx->TXDR = 0x00U;
+            // ... write a dummy data in TXDR to clear it
+            i2c->TXDR = 0;
         }
 
-        /* Flush TX register if not empty */
-        if ((I2Cx->ISR & I2C_ISR_TXE) == 0)
+        // Flush TX register if not empty
+        if ((i2c->ISR & I2C_ISR_TXE) == 0)
         {
-            I2Cx->ISR |= I2C_ISR_TXE;
+            i2c->ISR |= I2C_ISR_TXE;
         }
 
-        /* Clear Configuration Register 2 */
-        I2Cx->CR2 &= (uint32_t) ~((uint32_t) (I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN));
+        // Clear Configuration Register 2
+        i2c->CR2 &= ~(I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN);
 
         return false;
     }
+
     return true;
 }
 
-static inline bool _bc_i2c_read(I2C_TypeDef *I2Cx, uint8_t device_address, uint8_t *buffer, size_t length, bc_tick_t *tick_start)
+static bool _bc_i2c_read(I2C_TypeDef *i2c, uint8_t device_address, const void *buffer, size_t length)
 {
+    uint8_t *p = (uint8_t *) buffer;
+
     // Set size of data to read
-    _bc_i2c_config(I2Cx, device_address, length, I2C_CR2_AUTOEND, (uint32_t)(I2C_CR2_START | I2C_CR2_RD_WRN));
+    _bc_i2c_config(i2c, device_address, length, I2C_CR2_AUTOEND, I2C_CR2_START | I2C_CR2_RD_WRN);
 
-    while(length > 0U)
+    while (length > 0)
     {
-        /* Wait until RXNE flag is set */
-        if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_RXNE, RESET, 10, tick_start))
+        // Wait until RXNE flag is set
+        if (!_bc_i2c_watch_flag(i2c, I2C_ISR_RXNE, RESET))
         {
             return false;
         }
 
-        /* Read data from RXDR */
-        (*buffer++) = I2Cx->RXDR;
+        // Read data from RXDR
+        *p++ = i2c->RXDR;
+
         length--;
     }
 
-    /* No need to Check TC flag, with AUTOEND mode the stop is automatically generated */
-    /* Wait until STOPF flag is reset */
-    if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_STOPF, RESET, 10, tick_start))
+    // No need to Check TC flag, with AUTOEND mode the stop is automatically generated
+
+    // Wait until STOPF flag is reset
+    if (!_bc_i2c_watch_flag(i2c, I2C_ISR_STOPF, RESET))
     {
         return false;
     }
 
-    /* Clear STOP Flag */
-    I2Cx->ICR = I2C_ISR_STOPF;
+    // Clear STOP flag
+    i2c->ICR = I2C_ICR_STOPCF;
 
-    /* Clear Configuration Register 2 */
-    I2Cx->CR2 &= (uint32_t)~((uint32_t)(I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN));
+    // Clear Configuration Register 2
+    i2c->CR2 &= ~(I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN);
 
     return true;
 }
 
-static inline bool _bc_i2c_write(I2C_TypeDef *I2Cx, uint8_t *buffer, size_t length, bc_tick_t *tick_start)
+static bool _bc_i2c_write(I2C_TypeDef *i2c, const void *buffer, size_t length)
 {
+    uint8_t *p = (uint8_t *) buffer;
 
-    while (length > 0U)
+    while (length > 0)
     {
-        /* Wait until TXIS flag is set */
-        if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_TXIS, RESET, 10, tick_start))
+        // Wait until TXIS flag is set
+        if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
         {
             return false;
         }
 
-        /* Write data to TXDR */
-        I2Cx->TXDR = (*buffer++);
-        length--;
+        // Write data to TXDR
+        i2c->TXDR = *p++;
 
+        length--;
     }
 
-    /* No need to Check TC flag, with AUTOEND mode the stop is automatically generated */
-    /* Wait until STOPF flag is reset */
-    if (!_bc_i2c_watch_flag(I2Cx, I2C_ISR_STOPF, RESET, 10, tick_start))
+    // No need to Check TC flag, with AUTOEND mode the stop is automatically generated
+
+    // Wait until STOPF flag is reset
+    if (!_bc_i2c_watch_flag(i2c, I2C_ISR_STOPF, RESET))
     {
         return false;
     }
 
-    /* Clear STOP Flag */
-    I2Cx->ICR = I2C_ISR_STOPF;
+    // Clear STOP flag
+    i2c->ICR = I2C_ICR_STOPCF;
 
-    /* Clear Configuration Register 2 */
-    I2Cx->CR2 &= (uint32_t)~((uint32_t)(I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN));
+    // Clear Configuration Register 2
+    i2c->CR2 &= ~(I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN);
 
     return true;
 }
