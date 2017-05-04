@@ -146,7 +146,7 @@ static void _bc_uart1_init(bc_uart_config_t config)
     GPIOA->MODER &= ~(1 << GPIO_MODER_MODE3_Pos | 1 << GPIO_MODER_MODE2_Pos);
 
     // Select AF6 alternate function for TXD1 and RXD1 pins
-    GPIOA->AFR[0] |= GPIO_AF6_LPUART1 << GPIO_AFRL_AFRL3_Pos | GPIO_AF6_LPUART1 << GPIO_AFRL_AFRL2_Pos;
+    GPIOA->AFR[0] |= 6 << GPIO_AFRL_AFRL3_Pos | 6 << GPIO_AFRL_AFRL2_Pos;
 
     // Set LSE as LPUART1 clock source
     RCC->CCIPR |= RCC_CCIPR_LPUART1SEL_1 | RCC_CCIPR_LPUART1SEL_0;
