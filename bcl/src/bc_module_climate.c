@@ -133,10 +133,6 @@ static void _bc_module_climate_sht20_event_handler(bc_sht20_t *self, bc_sht20_ev
 
     if (event == BC_SHT20_EVENT_UPDATE)
     {
-        volatile float temperature;
-        bc_sht20_get_temperature_celsius(self, &temperature);
-        temperature = temperature;
-
         _bc_module_climate.event_handler(BC_MODULE_CLIMATE_EVENT_UPDATE_HYGROMETER, _bc_module_climate.event_param);
     }
     else if (event == BC_SHT20_EVENT_ERROR)
