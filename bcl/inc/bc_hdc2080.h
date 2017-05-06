@@ -1,7 +1,6 @@
 #ifndef _BC_HDC2080_H
 #define _BC_HDC2080_H
 
-#include <bc_common.h>
 #include <bc_i2c.h>
 #include <bc_scheduler.h>
 
@@ -46,10 +45,10 @@ struct bc_hdc2080_t
     bc_scheduler_task_id_t _task_id;
     bc_tick_t _update_interval;
     bc_hdc2080_state_t _state;
-    bool _temperature_valid;
     bool _humidity_valid;
-    uint16_t _reg_temperature;
+    bool _temperature_valid;
     uint16_t _reg_humidity;
+    uint16_t _reg_temperature;
 };
 
 //! @endcond
@@ -74,22 +73,6 @@ void bc_hdc2080_set_event_handler(bc_hdc2080_t *self, void (*event_handler)(bc_h
 
 void bc_hdc2080_set_update_interval(bc_hdc2080_t *self, bc_tick_t interval);
 
-//! @brief Get measured temperature as raw value
-//! @param[in] self Instance
-//! @param[in] raw Pointer to variable where result will be stored
-//! @return true When value is valid
-//! @return false When value is invalid
-
-bool bc_hdc2080_get_temperature_raw(bc_hdc2080_t *self, uint16_t *raw);
-
-//! @brief Get measured temperature in degrees of Celsius
-//! @param[in] self Instance
-//! @param[in] celsius Pointer to variable where result will be stored
-//! @return true When value is valid
-//! @return false When value is invalid
-
-bool bc_hdc2080_get_temperature_celsius(bc_hdc2080_t *self, float *celsius);
-
 //! @brief Get measured humidity as raw value
 //! @param[in] self Instance
 //! @param[in] raw Pointer to variable where result will be stored
@@ -105,6 +88,22 @@ bool bc_hdc2080_get_humidity_raw(bc_hdc2080_t *self, uint16_t *raw);
 //! @return false When value is invalid
 
 bool bc_hdc2080_get_humidity_percentage(bc_hdc2080_t *self, float *percentage);
+
+//! @brief Get measured temperature as raw value
+//! @param[in] self Instance
+//! @param[in] raw Pointer to variable where result will be stored
+//! @return true When value is valid
+//! @return false When value is invalid
+
+bool bc_hdc2080_get_temperature_raw(bc_hdc2080_t *self, uint16_t *raw);
+
+//! @brief Get measured temperature in degrees of Celsius
+//! @param[in] self Instance
+//! @param[in] celsius Pointer to variable where result will be stored
+//! @return true When value is valid
+//! @return false When value is invalid
+
+bool bc_hdc2080_get_temperature_celsius(bc_hdc2080_t *self, float *celsius);
 
 //! @}
 

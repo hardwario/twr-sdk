@@ -115,7 +115,7 @@ start:
         {
             self->_state = BC_TMP112_STATE_ERROR;
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x01, 0x81))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x01, 0x81))
             {
                 goto start;
             }
@@ -132,7 +132,7 @@ start:
 
             uint8_t reg_configuration;
 
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x01, &reg_configuration))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x01, &reg_configuration))
             {
                 goto start;
             }
@@ -142,7 +142,7 @@ start:
                 goto start;
             }
 
-            if (!bc_i2c_read_16b(self->_i2c_channel, self->_i2c_address, 0x00, &self->_reg_temperature))
+            if (!bc_i2c_memory_read_16b(self->_i2c_channel, self->_i2c_address, 0x00, &self->_reg_temperature))
             {
                 goto start;
             }

@@ -1,6 +1,6 @@
 #include <bc_module_climate.h>
 #include <bc_tmp112.h>
-#include <bc_hdc2080.h>
+#include <bc_sht20.h>
 #include <bc_opt3001.h>
 #include <bc_mpl3115a2.h>
 
@@ -9,7 +9,7 @@ static struct
     void (*event_handler)(bc_module_climate_event_t, void *);
     void *event_param;
     bc_tmp112_t tmp112;
-    bc_hdc2080_t hdc2080;
+    bc_sht20_t sht20;
     bc_opt3001_t opt3001;
     bc_mpl3115a2_t mpl3115a2;
 
@@ -17,7 +17,7 @@ static struct
 
 static void _bc_module_climate_tmp112_event_handler(bc_tmp112_t *self, bc_tmp112_event_t event, void *event_param);
 
-static void _bc_module_climate_hdc2080_event_handler(bc_hdc2080_t *self, bc_hdc2080_event_t event, void *event_param);
+static void _bc_module_climate_sht20_event_handler(bc_sht20_t *self, bc_sht20_event_t event, void *event_param);
 
 static void _bc_module_climate_opt3001_event_handler(bc_opt3001_t *self, bc_opt3001_event_t event, void *event_param);
 
@@ -30,8 +30,8 @@ void bc_module_climate_init(void)
     bc_tmp112_init(&_bc_module_climate.tmp112, BC_I2C_I2C0, 0x48);
     bc_tmp112_set_event_handler(&_bc_module_climate.tmp112, _bc_module_climate_tmp112_event_handler, NULL);
 
-    bc_hdc2080_init(&_bc_module_climate.hdc2080, BC_I2C_I2C0, 0x40);
-    bc_hdc2080_set_event_handler(&_bc_module_climate.hdc2080, _bc_module_climate_hdc2080_event_handler, NULL);
+    bc_sht20_init(&_bc_module_climate.sht20, BC_I2C_I2C0, 0x40);
+    bc_sht20_set_event_handler(&_bc_module_climate.sht20, _bc_module_climate_sht20_event_handler, NULL);
 
     bc_opt3001_init(&_bc_module_climate.opt3001, BC_I2C_I2C0, 0x44);
     bc_opt3001_set_event_handler(&_bc_module_climate.opt3001, _bc_module_climate_opt3001_event_handler, NULL);
@@ -53,7 +53,7 @@ void bc_module_climate_set_update_interval_thermometer(bc_tick_t interval)
 
 void bc_module_climate_set_update_interval_hygrometer(bc_tick_t interval)
 {
-    bc_hdc2080_set_update_interval(&_bc_module_climate.hdc2080, interval);
+    bc_sht20_set_update_interval(&_bc_module_climate.sht20, interval);
 }
 
 void bc_module_climate_set_update_interval_lux_meter(bc_tick_t interval)
@@ -83,7 +83,7 @@ bool bc_module_climate_get_temperature_kelvin(float *kelvin)
 
 bool bc_module_climate_get_humidity_percentage(float *percentage)
 {
-    return bc_hdc2080_get_humidity_percentage(&_bc_module_climate.hdc2080, percentage);
+    return bc_sht20_get_humidity_percentage(&_bc_module_climate.sht20, percentage);
 }
 
 bool bc_module_climate_get_luminosity_lux(float *lux)
@@ -121,7 +121,7 @@ static void _bc_module_climate_tmp112_event_handler(bc_tmp112_t *self, bc_tmp112
     }
 }
 
-static void _bc_module_climate_hdc2080_event_handler(bc_hdc2080_t *self, bc_hdc2080_event_t event, void *event_param)
+static void _bc_module_climate_sht20_event_handler(bc_sht20_t *self, bc_sht20_event_t event, void *event_param)
 {
     (void) self;
     (void) event_param;
@@ -131,11 +131,15 @@ static void _bc_module_climate_hdc2080_event_handler(bc_hdc2080_t *self, bc_hdc2
         return;
     }
 
-    if (event == BC_HDC2080_EVENT_UPDATE)
+    if (event == BC_SHT20_EVENT_UPDATE)
     {
+        volatile float temperature;
+        bc_sht20_get_temperature_celsius(self, &temperature);
+        temperature = temperature;
+
         _bc_module_climate.event_handler(BC_MODULE_CLIMATE_EVENT_UPDATE_HYGROMETER, _bc_module_climate.event_param);
     }
-    else if (event == BC_HDC2080_EVENT_ERROR)
+    else if (event == BC_SHT20_EVENT_ERROR)
     {
         _bc_module_climate.event_handler(BC_MODULE_CLIMATE_EVENT_ERROR_HYGROMETER, _bc_module_climate.event_param);
     }
