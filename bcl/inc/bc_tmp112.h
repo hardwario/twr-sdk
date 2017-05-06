@@ -3,6 +3,7 @@
 
 #include <bc_i2c.h>
 #include <bc_tick.h>
+#include <bc_scheduler.h>
 
 //! @addtogroup bc_tmp112 bc_tmp112
 //! @brief Driver for TMP112 temperature sensor
@@ -36,8 +37,11 @@ struct bc_tmp112_t
 {
     bc_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
+    bc_scheduler_task_id_t _task_id_interval;
+    bc_scheduler_task_id_t _task_id_measure;
     void (*_event_handler)(bc_tmp112_t *, bc_tmp112_event_t, void *);
     void *_event_param;
+    bool _measurement_active;
     bc_tick_t _update_interval;
     bc_tmp112_state_t _state;
     bool _temperature_valid;
@@ -65,6 +69,13 @@ void bc_tmp112_set_event_handler(bc_tmp112_t *self, void (*event_handler)(bc_tmp
 //! @param[in] interval Measurement interval
 
 void bc_tmp112_set_update_interval(bc_tmp112_t *self, bc_tick_t interval);
+
+//! @brief Start measurement manually
+//! @param[in] self Instance
+//! @return true On success
+//! @return False When other measurement is in progress
+
+bool bc_tmp112_measure(bc_tmp112_t *self);
 
 //! @brief Get measured temperature as raw value
 //! @param[in] self Instance
