@@ -16,7 +16,7 @@ void bc_hdc2080_init(bc_hdc2080_t *self, bc_i2c_channel_t i2c_channel, uint8_t i
 
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 
-    self->_task_id = bc_scheduler_register(_bc_hdc2080_task, self, bc_tick_get() + BC_HDC2080_DELAY_RUN);
+    self->_task_id = bc_scheduler_register(_bc_hdc2080_task, self, BC_HDC2080_DELAY_RUN);
 }
 
 void bc_hdc2080_set_event_handler(bc_hdc2080_t *self, void (*event_handler)(bc_hdc2080_t *, bc_hdc2080_event_t, void *), void *event_param)
