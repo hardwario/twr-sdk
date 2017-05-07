@@ -16,7 +16,7 @@ void bc_hdc2080_init(bc_hdc2080_t *self, bc_i2c_channel_t i2c_channel, uint8_t i
 
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 
-    self->_task_id = bc_scheduler_register(_bc_hdc2080_task, self, bc_tick_get() + BC_HDC2080_DELAY_RUN);
+    self->_task_id = bc_scheduler_register(_bc_hdc2080_task, self, BC_HDC2080_DELAY_RUN);
 }
 
 void bc_hdc2080_set_event_handler(bc_hdc2080_t *self, void (*event_handler)(bc_hdc2080_t *, bc_hdc2080_event_t, void *), void *event_param)
@@ -30,18 +30,6 @@ void bc_hdc2080_set_update_interval(bc_hdc2080_t *self, bc_tick_t interval)
     self->_update_interval = interval;
 }
 
-bool bc_hdc2080_get_temperature_raw(bc_hdc2080_t *self, uint16_t *raw)
-{
-    if (!self->_temperature_valid)
-    {
-        return false;
-    }
-
-    *raw = self->_reg_temperature;
-
-    return true;
-}
-
 bool bc_hdc2080_get_humidity_raw(bc_hdc2080_t *self, uint16_t *raw)
 {
     if (!self->_humidity_valid)
@@ -50,20 +38,6 @@ bool bc_hdc2080_get_humidity_raw(bc_hdc2080_t *self, uint16_t *raw)
     }
 
     *raw = self->_reg_humidity;
-
-    return true;
-}
-
-bool bc_hdc2080_get_temperature_celsius(bc_hdc2080_t *self, float *celsius)
-{
-    uint16_t raw;
-
-    if (!bc_hdc2080_get_temperature_raw(self, &raw))
-    {
-        return false;
-    }
-
-    *celsius = (float) raw / 65536.f * 165.f - 40.f;
 
     return true;
 }
@@ -87,6 +61,32 @@ bool bc_hdc2080_get_humidity_percentage(bc_hdc2080_t *self, float *percentage)
     return true;
 }
 
+bool bc_hdc2080_get_temperature_raw(bc_hdc2080_t *self, uint16_t *raw)
+{
+    if (!self->_temperature_valid)
+    {
+        return false;
+    }
+
+    *raw = self->_reg_temperature;
+
+    return true;
+}
+
+bool bc_hdc2080_get_temperature_celsius(bc_hdc2080_t *self, float *celsius)
+{
+    uint16_t raw;
+
+    if (!bc_hdc2080_get_temperature_raw(self, &raw))
+    {
+        return false;
+    }
+
+    *celsius = (float) raw / 65536.f * 165.f - 40.f;
+
+    return true;
+}
+
 static void _bc_hdc2080_task(void *param)
 {
     bc_hdc2080_t *self = param;
@@ -98,6 +98,7 @@ start:
         case BC_HDC2080_STATE_ERROR:
         {
             self->_humidity_valid = false;
+            self->_temperature_valid = false;
 
             if (self->_event_handler != NULL)
             {
@@ -114,7 +115,7 @@ start:
         {
             self->_state = BC_HDC2080_STATE_ERROR;
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x0e, 0x80))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x0e, 0x80))
             {
                 goto start;
             }
@@ -129,7 +130,7 @@ start:
         {
             self->_state = BC_HDC2080_STATE_ERROR;
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x0f, 0x07))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x0f, 0x07))
             {
                 goto start;
             }
@@ -146,7 +147,7 @@ start:
 
             uint8_t reg_interrupt;
 
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x04, &reg_interrupt))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x04, &reg_interrupt))
             {
                 goto start;
             }
@@ -156,22 +157,20 @@ start:
                 goto start;
             }
 
-            if (!bc_i2c_read_16b(self->_i2c_channel, self->_i2c_address, 0x02, &self->_reg_humidity))
+            if (!bc_i2c_memory_read_16b(self->_i2c_channel, self->_i2c_address, 0x02, &self->_reg_humidity))
             {
                 goto start;
             }
 
-            if (!bc_i2c_read_16b(self->_i2c_channel, self->_i2c_address, 0x00, &self->_reg_temperature))
+            if (!bc_i2c_memory_read_16b(self->_i2c_channel, self->_i2c_address, 0x00, &self->_reg_temperature))
             {
                 goto start;
             }
 
             self->_reg_temperature = self->_reg_temperature << 8 | self->_reg_temperature >> 8;
-
             self->_reg_humidity = self->_reg_humidity << 8 | self->_reg_humidity >> 8;
 
             self->_temperature_valid = true;
-
             self->_humidity_valid = true;
 
             self->_state = BC_HDC2080_STATE_UPDATE;

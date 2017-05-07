@@ -30,45 +30,45 @@ bool bc_sc16is740_init(bc_sc16is740_t *self, bc_i2c_channel_t i2c_channel, uint8
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 
     // Switch to access Special register
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, _BC_SC16IS740_LCR_SPECIAL_REGISTER))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, _BC_SC16IS740_LCR_SPECIAL_REGISTER))
     {
         return false;
     }
 
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_SPECIAL_REG_DLL, 0x58))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_SPECIAL_REG_DLL, 0x58))
     {
         return false;
     }
 
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_SPECIAL_REG_DLH, 0x00))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_SPECIAL_REG_DLH, 0x00))
     {
         return false;
     }
 
     // Switch to access Enhanced register
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, _BC_SC16IS740_LCR_SPECIAL_ENHANCED_REGISTER))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, _BC_SC16IS740_LCR_SPECIAL_ENHANCED_REGISTER))
     {
         return false;
     }
 
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_ENHANCED_REG_EFR, 0x10))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_ENHANCED_REG_EFR, 0x10))
     {
         return false;
     }
 
     // No break, no parity, 2 stop bits, 8 data bits
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, 0x07))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, 0x07))
     {
         return false;
     }
 
     // FIFO enabled, FIFO reset RX and TX
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_FCR, 0x07))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_FCR, 0x07))
     {
         return false;
     }
 
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_IER, 0x11))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_IER, 0x11))
     {
         return false;
     }
@@ -79,13 +79,15 @@ bool bc_sc16is740_init(bc_sc16is740_t *self, bc_i2c_channel_t i2c_channel, uint8
 bool bc_sc16is740_reset_fifo(bc_sc16is740_t *self, bc_sc16is740_fifo_t fifo)
 {
     uint8_t register_fcr;
+
     register_fcr = fifo | _BC_SC16IS740_BIT_FIFO_ENABLE;
-    return bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_FCR, register_fcr);
+
+    return bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_FCR, register_fcr);
 }
 
 bool bc_sc16is740_get_spaces_available(bc_sc16is740_t *self, uint8_t *spaces_available)
 {
-    return bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_TXLVL, spaces_available);
+    return bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_TXLVL, spaces_available);
 }
 
 uint8_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length)
@@ -107,13 +109,14 @@ uint8_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length
         return false;
     }
 
-    bc_i2c_tranfer_t transfer;
+    bc_i2c_memory_transfer_t transfer;
+
     transfer.device_address = self->_i2c_address;
     transfer.memory_address = _BC_SC16IS740_REG_THR;
     transfer.length = length;
     transfer.buffer = buffer;
 
-    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    if (!bc_i2c_memory_write(self->_i2c_channel, &transfer))
     {
         return 0;
     }
@@ -123,21 +126,20 @@ uint8_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length
 
 bool bc_sc16is740_available(bc_sc16is740_t *self, uint8_t *available)
 {
-    return bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_RXLVL, available);
+    return bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_RXLVL, available);
 }
 
 uint8_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length, bc_tick_t timeout)
 {
     uint8_t read_length = 0;
+
+    // TODO Should be tick_timeout and special exception BC_TICK_INFINITY must be handled
     bc_tick_t stop = bc_tick_get() + timeout;
-    uint8_t available;
-    bc_i2c_tranfer_t transfer;
-    transfer.device_address = self->_i2c_address;
-    transfer.memory_address = _BC_SC16IS740_REG_RHR;
-    transfer.buffer = buffer;
 
     while (bc_tick_get() < stop)
     {
+        uint8_t available;
+
         if (!bc_sc16is740_available(self, &available))
         {
             return 0;
@@ -145,6 +147,10 @@ uint8_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length,
 
         if (available != 0)
         {
+            bc_i2c_memory_transfer_t transfer;
+
+            transfer.device_address = self->_i2c_address;
+            transfer.memory_address = _BC_SC16IS740_REG_RHR;
             transfer.buffer = buffer + read_length;
             transfer.length = length - read_length;
 
@@ -158,7 +164,7 @@ uint8_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length,
                 return 0;
             }
 
-            if (!bc_i2c_read(self->_i2c_channel, &transfer))
+            if (!bc_i2c_memory_read(self->_i2c_channel, &transfer))
             {
                 return 0;
             }
@@ -172,7 +178,7 @@ uint8_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length,
         }
         else
         {
-            //TODO sleep or rewrite to task and callback
+            // TODO Sleep or rewrite to task and callback
         }
     }
 

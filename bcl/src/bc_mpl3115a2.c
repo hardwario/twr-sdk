@@ -84,7 +84,7 @@ start:
         }
         case BC_MPL3115A2_STATE_INITIALIZE:
         {
-            bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x04);
+            bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x04);
 
             self->_state = BC_MPL3115A2_STATE_MEASURE_ALTITUDE;
 
@@ -96,17 +96,17 @@ start:
         {
             self->_state = BC_MPL3115A2_STATE_ERROR;
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xb8))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xb8))
             {
                 goto start;
             }
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
             {
                 goto start;
             }
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xba))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xba))
             {
                 goto start;
             }
@@ -123,7 +123,7 @@ start:
 
             uint8_t reg_status;
 
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
             {
                 goto start;
             }
@@ -135,14 +135,14 @@ start:
 
             uint8_t buffer[5];
 
-            bc_i2c_tranfer_t transfer;
+            bc_i2c_memory_transfer_t transfer;
 
             transfer.device_address = self->_i2c_address;
             transfer.memory_address = 0x01;
             transfer.buffer = buffer;
             transfer.length = 5;
 
-            if (!bc_i2c_read(self->_i2c_channel, &transfer))
+            if (!bc_i2c_memory_read(self->_i2c_channel, &transfer))
             {
                 goto start;
             }
@@ -163,17 +163,17 @@ start:
         {
             self->_state = BC_MPL3115A2_STATE_ERROR;
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x38))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x38))
             {
                 goto start;
             }
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
             {
                 goto start;
             }
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x3a))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x3a))
             {
                 goto start;
             }
@@ -190,7 +190,7 @@ start:
 
             uint8_t reg_status;
 
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
             {
                 goto start;
             }
@@ -202,14 +202,14 @@ start:
 
             uint8_t buffer[5];
 
-            bc_i2c_tranfer_t transfer;
+            bc_i2c_memory_transfer_t transfer;
 
             transfer.device_address = self->_i2c_address;
             transfer.memory_address = 0x01;
             transfer.buffer = buffer;
             transfer.length = 5;
 
-            if (!bc_i2c_read(self->_i2c_channel, &transfer))
+            if (!bc_i2c_memory_read(self->_i2c_channel, &transfer))
             {
                 goto start;
             }

@@ -138,7 +138,107 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
     }
 }
 
-bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
+bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
+{
+    if (channel == BC_I2C_I2C0)
+    {
+        if (!bc_i2c.i2c0_initialized)
+        {
+            return false;
+        }
+
+        // Enable PLL and disable sleep
+        bc_module_core_pll_enable();
+
+        if (HAL_I2C_Master_Transmit(&bc_i2c.handle_i2c0, transfer->device_address << 1, transfer->buffer, transfer->length, 0xFFFFFFFF) != HAL_OK)
+        {
+            // Disable PLL and enable sleep
+            bc_module_core_pll_disable();
+
+            return false;
+        }
+
+        // Disable PLL and enable sleep
+        bc_module_core_pll_disable();
+
+        return true;
+    }
+    else
+    {
+        if (!bc_i2c.i2c1_initialized)
+        {
+            return false;
+        }
+
+        // Enable PLL and disable sleep
+        bc_module_core_pll_enable();
+
+        if (HAL_I2C_Master_Transmit(&bc_i2c.handle_i2c1, transfer->device_address << 1, transfer->buffer, transfer->length, 0xFFFFFFFF) != HAL_OK)
+        {
+            // Disable PLL and enable sleep
+            bc_module_core_pll_disable();
+
+            return false;
+        }
+
+        // Disable PLL and enable sleep
+        bc_module_core_pll_disable();
+
+        return true;
+    }
+}
+
+bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
+{
+    if (channel == BC_I2C_I2C0)
+    {
+        if (!bc_i2c.i2c0_initialized)
+        {
+            return false;
+        }
+
+        // Enable PLL and disable sleep
+        bc_module_core_pll_enable();
+
+        if (HAL_I2C_Master_Receive(&bc_i2c.handle_i2c0, transfer->device_address << 1, transfer->buffer, transfer->length, 0xFFFFFFFF) != HAL_OK)
+        {
+            // Disable PLL and enable sleep
+            bc_module_core_pll_disable();
+
+            return false;
+        }
+
+        // Disable PLL and enable sleep
+        bc_module_core_pll_disable();
+
+        return true;
+    }
+    else
+    {
+        if (!bc_i2c.i2c1_initialized)
+        {
+            return false;
+        }
+
+        // Enable PLL and disable sleep
+        bc_module_core_pll_enable();
+
+        if (HAL_I2C_Master_Receive(&bc_i2c.handle_i2c1, transfer->device_address << 1, transfer->buffer, transfer->length, 0xFFFFFFFF) != HAL_OK)
+        {
+            // Disable PLL and enable sleep
+            bc_module_core_pll_disable();
+
+            return false;
+        }
+
+        // Disable PLL and enable sleep
+        bc_module_core_pll_disable();
+
+        return true;
+    }
+}
+
+bool bc_i2c_memory_write(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t *transfer)
 {
     if (channel == BC_I2C_I2C0)
     {
@@ -188,7 +288,7 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
     }
 }
 
-bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
+bool bc_i2c_memory_read(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t *transfer)
 {
     if (channel == BC_I2C_I2C0)
     {
@@ -238,59 +338,59 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
     }
 }
 
-bool bc_i2c_write_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t data)
+bool bc_i2c_memory_write_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t data)
 {
-    bc_i2c_tranfer_t transfer;
+    bc_i2c_memory_transfer_t transfer;
 
     transfer.device_address = device_address;
     transfer.memory_address = memory_address;
     transfer.buffer = &data;
     transfer.length = 1;
 
-    return bc_i2c_write(channel, &transfer);
+    return bc_i2c_memory_write(channel, &transfer);
 }
 
-bool bc_i2c_write_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint16_t data)
+bool bc_i2c_memory_write_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint16_t data)
 {
     uint8_t buffer[2];
 
     buffer[0] = data >> 8;
     buffer[1] = data;
 
-    bc_i2c_tranfer_t transfer;
+    bc_i2c_memory_transfer_t transfer;
 
     transfer.device_address = device_address;
     transfer.memory_address = memory_address;
     transfer.buffer = buffer;
     transfer.length = 2;
 
-    return bc_i2c_write(channel, &transfer);
+    return bc_i2c_memory_write(channel, &transfer);
 }
 
-bool bc_i2c_read_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t *data)
+bool bc_i2c_memory_read_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t *data)
 {
-    bc_i2c_tranfer_t transfer;
+    bc_i2c_memory_transfer_t transfer;
 
     transfer.device_address = device_address;
     transfer.memory_address = memory_address;
     transfer.buffer = data;
     transfer.length = 1;
 
-    return bc_i2c_read(channel, &transfer);
+    return bc_i2c_memory_read(channel, &transfer);
 }
 
-bool bc_i2c_read_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint16_t *data)
+bool bc_i2c_memory_read_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint16_t *data)
 {
     uint8_t buffer[2];
 
-    bc_i2c_tranfer_t transfer;
+    bc_i2c_memory_transfer_t transfer;
 
     transfer.device_address = device_address;
     transfer.memory_address = memory_address;
     transfer.buffer = buffer;
     transfer.length = 2;
 
-    if (!bc_i2c_read(channel, &transfer))
+    if (!bc_i2c_memory_read(channel, &transfer))
     {
         return false;
     }

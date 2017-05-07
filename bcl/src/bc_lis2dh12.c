@@ -3,8 +3,8 @@
 #include <bc_exti.h>
 #include <stm32l0xx.h>
 
-#define BC_LIS2DH12_DELAY_RUN 10
-#define BC_LIS2DH12_DELAY_READ 10
+#define _BC_LIS2DH12_DELAY_RUN 10
+#define _BC_LIS2DH12_DELAY_READ 10
 
 static void _bc_lis2dh12_task(void *param);
 static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self);
@@ -28,7 +28,7 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     // Set input mode
     GPIOB->MODER &= ~GPIO_MODER_MODE6_Msk;
 
-    self->_task_id = bc_scheduler_register(_bc_lis2dh12_task, self, BC_LIS2DH12_DELAY_RUN);
+    self->_task_id = bc_scheduler_register(_bc_lis2dh12_task, self, _BC_LIS2DH12_DELAY_RUN);
 
     return true;
 }
@@ -113,7 +113,7 @@ static void _bc_lis2dh12_task(void *param)
 
                 // Read and check WHO_AM_I register
                 uint8_t who_am_i;
-                if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x0f, &who_am_i))
+                if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x0f, &who_am_i))
                 {
                     continue;
                 }
@@ -145,7 +145,7 @@ static void _bc_lis2dh12_task(void *param)
 
                 self->_state = BC_LIS2DH12_STATE_READ;
 
-                bc_scheduler_plan_current_relative(BC_LIS2DH12_DELAY_READ);
+                bc_scheduler_plan_current_relative(_BC_LIS2DH12_DELAY_READ);
 
                 return;
             }
@@ -185,7 +185,7 @@ static void _bc_lis2dh12_task(void *param)
                 // When the interrupt alarm is active
                 if(self->_alarm_active)
                 {
-                    if(!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x31, &int1_src))
+                    if(!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x31, &int1_src))
                     {
                         continue;
                     }
@@ -219,7 +219,7 @@ static void _bc_lis2dh12_task(void *param)
 
 static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self)
 {
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x20, 0x07))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x20, 0x07))
     {
         return false;
     }
@@ -229,13 +229,13 @@ static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self)
 
 static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self)
 {
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x23, 0x98))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x23, 0x98))
     {
         return false;
     }
 
     // ODR = 0x5 => 100Hz
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x20, 0x57))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x20, 0x57))
     {
         return false;
     }
@@ -245,15 +245,16 @@ static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self)
 
 static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self)
 {
-     bc_i2c_tranfer_t transfer;
      uint8_t buffer[6];
 
+     bc_i2c_memory_transfer_t transfer;
+
      transfer.device_address = self->_i2c_address;
-     transfer.memory_address = 0x28 | (1 << 7);     // Highest bit set enables address auto-increment
+     transfer.memory_address = 0xA8;
      transfer.buffer = buffer;
      transfer.length = 6;
 
-     bool return_value = bc_i2c_read(self->_i2c_channel, &transfer);
+     bool return_value = bc_i2c_memory_read(self->_i2c_channel, &transfer);
 
      // Copy bytes to their destination
      self->_out_x_l = buffer[0];
@@ -274,7 +275,7 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
         self->_alarm_active = true;
 
         // Disable IRQ first to change the registers
-        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x30, 0x00))
+        if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x30, 0x00))
         {
             return false;
         }
@@ -282,34 +283,34 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
         // Recalculate threshold to the 4g full-scale setting
         uint8_t int1_ths = (uint8_t)((alarm->threshold) / 0.031f);
 
-        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x32, int1_ths))
+        if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x32, int1_ths))
         {
             return false;
         }
 
         uint8_t int1_duration = (uint8_t)(alarm->duration / 1); // /10
-        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x33, int1_duration))
+        if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x33, int1_duration))
         {
             return false;
         }
 
         // CTRL_REG3
         uint8_t ctrl_reg3 = (1 << 6);
-        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x22, ctrl_reg3))
+        if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x22, ctrl_reg3))
         {
             return false;
         }
 
         // CTRL_REG6 - invert interrupt
         uint8_t ctrl_reg6 = (1 << 1);
-        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x25, ctrl_reg6))
+        if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x25, ctrl_reg6))
         {
             return false;
         }
 
         // ctr_reg5
         uint8_t ctrl_reg5 = (0 << 3); // latch interrupt request
-        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x24, ctrl_reg5))
+        if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x24, ctrl_reg5))
         {
             return false;
         }
@@ -328,7 +329,7 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
         int_cfg1 |= (alarm->x_high) ? (1 << 1) : 0;
         int_cfg1 |= (alarm->x_low) ? (1 << 0) : 0;
 
-        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x30, int_cfg1))
+        if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x30, int_cfg1))
         {
             return false;
         }
@@ -340,7 +341,7 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
         // Disable alarm
         self->_alarm_active = false;
 
-        if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x30, 0x00))
+        if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x30, 0x00))
         {
             return false;
         }
@@ -360,5 +361,4 @@ static void _bc_lis2dh12_interrupt(bc_exti_line_t line, void *param)
     self->_irq_flag = true;
 
     bc_scheduler_plan_now(self->_task_id);
-
 }
