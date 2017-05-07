@@ -127,7 +127,94 @@ void bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
     }
 }
 
-bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
+bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
+{
+
+    I2C_TypeDef *i2c;
+
+    if (channel == BC_I2C_I2C0)
+    {
+        if (!_bc_i2c.i2c0_initialized)
+        {
+            return false;
+        }
+
+        i2c = I2C2;
+    }
+    else
+    {
+        if (!_bc_i2c.i2c1_initialized)
+        {
+            return false;
+        }
+
+        i2c = I2C1;
+    }
+
+    bool status = false;
+
+    bc_module_core_pll_enable();
+
+    // Wait until bus is not busy
+    if (_bc_i2c_watch_flag(i2c, I2C_ISR_BUSY, SET))
+    {
+        _bc_i2c_config(i2c, transfer->device_address << 1, transfer->length, I2C_CR2_AUTOEND, _BC_I2C_GENERATE_START_WRITE);
+
+        // Wait until TXIS flag is set
+        if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
+        {
+            bc_module_core_pll_disable();
+
+            return false;
+        }
+
+        status = _bc_i2c_write(i2c, transfer->buffer, transfer->length);
+    }
+
+    bc_module_core_pll_disable();
+
+    return status;
+}
+
+bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
+{
+    I2C_TypeDef *i2c;
+
+    if (channel == BC_I2C_I2C0)
+    {
+        if (!_bc_i2c.i2c0_initialized)
+        {
+            return false;
+        }
+
+        i2c = I2C2;
+    }
+    else
+    {
+        if (!_bc_i2c.i2c1_initialized)
+        {
+            return false;
+        }
+
+        i2c = I2C1;
+    }
+
+    bool status = false;
+
+    bc_module_core_pll_enable();
+
+    // Wait until bus is not busy
+    if (_bc_i2c_watch_flag(i2c, I2C_ISR_BUSY, SET))
+    {
+        status = _bc_i2c_read(i2c, transfer->device_address << 1, transfer->buffer, transfer->length);
+    }
+
+    bc_module_core_pll_disable();
+
+    return status;
+}
+
+bool bc_i2c_memory_write(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t *transfer)
 {
     uint16_t transfer_memory_address_length;
 
@@ -183,55 +270,7 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
     }
 }
 
-bool bc_i2c_write_raw(bc_i2c_channel_t channel, uint8_t device_address, const void *buffer, size_t length)
-{
-    I2C_TypeDef *i2c;
-
-    if (channel == BC_I2C_I2C0)
-    {
-        if (!_bc_i2c.i2c0_initialized)
-        {
-            return false;
-        }
-
-        i2c = I2C2;
-    }
-    else
-    {
-        if (!_bc_i2c.i2c1_initialized)
-        {
-            return false;
-        }
-
-        i2c = I2C1;
-    }
-
-    bool status = false;
-
-    bc_module_core_pll_enable();
-
-    // Wait until bus is not busy
-    if (_bc_i2c_watch_flag(i2c, I2C_ISR_BUSY, SET))
-    {
-        _bc_i2c_config(i2c, device_address << 1, length, I2C_CR2_AUTOEND, _BC_I2C_GENERATE_START_WRITE);
-
-        // Wait until TXIS flag is set
-        if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
-        {
-            bc_module_core_pll_disable();
-
-            return false;
-        }
-
-        status = _bc_i2c_write(i2c, buffer, length);
-    }
-
-    bc_module_core_pll_disable();
-
-    return status;
-}
-
-bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
+bool bc_i2c_memory_read(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t *transfer)
 {
     uint16_t transfer_memory_address_length;
 
@@ -287,97 +326,59 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_tranfer_t *transfer)
     }
 }
 
-bool bc_i2c_read_raw(bc_i2c_channel_t channel, uint8_t device_address, const void *buffer, size_t length)
+bool bc_i2c_memory_write_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t data)
 {
-    I2C_TypeDef *i2c;
-
-    if (channel == BC_I2C_I2C0)
-    {
-        if (!_bc_i2c.i2c0_initialized)
-        {
-            return false;
-        }
-
-        i2c = I2C2;
-    }
-    else
-    {
-        if (!_bc_i2c.i2c1_initialized)
-        {
-            return false;
-        }
-
-        i2c = I2C1;
-    }
-
-    bool status = false;
-
-    bc_module_core_pll_enable();
-
-    // Wait until bus is not busy
-    if (_bc_i2c_watch_flag(i2c, I2C_ISR_BUSY, SET))
-    {
-        status = _bc_i2c_read(i2c, device_address << 1, buffer, length);
-    }
-
-    bc_module_core_pll_disable();
-
-    return status;
-}
-
-bool bc_i2c_write_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t data)
-{
-    bc_i2c_tranfer_t transfer;
+    bc_i2c_memory_transfer_t transfer;
 
     transfer.device_address = device_address;
     transfer.memory_address = memory_address;
     transfer.buffer = &data;
     transfer.length = 1;
 
-    return bc_i2c_write(channel, &transfer);
+    return bc_i2c_memory_write(channel, &transfer);
 }
 
-bool bc_i2c_write_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint16_t data)
+bool bc_i2c_memory_write_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint16_t data)
 {
     uint8_t buffer[2];
 
     buffer[0] = data >> 8;
     buffer[1] = data;
 
-    bc_i2c_tranfer_t transfer;
+    bc_i2c_memory_transfer_t transfer;
 
     transfer.device_address = device_address;
     transfer.memory_address = memory_address;
     transfer.buffer = buffer;
     transfer.length = 2;
 
-    return bc_i2c_write(channel, &transfer);
+    return bc_i2c_memory_write(channel, &transfer);
 }
 
-bool bc_i2c_read_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t *data)
+bool bc_i2c_memory_read_8b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint8_t *data)
 {
-    bc_i2c_tranfer_t transfer;
+    bc_i2c_memory_transfer_t transfer;
 
     transfer.device_address = device_address;
     transfer.memory_address = memory_address;
     transfer.buffer = data;
     transfer.length = 1;
 
-    return bc_i2c_read(channel, &transfer);
+    return bc_i2c_memory_read(channel, &transfer);
 }
 
-bool bc_i2c_read_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint16_t *data)
+bool bc_i2c_memory_read_16b(bc_i2c_channel_t channel, uint8_t device_address, uint32_t memory_address, uint16_t *data)
 {
     uint8_t buffer[2];
 
-    bc_i2c_tranfer_t transfer;
+    bc_i2c_memory_transfer_t transfer;
 
     transfer.device_address = device_address;
     transfer.memory_address = memory_address;
     transfer.buffer = buffer;
     transfer.length = 2;
 
-    if (!bc_i2c_read(channel, &transfer))
+    if (!bc_i2c_memory_read(channel, &transfer))
     {
         return false;
     }

@@ -61,14 +61,14 @@ void bc_hts221_init(bc_hts221_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c
 
     _bc_hts221_load_calibration(self);
 
-    self->_task_id = bc_scheduler_register(_bc_hts221_task, self, bc_tick_get() + BC_HTS221_DELAY_RUN);
+    self->_task_id = bc_scheduler_register(_bc_hts221_task, self, BC_HTS221_DELAY_RUN);
 }
 
 bool bc_hts221_echo(bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
     uint8_t result;
 
-    bc_i2c_read_8b(i2c_channel, i2c_address, HTS221_WHO_AM_I, &result);
+    bc_i2c_memory_read_8b(i2c_channel, i2c_address, HTS221_WHO_AM_I, &result);
     if(result == HTS221_WHO_AM_I_RESULT)
     {
         return true;
@@ -88,7 +88,7 @@ bool _bc_hts221_load_calibration(bc_hts221_t *self)
 
     for (i = 0; i < 16; i++)
     {
-        if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CALIB_OFFSET + i, &calibration[i]))
+        if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CALIB_OFFSET + i, &calibration[i]))
         {
             return false;
         }
@@ -180,14 +180,14 @@ start:
 
             self->_state = BC_HTS221_STATE_ERROR;
 
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, &ctrl_reg1))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, &ctrl_reg1))
             {
                 goto start;
             }
 
             ctrl_reg1 &= ~HTS221_BIT_PD;
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, ctrl_reg1))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, ctrl_reg1))
             {
                 goto start;
             }
@@ -203,24 +203,24 @@ start:
             uint8_t ctrl_reg1;
             self->_state = BC_HTS221_STATE_ERROR;
 
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, &ctrl_reg1))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, &ctrl_reg1))
             {
                 goto start;
             }
 
             ctrl_reg1 |= HTS221_BIT_PD;
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, ctrl_reg1))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, ctrl_reg1))
             {
                 goto start;
             }
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, HTS221_BIT_PD | HTS221_BIT_BDU))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, HTS221_BIT_PD | HTS221_BIT_BDU))
             {
                 goto start;
             }
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG2, HTS221_BIT_ONE_SHOT))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG2, HTS221_BIT_ONE_SHOT))
             {
                 goto start;
             }
@@ -239,7 +239,7 @@ start:
             uint8_t retval[2];
             uint8_t ctrl_reg1;
 
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_STATUS_REG, &reg_status))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_STATUS_REG, &reg_status))
             {
                 goto start;
             }
@@ -249,12 +249,12 @@ start:
                 goto start;
             }
 
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_HUMIDITY_OUT_H, &retval[1]))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_HUMIDITY_OUT_H, &retval[1]))
             {
                 goto start;
             }
 
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_HUMIDITY_OUT_L, &retval[0]))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_HUMIDITY_OUT_L, &retval[0]))
             {
                 goto start;
             }
@@ -262,14 +262,14 @@ start:
             self->_reg_humidity = ((uint16_t)retval[1] << 8) | retval[0];
 
             /* Power-down */
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, &ctrl_reg1))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, &ctrl_reg1))
             {
                 goto start;
             }
 
             ctrl_reg1 &= ~HTS221_BIT_PD;
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, ctrl_reg1))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, ctrl_reg1))
             {
                 goto start;
             }

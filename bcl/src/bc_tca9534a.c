@@ -16,7 +16,7 @@ bool bc_tca9534a_init(bc_tca9534a_t *self, bc_i2c_channel_t i2c_channel, uint8_t
 
     uint8_t direction;
 
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_CONFIGURATION, &direction))
+    if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_CONFIGURATION, &direction))
     {
         return false;
     }
@@ -26,7 +26,7 @@ bool bc_tca9534a_init(bc_tca9534a_t *self, bc_i2c_channel_t i2c_channel, uint8_t
 
 bool bc_tca9534a_read_port(bc_tca9534a_t *self, uint8_t *value)
 {
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_INPUT_PORT, value))
+    if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_INPUT_PORT, value))
     {
         return false;
     }
@@ -36,7 +36,7 @@ bool bc_tca9534a_read_port(bc_tca9534a_t *self, uint8_t *value)
 
 bool bc_tca9534a_write_port(bc_tca9534a_t *self, uint8_t value)
 {
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_OUTPUT_PORT, value))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_OUTPUT_PORT, value))
     {
         return false;
     }
@@ -91,7 +91,7 @@ bool bc_tca9534a_write_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca953
 
 bool bc_tca9534a_get_port_direction(bc_tca9534a_t *self, uint8_t *direction)
 {
-    if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_CONFIGURATION, direction))
+    if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_CONFIGURATION, direction))
     {
         return false;
     }
@@ -101,7 +101,7 @@ bool bc_tca9534a_get_port_direction(bc_tca9534a_t *self, uint8_t *direction)
 
 bool bc_tca9534a_set_port_direction(bc_tca9534a_t *self, uint8_t direction)
 {
-    if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_CONFIGURATION, direction))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_CONFIGURATION, direction))
     {
         return false;
     }

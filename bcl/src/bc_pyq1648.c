@@ -118,6 +118,7 @@ static void _bc_pyq1648_clear_event(bc_pyq1648_t *self)
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
 }
 
+// TODO Consider using "OneWire"
 static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
 {
     // Disable interrupts
