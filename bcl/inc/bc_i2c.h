@@ -73,6 +73,12 @@ typedef struct
 
 void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed);
 
+//! @brief Set speed I2C channel
+//! @param[in] channel I2C channel
+//! @param[in] speed I2C communication speed
+
+void bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed);
+
 //! @brief Write to I2C channel
 //! @param[in] channel I2C channel
 //! @param[in] transfer Pointer to I2C transfer parameters instance
