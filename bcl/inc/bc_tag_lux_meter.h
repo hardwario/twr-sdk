@@ -49,21 +49,21 @@ void bc_tag_lux_meter_set_event_handler(bc_tag_lux_meter_t *self, void (*event_h
 
 void bc_tag_lux_meter_set_update_interval(bc_tag_lux_meter_t *self, bc_tick_t interval);
 
-//! @brief Get measured luminosity as raw value
+//! @brief Get measured illuminance as raw value
 //! @param[in] self Instance
 //! @param[in] raw Pointer to variable where result will be stored
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_tag_lux_meter_get_luminosity_raw(bc_tag_lux_meter_t *self, uint16_t *raw);
+bool bc_tag_lux_meter_get_illuminance_raw(bc_tag_lux_meter_t *self, uint16_t *raw);
 
-//! @brief Get measured luminosity in lux
+//! @brief Get measured illuminance in lux
 //! @param[in] self Instance
 //! @param[in] lux Pointer to variable where result will be stored
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_tag_lux_meter_get_luminosity_lux(bc_tag_lux_meter_t *self, float *lux);
+bool bc_tag_lux_meter_get_illuminance_lux(bc_tag_lux_meter_t *self, float *lux);
 
 //! @}
 

@@ -3,6 +3,7 @@
 
 #include <bc_i2c.h>
 #include <bc_tick.h>
+#include <bc_scheduler.h>
 
 //! @addtogroup bc_opt3001 bc_opt3001
 //! @brief Driver for OPT3001 ambient light sensor
@@ -40,11 +41,14 @@ struct bc_opt3001_t
 {
     bc_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
+    bc_scheduler_task_id_t _task_id_interval;
+    bc_scheduler_task_id_t _task_id_measure;
     void (*_event_handler)(bc_opt3001_t *, bc_opt3001_event_t, void *);
     void *_event_param;
+    bool _measurement_active;
     bc_tick_t _update_interval;
     bc_opt3001_state_t _state;
-    bool _luminosity_valid;
+    bool _illuminance_valid;
     uint16_t _reg_result;
 };
 
@@ -70,21 +74,28 @@ void bc_opt3001_set_event_handler(bc_opt3001_t *self, void (*event_handler)(bc_o
 
 void bc_opt3001_set_update_interval(bc_opt3001_t *self, bc_tick_t interval);
 
-//! @brief Get measured luminosity as raw value
+//! @brief Start measurement manually
+//! @param[in] self Instance
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_opt3001_measure(bc_opt3001_t *self);
+
+//! @brief Get measured illuminance as raw value
 //! @param[in] self Instance
 //! @param[in] raw Pointer to variable where result will be stored
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_opt3001_get_luminosity_raw(bc_opt3001_t *self, uint16_t *raw);
+bool bc_opt3001_get_illuminance_raw(bc_opt3001_t *self, uint16_t *raw);
 
-//! @brief Get measured luminosity in lux
+//! @brief Get measured illuminance in lux
 //! @param[in] self Instance
 //! @param[in] lux Pointer to variable where result will be stored
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_opt3001_get_luminosity_lux(bc_opt3001_t *self, float *lux);
+bool bc_opt3001_get_illuminance_lux(bc_opt3001_t *self, float *lux);
 
 //! @}
 

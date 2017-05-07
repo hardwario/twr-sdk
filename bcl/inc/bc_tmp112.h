@@ -13,8 +13,11 @@
 
 typedef enum
 {
-    BC_TMP112_EVENT_ERROR = 0, //!< Error event
-    BC_TMP112_EVENT_UPDATE = 1 //!< Update event
+    //! @brief Error event
+    BC_TMP112_EVENT_ERROR = 0,
+
+    //! @brief Update event
+    BC_TMP112_EVENT_UPDATE = 1
 
 } bc_tmp112_event_t;
 
@@ -73,7 +76,7 @@ void bc_tmp112_set_update_interval(bc_tmp112_t *self, bc_tick_t interval);
 //! @brief Start measurement manually
 //! @param[in] self Instance
 //! @return true On success
-//! @return False When other measurement is in progress
+//! @return false When other measurement is in progress
 
 bool bc_tmp112_measure(bc_tmp112_t *self);
 
