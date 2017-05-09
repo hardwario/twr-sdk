@@ -4,8 +4,7 @@
 #include <bc_module_core.h>
 #include <stm32l083xx.h>
 
-// TODO Ok?
-#define BC_ADC_CHANNEL_NONE (BC_ADC_CHANNEL_A5 + 1)
+#define _BC_ADC_CHANNEL_NONE (BC_ADC_CHANNEL_A5 + 1)
 
 typedef struct
 {
@@ -14,11 +13,11 @@ typedef struct
     void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *);
     void *event_param;
     uint32_t chselr;
-} _bc_adc_config_t;
+} bc_adc_config_t;
 
-static bc_adc_channel_t _bc_adc_in_progress = BC_ADC_CHANNEL_NONE;
 static bool _bc_adc_initialized;
-static _bc_adc_config_t _bc_adc_config_table[6] =
+static bc_adc_channel_t _bc_adc_in_progress = _BC_ADC_CHANNEL_NONE;
+static bc_adc_config_t _bc_adc_config_table[6] =
 {
     [0].chselr = ADC_CHSELR_CHSEL0,
     [1].chselr = ADC_CHSELR_CHSEL1,
@@ -28,7 +27,7 @@ static _bc_adc_config_t _bc_adc_config_table[6] =
     [5].chselr = ADC_CHSELR_CHSEL5
 };
 
-void _bc_adc_task();
+static void _bc_adc_task();
 bc_scheduler_task_id_t _bc_adc_task_id;
 
 void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_format_t format)
@@ -40,7 +39,8 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_
         // Enable ADC clock
         RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
 
-        // TODO Errata
+        // Errata workaround
+        RCC->APB2ENR;
 
         // Disable ADC peripheral
         ADC1->CR &= ~ADC_CR_ADEN;
@@ -53,8 +53,6 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_
 
         // Sampling time selection (12.5 cycles)
         ADC1->SMPR |= ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0;
-
-        // TODO ... enable conversion time (sample count + sampling time) corections
 
         // Perform ADC calibration
         ADC1->CR |= ADC_CR_ADCAL;
@@ -100,7 +98,7 @@ bc_adc_format_t bc_adc_get_format(bc_adc_channel_t channel)
 bool bc_adc_measure(bc_adc_channel_t channel, void *result)
 {
     // If ongoing conversion ...
-    if (_bc_adc_in_progress != BC_ADC_CHANNEL_NONE)
+    if (_bc_adc_in_progress != _BC_ADC_CHANNEL_NONE)
     {
         return false;
     }
@@ -133,7 +131,7 @@ bool bc_adc_async_set_event_handler(bc_adc_channel_t channel, void (*event_handl
         return false;
     }
 
-    _bc_adc_config_t *adc = &_bc_adc_config_table[channel];
+    bc_adc_config_t *adc = &_bc_adc_config_table[channel];
 
     adc->event_handler = event_handler;
     adc->event_param = event_param;
@@ -144,7 +142,7 @@ bool bc_adc_async_set_event_handler(bc_adc_channel_t channel, void (*event_handl
 bool bc_adc_async_measure(bc_adc_channel_t channel)
 {
     // If ongoing conversion ...
-    if (_bc_adc_in_progress != BC_ADC_CHANNEL_NONE)
+    if (_bc_adc_in_progress != _BC_ADC_CHANNEL_NONE)
     {
         return false;
     }
@@ -170,12 +168,9 @@ bool bc_adc_async_measure(bc_adc_channel_t channel)
 
 void bc_adc_get_result(bc_adc_channel_t channel, void *result)
 {
-    uint32_t data;
-
-    data = ADC1->DR;
+    uint32_t data = ADC1->DR;
 
     // TODO ... take care of reference ...
-    // TODO Maybe add voltage (auto-calibration)
 
     switch (_bc_adc_config_table[channel].format)
     {
@@ -191,12 +186,10 @@ void bc_adc_get_result(bc_adc_channel_t channel, void *result)
     case BC_ADC_FORMAT_32_BIT:
         *(uint32_t *) result = data << 16;
         break;
-        /*
-         case BC_ADC_FORMAT_FLOAT_BIT:
-         1. measure Vrefint
-         2. *(float *)result = (Vrefint(voltage) / Vrefint(code)) * data;
-         break;
-         */
+    case BC_ADC_FORMAT_FLOAT:
+        // TODO Currently only approximate
+        *(float *) result = (3.3 / 65536) * data;
+        break;
     default:
         return;
         break;
@@ -208,20 +201,25 @@ void ADC1_COMP_IRQHandler()
     // Plan ADC task
     bc_scheduler_plan_now(_bc_adc_task_id);
 
-    // Clear flags
-    ADC1->ISR |= (ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_EOSMP);
+    // Enable "End Of Sequence" interrupt
+    ADC1->IER = 0;
+
+    // Clear EOS, EOC, OVR and EOSMP flags
+    ADC1->ISR = ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_OVR | ADC_ISR_EOSMP;
 
     NVIC_DisableIRQ(ADC1_COMP_IRQn);
 }
 
-void _bc_adc_task()
+static void _bc_adc_task()
 {
-    _bc_adc_config_t *adc = &_bc_adc_config_table[_bc_adc_in_progress];
+    bc_adc_config_t *adc = &_bc_adc_config_table[_bc_adc_in_progress];
     bc_adc_channel_t pending;
 
-    // Release used channel for another possible conversion
+    // Update pending
     pending = _bc_adc_in_progress;
-    _bc_adc_in_progress = BC_ADC_CHANNEL_NONE;
+
+    // Release ADC for further conversion
+    _bc_adc_in_progress = _BC_ADC_CHANNEL_NONE;
 
     // Perform event call-back
     adc->event_handler(pending, BC_ADC_EVENT_DONE, adc->event_param);
