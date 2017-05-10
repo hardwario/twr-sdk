@@ -2,7 +2,6 @@
 #define _BC_OPT3001_H
 
 #include <bc_i2c.h>
-#include <bc_tick.h>
 #include <bc_scheduler.h>
 
 //! @addtogroup bc_opt3001 bc_opt3001
@@ -48,6 +47,7 @@ struct bc_opt3001_t
     bool _measurement_active;
     bc_tick_t _update_interval;
     bc_opt3001_state_t _state;
+    bc_tick_t _tick_ready;
     bool _illuminance_valid;
     uint16_t _reg_result;
 };

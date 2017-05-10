@@ -2,7 +2,6 @@
 #define _BC_TMP112_H
 
 #include <bc_i2c.h>
-#include <bc_tick.h>
 #include <bc_scheduler.h>
 
 //! @addtogroup bc_tmp112 bc_tmp112
@@ -30,9 +29,10 @@ typedef struct bc_tmp112_t bc_tmp112_t;
 typedef enum
 {
     BC_TMP112_STATE_ERROR = -1,
-    BC_TMP112_STATE_MEASURE = 0,
-    BC_TMP112_STATE_READ = 1,
-    BC_TMP112_STATE_UPDATE = 2
+    BC_TMP112_STATE_INITIALIZE = 0,
+    BC_TMP112_STATE_MEASURE = 1,
+    BC_TMP112_STATE_READ = 2,
+    BC_TMP112_STATE_UPDATE = 3
 
 } bc_tmp112_state_t;
 
@@ -47,6 +47,7 @@ struct bc_tmp112_t
     bool _measurement_active;
     bc_tick_t _update_interval;
     bc_tmp112_state_t _state;
+    bc_tick_t _tick_ready;
     bool _temperature_valid;
     uint16_t _reg_temperature;
 };

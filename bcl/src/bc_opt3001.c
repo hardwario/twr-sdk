@@ -16,7 +16,9 @@ void bc_opt3001_init(bc_opt3001_t *self, bc_i2c_channel_t i2c_channel, uint8_t i
     self->_i2c_address = i2c_address;
 
     self->_task_id_interval = bc_scheduler_register(_bc_opt3001_task_interval, self, BC_TICK_INFINITY);
-    self->_task_id_measure = bc_scheduler_register(_bc_opt3001_task_measure, self, BC_TICK_INFINITY);
+    self->_task_id_measure = bc_scheduler_register(_bc_opt3001_task_measure, self, _BC_OPT3001_DELAY_RUN);
+
+    self->_tick_ready = _BC_OPT3001_DELAY_RUN;
 
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 }
@@ -50,7 +52,7 @@ bool bc_opt3001_measure(bc_opt3001_t *self)
 
     self->_measurement_active = true;
 
-    bc_scheduler_plan_absolute(self->_task_id_measure, _BC_OPT3001_DELAY_RUN);
+    bc_scheduler_plan_absolute(self->_task_id_measure, self->_tick_ready);
 
     return true;
 }
@@ -102,14 +104,14 @@ start:
         {
             self->_illuminance_valid = false;
 
+            self->_measurement_active = false;
+
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_OPT3001_EVENT_ERROR, self->_event_param);
             }
 
             self->_state = BC_OPT3001_STATE_INITIALIZE;
-
-            self->_measurement_active = false;
 
             return;
         }
@@ -124,7 +126,12 @@ start:
 
             self->_state = BC_OPT3001_STATE_MEASURE;
 
-            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_OPT3001_DELAY_INITIALIZATION);
+            self->_tick_ready = bc_tick_get() + _BC_OPT3001_DELAY_INITIALIZATION;
+
+            if (self->_measurement_active)
+            {
+                bc_scheduler_plan_current_absolute(self->_tick_ready);
+            }
 
             return;
         }
@@ -172,14 +179,14 @@ start:
         }
         case BC_OPT3001_STATE_UPDATE:
         {
+            self->_measurement_active = false;
+
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_OPT3001_EVENT_UPDATE, self->_event_param);
             }
 
             self->_state = BC_OPT3001_STATE_MEASURE;
-
-            self->_measurement_active = false;
 
             return;
         }

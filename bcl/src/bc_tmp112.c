@@ -1,7 +1,8 @@
 #include <bc_tmp112.h>
 
 #define _BC_TMP112_DELAY_RUN 50
-#define _BC_TMP112_DELAY_READ 50
+#define _BC_TMP112_DELAY_INITIALIZATION 50
+#define _BC_TMP112_DELAY_MEASUREMENT 50
 
 static void _bc_tmp112_task_interval(void *param);
 
@@ -15,7 +16,9 @@ void bc_tmp112_init(bc_tmp112_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c
     self->_i2c_address = i2c_address;
 
     self->_task_id_interval = bc_scheduler_register(_bc_tmp112_task_interval, self, BC_TICK_INFINITY);
-    self->_task_id_measure = bc_scheduler_register(_bc_tmp112_task_measure, self, BC_TICK_INFINITY);
+    self->_task_id_measure = bc_scheduler_register(_bc_tmp112_task_measure, self, _BC_TMP112_DELAY_RUN);
+
+    self->_tick_ready = _BC_TMP112_DELAY_RUN;
 
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 }
@@ -49,7 +52,7 @@ bool bc_tmp112_measure(bc_tmp112_t *self)
 
     self->_measurement_active = true;
 
-    bc_scheduler_plan_absolute(self->_task_id_measure, _BC_TMP112_DELAY_RUN);
+    bc_scheduler_plan_absolute(self->_task_id_measure, self->_tick_ready);
 
     return true;
 }
@@ -134,14 +137,34 @@ start:
         {
             self->_temperature_valid = false;
 
+            self->_measurement_active = false;
+
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_TMP112_EVENT_ERROR, self->_event_param);
             }
 
+            self->_state = BC_TMP112_STATE_INITIALIZE;
+
+            return;
+        }
+        case BC_TMP112_STATE_INITIALIZE:
+        {
+            self->_state = BC_TMP112_STATE_ERROR;
+
+            if (!bc_i2c_memory_write_16b(self->_i2c_channel, self->_i2c_address, 0x01, 0x0180))
+            {
+                goto start;
+            }
+
             self->_state = BC_TMP112_STATE_MEASURE;
 
-            self->_measurement_active = false;
+            self->_tick_ready = bc_tick_get() + _BC_TMP112_DELAY_INITIALIZATION;
+
+            if (self->_measurement_active)
+            {
+                bc_scheduler_plan_current_absolute(self->_tick_ready);
+            }
 
             return;
         }
@@ -156,7 +179,7 @@ start:
 
             self->_state = BC_TMP112_STATE_READ;
 
-            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_TMP112_DELAY_READ);
+            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_TMP112_DELAY_MEASUREMENT);
 
             return;
         }
@@ -189,14 +212,14 @@ start:
         }
         case BC_TMP112_STATE_UPDATE:
         {
+            self->_measurement_active = false;
+
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_TMP112_EVENT_UPDATE, self->_event_param);
             }
 
             self->_state = BC_TMP112_STATE_MEASURE;
-
-            self->_measurement_active = false;
 
             return;
         }

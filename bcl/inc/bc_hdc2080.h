@@ -40,11 +40,14 @@ struct bc_hdc2080_t
 {
     bc_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
+    bc_scheduler_task_id_t _task_id_interval;
+    bc_scheduler_task_id_t _task_id_measure;
     void (*_event_handler)(bc_hdc2080_t *, bc_hdc2080_event_t, void *);
     void *_event_param;
-    bc_scheduler_task_id_t _task_id;
+    bool _measurement_active;
     bc_tick_t _update_interval;
     bc_hdc2080_state_t _state;
+    bc_tick_t _tick_ready;
     bool _humidity_valid;
     bool _temperature_valid;
     uint16_t _reg_humidity;
@@ -72,6 +75,13 @@ void bc_hdc2080_set_event_handler(bc_hdc2080_t *self, void (*event_handler)(bc_h
 //! @param[in] interval Measurement interval
 
 void bc_hdc2080_set_update_interval(bc_hdc2080_t *self, bc_tick_t interval);
+
+//! @brief Start measurement manually
+//! @param[in] self Instance
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_hdc2080_measure(bc_hdc2080_t *self);
 
 //! @brief Get measured humidity as raw value
 //! @param[in] self Instance

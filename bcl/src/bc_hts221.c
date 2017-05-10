@@ -28,26 +28,26 @@
 #define HTS221_CALIB_D 0x3D
 #define HTS221_CALIB_E 0x3E
 #define HTS221_CALIB_F 0x3F
-
-#define HTS221_BIT_PD       0x80
-#define HTS221_BIT_BDU      0x04
-
+#define HTS221_BIT_PD 0x80
+#define HTS221_BIT_BDU 0x04
 #define HTS221_BIT_ONE_SHOT 0x01
-#define HTS221_BIT_T_DA     0x01
-#define HTS221_BIT_H_DA     0x02
-
-#define HTS221_MASK_ODR     0x03
+#define HTS221_BIT_T_DA 0x01
+#define HTS221_BIT_H_DA 0x02
+#define HTS221_MASK_ODR 0x03
 #define HTS221_ODR_ONE_SHOT 0x00
-#define HTS221_ODR_1hz      0x01
-#define HTS221_ODR_7hz      0x02
-#define HTS221_ODR_12hz     0x03
+#define HTS221_ODR_1_HZ 0x01
+#define HTS221_ODR_7_HZ 0x02
+#define HTS221_ODR_12_HZ 0x03
 
 // TODO Clarify timing with ST
-#define BC_HTS221_DELAY_RUN 50
-#define BC_HTS221_DELAY_INITIALIZATION 50
-#define BC_HTS221_DELAY_MEASUREMENT 50
+#define _BC_HTS221_DELAY_RUN 50
+#define _BC_HTS221_DELAY_INITIALIZATION 50
+#define _BC_HTS221_DELAY_MEASUREMENT 50
 
-static void _bc_hts221_task(void *param);
+static void _bc_hts221_task_interval(void *param);
+
+static void _bc_hts221_task_measure(void *param);
+
 static bool _bc_hts221_load_calibration(bc_hts221_t *self);
 
 void bc_hts221_init(bc_hts221_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
@@ -57,70 +57,15 @@ void bc_hts221_init(bc_hts221_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
+    self->_task_id_interval = bc_scheduler_register(_bc_hts221_task_interval, self, BC_TICK_INFINITY);
+    self->_task_id_measure = bc_scheduler_register(_bc_hts221_task_measure, self, _BC_HTS221_DELAY_RUN);
+
+    self->_tick_ready = _BC_HTS221_DELAY_RUN;
+
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 
+    // TODO This delays initialization, should be part of state machine
     _bc_hts221_load_calibration(self);
-
-    self->_task_id = bc_scheduler_register(_bc_hts221_task, self, BC_HTS221_DELAY_RUN);
-}
-
-bool bc_hts221_echo(bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
-{
-    uint8_t result;
-
-    bc_i2c_memory_read_8b(i2c_channel, i2c_address, HTS221_WHO_AM_I, &result);
-    if(result == HTS221_WHO_AM_I_RESULT)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-bool _bc_hts221_load_calibration(bc_hts221_t *self)
-{
-    uint8_t i;
-    uint8_t calibration[16];
-    int16_t h1_rh;
-    int16_t h1_t0_out;
-
-    for (i = 0; i < 16; i++)
-    {
-        if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CALIB_OFFSET + i, &calibration[i]))
-        {
-            return false;
-        }
-    }
-
-    self->_h0_rh = (int16_t) calibration[0];
-    self->_h0_rh >>= 1;
-    h1_rh = (int16_t) calibration[1];
-    h1_rh >>= 1;
-
-    self->_h0_t0_out = (int16_t) calibration[6];
-    self->_h0_t0_out |= ((int16_t) calibration[7]) << 8;
-
-    h1_t0_out = (int16_t) calibration[10];
-    h1_t0_out |= ((int16_t) calibration[11]) << 8;
-
-    if ((h1_t0_out - self->_h0_t0_out) == 0)
-    {
-        return false;
-    }
-
-    self->h_grad = (float) (h1_rh - self->_h0_rh) / (float) (h1_t0_out - self->_h0_t0_out);
-
-    uint16_t t0_degC = (int16_t) calibration[2];
-    t0_degC |= (int16_t) (0x03 & calibration[5]) << 8;
-    t0_degC >>= 3; // /= 8.0
-
-    uint16_t t1_degC = (int16_t) calibration[3];
-    t1_degC |= (int16_t) (0x0C & calibration[5]) << 6;
-    t1_degC >>= 3;
-
-    return true;
 }
 
 void bc_hts221_set_event_handler(bc_hts221_t *self, void (*event_handler)(bc_hts221_t *, bc_hts221_event_t, void *), void *event_param)
@@ -132,6 +77,29 @@ void bc_hts221_set_event_handler(bc_hts221_t *self, void (*event_handler)(bc_hts
 void bc_hts221_set_update_interval(bc_hts221_t *self, bc_tick_t interval)
 {
     self->_update_interval = interval;
+
+    if (self->_update_interval == BC_TICK_INFINITY)
+    {
+        bc_scheduler_plan_absolute(self->_task_id_interval, BC_TICK_INFINITY);
+    }
+    else
+    {
+        bc_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
+    }
+}
+
+bool bc_hts221_measure(bc_hts221_t *self)
+{
+    if (self->_measurement_active)
+    {
+        return false;
+    }
+
+    self->_measurement_active = true;
+
+    bc_scheduler_plan_absolute(self->_task_id_measure, self->_tick_ready);
+
+    return true;
 }
 
 bool bc_hts221_get_humidity_percentage(bc_hts221_t *self, float *percentage)
@@ -141,7 +109,7 @@ bool bc_hts221_get_humidity_percentage(bc_hts221_t *self, float *percentage)
         return false;
     }
 
-    *percentage = self->_h0_rh + ((self->_reg_humidity - self->_h0_t0_out) * self->h_grad);
+    *percentage = self->_h0_rh + ((self->_reg_humidity - self->_h0_t0_out) * self->_h_grad);
 
     if (*percentage >= 100.f)
     {
@@ -151,7 +119,16 @@ bool bc_hts221_get_humidity_percentage(bc_hts221_t *self, float *percentage)
     return true;
 }
 
-static void _bc_hts221_task(void *param)
+static void _bc_hts221_task_interval(void *param)
+{
+    bc_hts221_t *self = param;
+
+    bc_hts221_measure(self);
+
+    bc_scheduler_plan_current_relative(self->_update_interval);
+}
+
+static void _bc_hts221_task_measure(void *param)
 {
     bc_hts221_t *self = param;
 
@@ -163,6 +140,8 @@ start:
         {
             self->_humidity_valid = false;
 
+            self->_measurement_active = false;
+
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_HTS221_EVENT_ERROR, self->_event_param);
@@ -170,15 +149,13 @@ start:
 
             self->_state = BC_HTS221_STATE_INITIALIZE;
 
-            bc_scheduler_plan_current_relative(self->_update_interval);
-
             return;
         }
         case BC_HTS221_STATE_INITIALIZE:
         {
-            uint8_t ctrl_reg1;
-
             self->_state = BC_HTS221_STATE_ERROR;
+
+            uint8_t ctrl_reg1;
 
             if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, &ctrl_reg1))
             {
@@ -194,14 +171,20 @@ start:
 
             self->_state = BC_HTS221_STATE_MEASURE;
 
-            bc_scheduler_plan_current_relative(BC_HTS221_DELAY_INITIALIZATION);
+            self->_tick_ready = bc_tick_get() + _BC_HTS221_DELAY_INITIALIZATION;
+
+            if (self->_measurement_active)
+            {
+                bc_scheduler_plan_current_absolute(self->_tick_ready);
+            }
 
             return;
         }
         case BC_HTS221_STATE_MEASURE:
         {
-            uint8_t ctrl_reg1;
             self->_state = BC_HTS221_STATE_ERROR;
+
+            uint8_t ctrl_reg1;
 
             if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, &ctrl_reg1))
             {
@@ -227,7 +210,7 @@ start:
 
             self->_state = BC_HTS221_STATE_READ;
 
-            bc_scheduler_plan_current_relative(BC_HTS221_DELAY_MEASUREMENT);
+            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_HTS221_DELAY_MEASUREMENT);
 
             return;
         }
@@ -259,9 +242,8 @@ start:
                 goto start;
             }
 
-            self->_reg_humidity = ((uint16_t)retval[1] << 8) | retval[0];
+            self->_reg_humidity = ((uint16_t) retval[1] << 8) | retval[0];
 
-            /* Power-down */
             if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, &ctrl_reg1))
             {
                 goto start;
@@ -282,14 +264,14 @@ start:
         }
         case BC_HTS221_STATE_UPDATE:
         {
+            self->_measurement_active = false;
+
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_HTS221_EVENT_UPDATE, self->_event_param);
             }
 
             self->_state = BC_HTS221_STATE_MEASURE;
-
-            bc_scheduler_plan_current_relative(self->_update_interval);
 
             return;
         }
@@ -300,4 +282,48 @@ start:
             goto start;
         }
     }
+}
+
+static bool _bc_hts221_load_calibration(bc_hts221_t *self)
+{
+    uint8_t i;
+    uint8_t calibration[16];
+    int16_t h1_rh;
+    int16_t h1_t0_out;
+
+    for (i = 0; i < 16; i++)
+    {
+        if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CALIB_OFFSET + i, &calibration[i]))
+        {
+            return false;
+        }
+    }
+
+    self->_h0_rh = (int16_t) calibration[0];
+    self->_h0_rh >>= 1;
+    h1_rh = (int16_t) calibration[1];
+    h1_rh >>= 1;
+
+    self->_h0_t0_out = (int16_t) calibration[6];
+    self->_h0_t0_out |= ((int16_t) calibration[7]) << 8;
+
+    h1_t0_out = (int16_t) calibration[10];
+    h1_t0_out |= ((int16_t) calibration[11]) << 8;
+
+    if ((h1_t0_out - self->_h0_t0_out) == 0)
+    {
+        return false;
+    }
+
+    self->_h_grad = (float) (h1_rh - self->_h0_rh) / (float) (h1_t0_out - self->_h0_t0_out);
+
+    uint16_t t0_degC = (int16_t) calibration[2];
+    t0_degC |= (int16_t) (0x03 & calibration[5]) << 8;
+    t0_degC >>= 3; // /= 8.0
+
+    uint16_t t1_degC = (int16_t) calibration[3];
+    t1_degC |= (int16_t) (0x0C & calibration[5]) << 6;
+    t1_degC >>= 3;
+
+    return true;
 }
