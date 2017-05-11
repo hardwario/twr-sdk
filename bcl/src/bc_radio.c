@@ -1,9 +1,10 @@
 #include <bc_radio.h>
 #include <bc_queue.h>
-#include <bc_device_id.h>
+#include <bc_atsha204.h>
 #include <bc_scheduler.h>
 #include <bc_spirit1.h>
 #include <bc_eeprom.h>
+#include <bc_i2c.h>
 
 #define _BC_RADIO_EEPROM_PEER_DEVICE_ADDRESS 0x00
 
@@ -30,7 +31,7 @@ typedef enum
 
 typedef struct
 {
-    uint32_t address;
+    uint64_t address;
     uint16_t message_id;
     bool message_id_synced;
 
@@ -38,8 +39,9 @@ typedef struct
 
 static struct
 {
+    bc_atsha204_t atsha204;
     bc_radio_state_t state;
-    uint32_t device_address;
+    uint64_t device_address;
     uint16_t message_id;
     int transmit_count;
     void (*event_handler)(bc_radio_event_t, void *);
@@ -55,7 +57,7 @@ static struct
 
     bc_radio_peer_device_t peer_devices[BC_RADIO_MAX_DEVICES];
 
-    uint32_t peer_device_address;
+    uint64_t peer_device_address;
 
     bool listening;
 
@@ -64,31 +66,34 @@ static struct
 static void _bc_radio_task(void *param);
 static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *event_param);
 static void _bc_radio_save_peer_devices(void);
+static void atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t event, void *event_param);
 
-__attribute__((weak)) void bc_radio_on_push_button(uint32_t *peer_device_address, uint16_t *event_count) { (void) peer_device_address; (void) event_count; }
-__attribute__((weak)) void bc_radio_on_thermometer(uint32_t *peer_device_address, uint8_t *i2c, float *temperature) { (void) peer_device_address; (void) i2c; (void) temperature; }
-__attribute__((weak)) void bc_radio_on_humidity(uint32_t *peer_device_address, uint8_t *i2c, float *percentage) { (void) peer_device_address; (void) i2c; (void) percentage; }
-__attribute__((weak)) void bc_radio_on_lux_meter(uint32_t *peer_device_address, uint8_t *i2c, float *illuminance) { (void) peer_device_address; (void) i2c; (void) illuminance; }
-__attribute__((weak)) void bc_radio_on_barometer(uint32_t *peer_device_address, uint8_t *i2c, float *pressure, float *altitude) { (void) peer_device_address; (void) i2c; (void) pressure; (void) altitude; }
-__attribute__((weak)) void bc_radio_on_co2(uint32_t *peer_device_address, float *concentration) { (void) peer_device_address; (void) concentration; }
-__attribute__((weak)) void bc_radio_on_buffer(uint32_t *peer_device_address, void *buffer, size_t *length) { (void) peer_device_address; (void) buffer; (void) length; }
+__attribute__((weak)) void bc_radio_on_push_button(uint64_t *peer_device_address, uint16_t *event_count) { (void) peer_device_address; (void) event_count; }
+__attribute__((weak)) void bc_radio_on_thermometer(uint64_t *peer_device_address, uint8_t *i2c, float *temperature) { (void) peer_device_address; (void) i2c; (void) temperature; }
+__attribute__((weak)) void bc_radio_on_humidity(uint64_t *peer_device_address, uint8_t *i2c, float *percentage) { (void) peer_device_address; (void) i2c; (void) percentage; }
+__attribute__((weak)) void bc_radio_on_lux_meter(uint64_t *peer_device_address, uint8_t *i2c, float *illuminance) { (void) peer_device_address; (void) i2c; (void) illuminance; }
+__attribute__((weak)) void bc_radio_on_barometer(uint64_t *peer_device_address, uint8_t *i2c, float *pressure, float *altitude) { (void) peer_device_address; (void) i2c; (void) pressure; (void) altitude; }
+__attribute__((weak)) void bc_radio_on_co2(uint64_t *peer_device_address, float *concentration) { (void) peer_device_address; (void) concentration; }
+__attribute__((weak)) void bc_radio_on_buffer(uint64_t *peer_device_address, void *buffer, size_t *length) { (void) peer_device_address; (void) buffer; (void) length; }
 
 void bc_radio_init(void)
 {
     memset(&_bc_radio, 0, sizeof(_bc_radio));
 
+    bc_atsha204_init(&_bc_radio.atsha204, BC_I2C_I2C0, 0x64);
+    bc_atsha204_set_event_handler(&_bc_radio.atsha204, atsha204_event_handler, NULL);
+    bc_atsha204_read_serial_number(&_bc_radio.atsha204);
+
     bc_queue_init(&_bc_radio.pub_queue, _bc_radio.pub_queue_buffer, sizeof(_bc_radio.pub_queue_buffer));
     bc_queue_init(&_bc_radio.rx_queue, _bc_radio.rx_queue_buffer, sizeof(_bc_radio.rx_queue_buffer));
-
-    bc_device_id_get(&_bc_radio.device_address, sizeof(_bc_radio.device_address));
 
     bc_spirit1_init();
     bc_spirit1_set_event_handler(_bc_radio_spirit1_event_handler, NULL);
 
-    uint32_t buffer[BC_RADIO_MAX_DEVICES + 1];
+    uint64_t buffer[BC_RADIO_MAX_DEVICES + 1];
     bc_eeprom_read(_BC_RADIO_EEPROM_PEER_DEVICE_ADDRESS, buffer, sizeof(buffer));
 
-    uint32_t checksum = buffer[BC_RADIO_MAX_DEVICES];
+    uint64_t checksum = buffer[BC_RADIO_MAX_DEVICES];
 
     for (int i = 0; i < BC_RADIO_MAX_DEVICES; i++)
     {
@@ -147,7 +152,12 @@ void bc_radio_enrollment_stop(void)
     _bc_radio.enrollment_mode = false;
 }
 
-uint32_t bc_radio_get_event_device_address(void)
+uint64_t bc_radio_get_device_address(void)
+{
+    return _bc_radio.device_address;
+}
+
+uint64_t bc_radio_get_event_device_address(void)
 {
     return _bc_radio.peer_device_address;
 }
@@ -267,9 +277,9 @@ bool bc_radio_pub_co2(float *concentration)
 
 bool bc_radio_pub_buffer(void *buffer, size_t length)
 {
-    uint8_t qbuffer[1 + BC_SPIRIT1_MAX_PACKET_SIZE - 6];
+    uint8_t qbuffer[1 + BC_SPIRIT1_MAX_PACKET_SIZE - 8];
 
-    if (length > (1 + BC_SPIRIT1_MAX_PACKET_SIZE - 6))
+    if (length > (1 + BC_SPIRIT1_MAX_PACKET_SIZE - 8))
     {
         return false;
     }
@@ -293,6 +303,13 @@ static void _bc_radio_task(void *param)
 {
     (void) param;
 
+    if (_bc_radio.device_address == 0)
+    {
+        bc_atsha204_read_serial_number(&_bc_radio.atsha204);
+        bc_scheduler_plan_current_now();
+        return;
+    }
+
     if (_bc_radio.state == BC_RADIO_STATE_TX)
     {
         if (_bc_radio.transmit_count != 0)
@@ -315,13 +332,15 @@ static void _bc_radio_task(void *param)
         buffer[1] = _bc_radio.device_address >> 8;
         buffer[2] = _bc_radio.device_address >> 16;
         buffer[3] = _bc_radio.device_address >> 24;
-        buffer[4] = _bc_radio.message_id;
-        buffer[5] = _bc_radio.message_id >> 8;
-        buffer[6] = BC_RADIO_HEADER_ENROLL;
+        buffer[4] = _bc_radio.device_address >> 32;
+        buffer[5] = _bc_radio.device_address >> 40;
+        buffer[6] = _bc_radio.message_id;
+        buffer[7] = _bc_radio.message_id >> 8;
+        buffer[8] = BC_RADIO_HEADER_ENROLL;
 
         _bc_radio.message_id++;
 
-        bc_spirit1_set_tx_length(7);
+        bc_spirit1_set_tx_length(9);
 
         bc_spirit1_tx();
 
@@ -332,70 +351,72 @@ static void _bc_radio_task(void *param)
 
     uint8_t queue_item_buffer[sizeof(_bc_radio.pub_queue_buffer)];
     size_t queue_item_length;
-    uint32_t device_address;
+    uint64_t device_address;
 
     while (bc_queue_get(&_bc_radio.rx_queue, queue_item_buffer, &queue_item_length))
     {
 
-        device_address  = (uint32_t) queue_item_buffer[0];
-        device_address |= (uint32_t) queue_item_buffer[1] << 8;
-        device_address |= (uint32_t) queue_item_buffer[2] << 16;
-        device_address |= (uint32_t) queue_item_buffer[3] << 24;
+        device_address  = (uint64_t) queue_item_buffer[0];
+        device_address |= (uint64_t) queue_item_buffer[1] << 8;
+        device_address |= (uint64_t) queue_item_buffer[2] << 16;
+        device_address |= (uint64_t) queue_item_buffer[3] << 24;
+        device_address |= (uint64_t) queue_item_buffer[4] << 32;
+        device_address |= (uint64_t) queue_item_buffer[5] << 40;
 
-        if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_PUSH_BUTTON)
+        if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_PUSH_BUTTON)
         {
             uint16_t event_count;
 
-            memcpy(&event_count, &queue_item_buffer[6 + 1], sizeof(event_count));
+            memcpy(&event_count, &queue_item_buffer[8 + 1], sizeof(event_count));
 
             bc_radio_on_push_button(&device_address, &event_count);
         }
-        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_THERMOMETER)
+        else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_THERMOMETER)
         {
             float temperature;
 
-            memcpy(&temperature, &queue_item_buffer[6 + 2], sizeof(temperature));
+            memcpy(&temperature, &queue_item_buffer[8 + 2], sizeof(temperature));
 
-            bc_radio_on_thermometer(&device_address, &queue_item_buffer[6 + 1], &temperature);
+            bc_radio_on_thermometer(&device_address, &queue_item_buffer[8 + 1], &temperature);
         }
-        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_HUMIDITY)
+        else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_HUMIDITY)
         {
             float percentage;
 
-            memcpy(&percentage, &queue_item_buffer[6 + 2], sizeof(percentage));
+            memcpy(&percentage, &queue_item_buffer[8 + 2], sizeof(percentage));
 
-            bc_radio_on_humidity(&device_address, &queue_item_buffer[6 + 1], &percentage);
+            bc_radio_on_humidity(&device_address, &queue_item_buffer[8 + 1], &percentage);
         }
-        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_LUX_METER)
+        else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_LUX_METER)
         {
             float lux;
 
-            memcpy(&lux, &queue_item_buffer[6 + 2], sizeof(lux));
+            memcpy(&lux, &queue_item_buffer[8 + 2], sizeof(lux));
 
-            bc_radio_on_lux_meter(&device_address, &queue_item_buffer[6 + 1], &lux);
+            bc_radio_on_lux_meter(&device_address, &queue_item_buffer[8 + 1], &lux);
         }
-        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_BAROMETER)
+        else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_BAROMETER)
         {
             float pascal;
             float meter;
 
-            memcpy(&pascal, &queue_item_buffer[6 + 2], sizeof(pascal));
-            memcpy(&meter, &queue_item_buffer[6 + 2 + sizeof(pascal)], sizeof(meter));
+            memcpy(&pascal, &queue_item_buffer[8 + 2], sizeof(pascal));
+            memcpy(&meter, &queue_item_buffer[8 + 2 + sizeof(pascal)], sizeof(meter));
 
-            bc_radio_on_barometer(&device_address, &queue_item_buffer[6 + 1], &pascal, &meter);
+            bc_radio_on_barometer(&device_address, &queue_item_buffer[8 + 1], &pascal, &meter);
         }
-        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_CO2)
+        else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_CO2)
         {
             float concentration;
 
-            memcpy(&concentration, &queue_item_buffer[6 + 1], sizeof(concentration));
+            memcpy(&concentration, &queue_item_buffer[8 + 1], sizeof(concentration));
 
             bc_radio_on_co2(&device_address, &concentration);
         }
-        else if (queue_item_buffer[6] == BC_RADIO_HEADER_PUB_BUFFER)
+        else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_BUFFER)
         {
-            queue_item_length -= 1;
-            bc_radio_on_buffer(&device_address, &queue_item_buffer[6 + 1], &queue_item_length);
+            queue_item_length -= 8 + 1;
+            bc_radio_on_buffer(&device_address, &queue_item_buffer[8 + 1], &queue_item_length);
         }
 
     }
@@ -408,14 +429,16 @@ static void _bc_radio_task(void *param)
         buffer[1] = _bc_radio.device_address >> 8;
         buffer[2] = _bc_radio.device_address >> 16;
         buffer[3] = _bc_radio.device_address >> 24;
-        buffer[4] = _bc_radio.message_id;
-        buffer[5] = _bc_radio.message_id >> 8;
+        buffer[4] = _bc_radio.device_address >> 32;
+        buffer[5] = _bc_radio.device_address >> 40;
+        buffer[6] = _bc_radio.message_id;
+        buffer[7] = _bc_radio.message_id >> 8;
 
         _bc_radio.message_id++;
 
-        memcpy(buffer + 6, queue_item_buffer, queue_item_length);
+        memcpy(buffer + 8, queue_item_buffer, queue_item_length);
 
-        bc_spirit1_set_tx_length(6 + queue_item_length);
+        bc_spirit1_set_tx_length(8 + queue_item_length);
 
         bc_spirit1_tx();
 
@@ -459,16 +482,18 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
     {
         size_t length = bc_spirit1_get_rx_length();
 
-        if (length >= 6)
+        if (length >= 9)
         {
             uint8_t *buffer = bc_spirit1_get_rx_buffer();
 
-            _bc_radio.peer_device_address = (uint32_t) buffer[0];
-            _bc_radio.peer_device_address |= (uint32_t) buffer[1] << 8;
-            _bc_radio.peer_device_address |= (uint32_t) buffer[2] << 16;
-            _bc_radio.peer_device_address |= (uint32_t) buffer[3] << 24;
+            _bc_radio.peer_device_address = (uint64_t) buffer[0];
+            _bc_radio.peer_device_address |= (uint64_t) buffer[1] << 8;
+            _bc_radio.peer_device_address |= (uint64_t) buffer[2] << 16;
+            _bc_radio.peer_device_address |= (uint64_t) buffer[3] << 24;
+            _bc_radio.peer_device_address |= (uint64_t) buffer[4] << 32;
+            _bc_radio.peer_device_address |= (uint64_t) buffer[5] << 40;
 
-            if (_bc_radio.enrollment_mode && length == 7 && buffer[6] == BC_RADIO_HEADER_ENROLL)
+            if (_bc_radio.enrollment_mode && length == 9 && buffer[8] == BC_RADIO_HEADER_ENROLL)
             {
                 int i;
                 int free_address_i = BC_RADIO_MAX_DEVICES;
@@ -522,8 +547,8 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                 {
                     uint16_t message_id;
 
-                    message_id = (uint16_t) buffer[4];
-                    message_id |= (uint16_t) buffer[5] << 8;
+                    message_id = (uint16_t) buffer[6];
+                    message_id |= (uint16_t) buffer[7] << 8;
 
                     if (_bc_radio.peer_devices[i].message_id != message_id || !_bc_radio.peer_devices[i].message_id_synced)
                     {
@@ -531,7 +556,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
                         _bc_radio.peer_devices[i].message_id_synced = true;
 
-                        if (length > 6)
+                        if (length > 9)
                         {
                             bc_queue_put(&_bc_radio.rx_queue, buffer, length);
 
@@ -546,7 +571,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
 static void _bc_radio_save_peer_devices(void)
 {
-    uint32_t buffer[BC_RADIO_MAX_DEVICES + 1];
+    uint64_t buffer[BC_RADIO_MAX_DEVICES + 1];
     buffer[BC_RADIO_MAX_DEVICES] = 0;
 
     for (int i = 0; i < BC_RADIO_MAX_DEVICES; i++)
@@ -556,6 +581,27 @@ static void _bc_radio_save_peer_devices(void)
     }
 
     bc_eeprom_write(_BC_RADIO_EEPROM_PEER_DEVICE_ADDRESS, buffer, sizeof(buffer));
+}
+
+static void atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t event, void *event_param)
+{
+    if (event == BC_ATSHA204_EVENT_SERIAL_NUMBER)
+    {
+        if (bc_atsha204_get_serial_number(self, &_bc_radio.device_address, sizeof(_bc_radio.device_address)))
+        {
+            if (_bc_radio.event_handler != NULL)
+            {
+                _bc_radio.event_handler(BC_RADIO_EVENT_INIT_DONE, _bc_radio.event_param);
+            }
+        }
+        else
+        {
+            if (_bc_radio.event_handler != NULL)
+            {
+                _bc_radio.event_handler(BC_RADIO_EVENT_INIT_FAILURE, _bc_radio.event_param);
+            }
+        }
+    }
 }
 
 

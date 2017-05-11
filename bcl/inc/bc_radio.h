@@ -7,9 +7,11 @@
 
 typedef enum
 {
-    BC_RADIO_EVENT_ATTACH = 0,
-    BC_RADIO_EVENT_ATTACH_FAILURE = 1,
-    BC_RADIO_EVENT_DETACH = 2,
+    BC_RADIO_EVENT_INIT_FAILURE = -1,
+    BC_RADIO_EVENT_INIT_DONE = 1,
+    BC_RADIO_EVENT_ATTACH = 1,
+    BC_RADIO_EVENT_ATTACH_FAILURE = 2,
+    BC_RADIO_EVENT_DETACH = 3,
 
 } bc_radio_event_t;
 
@@ -27,7 +29,9 @@ void bc_radio_enrollment_start(void);
 
 void bc_radio_enrollment_stop(void);
 
-uint32_t bc_radio_get_event_device_address(void);
+uint64_t bc_radio_get_device_address(void);
+
+uint64_t bc_radio_get_event_device_address(void);
 
 bool bc_radio_pub_push_button(uint16_t *event_count);
 
