@@ -2,10 +2,10 @@
 #define _BC_MPL3115A2_H
 
 #include <bc_i2c.h>
-#include <bc_tick.h>
+#include <bc_scheduler.h>
 
 //! @addtogroup bc_mpl3115a2 bc_mpl3115a2
-//! @brief Driver for MPL3115A2
+//! @brief Driver for MPL3115A2 pressure/altitude sensor
 //! @{
 
 //! @brief Callback events
@@ -42,10 +42,14 @@ struct bc_mpl3115a2_t
 {
     bc_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
+    bc_scheduler_task_id_t _task_id_interval;
+    bc_scheduler_task_id_t _task_id_measure;
     void (*_event_handler)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t, void *);
     void *_event_param;
+    bool _measurement_active;
     bc_tick_t _update_interval;
     bc_mpl3115a2_state_t _state;
+    bc_tick_t _tick_ready;
     bool _altitude_valid;
     bool _pressure_valid;
     uint8_t _reg_out_p_msb_altitude;
@@ -81,6 +85,13 @@ void bc_mpl3115a2_set_event_handler(bc_mpl3115a2_t *self, void (*event_handler)(
 //! @param[in] interval Measurement interval
 
 void bc_mpl3115a2_set_update_interval(bc_mpl3115a2_t *self, bc_tick_t interval);
+
+//! @brief Start measurement manually
+//! @param[in] self Instance
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_mpl3115a2_measure(bc_mpl3115a2_t *self);
 
 //! @brief Get measured altitude in meters
 //! @param[in] self Instance

@@ -95,12 +95,12 @@ bool bc_module_climate_get_temperature_kelvin(float *kelvin);
 
 bool bc_module_climate_get_humidity_percentage(float *percentage);
 
-//! @brief Get measured luminosity in lux
+//! @brief Get measured illuminance in lux
 //! @param[in] lux Pointer to variable where result will be stored
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_module_climate_get_luminosity_lux(float *lux);
+bool bc_module_climate_get_illuminance_lux(float *lux);
 
 //! @brief Get measured altitude in meters
 //! @param[in] meter Pointer to variable where result will be stored

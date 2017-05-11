@@ -86,9 +86,9 @@ bool bc_module_climate_get_humidity_percentage(float *percentage)
     return bc_sht20_get_humidity_percentage(&_bc_module_climate.sht20, percentage);
 }
 
-bool bc_module_climate_get_luminosity_lux(float *lux)
+bool bc_module_climate_get_illuminance_lux(float *lux)
 {
-    return bc_opt3001_get_luminosity_lux(&_bc_module_climate.opt3001, lux);
+    return bc_opt3001_get_illuminance_lux(&_bc_module_climate.opt3001, lux);
 }
 
 bool bc_module_climate_get_altitude_meter(float *meter)
