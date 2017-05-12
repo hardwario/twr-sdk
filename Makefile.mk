@@ -36,14 +36,15 @@ SDK_DIR ?= sdk
 ################################################################################
 
 OUT ?= firmware
+TYPE ?= debug
 
 ################################################################################
 # Output extensions                                                            #
 ################################################################################
 
-ELF ?= $(OUT_DIR)/$(OUT).elf
-MAP ?= $(OUT_DIR)/$(OUT).map
-BIN ?= $(OUT_DIR)/$(OUT).bin
+ELF ?= $(OUT_DIR)/$(TYPE)/$(OUT).elf
+MAP ?= $(OUT_DIR)/$(TYPE)/$(OUT).map
+BIN ?= $(OUT_DIR)/$(TYPE)/$(OUT).bin
 
 ################################################################################
 # Linker script                                                                #
@@ -150,8 +151,8 @@ SRC_S = $(foreach dir,$(SRC_DIR),$(wildcard $(dir)/*.s))
 # Create list of object files and their dependencies                           #
 ################################################################################
 
-OBJ_C = $(SRC_C:%.c=$(OBJ_DIR)/%.o)
-OBJ_S = $(SRC_S:%.s=$(OBJ_DIR)/%.o)
+OBJ_C = $(SRC_C:%.c=$(OBJ_DIR)/$(TYPE)/%.o)
+OBJ_S = $(SRC_S:%.s=$(OBJ_DIR)/$(TYPE)/%.o)
 OBJ = $(OBJ_C) $(OBJ_S)
 DEP = $(OBJ:%.o=%.d)
 
@@ -173,12 +174,12 @@ debug:
 
 .PHONY: release
 release:
-	$(Q)$(MAKE) clean
-	$(Q)$(MAKE) .obj-release
-	$(Q)$(MAKE) elf
-	$(Q)$(MAKE) size
-	$(Q)$(MAKE) bin
-	$(Q)$(MAKE) .clean-obj
+	$(Q)$(MAKE) clean TYPE=release
+	$(Q)$(MAKE) .obj-release TYPE=release
+	$(Q)$(MAKE) elf TYPE=release
+	$(Q)$(MAKE) size TYPE=release
+	$(Q)$(MAKE) bin TYPE=release
+	$(Q)$(MAKE) .clean-obj TYPE=release
 
 ################################################################################
 # Clean target                                                                 #
@@ -192,16 +193,24 @@ clean:
 .PHONY: .clean-obj
 .clean-obj:
 	$(Q)$(ECHO) "Removing object directory..."
-	$(Q)rm -rf $(OBJ_DIR)
+	$(Q)rm -rf $(OBJ_DIR)/$(TYPE)
 
 .PHONY: .clean-out
 .clean-out:
-	$(Q)$(ECHO) "Removing output directory..."
-	$(Q)rm -rf $(OUT_DIR)
-
+	$(Q)$(ECHO) "Clean output ..."
+	$(Q)rm -f "$(ELF)" "$(MAP)" "$(BIN)"
+	
 ################################################################################
 # Flash firmware using DFU bootloader                                          #
 ################################################################################
+
+.PHONY: dfu-release
+dfu-release:	
+	$(Q)$(MAKE) dfu TYPE=release
+
+.PHONY: dfu-debug
+dfu-debug:	
+	$(Q)$(MAKE) dfu
 
 .PHONY: dfu
 dfu: $(BIN)
@@ -253,7 +262,7 @@ elf: $(ELF)
 
 $(ELF): $(OBJ)
 	$(Q)$(ECHO) "Linking object files..."
-	$(Q)mkdir -p $(OUT_DIR)
+	$(Q)mkdir -p $(OUT_DIR)/$(TYPE)
 	$(Q)$(CC) $(LDFLAGS) $(OBJ) -o $(ELF)
 	$(Q)chmod -x $(MAP) $(ELF)
 
@@ -296,7 +305,7 @@ $(BIN): $(ELF)
 # Compile "c" files                                                            #
 ################################################################################
 
-$(OBJ_DIR)/%.o: %.c
+$(OBJ_DIR)/$(TYPE)/%.o: %.c
 	$(Q)$(ECHO) "Compiling: $<"
 	$(Q)mkdir -p $(@D)
 	$(Q)$(CC) -MMD -c $(CFLAGS) $(foreach d,$(INC_DIR),-I$d) $< -o $@
@@ -305,7 +314,7 @@ $(OBJ_DIR)/%.o: %.c
 # Compile "s" files                                                            #
 ################################################################################
 
-$(OBJ_DIR)/%.o: %.s
+$(OBJ_DIR)/$(TYPE)/%.o: %.s
 	$(Q)$(ECHO) "Compiling: $<"
 	$(Q)mkdir -p $(@D)
 	$(Q)$(CC) -MMD -c $(ASFLAGS) $< -o $@
