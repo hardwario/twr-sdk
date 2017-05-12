@@ -46,6 +46,14 @@ void bc_module_climate_set_event_handler(void (*event_handler)(bc_module_climate
     _bc_module_climate.event_param = event_param;
 }
 
+void bc_module_climate_set_update_interval_all_sensors(bc_tick_t interval)
+{
+    bc_tmp112_set_update_interval(&_bc_module_climate.tmp112, interval);
+    bc_sht20_set_update_interval(&_bc_module_climate.sht20, interval);
+    bc_opt3001_set_update_interval(&_bc_module_climate.opt3001, interval);
+    bc_mpl3115a2_set_update_interval(&_bc_module_climate.mpl3115a2, interval);
+}
+
 void bc_module_climate_set_update_interval_thermometer(bc_tick_t interval)
 {
     bc_tmp112_set_update_interval(&_bc_module_climate.tmp112, interval);
@@ -64,6 +72,53 @@ void bc_module_climate_set_update_interval_lux_meter(bc_tick_t interval)
 void bc_module_climate_set_update_interval_barometer(bc_tick_t interval)
 {
     bc_mpl3115a2_set_update_interval(&_bc_module_climate.mpl3115a2, interval);
+}
+
+bool bc_module_climate_measure_all_sensors(void)
+{
+    bool ret = true;
+
+    if (!bc_tmp112_measure(&_bc_module_climate.tmp112))
+    {
+        ret = false;
+    }
+
+    if (!bc_sht20_measure(&_bc_module_climate.sht20))
+    {
+        ret = false;
+    }
+
+    if (!bc_opt3001_measure(&_bc_module_climate.opt3001))
+    {
+        ret = false;
+    }
+
+    if (!bc_mpl3115a2_measure(&_bc_module_climate.mpl3115a2))
+    {
+        ret = false;
+    }
+
+    return ret;
+}
+
+bool bc_module_climate_measure_thermometer(void)
+{
+    return bc_tmp112_measure(&_bc_module_climate.tmp112);
+}
+
+bool bc_module_climate_measure_hygrometer(void)
+{
+    return bc_sht20_measure(&_bc_module_climate.sht20);
+}
+
+bool bc_module_climate_measure_lux_meter(void)
+{
+    return bc_opt3001_measure(&_bc_module_climate.opt3001);
+}
+
+bool bc_module_climate_measure_barometer(void)
+{
+    return bc_mpl3115a2_measure(&_bc_module_climate.mpl3115a2);
 }
 
 bool bc_module_climate_get_temperature_celsius(float *celsius)

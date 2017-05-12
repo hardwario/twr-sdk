@@ -47,6 +47,11 @@ void bc_module_climate_init(void);
 
 void bc_module_climate_set_event_handler(void (*event_handler)(bc_module_climate_event_t, void *), void *event_param);
 
+//! @brief Set measurement interval for all sensors
+//! @param[in] interval Measurement interval
+
+void bc_module_climate_set_update_interval_all_sensors(bc_tick_t interval);
+
 //! @brief Set measurement interval for thermometer
 //! @param[in] interval Measurement interval
 
@@ -66,6 +71,36 @@ void bc_module_climate_set_update_interval_lux_meter(bc_tick_t interval);
 //! @param[in] interval Measurement interval
 
 void bc_module_climate_set_update_interval_barometer(bc_tick_t interval);
+
+//! @brief Start measurement of all sensors manually
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_module_climate_measure_all_sensors(void);
+
+//! @brief Start thermometer measurement manually
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_module_climate_measure_thermometer(void);
+
+//! @brief Start hygrometer measurement manually
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_module_climate_measure_hygrometer(void);
+
+//! @brief Start lux meter measurement manually
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_module_climate_measure_lux_meter(void);
+
+//! @brief Start barometer measurement manually
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_module_climate_measure_barometer(void);
 
 //! @brief Get measured temperature in degrees of Celsius
 //! @param[in] celsius Pointer to variable where result will be stored
