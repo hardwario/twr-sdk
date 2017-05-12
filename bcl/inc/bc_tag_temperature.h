@@ -55,6 +55,13 @@ void bc_tag_temperature_set_event_handler(bc_tag_temperature_t *self, void (*eve
 
 void bc_tag_temperature_set_update_interval(bc_tag_temperature_t *self, bc_tick_t interval);
 
+//! @brief Start measurement manually
+//! @param[in] self Instance
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_tag_temperature_measure(bc_tag_temperature_t *self);
+
 //! @brief Get measured temperature as raw value
 //! @param[in] self Instance
 //! @param[in] raw Pointer to variable where result will be stored
