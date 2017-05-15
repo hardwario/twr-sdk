@@ -602,6 +602,13 @@ static void atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t even
             }
         }
     }
+    else if (event == BC_ATSHA204_EVENT_ERROR)
+    {
+        if (_bc_radio.event_handler != NULL)
+        {
+            _bc_radio.event_handler(BC_RADIO_EVENT_INIT_FAILURE, _bc_radio.event_param);
+        }
+    }
 }
 
 
