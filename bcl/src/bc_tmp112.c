@@ -1,10 +1,12 @@
 #include <bc_tmp112.h>
-#include <bc_scheduler.h>
 
-#define BC_TMP112_DELAY_RUN 50
-#define BC_TMP112_DELAY_READ 50
+#define _BC_TMP112_DELAY_RUN 50
+#define _BC_TMP112_DELAY_INITIALIZATION 50
+#define _BC_TMP112_DELAY_MEASUREMENT 50
 
-static void _bc_tmp112_task(void *param);
+static void _bc_tmp112_task_interval(void *param);
+
+static void _bc_tmp112_task_measure(void *param);
 
 void bc_tmp112_init(bc_tmp112_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -13,9 +15,12 @@ void bc_tmp112_init(bc_tmp112_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
-    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+    self->_task_id_interval = bc_scheduler_register(_bc_tmp112_task_interval, self, BC_TICK_INFINITY);
+    self->_task_id_measure = bc_scheduler_register(_bc_tmp112_task_measure, self, _BC_TMP112_DELAY_RUN);
 
-    bc_scheduler_register(_bc_tmp112_task, self, BC_TMP112_DELAY_RUN);
+    self->_tick_ready = _BC_TMP112_DELAY_RUN;
+
+    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 }
 
 void bc_tmp112_set_event_handler(bc_tmp112_t *self, void (*event_handler)(bc_tmp112_t *, bc_tmp112_event_t, void *), void *event_param)
@@ -27,6 +32,29 @@ void bc_tmp112_set_event_handler(bc_tmp112_t *self, void (*event_handler)(bc_tmp
 void bc_tmp112_set_update_interval(bc_tmp112_t *self, bc_tick_t interval)
 {
     self->_update_interval = interval;
+
+    if (self->_update_interval == BC_TICK_INFINITY)
+    {
+        bc_scheduler_plan_absolute(self->_task_id_interval, BC_TICK_INFINITY);
+    }
+    else
+    {
+        bc_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
+    }
+}
+
+bool bc_tmp112_measure(bc_tmp112_t *self)
+{
+    if (self->_measurement_active)
+    {
+        return false;
+    }
+
+    self->_measurement_active = true;
+
+    bc_scheduler_plan_absolute(self->_task_id_measure, self->_tick_ready);
+
+    return true;
 }
 
 bool bc_tmp112_get_temperature_raw(bc_tmp112_t *self, int16_t *raw)
@@ -88,7 +116,16 @@ bool bc_tmp112_get_temperature_kelvin(bc_tmp112_t *self, float *kelvin)
     return true;
 }
 
-static void _bc_tmp112_task(void *param)
+static void _bc_tmp112_task_interval(void *param)
+{
+    bc_tmp112_t *self = param;
+
+    bc_tmp112_measure(self);
+
+    bc_scheduler_plan_current_relative(self->_update_interval);
+}
+
+static void _bc_tmp112_task_measure(void *param)
 {
     bc_tmp112_t *self = param;
 
@@ -100,14 +137,34 @@ start:
         {
             self->_temperature_valid = false;
 
+            self->_measurement_active = false;
+
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_TMP112_EVENT_ERROR, self->_event_param);
             }
 
+            self->_state = BC_TMP112_STATE_INITIALIZE;
+
+            return;
+        }
+        case BC_TMP112_STATE_INITIALIZE:
+        {
+            self->_state = BC_TMP112_STATE_ERROR;
+
+            if (!bc_i2c_memory_write_16b(self->_i2c_channel, self->_i2c_address, 0x01, 0x0180))
+            {
+                goto start;
+            }
+
             self->_state = BC_TMP112_STATE_MEASURE;
 
-            bc_scheduler_plan_current_relative(self->_update_interval);
+            self->_tick_ready = bc_tick_get() + _BC_TMP112_DELAY_INITIALIZATION;
+
+            if (self->_measurement_active)
+            {
+                bc_scheduler_plan_current_absolute(self->_tick_ready);
+            }
 
             return;
         }
@@ -122,7 +179,7 @@ start:
 
             self->_state = BC_TMP112_STATE_READ;
 
-            bc_scheduler_plan_current_absolute(bc_tick_get() + BC_TMP112_DELAY_READ);
+            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_TMP112_DELAY_MEASUREMENT);
 
             return;
         }
@@ -155,14 +212,14 @@ start:
         }
         case BC_TMP112_STATE_UPDATE:
         {
+            self->_measurement_active = false;
+
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_TMP112_EVENT_UPDATE, self->_event_param);
             }
 
             self->_state = BC_TMP112_STATE_MEASURE;
-
-            bc_scheduler_plan_current_relative(self->_update_interval);
 
             return;
         }

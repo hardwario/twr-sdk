@@ -40,16 +40,19 @@ struct bc_hts221_t
 {
     bc_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
+    bc_scheduler_task_id_t _task_id_interval;
+    bc_scheduler_task_id_t _task_id_measure;
     void (*_event_handler)(bc_hts221_t *, bc_hts221_event_t, void *);
     void *_event_param;
-    bc_scheduler_task_id_t _task_id;
+    bool _measurement_active;
     bc_tick_t _update_interval;
     bc_hts221_state_t _state;
+    bc_tick_t _tick_ready;
     bool _humidity_valid;
     int16_t _reg_humidity;
     int16_t _h0_rh;
     int16_t _h0_t0_out;
-    float h_grad;
+    float _h_grad;
 };
 
 //! @endcond
@@ -73,6 +76,13 @@ void bc_hts221_set_event_handler(bc_hts221_t *self, void (*event_handler)(bc_hts
 //! @param[in] interval Measurement interval
 
 void bc_hts221_set_update_interval(bc_hts221_t *self, bc_tick_t interval);
+
+//! @brief Start measurement manually
+//! @param[in] self Instance
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_hts221_measure(bc_hts221_t *self);
 
 //! @brief Get measured humidity as percentage
 //! @param[in] self Instance

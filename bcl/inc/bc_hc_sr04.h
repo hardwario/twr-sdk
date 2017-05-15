@@ -32,7 +32,7 @@ void bc_hc_sr04_set_update_interval(bc_tick_t interval);
 
 //! @brief Start measurement manually
 //! @return true On success
-//! @return False When other measurement is in progress
+//! @return false When other measurement is in progress
 
 bool bc_hc_sr04_measure(void);
 

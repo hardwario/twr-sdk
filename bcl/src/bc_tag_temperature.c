@@ -15,6 +15,11 @@ void bc_tag_temperature_set_update_interval(bc_tag_temperature_t *self, bc_tick_
     bc_tmp112_set_update_interval(self, interval);
 }
 
+bool bc_tag_temperature_measure(bc_tag_temperature_t *self)
+{
+    return bc_tmp112_measure(self);
+}
+
 bool bc_tag_temperature_get_temperature_raw(bc_tag_temperature_t *self, int16_t *raw)
 {
     return bc_tmp112_get_temperature_raw(self, raw);
