@@ -15,6 +15,11 @@ void bc_tag_barometer_set_update_interval(bc_tag_barometer_t *self, bc_tick_t in
     bc_mpl3115a2_set_update_interval(self, interval);
 }
 
+bool bc_tag_barometer_measure(bc_tag_barometer_t *self)
+{
+    return bc_mpl3115a2_measure(self);
+}
+
 bool bc_tag_barometer_get_altitude_meter(bc_tag_barometer_t *self, float *meter)
 {
     return bc_mpl3115a2_get_altitude_meter(self, meter);
