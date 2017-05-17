@@ -12,7 +12,24 @@
 #define BC_DATA_STREAM_FLOAT_BUFFER(NAME, NUMBER_OF_SAMPLES) \
     float NAME##_feed[NUMBER_OF_SAMPLES]; \
     float NAME##_sort[NUMBER_OF_SAMPLES]; \
-    bc_data_stream_buffer_t NAME = {.feed = NAME##_feed, .sort = NAME##_sort, .number_of_samples = NUMBER_OF_SAMPLES};
+    bc_data_stream_buffer_t NAME = { \
+            .feed = NAME##_feed, \
+            .sort = NAME##_sort, \
+            .number_of_samples = NUMBER_OF_SAMPLES, \
+            .type=BC_DATA_STREAM_TYPE_FLOAT \
+    };
+
+//! @brief Macro for int data stream buffer declaration
+
+#define BC_DATA_STREAM_INT_BUFFER(NAME, NUMBER_OF_SAMPLES) \
+    int NAME##_feed[NUMBER_OF_SAMPLES]; \
+    int NAME##_sort[NUMBER_OF_SAMPLES]; \
+    bc_data_stream_buffer_t NAME = { \
+            .feed = NAME##_feed, \
+            .sort = NAME##_sort, \
+            .number_of_samples = NUMBER_OF_SAMPLES, \
+            .type=BC_DATA_STREAM_TYPE_INT \
+    };
 
 //! @brief Data stream type
 
@@ -30,6 +47,7 @@ typedef struct
     void *feed;
     void *sort;
     int number_of_samples;
+    bc_data_stream_type_t type;
 
 } bc_data_stream_buffer_t;
 
@@ -42,30 +60,21 @@ typedef struct bc_data_stream_t bc_data_stream_t;
 
 struct bc_data_stream_t
 {
-    bc_data_stream_type_t _type;
     bc_data_stream_buffer_t *_buffer;
     int _counter;
     int _min_number_of_samples;
-    size_t _buffer_size;
-    void *_fifo_head;
-    void *_fifo_end;
-
-
-//    void *_temp_head;
-//    int _number_of_samples;
-
+    int _feed_head;
 };
 
 //! @endcond
 
 //! @brief Initialize data stream instance
 //! @param[in] self Instance
-//! @param[in] type Type of data stream values
 //! @param[in] int min_number_of_samples minimal number of samples for calculation avarage, median ...
 //! @param[in] buffer Buffer holding data stream content
 //! @param[in] buffer_size Size of buffer holding data stream content
 
-void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, int min_number_of_samples, bc_data_stream_buffer_t *buffer);
+void bc_data_stream_init(bc_data_stream_t *self, int min_number_of_samples, bc_data_stream_buffer_t *buffer);
 
 //! @brief Initialize data stream instance
 //! @param[in] self Instance
@@ -109,6 +118,15 @@ bool bc_data_stream_get_first(bc_data_stream_t *self, void *result);
 //! @return false On failure (desired value is not available)
 
 bool bc_data_stream_get_last(bc_data_stream_t *self, void *result);
+
+//! @brief Get nth value in data stream
+//! @param[in] self Instance
+//! @param[in] n position (example: 0 is first, -1 is last)
+//! @param[out] self Pointer to buffer where result will be stored
+//! @return true On success (desired value is available)
+//! @return false On failure (desired value is not available)
+
+bool bc_data_stream_get_nth(bc_data_stream_t *self, int n, void *result);
 
 //! @}
 
