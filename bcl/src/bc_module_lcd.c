@@ -43,12 +43,12 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 {
     bc_module_lcd_t *self = &_bc_module_lcd;
 
-    bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x39);
-    bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x00);
+    bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x3c);
+    bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a);
     _bc_module_lcd.gpio = _BC_MODULE_LCD_DISP_CS | _BC_MODULE_LCD_DISP_ON | _BC_MODULE_LCD_LED_GREEN | _BC_MODULE_LCD_LED_RED | _BC_MODULE_LCD_LED_BLUE;
     bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
 
-    bc_spi_init(BC_SPI_SPEED_2_MHZ, BC_SPI_MODE_0);
+    bc_spi_init(BC_SPI_SPEED_1_MHZ, BC_SPI_MODE_0);
 
     self->framebuffer = framebuffer->framebuffer;
 

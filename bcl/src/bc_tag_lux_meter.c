@@ -15,12 +15,17 @@ void bc_tag_lux_meter_set_update_interval(bc_tag_lux_meter_t *self, bc_tick_t in
     bc_opt3001_set_update_interval(self, interval);
 }
 
-bool bc_tag_lux_meter_get_luminosity_raw(bc_tag_lux_meter_t *self, uint16_t *raw)
+bool bc_tag_lux_meter_measure(bc_tag_lux_meter_t *self)
 {
-    return bc_opt3001_get_luminosity_raw(self, raw);
+    return bc_opt3001_measure(self);
 }
 
-bool bc_tag_lux_meter_get_luminosity_lux(bc_tag_lux_meter_t *self, float *lux)
+bool bc_tag_lux_meter_get_illuminance_raw(bc_tag_lux_meter_t *self, uint16_t *raw)
 {
-    return bc_opt3001_get_luminosity_lux(self, lux);
+    return bc_opt3001_get_illuminance_raw(self, raw);
+}
+
+bool bc_tag_lux_meter_get_illuminance_lux(bc_tag_lux_meter_t *self, float *lux)
+{
+    return bc_opt3001_get_illuminance_lux(self, lux);
 }

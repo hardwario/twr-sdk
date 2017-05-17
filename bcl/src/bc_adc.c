@@ -1,14 +1,22 @@
 #include <bc_common.h>
 #include <bc_adc.h>
+#include <bc_scheduler.h>
+#include <bc_module_core.h>
 #include <stm32l083xx.h>
+
+#define _BC_ADC_CHANNEL_NONE (BC_ADC_CHANNEL_A5 + 1)
 
 typedef struct
 {
     bc_adc_reference_t reference;
     bc_adc_format_t format;
+    void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *);
+    void *event_param;
     uint32_t chselr;
 } bc_adc_config_t;
 
+static bool _bc_adc_initialized;
+static bc_adc_channel_t _bc_adc_in_progress = _BC_ADC_CHANNEL_NONE;
 static bc_adc_config_t _bc_adc_config_table[6] =
 {
     [0].chselr = ADC_CHSELR_CHSEL0,
@@ -19,34 +27,52 @@ static bc_adc_config_t _bc_adc_config_table[6] =
     [5].chselr = ADC_CHSELR_CHSEL5
 };
 
+static void _bc_adc_task();
+bc_scheduler_task_id_t _bc_adc_task_id;
+
 void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_format_t format)
 {
-    RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; // Enable ADC peripheral clock
-
-    // ADC calibration
-    ADC1->CR &= (uint32_t) (~ADC_CR_ADEN);  // Clear ADEN
-    ADC1->CR |= ADC_CR_ADCAL;               // Start calibration
-    while ((ADC1->ISR & ADC_ISR_EOCAL) == 0)
+    if (_bc_adc_initialized != true)
     {
-        continue;                           // Wait until calibration is done
+        _bc_adc_initialized = true;
+
+        // Enable ADC clock
+        RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+
+        // Errata workaround
+        RCC->APB2ENR;
+
+        // Disable ADC peripheral
+        ADC1->CR &= ~ADC_CR_ADEN;
+
+        // Set auto-off mode, left align
+        ADC1->CFGR1 |= ADC_CFGR1_AUTOFF | ADC_CFGR1_ALIGN;
+
+        // Enable Over-sampler with over-sampling ratio (16x) and set PCLK/2 as a clock source
+        ADC1->CFGR2 = ADC_CFGR2_OVSE | ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0 | ADC_CFGR2_CKMODE_0;
+
+        // Sampling time selection (12.5 cycles)
+        ADC1->SMPR |= ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0;
+
+        // Perform ADC calibration
+        ADC1->CR |= ADC_CR_ADCAL;
+        while ((ADC1->ISR & ADC_ISR_EOCAL) == 0)
+        {
+            continue;
+        }
+
+        // Clear EOCAL flag
+        ADC1->ISR |= ADC_ISR_EOCAL;
+
+        // Enable the ADC
+        ADC1->CR |= ADC_CR_ADEN;
     }
-    ADC1->ISR |= ADC_ISR_EOCAL;             // Clear EOCAL
 
-    // Enable and configure ADC
-    ADC1->ISR |= ADC_ISR_ADRDY;                         // Clear the ADRDY bit
-    ADC1->CR |= ADC_CR_ADEN;                            // Enable the ADC
-    ADC1->CFGR1 |= ADC_CFGR1_AUTOFF |                   // Select the auto off mode
-                   ADC_CFGR1_ALIGN;                     // Left alignment
-    ADC1->CFGR2 = (ADC1->CFGR2 & (~ADC_CFGR2_CKMODE)) | // Asynchronous clock mode
-    (ADC_CFGR2_OVSE |                                   // Over-sampler Enable
-    ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0);               // Over-sampling ratio (16x)
-    ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1;      // Sampling time selection (12.5 cycles)
-
-    // Store desired reference
     bc_adc_set_reference(channel, reference);
 
-    // Store desired format
     bc_adc_set_format(channel, format);
+
+    _bc_adc_task_id = bc_scheduler_register(_bc_adc_task, NULL, BC_TICK_INFINITY);
 }
 
 void bc_adc_set_reference(bc_adc_channel_t channel, bc_adc_reference_t reference)
@@ -69,15 +95,19 @@ bc_adc_format_t bc_adc_get_format(bc_adc_channel_t channel)
     return _bc_adc_config_table[channel].format;
 }
 
-void bc_adc_measure(bc_adc_channel_t channel, void *result)
+bool bc_adc_measure(bc_adc_channel_t channel, void *result)
 {
-    uint32_t data;
+    // If ongoing conversion ...
+    if (_bc_adc_in_progress != _BC_ADC_CHANNEL_NONE)
+    {
+        return false;
+    }
 
     // Set ADC channel
-    ADC1->CHSELR = _bc_adc_config_table[channel].chselr; // Select CHSEL17 for VRefInt
+    ADC1->CHSELR = _bc_adc_config_table[channel].chselr;
 
-    // Clear EOC, EOS and OVR flags
-    ADC1->ISR = (ADC_ISR_EOS | ADC_ISR_OVR);
+    // Clear EOS, EOC, OVR and EOSMP flags
+    ADC1->ISR = ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_OVR | ADC_ISR_EOSMP;
 
     // Performs the AD conversion
     ADC1->CR |= ADC_CR_ADSTART;
@@ -88,32 +118,109 @@ void bc_adc_measure(bc_adc_channel_t channel, void *result)
         continue;
     }
 
-    data = ADC1->DR;
+    bc_adc_get_result(channel, result);
+
+    return true;
+}
+
+bool bc_adc_async_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *), void *event_param)
+{
+    // Check ongoing on edited channel
+    if (_bc_adc_in_progress == channel)
+    {
+        return false;
+    }
+
+    bc_adc_config_t *adc = &_bc_adc_config_table[channel];
+
+    adc->event_handler = event_handler;
+    adc->event_param = event_param;
+
+    return true;
+}
+
+bool bc_adc_async_measure(bc_adc_channel_t channel)
+{
+    // If ongoing conversion ...
+    if (_bc_adc_in_progress != _BC_ADC_CHANNEL_NONE)
+    {
+        return false;
+    }
+
+    _bc_adc_in_progress = channel;
+
+    // Set ADC channel
+    ADC1->CHSELR = _bc_adc_config_table[channel].chselr;
+
+    // Clear EOS, EOC, OVR and EOSMP flags
+    ADC1->ISR = ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_OVR | ADC_ISR_EOSMP;
+
+    // Enable "End Of Sequence" interrupt
+    ADC1->IER = ADC_IER_EOSIE;
+
+    NVIC_EnableIRQ(ADC1_COMP_IRQn);
+
+    // Start AD conversion
+    ADC1->CR |= ADC_CR_ADSTART;
+
+    return true;
+}
+
+void bc_adc_get_result(bc_adc_channel_t channel, void *result)
+{
+    uint32_t data = ADC1->DR;
 
     // TODO ... take care of reference ...
 
     switch (_bc_adc_config_table[channel].format)
     {
     case BC_ADC_FORMAT_8_BIT:
-        *(uint8_t *)result = data >> 8;
+        *(uint8_t *) result = data >> 8;
         break;
     case BC_ADC_FORMAT_16_BIT:
-        *(uint16_t *)result = data;
+        *(uint16_t *) result = data;
         break;
     case BC_ADC_FORMAT_24_BIT:
-        memcpy((uint8_t *)result + 1, &data, 2);
+        memcpy((uint8_t *) result + 1, &data, 2);
         break;
     case BC_ADC_FORMAT_32_BIT:
-        *(uint32_t *)result = data << 16;
+        *(uint32_t *) result = data << 16;
         break;
-        /*
-    case BC_ADC_FORMAT_FLOAT_BIT:
-        1. measure Vrefint
-        2. *(float *)result = (Vrefint(voltage) / Vrefint(code)) * data;
+    case BC_ADC_FORMAT_FLOAT:
+        // TODO Currently only approximate
+        *(float *) result = (3.3 / 65536) * data;
         break;
-        */
     default:
         return;
         break;
     }
+}
+
+void ADC1_COMP_IRQHandler()
+{
+    // Plan ADC task
+    bc_scheduler_plan_now(_bc_adc_task_id);
+
+    // Enable "End Of Sequence" interrupt
+    ADC1->IER = 0;
+
+    // Clear EOS, EOC, OVR and EOSMP flags
+    ADC1->ISR = ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_OVR | ADC_ISR_EOSMP;
+
+    NVIC_DisableIRQ(ADC1_COMP_IRQn);
+}
+
+static void _bc_adc_task()
+{
+    bc_adc_config_t *adc = &_bc_adc_config_table[_bc_adc_in_progress];
+    bc_adc_channel_t pending;
+
+    // Update pending
+    pending = _bc_adc_in_progress;
+
+    // Release ADC for further conversion
+    _bc_adc_in_progress = _BC_ADC_CHANNEL_NONE;
+
+    // Perform event call-back
+    adc->event_handler(pending, BC_ADC_EVENT_DONE, adc->event_param);
 }

@@ -1,11 +1,12 @@
 #include <bc_mpl3115a2.h>
-#include <bc_scheduler.h>
 
-#define BC_MPL3115A2_DELAY_RUN 1500
-#define BC_MPL3115A2_DELAY_RESET 1500
-#define BC_MPL3115A2_DELAY_MEASUREMENT 1500
+#define _BC_MPL3115A2_DELAY_RUN 1500
+#define _BC_MPL3115A2_DELAY_INITIALIZATION 1500
+#define _BC_MPL3115A2_DELAY_MEASUREMENT 1500
 
-static void _bc_mpl3115a2_task(void *param);
+static void _bc_mpl3115a2_task_interval(void *param);
+
+static void _bc_mpl3115a2_task_measure(void *param);
 
 void bc_mpl3115a2_init(bc_mpl3115a2_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -14,9 +15,12 @@ void bc_mpl3115a2_init(bc_mpl3115a2_t *self, bc_i2c_channel_t i2c_channel, uint8
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
-    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+    self->_task_id_interval = bc_scheduler_register(_bc_mpl3115a2_task_interval, self, BC_TICK_INFINITY);
+    self->_task_id_measure = bc_scheduler_register(_bc_mpl3115a2_task_measure, self, _BC_MPL3115A2_DELAY_RUN);
 
-    bc_scheduler_register(_bc_mpl3115a2_task, self, BC_MPL3115A2_DELAY_RUN);
+    self->_tick_ready = _BC_MPL3115A2_DELAY_RUN;
+
+    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 }
 
 void bc_mpl3115a2_set_event_handler(bc_mpl3115a2_t *self, void (*event_handler)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t, void *), void *event_param)
@@ -28,6 +32,29 @@ void bc_mpl3115a2_set_event_handler(bc_mpl3115a2_t *self, void (*event_handler)(
 void bc_mpl3115a2_set_update_interval(bc_mpl3115a2_t *self, bc_tick_t interval)
 {
     self->_update_interval = interval;
+
+    if (self->_update_interval == BC_TICK_INFINITY)
+    {
+        bc_scheduler_plan_absolute(self->_task_id_interval, BC_TICK_INFINITY);
+    }
+    else
+    {
+        bc_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
+    }
+}
+
+bool bc_mpl3115a2_measure(bc_mpl3115a2_t *self)
+{
+    if (self->_measurement_active)
+    {
+        return false;
+    }
+
+    self->_measurement_active = true;
+
+    bc_scheduler_plan_absolute(self->_task_id_measure, self->_tick_ready);
+
+    return true;
 }
 
 bool bc_mpl3115a2_get_altitude_meter(bc_mpl3115a2_t *self, float *meter)
@@ -58,7 +85,16 @@ bool bc_mpl3115a2_get_pressure_pascal(bc_mpl3115a2_t *self, float *pascal)
     return true;
 }
 
-static void _bc_mpl3115a2_task(void *param)
+static void _bc_mpl3115a2_task_interval(void *param)
+{
+    bc_mpl3115a2_t *self = param;
+
+    bc_mpl3115a2_measure(self);
+
+    bc_scheduler_plan_current_relative(self->_update_interval);
+}
+
+static void _bc_mpl3115a2_task_measure(void *param)
 {
     bc_mpl3115a2_t *self = param;
 
@@ -71,6 +107,8 @@ start:
             self->_altitude_valid = false;
             self->_pressure_valid = false;
 
+            self->_measurement_active = false;
+
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_MPL3115A2_EVENT_ERROR, self->_event_param);
@@ -78,17 +116,20 @@ start:
 
             self->_state = BC_MPL3115A2_STATE_INITIALIZE;
 
-            bc_scheduler_plan_current_relative(self->_update_interval);
-
             return;
         }
         case BC_MPL3115A2_STATE_INITIALIZE:
         {
-            bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x04);
+            bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x04);
 
             self->_state = BC_MPL3115A2_STATE_MEASURE_ALTITUDE;
 
-            bc_scheduler_plan_current_relative(BC_MPL3115A2_DELAY_RESET);
+            self->_tick_ready = bc_tick_get() + _BC_MPL3115A2_DELAY_INITIALIZATION;
+
+            if (self->_measurement_active)
+            {
+                bc_scheduler_plan_current_absolute(self->_tick_ready);
+            }
 
             return;
         }
@@ -96,24 +137,24 @@ start:
         {
             self->_state = BC_MPL3115A2_STATE_ERROR;
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xb8))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xb8))
             {
                 goto start;
             }
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
             {
                 goto start;
             }
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xba))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xba))
             {
                 goto start;
             }
 
             self->_state = BC_MPL3115A2_STATE_READ_ALTITUDE;
 
-            bc_scheduler_plan_current_relative(BC_MPL3115A2_DELAY_MEASUREMENT);
+            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_MPL3115A2_DELAY_MEASUREMENT);
 
             return;
         }
@@ -123,7 +164,7 @@ start:
 
             uint8_t reg_status;
 
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
             {
                 goto start;
             }
@@ -135,14 +176,14 @@ start:
 
             uint8_t buffer[5];
 
-            bc_i2c_tranfer_t transfer;
+            bc_i2c_memory_transfer_t transfer;
 
             transfer.device_address = self->_i2c_address;
             transfer.memory_address = 0x01;
             transfer.buffer = buffer;
             transfer.length = 5;
 
-            if (!bc_i2c_read(self->_i2c_channel, &transfer))
+            if (!bc_i2c_memory_read(self->_i2c_channel, &transfer))
             {
                 goto start;
             }
@@ -163,24 +204,24 @@ start:
         {
             self->_state = BC_MPL3115A2_STATE_ERROR;
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x38))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x38))
             {
                 goto start;
             }
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
             {
                 goto start;
             }
 
-            if (!bc_i2c_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x3a))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x3a))
             {
                 goto start;
             }
 
             self->_state = BC_MPL3115A2_STATE_READ_PRESSURE;
 
-            bc_scheduler_plan_current_relative(BC_MPL3115A2_DELAY_MEASUREMENT);
+            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_MPL3115A2_DELAY_MEASUREMENT);
 
             return;
         }
@@ -190,7 +231,7 @@ start:
 
             uint8_t reg_status;
 
-            if (!bc_i2c_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
+            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
             {
                 goto start;
             }
@@ -202,14 +243,14 @@ start:
 
             uint8_t buffer[5];
 
-            bc_i2c_tranfer_t transfer;
+            bc_i2c_memory_transfer_t transfer;
 
             transfer.device_address = self->_i2c_address;
             transfer.memory_address = 0x01;
             transfer.buffer = buffer;
             transfer.length = 5;
 
-            if (!bc_i2c_read(self->_i2c_channel, &transfer))
+            if (!bc_i2c_memory_read(self->_i2c_channel, &transfer))
             {
                 goto start;
             }
@@ -228,14 +269,14 @@ start:
         }
         case BC_MPL3115A2_STATE_UPDATE:
         {
+            self->_measurement_active = false;
+
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_MPL3115A2_EVENT_UPDATE, self->_event_param);
             }
 
             self->_state = BC_MPL3115A2_STATE_MEASURE_ALTITUDE;
-
-            bc_scheduler_plan_current_relative(self->_update_interval);
 
             return;
         }

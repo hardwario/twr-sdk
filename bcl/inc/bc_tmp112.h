@@ -2,7 +2,7 @@
 #define _BC_TMP112_H
 
 #include <bc_i2c.h>
-#include <bc_tick.h>
+#include <bc_scheduler.h>
 
 //! @addtogroup bc_tmp112 bc_tmp112
 //! @brief Driver for TMP112 temperature sensor
@@ -12,8 +12,11 @@
 
 typedef enum
 {
-    BC_TMP112_EVENT_ERROR = 0, //!< Error event
-    BC_TMP112_EVENT_UPDATE = 1 //!< Update event
+    //! @brief Error event
+    BC_TMP112_EVENT_ERROR = 0,
+
+    //! @brief Update event
+    BC_TMP112_EVENT_UPDATE = 1
 
 } bc_tmp112_event_t;
 
@@ -26,9 +29,10 @@ typedef struct bc_tmp112_t bc_tmp112_t;
 typedef enum
 {
     BC_TMP112_STATE_ERROR = -1,
-    BC_TMP112_STATE_MEASURE = 0,
-    BC_TMP112_STATE_READ = 1,
-    BC_TMP112_STATE_UPDATE = 2
+    BC_TMP112_STATE_INITIALIZE = 0,
+    BC_TMP112_STATE_MEASURE = 1,
+    BC_TMP112_STATE_READ = 2,
+    BC_TMP112_STATE_UPDATE = 3
 
 } bc_tmp112_state_t;
 
@@ -36,10 +40,14 @@ struct bc_tmp112_t
 {
     bc_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
+    bc_scheduler_task_id_t _task_id_interval;
+    bc_scheduler_task_id_t _task_id_measure;
     void (*_event_handler)(bc_tmp112_t *, bc_tmp112_event_t, void *);
     void *_event_param;
+    bool _measurement_active;
     bc_tick_t _update_interval;
     bc_tmp112_state_t _state;
+    bc_tick_t _tick_ready;
     bool _temperature_valid;
     uint16_t _reg_temperature;
 };
@@ -65,6 +73,13 @@ void bc_tmp112_set_event_handler(bc_tmp112_t *self, void (*event_handler)(bc_tmp
 //! @param[in] interval Measurement interval
 
 void bc_tmp112_set_update_interval(bc_tmp112_t *self, bc_tick_t interval);
+
+//! @brief Start measurement manually
+//! @param[in] self Instance
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_tmp112_measure(bc_tmp112_t *self);
 
 //! @brief Get measured temperature as raw value
 //! @param[in] self Instance
