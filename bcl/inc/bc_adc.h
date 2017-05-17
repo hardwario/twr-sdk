@@ -11,22 +11,22 @@
 
 typedef enum
 {
-    //!< ADC channel A0
+    //! @brief ADC channel A0
     BC_ADC_CHANNEL_A0 = 0,
 
-    //!< ADC channel A1
+    //! @brief ADC channel A1
     BC_ADC_CHANNEL_A1 = 1,
 
-    //!< ADC channel A2
+    //! @brief ADC channel A2
     BC_ADC_CHANNEL_A2 = 2,
 
-    //!< ADC channel A3
+    //! @brief ADC channel A3
     BC_ADC_CHANNEL_A3 = 3,
 
-    //!< ADC channel A4
+    //! @brief ADC channel A4
     BC_ADC_CHANNEL_A4 = 4,
 
-    //!< ADC channel A5
+    //! @brief ADC channel A5
     BC_ADC_CHANNEL_A5 = 5
 
 } bc_adc_channel_t;
@@ -35,10 +35,10 @@ typedef enum
 
 typedef enum
 {
-    //!< ADC voltage reference is default (from VDD)
+    //! @brief ADC voltage reference is default (from VDD)
     BC_ADC_REFERENCE_DEFAULT  = 0,
 
-    //!< ADC voltage reference is internal reference source
+    //! @brief ADC voltage reference is internal reference source
     BC_ADC_REFERENCE_INTERNAL = 1
 
 } bc_adc_reference_t;
@@ -47,19 +47,19 @@ typedef enum
 
 typedef enum
 {
-    //!< ADC result format is 8-bit
+    //! @brief ADC result format is 8-bit
     BC_ADC_FORMAT_8_BIT  = 0,
 
-    //!< ADC result format is 16-bit
+    //! @brief ADC result format is 16-bit
     BC_ADC_FORMAT_16_BIT = 1,
 
-    //!< ADC result format is 24-bit
+    //! @brief ADC result format is 24-bit
     BC_ADC_FORMAT_24_BIT = 2,
 
-    //!< ADC result format is 32-bit
+    //! @brief ADC result format is 32-bit
     BC_ADC_FORMAT_32_BIT = 3,
 
-    //!< ADC result format is float
+    //! @brief ADC result format is float
     BC_ADC_FORMAT_FLOAT = 4
 
 } bc_adc_format_t;
@@ -68,7 +68,7 @@ typedef enum
 
 typedef enum
 {
-    //!< ADC event
+    //! @brief ADC event
     BC_ADC_EVENT_DONE
 
 } bc_adc_event_t;
