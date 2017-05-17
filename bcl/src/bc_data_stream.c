@@ -147,7 +147,8 @@ bool bc_data_stream_get_median(bc_data_stream_t *self, void *result)
             if (length % 2 == 0)
             {
                 *(float *) result = (buffer[(length - 2) / 2] + buffer[length / 2]) / 2;
-            }else
+            }
+            else
             {
                 *(float *) result = buffer[(length - 1) / 2];
             }
@@ -163,7 +164,8 @@ bool bc_data_stream_get_median(bc_data_stream_t *self, void *result)
             if (length % 2 == 0)
             {
                 *(int *) result = (buffer[(length - 2) / 2] + buffer[length / 2]) / 2;
-            }else
+            }
+            else
             {
                 *(int *) result = buffer[(length - 1) / 2];
             }
@@ -246,12 +248,12 @@ bool bc_data_stream_get_last(bc_data_stream_t *self, void *result)
     return true;
 }
 
-static int _bc_data_stream_compare_float(const void * a, const void * b)
+static int _bc_data_stream_compare_float(const void *a, const void *b)
 {
-  return *(float*) a - *(float*) b;
+    return *(float *) a - *(float *) b;
 }
 
-static int _bc_data_stream_compare_int(const void * a, const void * b)
+static int _bc_data_stream_compare_int(const void *a, const void *b)
 {
-  return *(int*) a - *(int*) b;
+    return *(int *) a - *(int *) b;
 }
