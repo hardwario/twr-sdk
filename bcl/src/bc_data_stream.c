@@ -2,56 +2,47 @@
 
 static int _bc_data_stream_compare_float(const void * a, const void * b);
 static int _bc_data_stream_compare_int(const void * a, const void * b);
-
-void bc_data_stream_init(bc_data_stream_t *self, bc_data_stream_type_t type, void *buffer, size_t buffer_size)
+//
+void bc_data_stream_init(bc_data_stream_t *self, int min_number_of_samples, bc_data_stream_buffer_t *buffer)
 {
     memset(self, 0, sizeof(*self));
-
     self->_buffer = buffer;
-    self->_buffer_size = buffer_size;
-    self->_type = type;
-    self->_fifo_head = buffer;
-    self->_temp_head = (uint8_t *) buffer + (buffer_size / 2);
-    self->_number_of_samples = buffer_size / 2;
-
-    switch (self->_type)
-    {
-        case BC_DATA_STREAM_TYPE_FLOAT:
-        {
-            self->_number_of_samples /= sizeof(float);
-
-            break;
-        }
-        case BC_DATA_STREAM_TYPE_INT:
-        {
-            self->_number_of_samples /= sizeof(int);
-
-            break;
-        }
-        default:
-        {
-            break;
-        }
-    }
+    self->_counter = 0;
+    self->_feed_head = self->_buffer->number_of_samples - 1;
+    self->_min_number_of_samples = min_number_of_samples;
 }
 
 void bc_data_stream_feed(bc_data_stream_t *self, void *data)
 {
-    switch (self->_type)
+    if (data == NULL)
+    {
+        bc_data_stream_reset(self);
+        return;
+    }
+
+    if (++self->_feed_head == self->_buffer->number_of_samples)
+    {
+       self->_feed_head = 0;
+    }
+
+    switch (self->_buffer->type)
     {
         case BC_DATA_STREAM_TYPE_FLOAT:
         {
-            *(float *) self->_fifo_head = *(float *) data;
+            if (isnan(*(float *) data) || isinf(*(float *) data))
+            {
+                bc_data_stream_reset(self);
 
-            self->_fifo_head = (uint8_t *) self->_fifo_head + sizeof(float);
+                return;
+            }
+
+            *((float *) self->_buffer->feed + self->_feed_head) = *(float *) data;
 
             break;
         }
         case BC_DATA_STREAM_TYPE_INT:
         {
-            *(int *) self->_fifo_head = *(int *) data;
-
-            self->_fifo_head = (uint8_t *) self->_fifo_head + sizeof(int);
+            *((int *) self->_buffer->feed + self->_feed_head) = *(int *) data;
 
             break;
         }
@@ -59,11 +50,6 @@ void bc_data_stream_feed(bc_data_stream_t *self, void *data)
         {
             break;
         }
-    }
-
-    if (self->_fifo_head == self->_temp_head)
-    {
-        self->_fifo_head = self->_buffer;
     }
 
     self->_counter++;
@@ -71,26 +57,26 @@ void bc_data_stream_feed(bc_data_stream_t *self, void *data)
 
 void bc_data_stream_reset(bc_data_stream_t *self)
 {
-    self->_fifo_head = self->_buffer;
     self->_counter = 0;
+    self->_feed_head = self->_buffer->number_of_samples - 1;
 }
 
 bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
 {
-    if (self->_counter == 0)
+    if (self->_counter < self->_min_number_of_samples)
     {
         return false;
     }
 
-    switch (self->_type)
+    int length = self->_counter > self->_buffer->number_of_samples ? self->_buffer->number_of_samples : self->_counter;
+
+    switch (self->_buffer->type)
     {
         case BC_DATA_STREAM_TYPE_FLOAT:
         {
             float sum = 0;
+            float *buffer = (float *) self->_buffer->feed;
 
-            float *buffer = (float *) self->_buffer;
-
-            int length = self->_counter > self->_number_of_samples ? self->_number_of_samples : self->_counter;
 
             for (int i = 0; i < length; i ++)
             {
@@ -98,16 +84,12 @@ bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
             }
 
             *(float *) result = sum / length;
-
             break;
         }
         case BC_DATA_STREAM_TYPE_INT:
         {
             int sum = 0;
-
-            int *buffer = (int *) self->_buffer;
-
-            int length = self->_counter > self->_number_of_samples ? self->_number_of_samples : self->_counter;
+            int *buffer = (int *) self->_buffer->feed;
 
             for (int i = 0; i < length; i ++)
             {
@@ -115,7 +97,6 @@ bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
             }
 
             *(int *) result = sum / length;
-
             break;
         }
         default:
@@ -129,22 +110,21 @@ bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
 
 bool bc_data_stream_get_median(bc_data_stream_t *self, void *result)
 {
-    if (self->_counter == 0)
+    if (self->_counter < self->_min_number_of_samples)
     {
         return false;
     }
 
-    size_t length = self->_counter > self->_number_of_samples ? self->_number_of_samples : self->_counter;
+    int length = self->_counter > self->_buffer->number_of_samples ? self->_buffer->number_of_samples : self->_counter;
 
-    switch (self->_type)
+    switch (self->_buffer->type)
     {
         case BC_DATA_STREAM_TYPE_FLOAT:
         {
-            memcpy(self->_temp_head, self->_buffer, length * sizeof(float));
+            memcpy(self->_buffer->sort, self->_buffer->feed, length * sizeof(float));
+            qsort(self->_buffer->sort, length, sizeof(float), _bc_data_stream_compare_float);
 
-            qsort(self->_temp_head, length, sizeof(float), _bc_data_stream_compare_float);
-
-            float *buffer = (float *) self->_temp_head;
+            float *buffer = (float *) self->_buffer->sort;
 
             if (length % 2 == 0)
             {
@@ -158,11 +138,10 @@ bool bc_data_stream_get_median(bc_data_stream_t *self, void *result)
         }
         case BC_DATA_STREAM_TYPE_INT:
         {
-            memcpy(self->_temp_head, self->_buffer, length * sizeof(int));
+            memcpy(self->_buffer->sort, self->_buffer->feed, length * sizeof(int));
+            qsort(self->_buffer->sort, length, sizeof(int), _bc_data_stream_compare_int);
 
-            qsort(self->_temp_head, length, sizeof(int), _bc_data_stream_compare_int);
-
-            int *buffer = (int *) self->_temp_head;
+            int *buffer = (int *) self->_buffer->sort;
 
             if (length % 2 == 0)
             {
@@ -190,20 +169,23 @@ bool bc_data_stream_get_first(bc_data_stream_t *self, void *result)
         return false;
     }
 
-    void *pointer = self->_counter > self->_number_of_samples ? self->_fifo_head : self->_buffer;
+    int position = self->_counter < self->_buffer->number_of_samples ? 0 : self->_feed_head + 1;
 
-    switch (self->_type)
+    if (position == self->_buffer->number_of_samples)
+    {
+        position = 0;
+    }
+
+    switch (self->_buffer->type)
     {
         case BC_DATA_STREAM_TYPE_FLOAT:
         {
-            *(float *) result = *(float *) pointer;
-
+            *(float *) result = *((float *) self->_buffer->feed + position);
             break;
         }
         case BC_DATA_STREAM_TYPE_INT:
         {
-            *(int *) result = *(int *) pointer;
-
+            *(int *) result = *((int *) self->_buffer->feed + position);
             break;
         }
         default:
@@ -222,29 +204,57 @@ bool bc_data_stream_get_last(bc_data_stream_t *self, void *result)
         return false;
     }
 
-    void *pointer = self->_fifo_head;
-
-    if (self->_fifo_head == self->_buffer)
-    {
-        pointer = self->_temp_head;
-    }
-
-    switch (self->_type)
+    switch (self->_buffer->type)
     {
         case BC_DATA_STREAM_TYPE_FLOAT:
         {
-            pointer = (uint8_t *) pointer - sizeof(float);
-
-            *(float *) result = *(float *) pointer;
-
+            *(float *) result = *((float *) self->_buffer->feed + self->_feed_head);
             break;
         }
         case BC_DATA_STREAM_TYPE_INT:
         {
-            pointer = (uint8_t *) pointer - sizeof(int);
+            *(int *) result = *((int *) self->_buffer->feed + self->_feed_head);
+            break;
+        }
+        default:
+        {
+            return false;
+        }
+    }
 
-            *(int *) result = *(int *) pointer;
+    return true;
+}
 
+bool bc_data_stream_get_nth(bc_data_stream_t *self, int n, void *result)
+{
+    if (self->_counter < n)
+    {
+        return false;
+    }
+
+    int position;
+
+    if (n < 0)
+    {
+        position = self->_feed_head + 1 + self->_buffer->number_of_samples;
+    }
+    else
+    {
+        position = self->_counter < self->_buffer->number_of_samples ? 0 : self->_feed_head + 1;
+    }
+
+    position = (position + n) % self->_buffer->number_of_samples;
+
+    switch (self->_buffer->type)
+    {
+        case BC_DATA_STREAM_TYPE_FLOAT:
+        {
+            *(float *) result = *((float *) self->_buffer->feed + position);
+            break;
+        }
+        case BC_DATA_STREAM_TYPE_INT:
+        {
+            *(int *) result = *((int *) self->_buffer->feed + position);
             break;
         }
         default:
