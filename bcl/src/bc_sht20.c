@@ -9,6 +9,8 @@ static void _bc_sht20_task_interval(void *param);
 
 static void _bc_sht20_task_measure(void *param);
 
+// TODO SHT20 has only one fixed address so it is no necessary to pass it as parameter
+
 void bc_sht20_init(bc_sht20_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
     memset(self, 0, sizeof(*self));
