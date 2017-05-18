@@ -9,7 +9,9 @@
 
 //! @brief Maximum number of tasks
 
+#ifndef BC_SCHEDULER_MAX_TASKS
 #define BC_SCHEDULER_MAX_TASKS 32
+#endif
 
 //! @brief Task ID assigned by scheduler
 
