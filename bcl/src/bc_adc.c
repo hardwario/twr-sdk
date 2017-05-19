@@ -98,7 +98,7 @@ bc_adc_format_t bc_adc_get_format(bc_adc_channel_t channel)
     return _bc_adc_channel_table[channel].format;
 }
 
-bool bc_adc_measure(bc_adc_channel_t channel, void *result)
+bool bc_adc_read(bc_adc_channel_t channel, void *result)
 {
     // If ongoing conversion ...
     if (_bc_adc_channel_in_progress != _BC_ADC_CHANNEL_NONE)
@@ -126,7 +126,7 @@ bool bc_adc_measure(bc_adc_channel_t channel, void *result)
     return true;
 }
 
-bool bc_adc_async_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *), void *event_param)
+bool bc_adc_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *), void *event_param)
 {
     // Check ongoing on edited channel
     if (_bc_adc_channel_in_progress == channel)
@@ -142,7 +142,7 @@ bool bc_adc_async_set_event_handler(bc_adc_channel_t channel, void (*event_handl
     return true;
 }
 
-bool bc_adc_async_measure(bc_adc_channel_t channel)
+bool bc_adc_async_read(bc_adc_channel_t channel)
 {
     // If ongoing conversion ...
     if (_bc_adc_channel_in_progress != _BC_ADC_CHANNEL_NONE)

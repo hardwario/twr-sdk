@@ -104,13 +104,13 @@ void bc_adc_set_format(bc_adc_channel_t channel, bc_adc_format_t format);
 
 bc_adc_format_t bc_adc_get_format(bc_adc_channel_t channel);
 
-//! @brief Perform measurement on ADC channel
+//! @brief Reads the ADC channel voltage
 //! @param[in] channel ADC channel
 //! @param[out] result Pointer to destination where ADC conversion will be stored
 //! @return true On success
 //! @return false On failure
 
-bool bc_adc_measure(bc_adc_channel_t channel, void *result);
+bool bc_adc_read(bc_adc_channel_t channel, void *result);
 
 //! @brief Set callback function
 //! @param[in] channel ADC channel
@@ -119,17 +119,17 @@ bool bc_adc_measure(bc_adc_channel_t channel, void *result);
 //! @return true On success
 //! @return false On failure
 
-bool bc_adc_async_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *), void *event_param);
+bool bc_adc_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *), void *event_param);
 
-//! @brief Perform async measurement on ADC channel
+//! @brief Begins reading the ADC channel voltage in asynchronous mode
 //! @param[in] channel ADC channel
 //! @param[out] result Pointer to destination where ADC conversion will be stored
 //! @return true On success
 //! @return false On failure
 
-bool bc_adc_async_measure(bc_adc_channel_t channel);
+bool bc_adc_async_read(bc_adc_channel_t channel);
 
-//! @brief Perform measurement on ADC channel
+//! @brief Get the measurement results
 //! @param[in] channel ADC channel
 //! @param[out] result Pointer to destination where ADC conversion will be stored
 
