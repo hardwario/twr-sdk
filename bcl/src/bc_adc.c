@@ -1,6 +1,7 @@
-#include <bc_common.h>
 #include <bc_adc.h>
 #include <bc_scheduler.h>
+#include <bc_common.h>
+#include <bc_irq.h>
 #include <bc_module_core.h>
 #include <stm32l083xx.h>
 
@@ -16,15 +17,15 @@ typedef struct
 } bc_adc_config_t;
 
 static bool _bc_adc_initialized;
-static bc_adc_channel_t _bc_adc_in_progress = _BC_ADC_CHANNEL_NONE;
-static bc_adc_config_t _bc_adc_config_table[6] =
+static bc_adc_channel_t _bc_adc_channel_in_progress = _BC_ADC_CHANNEL_NONE;
+static bc_adc_config_t _bc_adc_channel_table[BC_ADC_CHANNEL_A5 + 1] =
 {
-    [0].chselr = ADC_CHSELR_CHSEL0,
-    [1].chselr = ADC_CHSELR_CHSEL1,
-    [2].chselr = ADC_CHSELR_CHSEL2,
-    [3].chselr = ADC_CHSELR_CHSEL3,
-    [4].chselr = ADC_CHSELR_CHSEL4,
-    [5].chselr = ADC_CHSELR_CHSEL5
+    [BC_ADC_CHANNEL_A0].chselr = ADC_CHSELR_CHSEL0,
+    [BC_ADC_CHANNEL_A1].chselr = ADC_CHSELR_CHSEL1,
+    [BC_ADC_CHANNEL_A2].chselr = ADC_CHSELR_CHSEL2,
+    [BC_ADC_CHANNEL_A3].chselr = ADC_CHSELR_CHSEL3,
+    [BC_ADC_CHANNEL_A4].chselr = ADC_CHSELR_CHSEL4,
+    [BC_ADC_CHANNEL_A5].chselr = ADC_CHSELR_CHSEL5
 };
 
 static void _bc_adc_task();
@@ -66,6 +67,8 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_
 
         // Enable the ADC
         ADC1->CR |= ADC_CR_ADEN;
+
+        NVIC_EnableIRQ(ADC1_COMP_IRQn);
     }
 
     bc_adc_set_reference(channel, reference);
@@ -77,42 +80,42 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_
 
 void bc_adc_set_reference(bc_adc_channel_t channel, bc_adc_reference_t reference)
 {
-    _bc_adc_config_table[channel].reference = reference;
+    _bc_adc_channel_table[channel].reference = reference;
 }
 
 bc_adc_reference_t bc_adc_get_reference(bc_adc_channel_t channel)
 {
-    return _bc_adc_config_table[channel].reference;
+    return _bc_adc_channel_table[channel].reference;
 }
 
 void bc_adc_set_format(bc_adc_channel_t channel, bc_adc_format_t format)
 {
-    _bc_adc_config_table[channel].format = format;
+    _bc_adc_channel_table[channel].format = format;
 }
 
 bc_adc_format_t bc_adc_get_format(bc_adc_channel_t channel)
 {
-    return _bc_adc_config_table[channel].format;
+    return _bc_adc_channel_table[channel].format;
 }
 
-bool bc_adc_measure(bc_adc_channel_t channel, void *result)
+bool bc_adc_read(bc_adc_channel_t channel, void *result)
 {
     // If ongoing conversion ...
-    if (_bc_adc_in_progress != _BC_ADC_CHANNEL_NONE)
+    if (_bc_adc_channel_in_progress != _BC_ADC_CHANNEL_NONE)
     {
         return false;
     }
 
     // Set ADC channel
-    ADC1->CHSELR = _bc_adc_config_table[channel].chselr;
+    ADC1->CHSELR = _bc_adc_channel_table[channel].chselr;
 
-    // Clear EOS, EOC, OVR and EOSMP flags
+    // Clear EOS, EOC, OVR and EOSMP flags (it is cleared by software writing 1 to it)
     ADC1->ISR = ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_OVR | ADC_ISR_EOSMP;
 
-    // Performs the AD conversion
+    // Start the AD measurement
     ADC1->CR |= ADC_CR_ADSTART;
 
-    // wait for end of sequence
+    // wait for end of measurement
     while ((ADC1->ISR & ADC_ISR_EOS) == 0)
     {
         continue;
@@ -123,15 +126,15 @@ bool bc_adc_measure(bc_adc_channel_t channel, void *result)
     return true;
 }
 
-bool bc_adc_async_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *), void *event_param)
+bool bc_adc_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *), void *event_param)
 {
     // Check ongoing on edited channel
-    if (_bc_adc_in_progress == channel)
+    if (_bc_adc_channel_in_progress == channel)
     {
         return false;
     }
 
-    bc_adc_config_t *adc = &_bc_adc_config_table[channel];
+    bc_adc_config_t *adc = &_bc_adc_channel_table[channel];
 
     adc->event_handler = event_handler;
     adc->event_param = event_param;
@@ -139,26 +142,28 @@ bool bc_adc_async_set_event_handler(bc_adc_channel_t channel, void (*event_handl
     return true;
 }
 
-bool bc_adc_async_measure(bc_adc_channel_t channel)
+bool bc_adc_async_read(bc_adc_channel_t channel)
 {
     // If ongoing conversion ...
-    if (_bc_adc_in_progress != _BC_ADC_CHANNEL_NONE)
+    if (_bc_adc_channel_in_progress != _BC_ADC_CHANNEL_NONE)
     {
         return false;
     }
 
-    _bc_adc_in_progress = channel;
+    _bc_adc_channel_in_progress = channel;
 
     // Set ADC channel
-    ADC1->CHSELR = _bc_adc_config_table[channel].chselr;
+    ADC1->CHSELR = _bc_adc_channel_table[channel].chselr;
 
     // Clear EOS, EOC, OVR and EOSMP flags
     ADC1->ISR = ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_OVR | ADC_ISR_EOSMP;
 
+    bc_irq_disable();
+
     // Enable "End Of Sequence" interrupt
     ADC1->IER = ADC_IER_EOSIE;
 
-    NVIC_EnableIRQ(ADC1_COMP_IRQn);
+    bc_irq_enable();
 
     // Start AD conversion
     ADC1->CR |= ADC_CR_ADSTART;
@@ -172,7 +177,7 @@ void bc_adc_get_result(bc_adc_channel_t channel, void *result)
 
     // TODO ... take care of reference ...
 
-    switch (_bc_adc_config_table[channel].format)
+    switch (_bc_adc_channel_table[channel].format)
     {
     case BC_ADC_FORMAT_8_BIT:
         *(uint8_t *) result = data >> 8;
@@ -201,26 +206,24 @@ void ADC1_COMP_IRQHandler()
     // Plan ADC task
     bc_scheduler_plan_now(_bc_adc_task_id);
 
-    // Enable "End Of Sequence" interrupt
+    // Disable "End Of Sequence" interrupt
     ADC1->IER = 0;
 
-    // Clear EOS, EOC, OVR and EOSMP flags
+    // Clear EOS, EOC, OVR and EOSMP flags (it is cleared by software writing 1 to it)
     ADC1->ISR = ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_OVR | ADC_ISR_EOSMP;
-
-    NVIC_DisableIRQ(ADC1_COMP_IRQn);
 }
 
 static void _bc_adc_task()
 {
-    bc_adc_config_t *adc = &_bc_adc_config_table[_bc_adc_in_progress];
-    bc_adc_channel_t pending;
+    bc_adc_config_t *adc = &_bc_adc_channel_table[_bc_adc_channel_in_progress];
+    bc_adc_channel_t pending_channel_result;
 
-    // Update pending
-    pending = _bc_adc_in_progress;
+    // Update pending channel result
+    pending_channel_result = _bc_adc_channel_in_progress;
 
     // Release ADC for further conversion
-    _bc_adc_in_progress = _BC_ADC_CHANNEL_NONE;
+    _bc_adc_channel_in_progress = _BC_ADC_CHANNEL_NONE;
 
     // Perform event call-back
-    adc->event_handler(pending, BC_ADC_EVENT_DONE, adc->event_param);
+    adc->event_handler(pending_channel_result, BC_ADC_EVENT_DONE, adc->event_param);
 }
