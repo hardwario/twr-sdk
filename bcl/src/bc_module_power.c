@@ -52,7 +52,7 @@ void bc_module_power_relay_set_state(bool state)
 {
     _bc_module_power.relay.on = state;
 
-    bc_gpio_set_output(BC_MODULE_POWER_PIN_RELAY, _bc_module_power.relay.on);
+    bc_gpio_set_output(BC_MODULE_POWER_PIN_RELAY, _bc_module_power.relay.on ? 1 : 0);
 }
 
 bool bc_module_power_relay_get_state(void)

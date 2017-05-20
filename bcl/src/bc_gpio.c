@@ -389,16 +389,16 @@ bool bc_gpio_get_input(bc_gpio_channel_t channel)
     return (bc_gpio_port[channel]->IDR & bc_gpio_16_bit_mask[channel]) != 0UL ? true : false;
 }
 
-void bc_gpio_set_output(bc_gpio_channel_t channel, bool state)
+void bc_gpio_set_output(bc_gpio_channel_t channel, int state)
 {
     // Write GPIO state to BSRR register
     bc_gpio_port[channel]->BSRR = state ? bc_gpio_16_bit_mask[channel] : bc_gpio_32_bit_upper_mask[channel];
 }
 
-bool bc_gpio_get_output(bc_gpio_channel_t channel)
+int bc_gpio_get_output(bc_gpio_channel_t channel)
 {
     // Return GPIO state from ODR register
-    return (bc_gpio_port[channel]->ODR & bc_gpio_16_bit_mask[channel]) != 0UL ? true : false;
+    return (bc_gpio_port[channel]->ODR & bc_gpio_16_bit_mask[channel]) != 0UL ? 1 : 0;
 }
 
 void bc_gpio_toggle_output(bc_gpio_channel_t channel)

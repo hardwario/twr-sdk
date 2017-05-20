@@ -114,7 +114,7 @@ static void _bc_pyq1648_clear_event(bc_pyq1648_t *self)
 {
     // Clear event by pull down DL
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT);
-    bc_gpio_set_output(self->_gpio_channel_dl, false);
+    bc_gpio_set_output(self->_gpio_channel_dl, 0);
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
 }
 
@@ -168,7 +168,7 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
         _bc_pyq1648_delay_100us(1);
     }
 
-    bc_gpio_set_output(self->_gpio_channel_serin, false);
+    bc_gpio_set_output(self->_gpio_channel_serin, 0);
 
     // Disable PLL
     bc_module_core_pll_disable();

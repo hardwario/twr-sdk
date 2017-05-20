@@ -18,7 +18,7 @@ void bc_td1207r_init(bc_td1207r_t *self, bc_gpio_channel_t reset_signal, bc_uart
     self->_uart_channel = uart_channel;
 
     bc_gpio_init(self->_reset_signal);
-    bc_gpio_set_output(self->_reset_signal, true);
+    bc_gpio_set_output(self->_reset_signal, 1);
     bc_gpio_set_mode(self->_reset_signal, BC_GPIO_MODE_OUTPUT);
 
     bc_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
@@ -98,7 +98,7 @@ static void _bc_td1207r_task(void *param)
             }
             case BC_TD1207R_STATE_INITIALIZE_RESET_L:
             {
-                bc_gpio_set_output(self->_reset_signal, false);
+                bc_gpio_set_output(self->_reset_signal, 0);
 
                 self->_state = BC_TD1207R_STATE_INITIALIZE_RESET_H;
 
@@ -108,7 +108,7 @@ static void _bc_td1207r_task(void *param)
             }
             case BC_TD1207R_STATE_INITIALIZE_RESET_H:
             {
-                bc_gpio_set_output(self->_reset_signal, true);
+                bc_gpio_set_output(self->_reset_signal, 1);
 
                 self->_state = BC_TD1207R_STATE_INITIALIZE_AT_COMMAND;
 

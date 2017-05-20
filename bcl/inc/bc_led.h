@@ -57,7 +57,7 @@ struct bc_led_t
 {
     bc_gpio_channel_t _gpio_channel;
     bool _open_drain_output;
-    bool _idle_state;
+    int _idle_state;
     bc_tick_t _slot_interval;
     uint32_t _pattern;
     uint32_t _selector;
@@ -73,7 +73,7 @@ struct bc_led_t
 //! @param[in] open_drain_output Determines if LED is driven by open-drain output
 //! @param[in] idle_state GPIO pin idle state (when LED is supposed to be off)
 
-void bc_led_init(bc_led_t *self, bc_gpio_channel_t gpio_channel, bool open_drain_output, bool idle_state);
+void bc_led_init(bc_led_t *self, bc_gpio_channel_t gpio_channel, bool open_drain_output, int idle_state);
 
 //! @brief Set slot interval for pattern processing
 //! @param[in] self Instance
