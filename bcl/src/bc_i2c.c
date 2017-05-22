@@ -197,16 +197,15 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
         _bc_i2c_config(i2c, transfer->device_address << 1, transfer->length, I2C_CR2_AUTOEND, _BC_I2C_GENERATE_START_WRITE);
 
         // Wait until TXIS flag is set
-        if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
+        if (_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
         {
-            __BC_I2C_RESET_PERIPHERAL(i2c);
-
-            bc_module_core_pll_disable();
-
-            return false;
+            status = _bc_i2c_write(i2c, transfer->buffer, transfer->length);
         }
+    }
 
-        status = _bc_i2c_write(i2c, transfer->buffer, transfer->length);
+    if(status == false)
+    {
+        __BC_I2C_RESET_PERIPHERAL(i2c);
     }
 
     bc_module_core_pll_disable();
