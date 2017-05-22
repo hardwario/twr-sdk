@@ -16,6 +16,8 @@
 #define _BC_I2C_BYTE_TRANSFER_TIME_100     80
 #define _BC_I2C_BYTE_TRANSFER_TIME_400     20
 
+#define __BC_I2C_RESET_PERIPHERAL(__I2C__) {__I2C__->CR1 &= ~I2C_CR1_PE; __I2C__->CR1 |= I2C_CR1_PE; }
+
 static struct
 {
     bool i2c0_initialized;
@@ -197,6 +199,8 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
         // Wait until TXIS flag is set
         if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
         {
+            __BC_I2C_RESET_PERIPHERAL(i2c);
+
             bc_module_core_pll_disable();
 
             return false;
@@ -248,6 +252,11 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
         status = _bc_i2c_read(i2c, transfer->device_address << 1, transfer->buffer, transfer->length);
     }
 
+    if (status == false)
+    {
+        __BC_I2C_RESET_PERIPHERAL(i2c);
+    }
+
     bc_module_core_pll_disable();
 
     return status;
@@ -289,6 +298,8 @@ bool bc_i2c_memory_write(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_
 
     if (!_bc_i2c_mem_write(i2c, transfer->device_address << 1, transfer->memory_address, transfer_memory_address_length, transfer->buffer, transfer->length))
     {
+        __BC_I2C_RESET_PERIPHERAL(i2c);
+
         // Disable PLL and enable sleep
         bc_module_core_pll_disable();
 
@@ -337,6 +348,8 @@ bool bc_i2c_memory_read(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t
 
     if (!_bc_i2c_mem_read(i2c, transfer->device_address << 1, transfer->memory_address, transfer_memory_address_length, transfer->buffer, transfer->length))
     {
+        __BC_I2C_RESET_PERIPHERAL(i2c);
+
         // Disable PLL and enable sleep
         bc_module_core_pll_disable();
 
