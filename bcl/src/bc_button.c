@@ -60,14 +60,14 @@ static void _bc_button_task(void *param)
 
     bc_tick_t tick_now = bc_scheduler_get_spin_tick();
 
-    bool pin_state = bc_gpio_get_input(self->_gpio_channel);
+    int pin_state = bc_gpio_get_input(self->_gpio_channel);
 
     if (self->_idle_state)
     {
         pin_state = !pin_state;
     }
 
-    if ((!self->_state && pin_state) || (self->_state && !pin_state))
+    if ((!self->_state && (pin_state == 1)) || (self->_state && (pin_state == 0)))
     {
         if (tick_now >= self->_tick_debounce)
         {

@@ -243,7 +243,7 @@ start:
                 self->_ignore_untill = bc_tick_get() + (75000 / 15);
             }
 
-            if (bc_gpio_get_input(self->_gpio_channel_dl))
+            if (bc_gpio_get_input(self->_gpio_channel_dl) == 1)
             {
                 _bc_pyq1648_clear_event(self);
             }
@@ -267,7 +267,7 @@ start:
 
             self->_state = BC_PYQ1648_STATE_ERROR;
 
-            if (bc_gpio_get_input(self->_gpio_channel_dl))
+            if (bc_gpio_get_input(self->_gpio_channel_dl) == 1)
             {
                 if (tick_now >= self->_aware_time)
                 {
