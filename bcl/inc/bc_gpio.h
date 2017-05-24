@@ -166,19 +166,19 @@ bc_gpio_mode_t bc_gpio_get_mode(bc_gpio_channel_t channel);
 //! @param channel GPIO channel
 //! @return state Input state
 
-bool bc_gpio_get_input(bc_gpio_channel_t channel);
+int bc_gpio_get_input(bc_gpio_channel_t channel);
 
 //! @brief Set output state for GPIO channel
 //! @param[in] channel GPIO channel
 //! @param[in] state Desired output state
 
-void bc_gpio_set_output(bc_gpio_channel_t channel, bool state);
+void bc_gpio_set_output(bc_gpio_channel_t channel, int state);
 
 //! @brief Get output state for GPIO channel
 //! @param[in] channel GPIO channel
 //! @return Output state
 
-bool bc_gpio_get_output(bc_gpio_channel_t channel);
+int bc_gpio_get_output(bc_gpio_channel_t channel);
 
 //! @brief Toggle output state for GPIO channel
 //! @param[in] channel GPIO channel

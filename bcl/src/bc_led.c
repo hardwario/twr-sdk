@@ -10,7 +10,7 @@ static void _bc_led_on(bc_led_t *self);
 
 static void _bc_led_off(bc_led_t *self);
 
-void bc_led_init(bc_led_t *self, bc_gpio_channel_t gpio_channel, bool open_drain_output, bool idle_state)
+void bc_led_init(bc_led_t *self, bc_gpio_channel_t gpio_channel, bool open_drain_output, int idle_state)
 {
     memset(self, 0, sizeof(*self));
 
@@ -213,10 +213,10 @@ static void _bc_led_task_pulse(void *param)
 
 static void _bc_led_on(bc_led_t *self)
 {
-    bc_gpio_set_output(self->_gpio_channel, self->_idle_state ? false : true);
+    bc_gpio_set_output(self->_gpio_channel, self->_idle_state ? 0 : 1);
 }
 
 static void _bc_led_off(bc_led_t *self)
 {
-    bc_gpio_set_output(self->_gpio_channel, self->_idle_state ? true : false);
+    bc_gpio_set_output(self->_gpio_channel, self->_idle_state ? 1 : 0);
 }

@@ -12,7 +12,7 @@ void bc_module_battery_init(bc_module_battery_format_t format)
     memset(&_bc_module_battery, 0, sizeof(_bc_module_battery));
 
     bc_gpio_init(BC_GPIO_P1);
-    bc_gpio_set_output(BC_GPIO_P1, false);
+    bc_gpio_set_output(BC_GPIO_P1, 0);
     bc_gpio_set_mode(BC_GPIO_P1, BC_GPIO_MODE_OUTPUT);
 
     // TODO Implement
