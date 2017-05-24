@@ -585,6 +585,8 @@ static void _bc_radio_save_peer_devices(void)
 
 static void atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t event, void *event_param)
 {
+    (void) event_param;
+
     if (event == BC_ATSHA204_EVENT_SERIAL_NUMBER)
     {
         if (bc_atsha204_get_serial_number(self, &_bc_radio.device_address, sizeof(_bc_radio.device_address)))

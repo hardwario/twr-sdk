@@ -65,7 +65,7 @@ bool bc_atsha204_get_serial_number(bc_atsha204_t *self, void *destination, size_
 
     uint8_t *number = (uint8_t *) destination;
 
-    int i = 0;
+    size_t i = 0;
 
     for (; (i < size) && (i < 2); i++)
     {
@@ -81,16 +81,6 @@ bool bc_atsha204_get_serial_number(bc_atsha204_t *self, void *destination, size_
     {
         *number++ = 0;
     }
-
-//    *number  = (uint64_t) self->_rx_buffer[1];
-//    *number |= (uint64_t) self->_rx_buffer[2] << 8;
-//    *number |= (uint64_t) self->_rx_buffer[3] << 16;
-//    *number |= (uint64_t) self->_rx_buffer[4] << 24;
-//
-//    *number |= (uint64_t) self->_rx_buffer[1 + 7] << 32;
-//    *number |= (uint64_t) self->_rx_buffer[2 + 7] << 40;
-//    *number |= (uint64_t) self->_rx_buffer[3 + 7] << 48;
-//    *number |= (uint64_t) self->_rx_buffer[4 + 7] << 56;
 
     return true;
 }
@@ -130,6 +120,8 @@ static void _bc_atsha204_task(void *param)
 
             break;
         }
+        case BC_ATSHA204_STATE_READY:
+        case BC_ATSHA204_STATE_SERIAL_NUMBER:
         default:
         {
             return;
