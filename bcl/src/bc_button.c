@@ -64,10 +64,10 @@ static void _bc_button_task(void *param)
 
     if (self->_idle_state)
     {
-        pin_state = !pin_state;
+        pin_state = pin_state != 0 ? 0 : 1;
     }
 
-    if ((!self->_state && (pin_state == 1)) || (self->_state && (pin_state == 0)))
+    if ((!self->_state && (pin_state != 0)) || (self->_state && (pin_state == 0)))
     {
         if (tick_now >= self->_tick_debounce)
         {
