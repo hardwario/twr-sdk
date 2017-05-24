@@ -10,8 +10,8 @@
 #define _BC_I2C_SOFTEND_MODE               (0x00000000U)
 #define _BC_I2C_NO_STARTSTOP               (0x00000000U)
 #define _BC_I2C_GENERATE_START_WRITE       I2C_CR2_START
-#define _BC_I2C_FLAG_TIMEOUT 1
-#define _BC_I2C_ACK_TIMEOUT 1
+//#define _BC_I2C_FLAG_TIMEOUT 1
+//#define _BC_I2C_ACK_TIMEOUT 1
 
 static struct
 {
@@ -159,12 +159,10 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
     if (_bc_i2c_watch_flag(i2c, I2C_ISR_BUSY, SET))
     {
         _bc_i2c_config(i2c, transfer->device_address << 1, transfer->length, I2C_CR2_AUTOEND, _BC_I2C_GENERATE_START_WRITE);
-
         // Wait until TXIS flag is set
         if (!_bc_i2c_watch_flag(i2c, I2C_ISR_TXIS, RESET))
         {
             bc_module_core_pll_disable();
-
             return false;
         }
 
@@ -516,7 +514,7 @@ static void _bc_i2c_config(I2C_TypeDef *i2c, uint8_t device_address, uint8_t len
 
 static bool _bc_i2c_watch_flag(I2C_TypeDef *i2c, uint32_t flag, FlagStatus status)
 {
-    bc_tick_t tick_last = bc_tick_get() + _BC_I2C_FLAG_TIMEOUT;
+    uint32_t timeout = 1000;
 
     while ((i2c->ISR & flag) == status)
     {
@@ -529,7 +527,7 @@ static bool _bc_i2c_watch_flag(I2C_TypeDef *i2c, uint32_t flag, FlagStatus statu
             }
         }
 
-        if (bc_tick_get() > tick_last)
+        if (timeout-- == 0)
         {
             return false;
         }
@@ -539,7 +537,7 @@ static bool _bc_i2c_watch_flag(I2C_TypeDef *i2c, uint32_t flag, FlagStatus statu
 
 static inline bool _bc_i2c_ack_failed(I2C_TypeDef *i2c)
 {
-    bc_tick_t tick_last = bc_tick_get() + _BC_I2C_ACK_TIMEOUT;
+    uint32_t timeout = 10;
 
     if ((i2c->ISR & I2C_ISR_NACKF) != 0)
     {
@@ -547,7 +545,7 @@ static inline bool _bc_i2c_ack_failed(I2C_TypeDef *i2c)
         // AutoEnd should be initialized after AF
         while ((i2c->ISR & I2C_ISR_STOPF) == 0)
         {
-            if (bc_tick_get() > tick_last)
+            if (timeout-- == 0)
             {
                 return false;
             }
