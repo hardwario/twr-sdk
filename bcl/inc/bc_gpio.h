@@ -11,65 +11,65 @@
 
 typedef enum
 {
-    //!< GPIO channel P0
+    //! @brief GPIO channel P0
     BC_GPIO_P0 = 0,
 
-    //!< GPIO channel P1
+    //! @brief GPIO channel P1
     BC_GPIO_P1 = 1,
 
-    //!< GPIO channel P2
+    //! @brief GPIO channel P2
     BC_GPIO_P2 = 2,
 
-    //!< GPIO channel P3
+    //! @brief GPIO channel P3
     BC_GPIO_P3 = 3,
 
-    //!< GPIO channel P4
+    //! @brief GPIO channel P4
     BC_GPIO_P4 = 4,
 
-    //!< GPIO channel P5
+    //! @brief GPIO channel P5
     BC_GPIO_P5 = 5,
 
-    //!< GPIO channel P6
+    //! @brief GPIO channel P6
     BC_GPIO_P6 = 6,
 
-    //!< GPIO channel P7
+    //! @brief GPIO channel P7
     BC_GPIO_P7 = 7,
 
-    //!< GPIO channel P8
+    //! @brief GPIO channel P8
     BC_GPIO_P8 = 8,
 
-    //!< GPIO channel P9
+    //! @brief GPIO channel P9
     BC_GPIO_P9 = 9,
 
-    //!< GPIO channel P10
+    //! @brief GPIO channel P10
     BC_GPIO_P10 = 10,
 
-    //!< GPIO channel P11
+    //! @brief GPIO channel P11
     BC_GPIO_P11 = 11,
 
-    //!< GPIO channel P12
+    //! @brief GPIO channel P12
     BC_GPIO_P12 = 12,
 
-    //!< GPIO channel P13
+    //! @brief GPIO channel P13
     BC_GPIO_P13 = 13,
 
-    //!< GPIO channel P14
+    //! @brief GPIO channel P14
     BC_GPIO_P14 = 14,
 
-    //!< GPIO channel P15
+    //! @brief GPIO channel P15
     BC_GPIO_P15 = 15,
 
-    //!< GPIO channel P16
+    //! @brief GPIO channel P16
     BC_GPIO_P16 = 16,
 
-    //!< GPIO channel P17
+    //! @brief GPIO channel P17
     BC_GPIO_P17 = 17,
 
-    //!< GPIO channel LED
+    //! @brief GPIO channel LED
     BC_GPIO_LED = 18,
 
-    //!< GPIO channel BUTTON
-    BC_GPIO_BUTTON = 19,
+    //! @brief GPIO channel BUTTON
+    BC_GPIO_BUTTON = 19
 
 } bc_gpio_channel_t;
 
@@ -77,13 +77,13 @@ typedef enum
 
 typedef enum
 {
-    //!< GPIO channel has no pull-up/pull-down
+    //! @brief GPIO channel has no pull-up/pull-down
     BC_GPIO_PULL_NONE = 0,
 
-    //!< GPIO channel has pull-up
+    //! @brief GPIO channel has pull-up
     BC_GPIO_PULL_UP = 1,
 
-    //!< GPIO channel has pull-down
+    //! @brief GPIO channel has pull-down
     BC_GPIO_PULL_DOWN = 2
 
 } bc_gpio_pull_t;
@@ -92,20 +92,44 @@ typedef enum
 
 typedef enum
 {
-    //!< GPIO channel operates as input
+    //! @brief GPIO channel operates as input
     BC_GPIO_MODE_INPUT = 0,
 
-    //!< GPIO channel operates as output
+    //! @brief GPIO channel operates as output
     BC_GPIO_MODE_OUTPUT = 1,
 
-    //!< GPIO channel operates in alternate mode
+    //! @brief GPIO channel operates in alternate mode
     BC_GPIO_MODE_ALTERNATE = 2,
 
-    //!< GPIO channel operates in analog mode
+    //! @brief GPIO channel operates in analog mode
     BC_GPIO_MODE_ANALOG = 3,
 
-    //!< GPIO channel operates as open-drain output
-    BC_GPIO_MODE_OUTPUT_OD = 4
+    //! @brief GPIO channel operates as open-drain output
+    BC_GPIO_MODE_OUTPUT_OD = 4,
+
+    //! @brief GPIO channel operates in alternate mode AF0
+    BC_GPIO_MODE_ALTERNATE_0 = (0 << 4) | 2,
+
+    //! @brief GPIO channel operates in alternate mode AF1
+    BC_GPIO_MODE_ALTERNATE_1 = (1 << 4) | 2,
+
+    //! @brief GPIO channel operates in alternate mode AF2
+    BC_GPIO_MODE_ALTERNATE_2 = (2 << 4) | 2,
+
+    //! @brief GPIO channel operates in alternate mode AF3
+    BC_GPIO_MODE_ALTERNATE_3 = (3 << 4) | 2,
+
+    //! @brief GPIO channel operates in alternate mode AF4
+    BC_GPIO_MODE_ALTERNATE_4 = (4 << 4) | 2,
+
+    //! @brief GPIO channel operates in alternate mode AF5
+    BC_GPIO_MODE_ALTERNATE_5 = (5 << 4) | 2,
+
+    //! @brief GPIO channel operates in alternate mode AF6
+    BC_GPIO_MODE_ALTERNATE_6 = (6 << 4) | 2,
+
+    //! @brief GPIO channel operates in alternate mode AF7
+    BC_GPIO_MODE_ALTERNATE_7 = (7 << 4) | 2
 
 } bc_gpio_mode_t;
 
