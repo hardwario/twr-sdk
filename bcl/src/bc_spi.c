@@ -22,14 +22,17 @@ static const uint32_t _bc_spi_mode_table[4] =
     [BC_SPI_MODE_3] = 0x03  // SPI mode of operation is 3 (CPOL = 1, CPHA = 1)
 };
 
-static bc_spi_mode_t _bc_spi_mode;
-static bc_spi_speed_t _bc_spi_speed;
-static void (*_event_handler)(bc_spi_event_t event, void *_event_param);
-static void *_event_param;
-static bool _in_progress;
-static bc_spi_event_t _pending_event;
-static bool _initilized;
-static bc_scheduler_task_id_t _task_id;
+static struct
+{
+    bc_spi_mode_t mode;
+    bc_spi_speed_t speed;
+    void (*event_handler)(bc_spi_event_t event, void *_bc_spi_event_param);
+    void *event_param;
+    bool in_progress;
+    bc_spi_event_t pending_event;
+    bool initilized;
+    bc_scheduler_task_id_t task_id;
+} _bc_spi;
 
 static uint8_t _bc_spi_transfer_byte(uint8_t value);
 static inline void _bc_spi_transfer_error_handler();
@@ -39,12 +42,12 @@ static void _bc_spi_task();
 void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
 {
     // If is already initilized ...
-    if(_initilized == true)
+    if(_bc_spi.initilized == true)
     {
         // ... dont do it again
         return;
     }
-    _initilized = true;
+    _bc_spi.initilized = true;
 
     // Enable GPIOB clock
     RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
@@ -83,7 +86,7 @@ void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
     NVIC_SetPriority(DMA1_Channel4_5_6_7_IRQn, 0);
     NVIC_EnableIRQ(DMA1_Channel4_5_6_7_IRQn);
 
-    _task_id = bc_scheduler_register(_bc_spi_task, NULL, BC_TICK_INFINITY);
+    _bc_spi.task_id = bc_scheduler_register(_bc_spi_task, NULL, BC_TICK_INFINITY);
 }
 
 void bc_spi_set_speed(bc_spi_speed_t speed)
@@ -91,7 +94,7 @@ void bc_spi_set_speed(bc_spi_speed_t speed)
     uint32_t cr1;
 
     // Store desired speed
-    _bc_spi_speed = speed;
+    _bc_spi.speed = speed;
 
     // Disable SPI
     SPI2->CR1 &= ~SPI_CR1_SPE;
@@ -110,7 +113,7 @@ void bc_spi_set_speed(bc_spi_speed_t speed)
 
 bc_spi_speed_t bc_spi_get_speed(void)
 {
-    return _bc_spi_speed;
+    return _bc_spi.speed;
 }
 
 void bc_spi_set_mode(bc_spi_mode_t mode)
@@ -118,7 +121,7 @@ void bc_spi_set_mode(bc_spi_mode_t mode)
     uint32_t cr1;
 
     // Store desired mode
-    _bc_spi_mode = mode;
+    _bc_spi.mode = mode;
 
     // Disable SPI
     SPI2->CR1 &= ~SPI_CR1_SPE;
@@ -137,20 +140,20 @@ void bc_spi_set_mode(bc_spi_mode_t mode)
 
 bc_spi_mode_t bc_spi_get_mode(void)
 {
-    return _bc_spi_mode;
+    return _bc_spi.mode;
 }
 
 bool bc_spi_transfer(const void *source, void *destination, size_t length)
 {
     // If another transfer cannot be executed ...
-    if (_in_progress == true)
+    if (_bc_spi.in_progress == true)
     {
         // ... dont do it
         return false;
     }
 
     // Update status
-    _in_progress = true;
+    _bc_spi.in_progress = true;
 
     // Enable PLL and disable sleep
     bc_module_core_pll_enable();
@@ -190,7 +193,7 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
     bc_module_core_pll_disable();
 
     // Update status
-    _in_progress = false;
+    _bc_spi.in_progress = false;
 
     return true;
 }
@@ -198,15 +201,15 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
 bool bc_spi_async_transfer(const void *source, void *destination, size_t length, void (*event_handler)(bc_spi_event_t event, void *event_param), void (*event_param))
 {
     // If another transfer cannot be executed now ...
-    if((_in_progress == true) || (_pending_event != _BC_SPI_EVENT_CLEAR))
+    if((_bc_spi.in_progress == true) || (_bc_spi.pending_event != _BC_SPI_EVENT_CLEAR))
     {
         // ... dont do it
         return false;
     }
 
     // Update event related variables
-    _event_handler = event_handler;
-    _event_param = event_param;
+    _bc_spi.event_handler = event_handler;
+    _bc_spi.event_param = event_param;
 
     // Enable DMA1
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
@@ -223,7 +226,7 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
         GPIOB->BSRR = GPIO_BSRR_BR_12;
 
         // Update status
-        _in_progress = true;
+        _bc_spi.in_progress = true;
 
         // Set memory incrementation, direction from memory and disable peripheral
         DMA1_Channel5->CCR = DMA_CCR_DIR | DMA_CCR_MINC;
@@ -339,48 +342,48 @@ static inline void _bc_spi_transfer_error_handler()
     // TODO Not sure what should happen here
 
     // Update status
-    _in_progress = false;
-    _pending_event |= BC_SPI_EVENT_ERROR;
+    _bc_spi.in_progress = false;
+    _bc_spi.pending_event |= BC_SPI_EVENT_ERROR;
 
     GPIOB->BSRR = GPIO_BSRR_BS_12;
 
     // Plan task that call event handler
-    bc_scheduler_plan_now(_task_id);
+    bc_scheduler_plan_now(_bc_spi.task_id);
 }
 
 static inline void _bc_spi_transfer_done_handler()
 {
     // Update status
-    _in_progress = false;
-    _pending_event |= BC_SPI_EVENT_DONE;
+    _bc_spi.in_progress = false;
+    _bc_spi.pending_event |= BC_SPI_EVENT_DONE;
 
     GPIOB->BSRR = GPIO_BSRR_BS_12;
 
     // Plan task that call event handler
-    bc_scheduler_plan_now(_task_id);
+    bc_scheduler_plan_now(_bc_spi.task_id);
 }
 
 static void _bc_spi_task()
 {
     // If is event handler valid ...
-    if (_event_handler != NULL)
+    if (_bc_spi.event_handler != NULL)
     {
-        if((_pending_event & BC_SPI_EVENT_ERROR) != 0)
+        if((_bc_spi.pending_event & BC_SPI_EVENT_ERROR) != 0)
         {
             // ... call event handler with BC_SPI_EVENT_ERROR
-            _event_handler(BC_SPI_EVENT_ERROR, _event_param);
-            _pending_event &= ~BC_SPI_EVENT_ERROR;
+            _bc_spi.event_handler(BC_SPI_EVENT_ERROR, _bc_spi.event_param);
+            _bc_spi.pending_event &= ~BC_SPI_EVENT_ERROR;
 
             // TODO Not sure what should happen here (viz. _bc_spi_transfer_error_handler)
 
             // Disable PLL and enable sleep
             bc_module_core_pll_disable();
         }
-        if ((_pending_event & BC_SPI_EVENT_DONE) != 0)
+        if ((_bc_spi.pending_event & BC_SPI_EVENT_DONE) != 0)
         {
             // ... call event handler with BC_SPI_EVENT_CPLT
-            _event_handler(BC_SPI_EVENT_DONE, _event_param);
-            _pending_event &= ~BC_SPI_EVENT_DONE;
+            _bc_spi.event_handler(BC_SPI_EVENT_DONE, _bc_spi.event_param);
+            _bc_spi.pending_event &= ~BC_SPI_EVENT_DONE;
 
             // Disable PLL and enable sleep
             bc_module_core_pll_disable();
@@ -388,6 +391,6 @@ static void _bc_spi_task()
     }
     else
     {
-        _pending_event = _BC_SPI_EVENT_CLEAR;
+        _bc_spi.pending_event = _BC_SPI_EVENT_CLEAR;
     }
 }
