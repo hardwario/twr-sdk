@@ -11,11 +11,20 @@
 
 typedef enum
 {
-    BC_SPI_SPEED_1_MHZ = 0, //!< SPI communication speed is 1 MHz
-    BC_SPI_SPEED_2_MHZ = 1, //!< SPI communication speed is 2 MHz
-    BC_SPI_SPEED_4_MHZ = 2, //!< SPI communication speed is 4 MHz
-    BC_SPI_SPEED_8_MHZ = 3, //!< SPI communication speed is 8 MHz
-    BC_SPI_SPEED_16_MHZ = 4 //!< SPI communication speed is 16 MHz
+    //! @brief SPI communication speed is 1 MHz
+    BC_SPI_SPEED_1_MHZ = 0,
+
+    //! @brief SPI communication speed is 2 MHz
+    BC_SPI_SPEED_2_MHZ = 1,
+
+    //! @brief SPI communication speed is 4 MHz
+    BC_SPI_SPEED_4_MHZ = 2,
+
+    //! @brief SPI communication speed is 8 MHz
+    BC_SPI_SPEED_8_MHZ = 3,
+
+    //! @brief SPI communication speed is 16 MHz
+    BC_SPI_SPEED_16_MHZ = 4
 
 } bc_spi_speed_t;
 
@@ -23,12 +32,31 @@ typedef enum
 
 typedef enum
 {
-    BC_SPI_MODE_0 = 0, //!< SPI mode of operation is 0 (CPOL = 0, CPHA = 0)
-    BC_SPI_MODE_1 = 1, //!< SPI mode of operation is 1 (CPOL = 0, CPHA = 1)
-    BC_SPI_MODE_2 = 2, //!< SPI mode of operation is 2 (CPOL = 1, CPHA = 0)
-    BC_SPI_MODE_3 = 3  //!< SPI mode of operation is 3 (CPOL = 1, CPHA = 1)
+    //! @brief SPI mode of operation is 0 (CPOL = 0, CPHA = 0)
+    BC_SPI_MODE_0 = 0,
+
+    //! @brief SPI mode of operation is 1 (CPOL = 0, CPHA = 1)
+    BC_SPI_MODE_1 = 1,
+
+    //! @brief SPI mode of operation is 2 (CPOL = 1, CPHA = 0)
+    BC_SPI_MODE_2 = 2,
+
+    //! @brief SPI mode of operation is 3 (CPOL = 1, CPHA = 1)
+    BC_SPI_MODE_3 = 3
 
 } bc_spi_mode_t;
+
+//! @brief SPI event
+
+typedef enum
+{
+    //! @brief SPI event is error
+    BC_SPI_EVENT_ERROR = 1,
+
+    //! @brief SPI event is completed
+    BC_SPI_EVENT_DONE = 2
+
+} bc_spi_event_t;
 
 //! @brief Initialize SPI channel
 //! @param[in] speed SPI communication speed
@@ -61,7 +89,16 @@ bc_spi_mode_t bc_spi_get_mode(void);
 //! @param[out] destination Pointer to destination buffer
 //! @param[in] length Number of bytes to be transferred
 
-void bc_spi_transfer(const void *source, void *destination, size_t length);
+bool bc_spi_transfer(const void *source, void *destination, size_t length);
+
+//! @brief Execute async SPI transfer
+//! @param[in] source Pointer to source buffer
+//! @param[out] destination Pointer to destination buffer
+//! @param[in] length Number of bytes to be transferred
+//! @param[in] event_handler Function address (can be NULL)
+//! @param[in] event_param Optional event parameter (can be NULL)
+
+bool bc_spi_async_transfer(const void *source, void *destination, size_t length, void (*event_handler)(bc_spi_event_t event, void *event_param), void (*event_param));
 
 //! @}
 
