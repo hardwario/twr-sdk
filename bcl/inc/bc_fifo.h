@@ -11,10 +11,17 @@
 
 typedef struct
 {
-    void *buffer; //!< Pointer to buffer where FIFO holds data
-    size_t size;  //!< Size of buffer where FIFO holds data
-    size_t head;  //!< Position of FIFO's head
-    size_t tail;  //!< Position of FIFO's tail
+    //! @brief Pointer to buffer where FIFO holds data
+    void *buffer;
+
+    //! @brief Size of buffer where FIFO holds data
+    size_t size;
+
+    //! @brief Position of FIFO's head
+    size_t head;
+
+    //! @brief Position of FIFO's tail
+    size_t tail;
 
 } bc_fifo_t;
 

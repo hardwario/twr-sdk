@@ -110,8 +110,8 @@ void bc_wssfm10r1at_set_event_handler(bc_wssfm10r1at_t *self, void (*event_handl
 
 //! @brief Check if modem is ready for commands
 //! @param[in] self Instance
-//! @return true if ready
-//! @return false if not ready
+//! @return true If ready
+//! @return false If not ready
 
 bool bc_wssfm10r1at_is_ready(bc_wssfm10r1at_t *self);
 
@@ -119,29 +119,29 @@ bool bc_wssfm10r1at_is_ready(bc_wssfm10r1at_t *self);
 //! @param[in] self Instance
 //! @param[in] buffer Pointer to data to be transmitted
 //! @param[in] length Length of data to be transmitted in bytes (must be from 1 to 12 bytes)
-//! @return true if command was accepted for processing
-//! @return false if command was denied for processing
+//! @return true If command was accepted for processing
+//! @return false If command was denied for processing
 
 bool bc_wssfm10r1at_send_rf_frame(bc_wssfm10r1at_t *self, const void *buffer, size_t length);
 
 //! @brief Read device ID command
 //! @param[in] self Instance
-//! @return true if command was accepted for processing
-//! @return false if command was denied for processing
+//! @return true If command was accepted for processing
+//! @return false If command was denied for processing
 
 bool bc_wssfm10r1at_read_device_id(bc_wssfm10r1at_t *self);
 
 //! @brief Read device PAC command
 //! @param[in] self Instance
-//! @return true if command was accepted for processing
-//! @return false if command was denied for processing
+//! @return true If command was accepted for processing
+//! @return false If command was denied for processing
 
 bool bc_wssfm10r1at_read_device_pac(bc_wssfm10r1at_t *self);
 
 //! @brief Generate continuous wave command
 //! @param[in] self Instance
-//! @return true if command was accepted for processing
-//! @return false if command was denied for processing
+//! @return true If command was accepted for processing
+//! @return false If command was denied for processing
 
 bool bc_wssfm10r1at_continuous_wave(bc_wssfm10r1at_t *self);
 

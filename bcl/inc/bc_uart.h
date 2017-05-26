@@ -20,6 +20,7 @@
 
 typedef enum
 {
+    //! @brief Configuration 8 bits, no parity, 1 stop bit
     BC_UART_CONFIG_9600_8N1 = 9600 | _BC_UART_DATA_BITS_8 | _BC_UART_PARITY_NONE | _BC_UART_STOP_BITS_1
 
 } bc_uart_config_t;
@@ -37,8 +38,13 @@ typedef enum
 
 typedef enum
 {
+    //! @brief Event is writting done
     BC_UART_EVENT_ASYNC_WRITE_DONE = 0,
+
+    //! @brief Event is reading done
     BC_UART_EVENT_ASYNC_READ_DATA = 1,
+
+    //! @brief Event is timeout
     BC_UART_EVENT_ASYNC_READ_TIMEOUT = 2
 
 } bc_uart_event_t;
@@ -66,15 +72,48 @@ size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t lengt
 
 size_t bc_uart_read(bc_uart_channel_t channel, void *buffer, size_t length, bc_tick_t timeout);
 
+//! @brief Set callback function
+//! @param[in] channel UART channel
+//! @param[in] event_handler Function address
+//! @param[in] event_param Optional event parameter (can be NULL)
+
 void bc_uart_set_event_handler(bc_uart_channel_t channel, void (*event_handler)(bc_uart_channel_t, bc_uart_event_t, void *), void *event_param);
+
+//! @brief Set buffers for async transfers
+//! @param[in] channel UART channel
+//! @param[in] write_fifo Pointer to writing fifo
+//! @param[in] read_fifo Pointer to reader fifo
 
 void bc_uart_set_async_fifo(bc_uart_channel_t channel, bc_fifo_t *write_fifo, bc_fifo_t *read_fifo);
 
+//! @brief Add data to be transmited in async mode
+//! @param[in] channel UART channel
+//! @param[in] buffer Pointer to buffer
+//! @param[in] length Length of data to be added
+//! @return Number of bytes added
+
 size_t bc_uart_async_write(bc_uart_channel_t channel, const void *buffer, size_t length);
+
+//! @brief Start async reading
+//! @param[in] channel UART channel
+//! @param[in] timeout Maximum timeout in ms
+//! @return true On success
+//! @return false On failure
 
 bool bc_uart_async_read_start(bc_uart_channel_t channel, bc_tick_t timeout);
 
+//! @brief Cancel async reading
+//! @param[in] channel UART channel
+//! @return true On success
+//! @return false On failure
+
 bool bc_uart_async_read_cancel(bc_uart_channel_t channel);
+
+//! @brief Get data that has been received in async mode
+//! @param[in] channel UART channel
+//! @param[in] buffer Pointer to buffer
+//! @param[in] length Maximum length of received data
+//! @return Number of received bytes
 
 size_t bc_uart_async_read(bc_uart_channel_t channel, void *buffer, size_t length);
 
