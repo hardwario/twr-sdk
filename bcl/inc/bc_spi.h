@@ -46,6 +46,18 @@ typedef enum
 
 } bc_spi_mode_t;
 
+//! @brief SPI event
+
+typedef enum
+{
+    //! @brief SPI event is error
+    BC_SPI_EVENT_ERROR = 1,
+
+    //! @brief SPI event is completed
+    BC_SPI_EVENT_DONE = 2
+
+} bc_spi_event_t;
+
 //! @brief Initialize SPI channel
 //! @param[in] speed SPI communication speed
 //! @param[in] mode SPI mode of operation
@@ -77,7 +89,16 @@ bc_spi_mode_t bc_spi_get_mode(void);
 //! @param[out] destination Pointer to destination buffer
 //! @param[in] length Number of bytes to be transferred
 
-void bc_spi_transfer(const void *source, void *destination, size_t length);
+bool bc_spi_transfer(const void *source, void *destination, size_t length);
+
+//! @brief Execute async SPI transfer
+//! @param[in] source Pointer to source buffer
+//! @param[out] destination Pointer to destination buffer
+//! @param[in] length Number of bytes to be transferred
+//! @param[in] event_handler Function address (can be NULL)
+//! @param[in] event_param Optional event parameter (can be NULL)
+
+bool bc_spi_async_transfer(const void *source, void *destination, size_t length, void (*event_handler)(bc_spi_event_t event, void *event_param), void (*event_param));
 
 //! @}
 
