@@ -8,11 +8,14 @@
 #include <bc_tca9534a.h>
 #include <bc_scheduler.h>
 
-#define _BC_MODULE_LCD_DISP_ON   0x04
-#define _BC_MODULE_LCD_LED_GREEN 0x10
-#define _BC_MODULE_LCD_LED_RED   0x20
-#define _BC_MODULE_LCD_LED_BLUE  0x40
-#define _BC_MODULE_LCD_DISP_CS   0x80
+#define _BC_MODULE_LCD_BACKLIGHT (1 << 0)
+#define _BC_MODULE_LCD_BUTTON1   (1 << 1)
+#define _BC_MODULE_LCD_DISP_ON   (1 << 2)
+#define _BC_MODULE_LCD_BUTTON2   (1 << 3)
+#define _BC_MODULE_LCD_LED_GREEN (1 << 4)
+#define _BC_MODULE_LCD_LED_RED   (1 << 5)
+#define _BC_MODULE_LCD_LED_BLUE  (1 << 6)
+#define _BC_MODULE_LCD_DISP_CS   (1 << 7)
 #define _BC_MODULE_LCD_VCOM_PERIOD 15000
 
 typedef struct bc_module_lcd_t
@@ -38,15 +41,17 @@ uint8_t reverse2(uint32_t b) {
 
 static void _bc_module_lcd_spi_transfer(uint8_t *buffer, size_t length);
 static void _bc_module_lcd_task(void *param);
+void _bc_spi_event_handler(bc_spi_event_t event, void *event_param);
 
 void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 {
     bc_module_lcd_t *self = &_bc_module_lcd;
 
     bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x3c);
-    bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a);
     _bc_module_lcd.gpio = _BC_MODULE_LCD_DISP_CS | _BC_MODULE_LCD_DISP_ON | _BC_MODULE_LCD_LED_GREEN | _BC_MODULE_LCD_LED_RED | _BC_MODULE_LCD_LED_BLUE;
     bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
+
+    bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a);
 
     bc_spi_init(BC_SPI_SPEED_1_MHZ, BC_SPI_MODE_0);
 
@@ -227,10 +232,12 @@ void bc_module_lcd_update(void)
 {
     bc_module_lcd_t *self = &_bc_module_lcd;
     self->framebuffer[0] = 0x80 | self->vcom;
-
-    _bc_module_lcd_spi_transfer(self->framebuffer, BC_LCD_FRAMEBUFFER_SIZE);
-
     self->vcom ^= 0x40;
+
+    _bc_module_lcd.gpio &= ~_BC_MODULE_LCD_DISP_CS;
+    bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
+
+    bc_spi_async_transfer(self->framebuffer, NULL, BC_LCD_FRAMEBUFFER_SIZE, _bc_spi_event_handler, NULL);
 
     bc_scheduler_plan_relative(self->task_id, _BC_MODULE_LCD_VCOM_PERIOD);
 }
@@ -279,4 +286,15 @@ static void _bc_module_lcd_task(void *param)
     _bc_module_lcd.vcom ^= 0x40;
 
     bc_scheduler_plan_current_relative(_BC_MODULE_LCD_VCOM_PERIOD);
+}
+
+void _bc_spi_event_handler(bc_spi_event_t event, void *event_param)
+{
+    (void) event_param;
+
+    if (event == BC_SPI_EVENT_DONE)
+    {
+        _bc_module_lcd.gpio |= _BC_MODULE_LCD_DISP_CS;
+        bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
+    }
 }
