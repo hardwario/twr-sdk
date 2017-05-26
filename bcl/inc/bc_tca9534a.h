@@ -60,16 +60,16 @@ bool bc_tca9534a_init(bc_tca9534a_t *self, bc_i2c_channel_t i2c_channel, uint8_t
 //! @brief Read state of all pins
 //! @param[in] self Instance
 //! @param[out] state Pointer to variable where state of all pins will be stored
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_tca9534a_read_port(bc_tca9534a_t *self, uint8_t *state);
 
 //! @brief Write state to all pins
 //! @param[in] self Instance
 //! @param[in] state Desired state of all pins
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_tca9534a_write_port(bc_tca9534a_t *self, uint8_t state);
 
@@ -77,8 +77,8 @@ bool bc_tca9534a_write_port(bc_tca9534a_t *self, uint8_t state);
 //! @param[in] self Instance
 //! @param[in] pin Pin name
 //! @param[out] state Pointer to variable where state of pin will be stored
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_state_t *state);
 
@@ -86,24 +86,24 @@ bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534
 //! @param[in] self Instance
 //! @param[in] pin Pin name
 //! @param[in] state Desired state of pin
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_tca9534a_write_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_state_t state);
 
 //! @brief Get direction of all pins
 //! @param[in] self Instance
 //! @param[out] direction Pointer to variable where direction of all pins will be stored
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_tca9534a_get_port_direction(bc_tca9534a_t *self, uint8_t *direction);
 
 //! @brief Set direction of all pins
 //! @param[in] self Instance
 //! @param[in] direction Desired direction of all pins
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_tca9534a_set_port_direction(bc_tca9534a_t *self, uint8_t direction);
 
@@ -111,8 +111,8 @@ bool bc_tca9534a_set_port_direction(bc_tca9534a_t *self, uint8_t direction);
 //! @param[in] self Instance
 //! @param[in] pin Pin name
 //! @param[out] direction Pointer to variable where direction of pin will be stored
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_tca9534a_get_pin_direction(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_pin_direction_t *direction);
 
@@ -120,8 +120,8 @@ bool bc_tca9534a_get_pin_direction(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, b
 //! @param[in] self Instance
 //! @param[in] pin Pin name
 //! @param[in] direction Desired pin direction
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_tca9534a_set_pin_direction(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_pin_direction_t direction);
 

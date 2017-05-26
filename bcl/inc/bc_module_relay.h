@@ -35,8 +35,13 @@
 
 typedef enum
 {
+    //! @brief State is unknown
     BC_MODULE_RELAY_STATE_UNKNOWN = -1,
+
+    //! @brief State is false
     BC_MODULE_RELAY_STATE_FALSE = 0,
+
+    //! @brief State is true
     BC_MODULE_RELAY_STATE_TRUE = 1
 
 } bc_module_relay_state_t;

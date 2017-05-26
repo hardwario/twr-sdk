@@ -19,6 +19,8 @@ typedef enum
 
 //! @brief TCA9534A instance
 
+//! @cond
+
 typedef struct
 {
     bc_i2c_channel_t _i2c_channel;
@@ -26,28 +28,30 @@ typedef struct
 
 } bc_sc16is740_t;
 
+//! @endcond
+
 //! @brief Initialize SC16IS740
 //! @param[in] self Instance
 //! @param[in] i2c_channel I2C channel
 //! @param[in] i2c_address I2C device address
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_sc16is740_init(bc_sc16is740_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
 //! @brief Reset FIFO
 //! @param[in] self Instance
 //! @param[in] fifo
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_sc16is740_reset_fifo(bc_sc16is740_t *self, bc_sc16is740_fifo_t fifo);
 
 //! @brief Get TX FIXO space available
 //! @param[in] self Instance
 //! @param[out] spaces_available
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_sc16is740_get_spaces_available(bc_sc16is740_t *self, uint8_t *spaces_available);
 
@@ -62,8 +66,8 @@ uint8_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length
 //! @brief Get RX FIXO available data
 //! @param[in] self Instance
 //! @param[out] available
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_sc16is740_available(bc_sc16is740_t *self, uint8_t *available);
 

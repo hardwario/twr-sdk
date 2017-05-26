@@ -11,8 +11,11 @@
 
 typedef enum
 {
-    BC_TAG_LUX_METER_I2C_ADDRESS_DEFAULT = 0x44,  //!< Default I2C address
-    BC_TAG_LUX_METER_I2C_ADDRESS_ALTERNATE = 0x45 //!< Alternate I2C address
+    //! @brief Default I2C address
+    BC_TAG_LUX_METER_I2C_ADDRESS_DEFAULT = 0x44,
+
+    //! @brief Alternate I2C address
+    BC_TAG_LUX_METER_I2C_ADDRESS_ALTERNATE = 0x45
 
 } bc_tag_lux_meter_i2c_address_t;
 
@@ -20,8 +23,11 @@ typedef enum
 
 typedef enum
 {
-    BC_TAG_LUX_METER_EVENT_ERROR = BC_OPT3001_EVENT_ERROR,  //!< Error event
-    BC_TAG_LUX_METER_EVENT_UPDATE = BC_OPT3001_EVENT_UPDATE //!< Update event
+    //! @brief Error event
+    BC_TAG_LUX_METER_EVENT_ERROR = BC_OPT3001_EVENT_ERROR,
+
+    //! @brief Update event
+    BC_TAG_LUX_METER_EVENT_UPDATE = BC_OPT3001_EVENT_UPDATE
 
 } bc_tag_lux_meter_event_t;
 

@@ -87,7 +87,7 @@ void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_p
 
 //! @brief Set PYQ1648 sensitivity
 //! @param[in] self Instance
-//! @param[in] sensitivity sensitivity
+//! @param[in] sensitivity Sensitivity
 
 void bc_pyq1648_set_sensitivity(bc_pyq1648_t *self, bc_pyq1648_sensitivity_t sensitivity);
 
