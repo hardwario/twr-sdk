@@ -55,18 +55,8 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_
         // Sampling time selection (12.5 cycles)
         ADC1->SMPR |= ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0;
 
-        // Perform ADC calibration
-        ADC1->CR |= ADC_CR_ADCAL;
-        while ((ADC1->ISR & ADC_ISR_EOCAL) == 0)
-        {
-            continue;
-        }
-
-        // Clear EOCAL flag
-        ADC1->ISR |= ADC_ISR_EOCAL;
-
-        // Enable the ADC
-        ADC1->CR |= ADC_CR_ADEN;
+        // Enable ADC voltage regulator
+        ADC1->CR |= ADC_CR_ADVREGEN;
 
         NVIC_EnableIRQ(ADC1_COMP_IRQn);
     }
@@ -156,12 +146,12 @@ bool bc_adc_async_read(bc_adc_channel_t channel)
     ADC1->CHSELR = _bc_adc_channel_table[channel].chselr;
 
     // Clear EOS, EOC, OVR and EOSMP flags
-    ADC1->ISR = ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_OVR | ADC_ISR_EOSMP;
+    ADC1->ISR = ADC_ISR_EOS | ADC_ISR_EOC | ADC_ISR_OVR;
 
     bc_irq_disable();
 
-    // Enable "End Of Sequence" interrupt
-    ADC1->IER = ADC_IER_EOSIE;
+    // Enable "End Of Converion" interrupt
+    ADC1->IER = ADC_IER_EOCIE;
 
     bc_irq_enable();
 
