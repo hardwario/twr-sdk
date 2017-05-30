@@ -44,6 +44,22 @@ bool bc_module_sensor_init(void);
 
 bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_pull_t pull);
 
+//! @brief Set digital output mode of Sensor module
+//! @param[in] channel Sensor module channel
+//! @return true On success
+//! @return false On Error
+//
+
+bool bc_module_sensor_set_digital_output_mode(bc_module_channel_t channel);
+
+//! @brief Set digital output of Sensor module channel to given value
+//! @param[in] channel Sensor module channel
+//! @param[in] value Value to be set
+//
+
+void bc_module_sensor_set_digital_output(bc_module_channel_t channel, bool value);
+
 //! @}
+
 
 #endif /* _BC_MODULE_SENSOR_H */
