@@ -151,6 +151,7 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
         regmask >>= 1;
 
         *GPIOx_BSRR = bsrr_mask[0];
+
         __asm("nop");
         __asm("nop");
         __asm("nop");
@@ -159,10 +160,62 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
         __asm("nop");
         __asm("nop");
         __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+
         *GPIOx_BSRR = bsrr_mask[1];
+
         __asm("nop");
         __asm("nop");
         __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+        __asm("nop");
+
         *GPIOx_BSRR = bsrr_mask[next_bit];
 
         _bc_pyq1648_delay_100us(1);
