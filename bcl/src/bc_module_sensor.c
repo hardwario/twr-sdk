@@ -36,6 +36,23 @@ bool bc_module_sensor_init(void)
     return true;
 }
 
+bool bc_module_sensor_set_digital_output_mode(bc_module_channel_t channel)
+{
+    switch(channel)
+    {
+	case BC_MODULE_SENSOR_CHANNEL_A:
+	    bc_gpio_init(BC_GPIO_P4);
+            bc_gpio_set_mode(BC_GPIO_P4, BC_GPIO_MODE_OUTPUT);
+	    return true;
+	case BC_MODULE_SENSOR_CHANNEL_B:
+	    bc_gpio_init(BC_GPIO_P5);
+            bc_gpio_set_mode(BC_GPIO_P5, BC_GPIO_MODE_OUTPUT);
+	    return true;
+	default:
+	    return false;
+    }
+}
+
 bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_pull_t pull)
 {
     if (channel == BC_MODULE_SENSOR_CHANNEL_A)
@@ -67,3 +84,19 @@ bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_pull_t pul
 
     return bc_tca9534a_set_port_direction(&_bc_module_sensor.tca9534a, _bc_module_sensor.direction);
 }
+
+
+void bc_module_sensor_set_digital_output(bc_module_channel_t channel, bool value) {
+    bc_gpio_channel_t output_channel;
+    switch(channel)
+    {
+	case BC_MODULE_SENSOR_CHANNEL_A:
+	    output_channel = BC_GPIO_P4;
+	case BC_MODULE_SENSOR_CHANNEL_B:
+	    output_channel = BC_GPIO_P5;
+	default:
+	    output_channel = BC_GPIO_P4;
+    }
+    bc_gpio_set_output(output_channel, value ? 1 : 0);
+}
+
