@@ -85,16 +85,16 @@ void bc_module_lcd_off(void)
 
 void bc_module_lcd_clear(void)
 {
-    uint32_t x;
-    uint32_t y;
-
-    for (y = 0; y < 128; y++)
-    {
-        for (x = 0; x < 128; x++)
-        {
-            bc_module_lcd_draw_pixel(x, y, false);
-        }
-    }
+    bc_module_lcd_t *self = &_bc_module_lcd;
+    uint8_t line;
+    uint32_t offs;
+    uint8_t col;
+	for (line = 0x01, offs = 2; line <= 128; line++, offs += 18) {
+		for (col = 0; col < 16; col++)
+		{
+			self->framebuffer[offs + col] = 0xff;
+		}
+	}
 }
 
 void bc_module_lcd_draw_pixel(int x, int y, bool value)
