@@ -143,6 +143,11 @@ bc_spi_mode_t bc_spi_get_mode(void)
     return _bc_spi.mode;
 }
 
+bool bc_spi_is_ready(void)
+{
+	return (!_bc_spi.in_progress) && (_bc_spi.pending_event == _BC_SPI_EVENT_CLEAR);
+}
+
 bool bc_spi_transfer(const void *source, void *destination, size_t length)
 {
     // If another transfer cannot be executed ...

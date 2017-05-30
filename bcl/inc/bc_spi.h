@@ -84,6 +84,12 @@ void bc_spi_set_mode(bc_spi_mode_t mode);
 
 bc_spi_mode_t bc_spi_get_mode(void);
 
+//! @brief Check if is ready for transfer
+//! @return true if ready
+//! @return false if not ready
+
+bool bc_spi_is_ready(void);
+
 //! @brief Execute SPI transfer
 //! @param[in] source Pointer to source buffer
 //! @param[out] destination Pointer to destination buffer
