@@ -50,16 +50,32 @@ void bc_module_battery_set_event_handler(void (*event_handler)(bc_module_battery
 
 void bc_module_battery_set_update_interval(bc_tick_t interval);
 
-//! @brief Start mesurement
+//! @brief Set voltage levels
+//! @param[in] level_low_threshold Voltage level considered as low
+//! @param[in] level_critical_threshold Voltage level considered as critical
 
-void bc_module_battery_measure(void);
+void bc_module_battery_set_threshold_levels(float level_low_threshold, float level_critical_threshold);
+
+//! @brief Start mesurement
+//! @return true On success
+//! @return false On failure
+
+bool bc_module_battery_measure(void);
 
 //! @brief Get Batery Module voltage
 //! @param[out] voltage Measured voltage
 //! @return true On success
 //! @return false On failure
 
-bool bc_module_battery_get_voltage_volt(float *voltage);
+bool bc_module_battery_update_voltage_on_battery(float *voltage);
+
+//! @brief Get Batery Module charge in percents
+//! @param[out] percentage Measured charge
+//! @return true On success
+//! @return false On failure
+
+bool bc_module_battery_get_charge_level(int *percentage);
+
 
 //! @}
 
