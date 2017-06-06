@@ -53,9 +53,17 @@ typedef struct bc_led_t bc_led_t;
 
 //! @cond
 
+typedef struct
+{
+    void (*init)(bc_led_t *self);
+    void (*on)(bc_led_t *self);
+    void (*off)(bc_led_t *self);
+} bc_led_driver_t;
+
 struct bc_led_t
 {
-    bc_gpio_channel_t _gpio_channel;
+    int _channel;
+    const bc_led_driver_t *_driver;
     bool _open_drain_output;
     int _idle_state;
     bc_tick_t _slot_interval;
@@ -74,6 +82,14 @@ struct bc_led_t
 //! @param[in] idle_state GPIO pin idle state (when LED is supposed to be off)
 
 void bc_led_init(bc_led_t *self, bc_gpio_channel_t gpio_channel, bool open_drain_output, int idle_state);
+
+//! @brief Initialize virtual LED
+//! @param[in] self Instance
+//! @param[in] channel Virtual channel LED is connected to
+//! @param[in] driver Virtual channel LED driver
+//! @param[in] idle_state Virtual pin idle state (when LED is supposed to be off)
+
+void bc_led_init_virtual(bc_led_t *self, int channel, const bc_led_driver_t *driver, int idle_state);
 
 //! @brief Set slot interval for pattern processing
 //! @param[in] self Instance
