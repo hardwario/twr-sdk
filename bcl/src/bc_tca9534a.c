@@ -29,12 +29,7 @@ bool bc_tca9534a_init(bc_tca9534a_t *self, bc_i2c_channel_t i2c_channel, uint8_t
 
 bool bc_tca9534a_read_port(bc_tca9534a_t *self, uint8_t *value)
 {
-    if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_INPUT_PORT, value))
-    {
-        return false;
-    }
-
-    return true;
+    return bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, BC_TCA9534A_REGISTER_INPUT_PORT, value);
 }
 
 bool bc_tca9534a_write_port(bc_tca9534a_t *self, uint8_t value)
