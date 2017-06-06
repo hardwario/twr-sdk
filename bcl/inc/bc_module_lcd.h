@@ -3,6 +3,8 @@
 
 
 #include <bc_font_common.h>
+#include <bc_led.h>
+#include <bc_button.h>
 
 //! @addtogroup bc_module_lcd bc_module_lcd
 //! @brief Driver for lcd
@@ -52,12 +54,39 @@ typedef enum
 
 } bc_module_lcd_rotation_t;
 
+//! @brief Virtual LED channels
+
+typedef enum
+{
+    //! @brief LCD red LED channel
+    BC_MODULE_LCD_LED_RED = 0,
+
+    //! @brief LCD green LED channel
+    BC_MODULE_LCD_LED_GREEN  = 1,
+
+    //! @brief LCD blue LED channel
+    BC_MODULE_LCD_LED_BLUE = 2
+
+} bc_module_lcd_led_t;
+
+//! @brief Virtual button channels
+
+typedef enum
+{
+    //! @brief LCD left button channel
+    BC_MODULE_LCD_BUTTON_LEFT = 0,
+
+    //! @brief LCD right button channel
+    BC_MODULE_LCD_BUTTON_RIGHT  = 1
+
+} bc_module_lcd_button_t;
+
 //! @brief LCD frame buffer instance
 
 bc_module_lcd_framebuffer_t _bc_module_lcd_framebuffer;
 
 //! @brief Initialize lcd
-//! @param[in] bc_module_lcd_framebuffer_t framebuffer
+//! @param[in] framebuffer
 
 void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer);
 
@@ -121,6 +150,16 @@ void bc_module_lcd_set_rotation(bc_module_lcd_rotation_t rotation);
 //! @return Rotation of display
 
 bc_module_lcd_rotation_t bc_module_lcd_get_rotation(void);
+
+//! @brief Lcd get led driver
+//! @return Driver for onboard led
+
+const bc_led_driver_t *bc_module_lcd_get_led_driver(void);
+
+//! @brief Lcd get button driver
+//! @return Driver for onboard button
+
+const bc_button_driver_t *bc_module_lcd_get_button_driver(void);
 
 //! @}
 
