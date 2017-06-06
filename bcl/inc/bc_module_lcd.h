@@ -91,12 +91,22 @@ bc_module_lcd_framebuffer_t _bc_module_lcd_framebuffer;
 void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer);
 
 //! @brief Lcd on
+//! @return true On success
+//! @return false On failure
 
-void bc_module_lcd_on(void);
+bool bc_module_lcd_on(void);
 
 //! @brief Lcd off
+//! @return true On success
+//! @return false On failure
 
-void bc_module_lcd_off(void);
+bool bc_module_lcd_off(void);
+
+//! @brief Check if lcd is ready for commands
+//! @return true If ready
+//! @return false If not ready
+
+bool bc_module_lcd_is_ready(void);
 
 //! @brief Lcd clear
 
@@ -129,12 +139,16 @@ int bc_module_lcd_draw_string(int left, int top, char *str);
 //void bc_module_lcd_printf(uint8_t line, /*uint8_t size, font, */const uint8_t *string/*, ...*/);
 
 //! @brief Lcd update, send data
+//! @return true On success
+//! @return false On failure
 
-void bc_module_lcd_update(void);
+bool bc_module_lcd_update(void);
 
 //! @brief Send Lcd clear memory command
+//! @return true On success
+//! @return false On failure
 
-void bc_module_lcd_clear_memory_command(void);
+bool bc_module_lcd_clear_memory_command(void);
 
 //! @brief Lcd set font
 //! @param[in] *font Font
