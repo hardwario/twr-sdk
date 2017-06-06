@@ -32,9 +32,16 @@ typedef struct bc_button_t bc_button_t;
 
 //! @cond
 
+typedef struct
+{
+    void (*init)(bc_button_t *self);
+    int (*get_input)(bc_button_t *self);
+} bc_button_driver_t;
+
 struct bc_button_t
 {
-    bc_gpio_channel_t _gpio_channel;
+    int _channel;
+    const bc_button_driver_t *_driver;
     bc_gpio_pull_t _gpio_pull;
     bool _idle_state;
     void (*_event_handler)(bc_button_t *, bc_button_event_t, void *);
@@ -59,6 +66,14 @@ struct bc_button_t
 //! @param[in] idle_state GPIO pin idle state (when button is not pressed)
 
 void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_pull_t gpio_pull, bool idle_state);
+
+//! @brief Initialize virtual button
+//! @param[in] self Instance
+//! @param[in] channel Virtual channel button is connected to
+//! @param[in] driver Virtual channel button driver
+//! @param[in] idle_state Virtual pin idle state (when LED is supposed to be off)
+
+void bc_button_init_virtual(bc_button_t *self, int channel, const bc_button_driver_t *driver, bool idle_state);
 
 //! @brief Set callback function
 //! @param[in] self Instance

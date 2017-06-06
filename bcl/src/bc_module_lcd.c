@@ -2,30 +2,35 @@
 // https://www.embeddedartists.com/sites/default/files/support/datasheet/Memory_LCD_Programming.pdf
 // https://www.silabs.com/documents/public/application-notes/AN0048.pdf
 
-#include <bc_module_lcd.h>
 #include <stm32l0xx.h>
+#include <bc_module_lcd.h>
 #include <bc_spi.h>
 #include <bc_tca9534a.h>
 #include <bc_scheduler.h>
 
-#define _BC_MODULE_LCD_BACKLIGHT (1 << 0)
-#define _BC_MODULE_LCD_BUTTON1   (1 << 1)
-#define _BC_MODULE_LCD_DISP_ON   (1 << 2)
-#define _BC_MODULE_LCD_BUTTON2   (1 << 3)
-#define _BC_MODULE_LCD_LED_GREEN (1 << 4)
-#define _BC_MODULE_LCD_LED_RED   (1 << 5)
-#define _BC_MODULE_LCD_LED_BLUE  (1 << 6)
-#define _BC_MODULE_LCD_DISP_CS   (1 << 7)
+enum
+{
+    _BC_MODULE_LCD_BACKLIGHT_POS = 0,
+    _BC_MODULE_LCD_BUTTON1_POS = 1,
+    _BC_MODULE_LCD_DISP_ON_POS = 2,
+    _BC_MODULE_LCD_BUTTON2_POS = 3,
+    _BC_MODULE_LCD_LED_GREEN_POS = 4,
+    _BC_MODULE_LCD_LED_RED_POS = 5,
+    _BC_MODULE_LCD_LED_BLUE_POS = 6,
+    _BC_MODULE_LCD_LED_DISP_CS_POS = 7
+};
+
 #define _BC_MODULE_LCD_VCOM_PERIOD 15000
+#define _BC_MODULE_LCD_INITIALIZED ((1 << _BC_MODULE_LCD_LED_DISP_CS_POS) | (1 << _BC_MODULE_LCD_DISP_ON_POS) | (1 << _BC_MODULE_LCD_LED_GREEN_POS) | (1 << _BC_MODULE_LCD_LED_RED_POS) | (1 << _BC_MODULE_LCD_LED_BLUE_POS))
 
 typedef struct bc_module_lcd_t
 {
     void (*event_handler)(bc_module_lcd_event_t, void *);
     void *event_param;
+    bool is_tca9534a_initialized;
     bc_tca9534a_t tca9534a;
     uint8_t *framebuffer;
     const bc_font_t *font;
-    uint8_t gpio;
     bc_module_lcd_rotation_t rotation;
     uint8_t vcom;
     bc_scheduler_task_id_t task_id;
@@ -34,35 +39,60 @@ typedef struct bc_module_lcd_t
 
 bc_module_lcd_t _bc_module_lcd;
 
-uint8_t reverse2(uint32_t b) {
+static bc_tca9534a_pin_t _bc_module_lcd_led_pin_lut[3] =
+{
+        [BC_MODULE_LCD_LED_RED] = BC_TCA9534A_PIN_P5,
+        [BC_MODULE_LCD_LED_GREEN] = BC_TCA9534A_PIN_P4,
+        [BC_MODULE_LCD_LED_BLUE] = BC_TCA9534A_PIN_P6
+};
 
-	return __RBIT(b) >> 24;
-}
+static bc_tca9534a_pin_t _bc_module_lcd_button_pin_lut[2] =
+{
+        [BC_MODULE_LCD_BUTTON_LEFT] = BC_TCA9534A_PIN_P3,
+        [BC_MODULE_LCD_BUTTON_RIGHT] = BC_TCA9534A_PIN_P1
+};
 
 static void _bc_module_lcd_spi_transfer(uint8_t *buffer, size_t length);
+
 static void _bc_module_lcd_task(void *param);
-void _bc_spi_event_handler(bc_spi_event_t event, void *event_param);
+
+static void _bc_spi_event_handler(bc_spi_event_t event, void *event_param);
+
+static inline uint8_t _bc_module_lcd_reverse(uint8_t b);
+
+static void _bc_module_lcd_led_init(bc_led_t *self);
+
+static void _bc_module_lcd_led_on(bc_led_t *self);
+
+static void _bc_module_lcd_led_off(bc_led_t *self);
+
+static void _bc_module_lcd_button_init(bc_button_t *self);
+
+static int _bc_module_lcd_button_get_input(bc_button_t *self);
 
 void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 {
-    bc_module_lcd_t *self = &_bc_module_lcd;
+    if (!_bc_module_lcd.is_tca9534a_initialized)
+    {
+        bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x3c);
 
-    bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x3c);
-    _bc_module_lcd.gpio = _BC_MODULE_LCD_DISP_CS | _BC_MODULE_LCD_DISP_ON | _BC_MODULE_LCD_LED_GREEN | _BC_MODULE_LCD_LED_RED | _BC_MODULE_LCD_LED_BLUE;
-    bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
+        bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_INITIALIZED);
 
-    bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a);
+        bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a);
+
+        _bc_module_lcd.is_tca9534a_initialized = true;
+    }
 
     bc_spi_init(BC_SPI_SPEED_1_MHZ, BC_SPI_MODE_0);
 
-    self->framebuffer = framebuffer->framebuffer;
+    _bc_module_lcd.framebuffer = framebuffer->framebuffer;
 
     // Address lines
     uint8_t line;
     uint32_t offs;
     for (line = 0x01, offs = 1; line <= 128; line++, offs += 18) {
         // Fill the gate line addresses on the exact place in the buffer
-        self->framebuffer[offs] = reverse2(line);
+        _bc_module_lcd.framebuffer[offs] = _bc_module_lcd_reverse(line);
     }
 
     // Prepare buffer so the background is "white" reflective
@@ -73,28 +103,26 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 
 void bc_module_lcd_on(void)
 {
-    _bc_module_lcd.gpio |= _BC_MODULE_LCD_DISP_ON;
-    bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
+    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_DISP_ON_POS, 1);
 }
 
 void bc_module_lcd_off(void)
 {
-    _bc_module_lcd.gpio &= ~_BC_MODULE_LCD_DISP_ON;
-    bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
+    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_DISP_ON_POS, 0);
 }
 
 void bc_module_lcd_clear(void)
 {
-    bc_module_lcd_t *self = &_bc_module_lcd;
-    uint8_t line;
-    uint32_t offs;
-    uint8_t col;
-	for (line = 0x01, offs = 2; line <= 128; line++, offs += 18) {
-		for (col = 0; col < 16; col++)
-		{
-			self->framebuffer[offs + col] = 0xff;
-		}
-	}
+    uint32_t x;
+    uint32_t y;
+
+    for (y = 0; y < 128; y++)
+    {
+        for (x = 0; x < 128; x++)
+        {
+            bc_module_lcd_draw_pixel(x, y, false);
+        }
+    }
 }
 
 void bc_module_lcd_draw_pixel(int x, int y, bool value)
@@ -104,11 +132,9 @@ void bc_module_lcd_draw_pixel(int x, int y, bool value)
         return;
     }
 
-    bc_module_lcd_t *self = &_bc_module_lcd;
-
     int tmp;
 
-    switch(self->rotation)
+    switch(_bc_module_lcd.rotation)
     {
         case BC_MODULE_LCD_ROTATION_90 :
             tmp = x;
@@ -141,19 +167,17 @@ void bc_module_lcd_draw_pixel(int x, int y, bool value)
 
     if(!value)
     {
-        self->framebuffer[byteIndex] |= bitMask;
+        _bc_module_lcd.framebuffer[byteIndex] |= bitMask;
     }
     else
     {
-        self->framebuffer[byteIndex] &= ~bitMask;
+        _bc_module_lcd.framebuffer[byteIndex] &= ~bitMask;
     }
 }
 
 int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
 {
-    bc_module_lcd_t *self = &_bc_module_lcd;
-
-    const bc_font_t *font = self->font;
+    const bc_font_t *font = _bc_module_lcd.font;
 
     int w = 0;
     uint8_t h = 0;
@@ -230,16 +254,14 @@ Framebuffer format for updating multiple lines, ideal for later DMA TX:
 */
 void bc_module_lcd_update(void)
 {
-    bc_module_lcd_t *self = &_bc_module_lcd;
-    self->framebuffer[0] = 0x80 | self->vcom;
-    self->vcom ^= 0x40;
+    _bc_module_lcd.framebuffer[0] = 0x80 | _bc_module_lcd.vcom;
+    _bc_module_lcd.vcom ^= 0x40;
 
-    _bc_module_lcd.gpio &= ~_BC_MODULE_LCD_DISP_CS;
-    bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
+    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_POS, 0);
 
-    bc_spi_async_transfer(self->framebuffer, NULL, BC_LCD_FRAMEBUFFER_SIZE, _bc_spi_event_handler, NULL);
+    bc_spi_async_transfer(_bc_module_lcd.framebuffer, NULL, BC_LCD_FRAMEBUFFER_SIZE, _bc_spi_event_handler, NULL);
 
-    bc_scheduler_plan_relative(self->task_id, _BC_MODULE_LCD_VCOM_PERIOD);
+    bc_scheduler_plan_relative(_bc_module_lcd.task_id, _BC_MODULE_LCD_VCOM_PERIOD);
 }
 
 void bc_module_lcd_clear_memory_command(void)
@@ -264,15 +286,44 @@ bc_module_lcd_rotation_t bc_module_lcd_get_rotation(void)
     return _bc_module_lcd.rotation;
 }
 
+const bc_led_driver_t *bc_module_lcd_get_led_driver(void)
+{
+    static const bc_led_driver_t bc_module_lcd_led_driver =
+    {
+            .init = _bc_module_lcd_led_init,
+            .on = _bc_module_lcd_led_on,
+            .off = _bc_module_lcd_led_off,
+    };
+
+    return &bc_module_lcd_led_driver;
+}
+
+const bc_button_driver_t *bc_module_lcd_get_button_driver(void)
+{
+    static const bc_button_driver_t bc_module_lcd_button_driver =
+    {
+            .init = _bc_module_lcd_button_init,
+            .get_input = _bc_module_lcd_button_get_input,
+    };
+
+    return &bc_module_lcd_button_driver;
+}
+
+static inline uint8_t _bc_module_lcd_reverse(uint8_t b)
+{
+   b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+   b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+   b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+   return b;
+}
+
 static void _bc_module_lcd_spi_transfer(uint8_t *buffer, size_t length)
 {
-    _bc_module_lcd.gpio &= ~_BC_MODULE_LCD_DISP_CS;
-    bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
+    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_POS, 0);
 
     bc_spi_transfer(buffer, NULL, length);
 
-    _bc_module_lcd.gpio |= _BC_MODULE_LCD_DISP_CS;
-    bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
+    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_POS, 1);
 }
 
 static void _bc_module_lcd_task(void *param)
@@ -288,13 +339,71 @@ static void _bc_module_lcd_task(void *param)
     bc_scheduler_plan_current_relative(_BC_MODULE_LCD_VCOM_PERIOD);
 }
 
-void _bc_spi_event_handler(bc_spi_event_t event, void *event_param)
+static void _bc_spi_event_handler(bc_spi_event_t event, void *event_param)
 {
     (void) event_param;
 
     if (event == BC_SPI_EVENT_DONE)
     {
-        _bc_module_lcd.gpio |= _BC_MODULE_LCD_DISP_CS;
-        bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _bc_module_lcd.gpio);
+        bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_POS, 1);
     }
+}
+
+static void _bc_module_lcd_led_init(bc_led_t *self)
+{
+    (void) self;
+
+    if (!_bc_module_lcd.is_tca9534a_initialized)
+    {
+        bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x3c);
+
+        bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_INITIALIZED);
+
+        bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a);
+
+        _bc_module_lcd.is_tca9534a_initialized = true;
+    }
+}
+
+static void _bc_module_lcd_led_on(bc_led_t *self)
+{
+    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel], self->_idle_state ? 0 : 1);
+}
+
+static void _bc_module_lcd_led_off(bc_led_t *self)
+{
+    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel], self->_idle_state ? 1 : 0);
+}
+
+static void _bc_module_lcd_button_init(bc_button_t *self)
+{
+    (void) self;
+
+    if (!_bc_module_lcd.is_tca9534a_initialized)
+    {
+        bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x3c);
+
+        bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_INITIALIZED);
+
+        bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a);
+
+        _bc_module_lcd.is_tca9534a_initialized = true;
+    }
+
+    bc_gpio_set_mode(BC_GPIO_BUTTON, BC_GPIO_MODE_INPUT);
+    bc_gpio_init(BC_GPIO_BUTTON);
+}
+
+static int _bc_module_lcd_button_get_input(bc_button_t *self)
+{
+    if (bc_gpio_get_input(BC_GPIO_BUTTON) == 0)
+    {
+        return 0;
+    }
+
+    bc_tca9534a_state_t s;
+
+    bc_tca9534a_read_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_button_pin_lut[self->_channel], &s);
+
+    return s;
 }
