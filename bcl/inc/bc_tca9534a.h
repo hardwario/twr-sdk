@@ -47,6 +47,8 @@ typedef struct
 {
     bc_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
+    uint8_t _direction;
+    uint8_t _output_port;
 
 } bc_tca9534a_t;
 
