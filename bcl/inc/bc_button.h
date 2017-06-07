@@ -32,6 +32,12 @@ typedef struct bc_button_t bc_button_t;
 
 //! @cond
 
+typedef union
+{
+    bc_gpio_channel_t gpio_channel;
+    int virtual_channel;
+} bc_button_channel_t;
+
 typedef struct
 {
     void (*init)(bc_button_t *self);
@@ -40,7 +46,7 @@ typedef struct
 
 struct bc_button_t
 {
-    int _channel;
+    bc_button_channel_t _channel;
     const bc_button_driver_t *_driver;
     bc_gpio_pull_t _gpio_pull;
     bool _idle_state;
