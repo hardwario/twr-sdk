@@ -347,6 +347,8 @@ static void _bc_radio_task(void *param)
         _bc_radio.transmit_count = 10;
 
         _bc_radio.state = BC_RADIO_STATE_TX;
+
+        return;
     }
 
     uint8_t queue_item_buffer[sizeof(_bc_radio.pub_queue_buffer)];
