@@ -252,31 +252,34 @@ Framebuffer format for updating multiple lines, ideal for later DMA TX:
 */
 bool bc_module_lcd_update(void)
 {
-	if (!_bc_module_lcd_tca9534a_init())
-	{
-		return false;
-	}
-
-    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 0))
+    if(bc_spi_is_ready())
     {
-    	_bc_module_lcd.is_tca9534a_initialized = false;
-    	return false;
+        if (!_bc_module_lcd_tca9534a_init())
+        {
+            return false;
+        }
+
+        if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 0))
+        {
+            _bc_module_lcd.is_tca9534a_initialized = false;
+            return false;
+        }
+
+        _bc_module_lcd.framebuffer[0] = 0x80 | _bc_module_lcd.vcom;
+
+        if (!bc_spi_async_transfer(_bc_module_lcd.framebuffer, NULL, BC_LCD_FRAMEBUFFER_SIZE, _bc_spi_event_handler, NULL))
+        {
+            if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 1))
+            {
+                _bc_module_lcd.is_tca9534a_initialized = false;
+            }
+            return false;
+        }
+
+        bc_scheduler_plan_relative(_bc_module_lcd.task_id, _BC_MODULE_LCD_VCOM_PERIOD);
+
+        _bc_module_lcd.vcom ^= 0x40;
     }
-
-    _bc_module_lcd.framebuffer[0] = 0x80 | _bc_module_lcd.vcom;
-
-    if (!bc_spi_async_transfer(_bc_module_lcd.framebuffer, NULL, BC_LCD_FRAMEBUFFER_SIZE, _bc_spi_event_handler, NULL))
-    {
-    	if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 1))
-    	{
-    		_bc_module_lcd.is_tca9534a_initialized = false;
-    	}
-    	return false;
-    }
-
-    bc_scheduler_plan_relative(_bc_module_lcd.task_id, _BC_MODULE_LCD_VCOM_PERIOD);
-
-    _bc_module_lcd.vcom ^= 0x40;
 
     return true;
 }
