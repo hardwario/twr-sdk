@@ -52,7 +52,9 @@ static bc_tca9534a_pin_t _bc_module_lcd_button_pin_lut[2] =
         [BC_MODULE_LCD_BUTTON_RIGHT] = BC_TCA9534A_PIN_P1
 };
 
-static void _bc_module_lcd_spi_transfer(uint8_t *buffer, size_t length);
+static bool _bc_module_lcd_tca9534a_init(void);
+
+static bool _bc_module_lcd_spi_transfer(uint8_t *buffer, size_t length);
 
 static void _bc_module_lcd_task(void *param);
 
@@ -72,16 +74,7 @@ static int _bc_module_lcd_button_get_input(bc_button_t *self);
 
 void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 {
-    if (!_bc_module_lcd.is_tca9534a_initialized)
-    {
-        bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x3c);
-
-        bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_INITIALIZED);
-
-        bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a);
-
-        _bc_module_lcd.is_tca9534a_initialized = true;
-    }
+	_bc_module_lcd_tca9534a_init();
 
     bc_spi_init(BC_SPI_SPEED_1_MHZ, BC_SPI_MODE_0);
 
@@ -101,14 +94,19 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
     _bc_module_lcd.task_id = bc_scheduler_register(_bc_module_lcd_task, NULL, _BC_MODULE_LCD_VCOM_PERIOD);
 }
 
-void bc_module_lcd_on(void)
+bool bc_module_lcd_on(void)
 {
-    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_DISP_ON_PIN, 1);
+    return bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_DISP_ON_PIN, 1);
 }
 
-void bc_module_lcd_off(void)
+bool bc_module_lcd_off(void)
 {
-    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_DISP_ON_PIN, 0);
+    return bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_DISP_ON_PIN, 0);
+}
+
+bool bc_module_lcd_is_ready(void)
+{
+	return _bc_module_lcd_tca9534a_init() && bc_spi_is_ready();
 }
 
 void bc_module_lcd_clear(void)
@@ -252,23 +250,42 @@ Framebuffer format for updating multiple lines, ideal for later DMA TX:
 ||  M0 M1 M2  DUMMY || ADDR | DATA | DUMMY || ADDR | DATA | DUMMY |
 
 */
-void bc_module_lcd_update(void)
+bool bc_module_lcd_update(void)
 {
+	if (!_bc_module_lcd_tca9534a_init())
+	{
+		return false;
+	}
+
+    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 0))
+    {
+    	_bc_module_lcd.is_tca9534a_initialized = false;
+    	return false;
+    }
+
     _bc_module_lcd.framebuffer[0] = 0x80 | _bc_module_lcd.vcom;
-    _bc_module_lcd.vcom ^= 0x40;
 
-    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 0);
-
-    bc_spi_async_transfer(_bc_module_lcd.framebuffer, NULL, BC_LCD_FRAMEBUFFER_SIZE, _bc_spi_event_handler, NULL);
+    if (!bc_spi_async_transfer(_bc_module_lcd.framebuffer, NULL, BC_LCD_FRAMEBUFFER_SIZE, _bc_spi_event_handler, NULL))
+    {
+    	if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 1))
+    	{
+    		_bc_module_lcd.is_tca9534a_initialized = false;
+    	}
+    	return false;
+    }
 
     bc_scheduler_plan_relative(_bc_module_lcd.task_id, _BC_MODULE_LCD_VCOM_PERIOD);
+
+    _bc_module_lcd.vcom ^= 0x40;
+
+    return true;
 }
 
-void bc_module_lcd_clear_memory_command(void)
+bool bc_module_lcd_clear_memory_command(void)
 {
     uint8_t spi_data[2] = {0x20, 0x00};
 
-    _bc_module_lcd_spi_transfer(spi_data, sizeof(spi_data));
+    return _bc_module_lcd_spi_transfer(spi_data, sizeof(spi_data));
 }
 
 void bc_module_lcd_set_font(const bc_font_t *font)
@@ -317,13 +334,48 @@ static inline uint8_t _bc_module_lcd_reverse(uint8_t b)
    return b;
 }
 
-static void _bc_module_lcd_spi_transfer(uint8_t *buffer, size_t length)
+static bool _bc_module_lcd_tca9534a_init(void)
 {
-    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 0);
+	if (!_bc_module_lcd.is_tca9534a_initialized)
+	{
+		if (!bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x3c))
+		{
+			return false;
+		}
 
-    bc_spi_transfer(buffer, NULL, length);
+		if (!bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_INITIALIZED))
+		{
+			return false;
+		}
 
-    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 1);
+		if (!bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a))
+		{
+			return false;
+		}
+
+		_bc_module_lcd.is_tca9534a_initialized = true;
+	}
+
+	return true;
+}
+
+static bool _bc_module_lcd_spi_transfer(uint8_t *buffer, size_t length)
+{
+    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 0))
+    {
+    	_bc_module_lcd.is_tca9534a_initialized = false;
+    	return false;
+    }
+
+    bool spi_state = bc_spi_transfer(buffer, NULL, length);
+
+    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 1))
+    {
+    	_bc_module_lcd.is_tca9534a_initialized = false;
+    	return false;
+    }
+
+    return spi_state;
 }
 
 static void _bc_module_lcd_task(void *param)
@@ -332,9 +384,10 @@ static void _bc_module_lcd_task(void *param)
 
     uint8_t spi_data[2] = {_bc_module_lcd.vcom, 0x00};
 
-    _bc_module_lcd_spi_transfer(spi_data, sizeof(spi_data));
-
-    _bc_module_lcd.vcom ^= 0x40;
+    if (_bc_module_lcd_spi_transfer(spi_data, sizeof(spi_data)))
+    {
+    	_bc_module_lcd.vcom ^= 0x40;
+    }
 
     bc_scheduler_plan_current_relative(_BC_MODULE_LCD_VCOM_PERIOD);
 }
@@ -353,42 +406,30 @@ static void _bc_module_lcd_led_init(bc_led_t *self)
 {
     (void) self;
 
-    if (!_bc_module_lcd.is_tca9534a_initialized)
-    {
-        bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x3c);
-
-        bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_INITIALIZED);
-
-        bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a);
-
-        _bc_module_lcd.is_tca9534a_initialized = true;
-    }
+    _bc_module_lcd_tca9534a_init();
 }
 
 static void _bc_module_lcd_led_on(bc_led_t *self)
 {
-    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel.virtual_channel], self->_idle_state ? 0 : 1);
+    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel.virtual_channel], self->_idle_state ? 0 : 1))
+    {
+    	_bc_module_lcd.is_tca9534a_initialized = false;
+    }
 }
 
 static void _bc_module_lcd_led_off(bc_led_t *self)
 {
-    bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel.virtual_channel], self->_idle_state ? 1 : 0);
+    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel.virtual_channel], self->_idle_state ? 1 : 0))
+    {
+    	_bc_module_lcd.is_tca9534a_initialized = false;
+    }
 }
 
 static void _bc_module_lcd_button_init(bc_button_t *self)
 {
     (void) self;
 
-    if (!_bc_module_lcd.is_tca9534a_initialized)
-    {
-        bc_tca9534a_init(&_bc_module_lcd.tca9534a, BC_I2C_I2C0, 0x3c);
-
-        bc_tca9534a_write_port(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_INITIALIZED);
-
-        bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a);
-
-        _bc_module_lcd.is_tca9534a_initialized = true;
-    }
+    _bc_module_lcd_tca9534a_init();
 
     bc_gpio_set_mode(BC_GPIO_BUTTON, BC_GPIO_MODE_INPUT);
     bc_gpio_init(BC_GPIO_BUTTON);
@@ -403,7 +444,10 @@ static int _bc_module_lcd_button_get_input(bc_button_t *self)
 
     bc_tca9534a_state_t s;
 
-    bc_tca9534a_read_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_button_pin_lut[self->_channel.virtual_channel], &s);
+    if (!bc_tca9534a_read_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_button_pin_lut[self->_channel.virtual_channel], &s))
+    {
+    	_bc_module_lcd.is_tca9534a_initialized = false;
+    }
 
     return s;
 }
