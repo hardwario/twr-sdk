@@ -279,9 +279,11 @@ bool bc_module_lcd_update(void)
         bc_scheduler_plan_relative(_bc_module_lcd.task_id, _BC_MODULE_LCD_VCOM_PERIOD);
 
         _bc_module_lcd.vcom ^= 0x40;
+
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 bool bc_module_lcd_clear_memory_command(void)

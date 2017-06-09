@@ -6,17 +6,17 @@ static void _bc_led_task(void *param);
 
 static void _bc_led_task_pulse(void *param);
 
-static void _bc_gpio_led_init(bc_led_t *self);
+static void _bc_led_gpio_init(bc_led_t *self);
 
-static void _bc_gpio_led_on(bc_led_t *self);
+static void _bc_led_gpio_on(bc_led_t *self);
 
-static void _bc_gpio_led_off(bc_led_t *self);
+static void _bc_led_gpio_off(bc_led_t *self);
 
 static const bc_led_driver_t _bc_led_driver_gpio =
 {
-        .init = _bc_gpio_led_init,
-        .on =   _bc_gpio_led_on,
-        .off =  _bc_gpio_led_off,
+        .init = _bc_led_gpio_init,
+        .on =   _bc_led_gpio_on,
+        .off =  _bc_led_gpio_off,
 };
 
 void bc_led_init(bc_led_t *self, bc_gpio_channel_t gpio_channel, bool open_drain_output, int idle_state)
@@ -241,17 +241,17 @@ static void _bc_led_task_pulse(void *param)
     bc_scheduler_unregister(self->_pulse_task_id);
 }
 
-static void _bc_gpio_led_init(bc_led_t *self)
+static void _bc_led_gpio_init(bc_led_t *self)
 {
     bc_gpio_init(self->_channel.gpio_channel);
 }
 
-static void _bc_gpio_led_on(bc_led_t *self)
+static void _bc_led_gpio_on(bc_led_t *self)
 {
     bc_gpio_set_output(self->_channel.gpio_channel, self->_idle_state ? 0 : 1);
 }
 
-static void _bc_gpio_led_off(bc_led_t *self)
+static void _bc_led_gpio_off(bc_led_t *self)
 {
     bc_gpio_set_output(self->_channel.gpio_channel, self->_idle_state ? 1 : 0);
 }

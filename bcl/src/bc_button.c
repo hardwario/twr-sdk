@@ -8,14 +8,14 @@
 
 static void _bc_button_task(void *param);
 
-static void _bc_gpio_button_init(bc_button_t *self);
+static void _bc_button_gpio_init(bc_button_t *self);
 
-static int _bc_gpio_button_get_input(bc_button_t *self);
+static int _bc_button_gpio_get_input(bc_button_t *self);
 
 static const bc_button_driver_t _bc_button_driver_gpio =
 {
-        .init = _bc_gpio_button_init,
-        .get_input = _bc_gpio_button_get_input,
+        .init = _bc_button_gpio_init,
+        .get_input = _bc_button_gpio_get_input,
 };
 
 void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_pull_t gpio_pull, bool idle_state)
@@ -155,12 +155,12 @@ static void _bc_button_task(void *param)
     bc_scheduler_plan_current_relative(self->_scan_interval);
 }
 
-static void _bc_gpio_button_init(bc_button_t *self)
+static void _bc_button_gpio_init(bc_button_t *self)
 {
     bc_gpio_init(self->_channel.gpio_channel);
 }
 
-static int _bc_gpio_button_get_input(bc_button_t *self)
+static int _bc_button_gpio_get_input(bc_button_t *self)
 {
     return bc_gpio_get_input(self->_channel.gpio_channel);
 }
