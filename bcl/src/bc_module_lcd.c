@@ -10,18 +10,18 @@
 
 enum
 {
-    _BC_MODULE_LCD_BACKLIGHT_POS = 0,
-    _BC_MODULE_LCD_BUTTON1_POS = 1,
-    _BC_MODULE_LCD_DISP_ON_POS = 2,
-    _BC_MODULE_LCD_BUTTON2_POS = 3,
-    _BC_MODULE_LCD_LED_GREEN_POS = 4,
-    _BC_MODULE_LCD_LED_RED_POS = 5,
-    _BC_MODULE_LCD_LED_BLUE_POS = 6,
-    _BC_MODULE_LCD_LED_DISP_CS_POS = 7
+    _BC_MODULE_LCD_BACKLIGHT_PIN = BC_TCA9534A_PIN_P0,
+    _BC_MODULE_LCD_BUTTON1_PIN = BC_TCA9534A_PIN_P1,
+    _BC_MODULE_LCD_DISP_ON_PIN = BC_TCA9534A_PIN_P2,
+    _BC_MODULE_LCD_BUTTON2_PIN = BC_TCA9534A_PIN_P3,
+    _BC_MODULE_LCD_LED_GREEN_PIN = BC_TCA9534A_PIN_P4,
+    _BC_MODULE_LCD_LED_RED_PIN = BC_TCA9534A_PIN_P5,
+    _BC_MODULE_LCD_LED_BLUE_PIN = BC_TCA9534A_PIN_P6,
+    _BC_MODULE_LCD_LED_DISP_CS_PIN = BC_TCA9534A_PIN_P7
 };
 
 #define _BC_MODULE_LCD_VCOM_PERIOD 15000
-#define _BC_MODULE_LCD_INITIALIZED ((1 << _BC_MODULE_LCD_LED_DISP_CS_POS) | (1 << _BC_MODULE_LCD_DISP_ON_POS) | (1 << _BC_MODULE_LCD_LED_GREEN_POS) | (1 << _BC_MODULE_LCD_LED_RED_POS) | (1 << _BC_MODULE_LCD_LED_BLUE_POS))
+#define _BC_MODULE_LCD_INITIALIZED ((1 << _BC_MODULE_LCD_LED_DISP_CS_PIN) | (1 << _BC_MODULE_LCD_DISP_ON_PIN) | (1 << _BC_MODULE_LCD_LED_GREEN_PIN) | (1 << _BC_MODULE_LCD_LED_RED_PIN) | (1 << _BC_MODULE_LCD_LED_BLUE_PIN))
 
 typedef struct bc_module_lcd_t
 {
@@ -96,12 +96,12 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
 
 bool bc_module_lcd_on(void)
 {
-    return bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_DISP_ON_POS, 1);
+    return bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_DISP_ON_PIN, 1);
 }
 
 bool bc_module_lcd_off(void)
 {
-    return bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_DISP_ON_POS, 0);
+    return bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_DISP_ON_PIN, 0);
 }
 
 bool bc_module_lcd_is_ready(void)
@@ -252,33 +252,38 @@ Framebuffer format for updating multiple lines, ideal for later DMA TX:
 */
 bool bc_module_lcd_update(void)
 {
-	if (!_bc_module_lcd_tca9534a_init())
-	{
-		return false;
-	}
-
-    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_POS, 0))
+    if(bc_spi_is_ready())
     {
-    	_bc_module_lcd.is_tca9534a_initialized = false;
-    	return false;
+        if (!_bc_module_lcd_tca9534a_init())
+        {
+            return false;
+        }
+
+        if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 0))
+        {
+            _bc_module_lcd.is_tca9534a_initialized = false;
+            return false;
+        }
+
+        _bc_module_lcd.framebuffer[0] = 0x80 | _bc_module_lcd.vcom;
+
+        if (!bc_spi_async_transfer(_bc_module_lcd.framebuffer, NULL, BC_LCD_FRAMEBUFFER_SIZE, _bc_spi_event_handler, NULL))
+        {
+            if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 1))
+            {
+                _bc_module_lcd.is_tca9534a_initialized = false;
+            }
+            return false;
+        }
+
+        bc_scheduler_plan_relative(_bc_module_lcd.task_id, _BC_MODULE_LCD_VCOM_PERIOD);
+
+        _bc_module_lcd.vcom ^= 0x40;
+
+        return true;
     }
 
-    _bc_module_lcd.framebuffer[0] = 0x80 | _bc_module_lcd.vcom;
-
-    if (!bc_spi_async_transfer(_bc_module_lcd.framebuffer, NULL, BC_LCD_FRAMEBUFFER_SIZE, _bc_spi_event_handler, NULL))
-    {
-    	if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_POS, 1))
-    	{
-    		_bc_module_lcd.is_tca9534a_initialized = false;
-    	}
-    	return false;
-    }
-
-    bc_scheduler_plan_relative(_bc_module_lcd.task_id, _BC_MODULE_LCD_VCOM_PERIOD);
-
-    _bc_module_lcd.vcom ^= 0x40;
-
-    return true;
+    return false;
 }
 
 bool bc_module_lcd_clear_memory_command(void)
@@ -361,7 +366,7 @@ static bool _bc_module_lcd_tca9534a_init(void)
 
 static bool _bc_module_lcd_spi_transfer(uint8_t *buffer, size_t length)
 {
-    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_POS, 0))
+    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 0))
     {
     	_bc_module_lcd.is_tca9534a_initialized = false;
     	return false;
@@ -369,7 +374,7 @@ static bool _bc_module_lcd_spi_transfer(uint8_t *buffer, size_t length)
 
     bool spi_state = bc_spi_transfer(buffer, NULL, length);
 
-    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_POS, 1))
+    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 1))
     {
     	_bc_module_lcd.is_tca9534a_initialized = false;
     	return false;
@@ -398,7 +403,7 @@ static void _bc_spi_event_handler(bc_spi_event_t event, void *event_param)
 
     if (event == BC_SPI_EVENT_DONE)
     {
-        bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_POS, 1);
+        bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_LED_DISP_CS_PIN, 1);
     }
 }
 
@@ -411,7 +416,7 @@ static void _bc_module_lcd_led_init(bc_led_t *self)
 
 static void _bc_module_lcd_led_on(bc_led_t *self)
 {
-    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel], self->_idle_state ? 0 : 1))
+    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel.virtual_channel], self->_idle_state ? 0 : 1))
     {
     	_bc_module_lcd.is_tca9534a_initialized = false;
     }
@@ -419,7 +424,7 @@ static void _bc_module_lcd_led_on(bc_led_t *self)
 
 static void _bc_module_lcd_led_off(bc_led_t *self)
 {
-    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel], self->_idle_state ? 1 : 0))
+    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel.virtual_channel], self->_idle_state ? 1 : 0))
     {
     	_bc_module_lcd.is_tca9534a_initialized = false;
     }
@@ -444,7 +449,7 @@ static int _bc_module_lcd_button_get_input(bc_button_t *self)
 
     bc_tca9534a_state_t s;
 
-    if (!bc_tca9534a_read_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_button_pin_lut[self->_channel], &s))
+    if (!bc_tca9534a_read_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_button_pin_lut[self->_channel.virtual_channel], &s))
     {
     	_bc_module_lcd.is_tca9534a_initialized = false;
     }

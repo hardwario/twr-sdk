@@ -53,6 +53,12 @@ typedef struct bc_led_t bc_led_t;
 
 //! @cond
 
+typedef union
+{
+    bc_gpio_channel_t gpio_channel;
+    int virtual_channel;
+} bc_led_channel_t;
+
 typedef struct
 {
     void (*init)(bc_led_t *self);
@@ -62,7 +68,7 @@ typedef struct
 
 struct bc_led_t
 {
-    int _channel;
+    bc_led_channel_t _channel;
     const bc_led_driver_t *_driver;
     bool _open_drain_output;
     int _idle_state;

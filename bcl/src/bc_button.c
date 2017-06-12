@@ -22,7 +22,7 @@ void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_p
 {
     memset(self, 0, sizeof(*self));
 
-    self->_channel = gpio_channel;
+    self->_channel.gpio_channel = gpio_channel;
     self->_gpio_pull = gpio_pull;
     self->_idle_state = idle_state;
 
@@ -32,11 +32,10 @@ void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_p
     self->_hold_time = _BC_BUTTON_HOLD_TIME;
 
     self->_driver = &_bc_button_driver_gpio;
-    self->_driver->init(self);
 
-    bc_gpio_init(self->_channel);
-    bc_gpio_set_pull(self->_channel, self->_gpio_pull);
-    bc_gpio_set_mode(self->_channel, BC_GPIO_MODE_INPUT);
+    self->_driver->init(self);
+    bc_gpio_set_pull(self->_channel.gpio_channel, self->_gpio_pull);
+    bc_gpio_set_mode(self->_channel.gpio_channel, BC_GPIO_MODE_INPUT);
 
     bc_scheduler_register(_bc_button_task, self, self->_scan_interval);
 }
@@ -45,7 +44,7 @@ void bc_button_init_virtual(bc_button_t *self, int channel, const bc_button_driv
 {
     memset(self, 0, sizeof(*self));
 
-    self->_channel = channel;
+    self->_channel.virtual_channel = channel;
     self->_idle_state = idle_state;
 
     self->_scan_interval = _BC_BUTTON_SCAN_INTERVAL;
@@ -158,10 +157,10 @@ static void _bc_button_task(void *param)
 
 static void _bc_button_gpio_init(bc_button_t *self)
 {
-    bc_gpio_init(self->_channel);
+    bc_gpio_init(self->_channel.gpio_channel);
 }
 
 static int _bc_button_gpio_get_input(bc_button_t *self)
 {
-    return bc_gpio_get_input(self->_channel);
+    return bc_gpio_get_input(self->_channel.gpio_channel);
 }
