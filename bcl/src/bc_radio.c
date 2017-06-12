@@ -11,6 +11,8 @@
 typedef enum
 {
     BC_RADIO_HEADER_ENROLL,
+	BC_RADIO_HEADER_ATTACH,
+	BC_RADIO_HEADER_DETACH,
     BC_RADIO_HEADER_PUB_PUSH_BUTTON,
     BC_RADIO_HEADER_PUB_THERMOMETER,
     BC_RADIO_HEADER_PUB_HUMIDITY,
@@ -67,6 +69,8 @@ static void _bc_radio_task(void *param);
 static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *event_param);
 static void _bc_radio_save_peer_devices(void);
 static void atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t event, void *event_param);
+static bool _bc_radio_peer_device_add(uint64_t device_address);
+static bool _bc_radio_peer_device_remove(uint64_t device_address);
 
 __attribute__((weak)) void bc_radio_on_push_button(uint64_t *peer_device_address, uint16_t *event_count) { (void) peer_device_address; (void) event_count; }
 __attribute__((weak)) void bc_radio_on_thermometer(uint64_t *peer_device_address, uint8_t *i2c, float *temperature) { (void) peer_device_address; (void) i2c; (void) temperature; }
@@ -150,6 +154,55 @@ void bc_radio_enrollment_start(void)
 void bc_radio_enrollment_stop(void)
 {
     _bc_radio.enrollment_mode = false;
+}
+
+bool bc_radio_peer_device_add(uint64_t device_address)
+{
+
+	if (!_bc_radio_peer_device_add(device_address))
+	{
+		return false;
+	}
+
+    uint8_t buffer[1 + sizeof(_bc_radio.device_address)];
+
+    buffer[0] = BC_RADIO_HEADER_ATTACH;
+
+    memcpy(&buffer[1], &_bc_radio.device_address, sizeof(_bc_radio.device_address));
+
+    bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer));
+
+    bc_scheduler_plan_now(_bc_radio.task_id);
+
+	return true;
+}
+
+bool bc_radio_peer_device_remove(uint64_t device_address)
+{
+	if (!_bc_radio_peer_device_remove(device_address))
+	{
+		return false;
+	}
+
+    uint8_t buffer[1 + sizeof(_bc_radio.device_address)];
+
+    buffer[0] = BC_RADIO_HEADER_DETACH;
+
+    memcpy(&buffer[1], &_bc_radio.device_address, sizeof(_bc_radio.device_address));
+
+    bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer));
+
+    bc_scheduler_plan_now(_bc_radio.task_id);
+
+	return true;
+}
+
+void bc_radio_get_peer_devices_address(uint64_t *device_address, int length)
+{
+	for (int i = 0; (i < BC_RADIO_MAX_DEVICES) && (i < length); i++)
+	{
+		device_address[i] = _bc_radio.peer_devices[i].address;
+	}
 }
 
 uint64_t bc_radio_get_device_address(void)
@@ -497,50 +550,32 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
             if (_bc_radio.enrollment_mode && length == 9 && buffer[8] == BC_RADIO_HEADER_ENROLL)
             {
-                int i;
-                int free_address_i = BC_RADIO_MAX_DEVICES;
-
                 _bc_radio.enrollment_mode = false;
 
-                for (i = 0; i < BC_RADIO_MAX_DEVICES; i++)
+                if (!bc_radio_peer_device_add(_bc_radio.peer_device_address))
                 {
-                    if (_bc_radio.peer_device_address == _bc_radio.peer_devices[i].address)
-                    {
-                        _bc_radio.peer_devices[i].address = 0;
-                        _bc_radio_save_peer_devices();
-
-                        if (_bc_radio.event_handler != NULL)
-                        {
-                            _bc_radio.event_handler(BC_RADIO_EVENT_DETACH, _bc_radio.event_param);
-                        }
-
-                        return;
-                    }
-
-                    if ((_bc_radio.peer_devices[i].address == 0) && (i < free_address_i))
-                    {
-                        free_address_i = i;
-                    }
+                	bc_radio_peer_device_remove(_bc_radio.peer_device_address);
                 }
+                return;
+            }
 
-                if (free_address_i == BC_RADIO_MAX_DEVICES)
-                {
-                    if (_bc_radio.event_handler != NULL)
-                    {
-                        _bc_radio.event_handler(BC_RADIO_EVENT_ATTACH_FAILURE, _bc_radio.event_param);
-                    }
-                    return;
-                }
+            if (length == 17)
+            {
+            	if (buffer[8] == BC_RADIO_HEADER_ATTACH )
+				{
+            		uint64_t address;
+            		memcpy(&address, buffer + 9, sizeof(address));
+            		_bc_radio_peer_device_add(address);
+            		return;
+				}
 
-                _bc_radio.peer_devices[free_address_i].address = _bc_radio.peer_device_address;
-                _bc_radio.peer_devices[free_address_i].message_id_synced = false;
-
-                _bc_radio_save_peer_devices();
-
-                if (_bc_radio.event_handler != NULL)
-                {
-                    _bc_radio.event_handler(BC_RADIO_EVENT_ATTACH, _bc_radio.event_param);
-                }
+            	if (buffer[8] == BC_RADIO_HEADER_DETACH)
+            	{
+            		uint64_t address;
+					memcpy(&address, buffer + 9, sizeof(address));
+					_bc_radio_peer_device_remove(address);
+					return;
+            	}
             }
 
             for (int i = 0; i < BC_RADIO_MAX_DEVICES; i++)
@@ -615,4 +650,65 @@ static void atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t even
     }
 }
 
+static bool _bc_radio_peer_device_add(uint64_t device_address)
+{
+	int free_address_i = BC_RADIO_MAX_DEVICES;
 
+	for (int i = 0; i < BC_RADIO_MAX_DEVICES; i++)
+	{
+		if (device_address == _bc_radio.peer_devices[i].address)
+		{
+			return false;
+		}
+
+		if ((_bc_radio.peer_devices[i].address == 0) && (i < free_address_i))
+		{
+			free_address_i = i;
+		}
+	}
+
+	if (free_address_i == BC_RADIO_MAX_DEVICES)
+	{
+		if (_bc_radio.event_handler != NULL)
+		{
+			_bc_radio.peer_device_address = device_address;
+			_bc_radio.event_handler(BC_RADIO_EVENT_ATTACH_FAILURE, _bc_radio.event_param);
+		}
+		return false;
+	}
+
+	_bc_radio.peer_devices[free_address_i].address = _bc_radio.peer_device_address;
+	_bc_radio.peer_devices[free_address_i].message_id_synced = false;
+
+	_bc_radio_save_peer_devices();
+
+	if (_bc_radio.event_handler != NULL)
+	{
+		_bc_radio.peer_device_address = device_address;
+		_bc_radio.event_handler(BC_RADIO_EVENT_ATTACH, _bc_radio.event_param);
+	}
+
+	return true;
+}
+
+static bool _bc_radio_peer_device_remove(uint64_t device_address)
+{
+	for (int i = 0; i < BC_RADIO_MAX_DEVICES; i++)
+	{
+		if (device_address == _bc_radio.peer_devices[i].address)
+		{
+			_bc_radio.peer_devices[i].address = 0;
+			_bc_radio_save_peer_devices();
+
+			if (_bc_radio.event_handler != NULL)
+			{
+				_bc_radio.peer_device_address = device_address;
+				_bc_radio.event_handler(BC_RADIO_EVENT_DETACH, _bc_radio.event_param);
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}

@@ -29,6 +29,12 @@ void bc_radio_enrollment_start(void);
 
 void bc_radio_enrollment_stop(void);
 
+bool bc_radio_peer_device_add(uint64_t device_address);
+
+bool bc_radio_peer_device_remove(uint64_t device_address);
+
+void bc_radio_get_peer_devices_address(uint64_t *device_address, int length);
+
 uint64_t bc_radio_get_device_address(void);
 
 uint64_t bc_radio_get_event_device_address(void);
