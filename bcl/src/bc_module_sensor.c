@@ -14,7 +14,6 @@ static struct
 
 } _bc_module_sensor;
 
-
 bool bc_module_sensor_init(void)
 {
 	if (_bc_module_sensor.initialized)
@@ -60,7 +59,7 @@ bool bc_module_sensor_set_digital_output_mode(bc_module_channel_t channel)
     }
 }
 
-bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_pull_t pull)
+bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_sensor_pull_t pull)
 {
 	if (!_bc_module_sensor.initialized)
 	{
@@ -71,11 +70,11 @@ bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_pull_t pul
     {
         _bc_module_sensor.direction |= _BC_MODULE_SENSOR_CH_A_VDD | _BC_MODULE_SENSOR_CH_A_EN;
 
-        if (pull == BC_MODULE_SENSOR_PULL_4K7)
+        if (pull == BC_MODULE_SENSOR_PULL_UP_4K7)
         {
             _bc_module_sensor.direction &= ~_BC_MODULE_SENSOR_CH_A_EN;
         }
-        else if (pull == BC_MODULE_SENSOR_PULL_56)
+        else if (pull == BC_MODULE_SENSOR_PULL_UP_56R)
         {
             _bc_module_sensor.direction &= ~_BC_MODULE_SENSOR_CH_A_VDD;
         }
@@ -84,11 +83,11 @@ bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_pull_t pul
     {
         _bc_module_sensor.direction |= _BC_MODULE_SENSOR_CH_B_EN | _BC_MODULE_SENSOR_CH_B_VDD;
 
-        if (pull == BC_MODULE_SENSOR_PULL_4K7)
+        if (pull == BC_MODULE_SENSOR_PULL_UP_4K7)
         {
             _bc_module_sensor.direction &= ~_BC_MODULE_SENSOR_CH_B_EN;
         }
-        else if (pull == BC_MODULE_SENSOR_PULL_56)
+        else if (pull == BC_MODULE_SENSOR_PULL_UP_56R)
         {
             _bc_module_sensor.direction &= ~_BC_MODULE_SENSOR_CH_B_VDD;
         }
@@ -99,12 +98,9 @@ bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_pull_t pul
     	_bc_module_sensor.initialized = false;
     	return false;
     }
-    else
-    {
-    	return true;
-    }
-}
 
+    return true;
+}
 
 void bc_module_sensor_set_digital_output(bc_module_channel_t channel, bool value) {
     bc_gpio_channel_t output_channel;

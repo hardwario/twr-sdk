@@ -2,16 +2,16 @@
 
 #define _BC_FLOOD_DETECTOR_DELAY_RUN 50
 
-static void self_task_interval(void *param);
+static void _bc_flood_task_interval(void *param);
 
-static void self_task_measure(void *param);
+static void _bc_flood_task_measure(void *param);
 
 void bc_flood_detector_init(bc_flood_detector_t *self, bc_flood_detector_type_t type)
 {
 	memset(self, 0, sizeof(&self));
 	self->_type = type;
-	self->_task_id_interval = bc_scheduler_register(self_task_interval, self, BC_TICK_INFINITY);
-	self->_task_id_measure = bc_scheduler_register(self_task_measure, self, _BC_FLOOD_DETECTOR_DELAY_RUN);
+	self->_task_id_interval = bc_scheduler_register(_bc_flood_task_interval, self, BC_TICK_INFINITY);
+	self->_task_id_measure = bc_scheduler_register(_bc_flood_task_measure, self, _BC_FLOOD_DETECTOR_DELAY_RUN);
 }
 
 void bc_flood_detector_set_event_handler(bc_flood_detector_t *self, void (*event_handler)(bc_flood_detector_t *, bc_flood_detector_event_t, void*), void *event_param)
@@ -53,7 +53,7 @@ bool bc_flood_detector_is_alarm(bc_flood_detector_t *self)
 	return self->_alarm;
 }
 
-static void self_task_interval(void *param)
+static void _bc_flood_task_interval(void *param)
 {
 	bc_flood_detector_t *self = (bc_flood_detector_t *) param;
 
@@ -62,13 +62,14 @@ static void self_task_interval(void *param)
     bc_scheduler_plan_current_relative(self->_update_interval);
 }
 
-static void self_task_measure(void *param)
+static void _bc_flood_task_measure(void *param)
 {
 	bc_flood_detector_t *self = (bc_flood_detector_t *) param;
 
 start:
 
-	switch (self->_state) {
+	switch (self->_state)
+	{
 		case BC_FLOOD_DETECTOR_STATE_ERROR:
 		{
 			self->_measurement_active = false;
@@ -86,7 +87,8 @@ start:
 		{
 			self->_state = BC_FLOOD_DETECTOR_STATE_ERROR;
 
-			switch (self->_type) {
+			switch (self->_type)
+			{
 				case BC_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_A:
 				{
 					if (!bc_module_sensor_init())
@@ -125,10 +127,11 @@ start:
 		{
 			self->_state = BC_FLOOD_DETECTOR_STATE_ERROR;
 
-			switch (self->_type) {
+			switch (self->_type)
+			{
 				case BC_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_A:
 				{
-					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_4K7))
+					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_UP_4K7))
 					{
 						goto start;
 					}
@@ -137,7 +140,7 @@ start:
 				}
 				case BC_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_B:
 				{
-					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_PULL_4K7))
+					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_PULL_UP_4K7))
 					{
 						goto start;
 					}
@@ -150,14 +153,15 @@ start:
 				}
 			}
 
-			self->_state = BC_FLOOD_DETECTOR_STATE_READ;
+			self->_state = BC_FLOOD_DETECTOR_STATE_MEASURE;
 			return;
 		}
-		case BC_FLOOD_DETECTOR_STATE_READ:
+		case BC_FLOOD_DETECTOR_STATE_MEASURE:
 		{
 			self->_state = BC_FLOOD_DETECTOR_STATE_ERROR;
 
-			switch (self->_type) {
+			switch (self->_type)
+			{
 				case BC_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_A:
 				{
 					self->_alarm = bc_gpio_get_input(BC_GPIO_P4) == 1;
