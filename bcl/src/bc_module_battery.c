@@ -69,6 +69,8 @@ void bc_module_battery_set_update_interval(bc_tick_t interval)
     else
     {
         bc_scheduler_plan_relative(_bc_module_battery.task_id, _bc_module_battery.update_interval);
+
+        bc_module_battery_measure();
     }
 }
 

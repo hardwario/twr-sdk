@@ -85,6 +85,8 @@ void bc_hts221_set_update_interval(bc_hts221_t *self, bc_tick_t interval)
     else
     {
         bc_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
+
+        bc_hts221_measure(self);
     }
 }
 

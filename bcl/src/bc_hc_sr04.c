@@ -98,6 +98,8 @@ void bc_hc_sr04_set_update_interval(bc_tick_t interval)
     else
     {
         bc_scheduler_plan_relative(_bc_hc_sr04.task_id_interval, _bc_hc_sr04.update_interval);
+
+        bc_hc_sr04_measure();
     }
 }
 

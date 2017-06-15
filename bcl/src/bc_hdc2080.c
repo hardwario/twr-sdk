@@ -41,6 +41,8 @@ void bc_hdc2080_set_update_interval(bc_hdc2080_t *self, bc_tick_t interval)
     else
     {
         bc_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
+
+        bc_hdc2080_measure(self);
     }
 }
 
