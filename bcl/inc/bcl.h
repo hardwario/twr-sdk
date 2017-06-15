@@ -44,10 +44,12 @@
 #include <bc_module_sigfox.h>
 #include <bc_module_lcd.h>
 #include <bc_module_co2.h>
+#include <bc_module_sensor.h>
 
 // Other
 
 #include <bc_data_stream.h>
+#include <bc_flood_detector.h>
 
 //! @mainpage BigClown firmware SDK
 //! This is API documentation of BigClown SDK
