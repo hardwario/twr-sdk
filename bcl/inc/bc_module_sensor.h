@@ -24,9 +24,9 @@ typedef enum
 
 typedef enum
 {
-    BC_MODULE_PULL_NONE = 0,
-    BC_MODULE_PULL_4K7 = 1,
-    BC_MODULE_PULL_56 = 2,
+    BC_MODULE_SENSOR_PULL_NONE = 0,
+    BC_MODULE_SENSOR_PULL_4K7 = 1,
+    BC_MODULE_SENSOR_PULL_56 = 2,
 
 } bc_module_pull_t;
 

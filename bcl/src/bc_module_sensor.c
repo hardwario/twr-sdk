@@ -10,12 +10,18 @@ static struct
 {
     bc_tca9534a_t tca9534a;
     uint8_t direction;
+    bool initialized;
 
 } _bc_module_sensor;
 
 
 bool bc_module_sensor_init(void)
 {
+	if (_bc_module_sensor.initialized)
+	{
+		return true;
+	}
+
     if (!bc_tca9534a_init(&_bc_module_sensor.tca9534a, BC_I2C_I2C0, 0x3e))
     {
         return false;
@@ -33,6 +39,7 @@ bool bc_module_sensor_init(void)
         return false;
     }
 
+    _bc_module_sensor.initialized = true;
     return true;
 }
 
@@ -55,15 +62,20 @@ bool bc_module_sensor_set_digital_output_mode(bc_module_channel_t channel)
 
 bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_pull_t pull)
 {
+	if (!_bc_module_sensor.initialized)
+	{
+		return false;
+	}
+
     if (channel == BC_MODULE_SENSOR_CHANNEL_A)
     {
         _bc_module_sensor.direction |= _BC_MODULE_SENSOR_CH_A_VDD | _BC_MODULE_SENSOR_CH_A_EN;
 
-        if (pull == BC_MODULE_PULL_4K7)
+        if (pull == BC_MODULE_SENSOR_PULL_4K7)
         {
             _bc_module_sensor.direction &= ~_BC_MODULE_SENSOR_CH_A_EN;
         }
-        else if (pull == BC_MODULE_PULL_56)
+        else if (pull == BC_MODULE_SENSOR_PULL_56)
         {
             _bc_module_sensor.direction &= ~_BC_MODULE_SENSOR_CH_A_VDD;
         }
@@ -72,17 +84,25 @@ bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_pull_t pul
     {
         _bc_module_sensor.direction |= _BC_MODULE_SENSOR_CH_B_EN | _BC_MODULE_SENSOR_CH_B_VDD;
 
-        if (pull == BC_MODULE_PULL_4K7)
+        if (pull == BC_MODULE_SENSOR_PULL_4K7)
         {
             _bc_module_sensor.direction &= ~_BC_MODULE_SENSOR_CH_B_EN;
         }
-        else if (pull == BC_MODULE_PULL_56)
+        else if (pull == BC_MODULE_SENSOR_PULL_56)
         {
             _bc_module_sensor.direction &= ~_BC_MODULE_SENSOR_CH_B_VDD;
         }
     }
 
-    return bc_tca9534a_set_port_direction(&_bc_module_sensor.tca9534a, _bc_module_sensor.direction);
+    if (!bc_tca9534a_set_port_direction(&_bc_module_sensor.tca9534a, _bc_module_sensor.direction))
+    {
+    	_bc_module_sensor.initialized = false;
+    	return false;
+    }
+    else
+    {
+    	return true;
+    }
 }
 
 
