@@ -452,6 +452,7 @@ static int _bc_module_lcd_button_get_input(bc_button_t *self)
     if (!bc_tca9534a_read_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_button_pin_lut[self->_channel.virtual_channel], &s))
     {
     	_bc_module_lcd.is_tca9534a_initialized = false;
+    	return 0;
     }
 
     return s;
