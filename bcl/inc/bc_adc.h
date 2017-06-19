@@ -31,18 +31,6 @@ typedef enum
 
 } bc_adc_channel_t;
 
-//! @brief ADC voltage reference
-
-typedef enum
-{
-    //! @brief ADC voltage reference is default (from VDD)
-    BC_ADC_REFERENCE_DEFAULT  = 0,
-
-    //! @brief ADC voltage reference is internal reference source
-    BC_ADC_REFERENCE_INTERNAL = 1
-
-} bc_adc_reference_t;
-
 //! @brief ADC result format
 
 typedef enum
@@ -75,22 +63,9 @@ typedef enum
 
 //! @brief Initialize ADC channel
 //! @param[in] channel ADC channel
-//! @param[in] reference ADC voltage reference
 //! @param[in] format ADC result format
 
-void bc_adc_init(bc_adc_channel_t channel, bc_adc_reference_t reference, bc_adc_format_t format);
-
-//! @brief Set ADC voltage reference
-//! @param[in] channel ADC channel
-//! @param[in] reference ADC voltage reference
-
-void bc_adc_set_reference(bc_adc_channel_t channel, bc_adc_reference_t reference);
-
-//! @brief Get ADC voltage reference
-//! @param[in] channel ADC channel
-//! @return ADC voltage reference
-
-bc_adc_reference_t bc_adc_get_reference(bc_adc_channel_t channel);
+void bc_adc_init(bc_adc_channel_t channel, bc_adc_format_t format);
 
 //! @brief Set ADC result format
 //! @param[in] channel ADC channel
