@@ -18,7 +18,7 @@ In short it is a set of libraries and APIs which simplify embedded firmware deve
 
 All the drivers provide high-level abstraction of the underlying hardware and follow event-driven approach.
 
-The whole library is documented using Doxygen and automatically generated at (sdk.bigclowm.com)[http://sdk.bigclown.com] with every commit/merge to master branch using Travis CI.
+The whole library is documented using Doxygen and automatically generated at [sdk.bigclowm.com](http://sdk.bigclown.com) with every commit/merge to master branch using Travis CI.
 
 Firmware SDK also comes with Makefile recipe to build the firmware projects.
 
