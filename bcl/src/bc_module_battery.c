@@ -48,7 +48,7 @@ void bc_module_battery_init(bc_module_battery_format_t format)
     bc_gpio_set_mode(BC_GPIO_P1, BC_GPIO_MODE_OUTPUT);
 
     // Initialize ADC channel
-    bc_adc_init(BC_ADC_CHANNEL_A0, BC_ADC_REFERENCE_DEFAULT, BC_ADC_FORMAT_FLOAT);
+    bc_adc_init(BC_ADC_CHANNEL_A0, BC_ADC_FORMAT_FLOAT);
     bc_adc_set_event_handler(BC_ADC_CHANNEL_A0, _bc_module_battery_adc_event_handler, NULL);
 }
 
