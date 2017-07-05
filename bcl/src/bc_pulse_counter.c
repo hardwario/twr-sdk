@@ -94,11 +94,11 @@ void bc_pulse_counter_reset(bc_pulse_counter_t *self)
 
 static void _bc_pulse_counter_task_update(void *param)
 {
-    bc_pulse_counter_t *c = param;
+    bc_pulse_counter_t *self = param;
 
-    c->_event_handler(c, BC_COUNTER_EVENT_UPDATE, c->_event_param);
+    self->_event_handler(self, BC_COUNTER_EVENT_UPDATE, self->_event_param);
 
-    bc_scheduler_plan_current_relative(c->_update_interval);
+    bc_scheduler_plan_current_relative(self->_update_interval);
 }
 
 static void _bc_pulse_counter_task(void *param)
@@ -106,16 +106,16 @@ static void _bc_pulse_counter_task(void *param)
     bc_pulse_counter_t *self = param;
 
     // Get state of present counter input
-    int now = self->_driver->get_input(self);
+    int value = self->_driver->get_input(self);
 
     switch (self->_state)
     {
         case BC_COUNTER_STATE_IDLE:
         {
             // If the state of input has changed...
-            if (now != self->_idle)
+            if (value != self->_idle)
             {
-                self->_changed = now;
+                self->_changed = value;
                 self->_state = BC_COUNTER_STATE_DEBOUNCE;
                 bc_scheduler_plan_current_relative(self->_debounce_time);
                 return;
@@ -126,7 +126,7 @@ static void _bc_pulse_counter_task(void *param)
         case BC_COUNTER_STATE_DEBOUNCE:
         {
             // If state is valid...
-            if (self->_changed == now)
+            if (self->_changed == value)
             {
                 // ...increment on watched edge
                 if (self->_changed != 0)
@@ -145,7 +145,7 @@ static void _bc_pulse_counter_task(void *param)
                 }
 
                 // Update idle state
-                self->_idle = now;
+                self->_idle = value;
             }
 
             // Update internal stae to idle
@@ -154,8 +154,10 @@ static void _bc_pulse_counter_task(void *param)
             break;
         }
         default:
+        {
             for(;;);
             break;
+        }
     }
 
     bc_scheduler_plan_current_relative(_BC_PULSE_COUNTER_SCAN_INTERVAL);
