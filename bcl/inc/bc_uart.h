@@ -14,49 +14,10 @@
 #define _BC_UART_PARITY_NONE 0x00000000
 #define _BC_UART_STOP_BITS_1 0x00000000
 
+// Todo remove
+#define BC_UART_CONFIG_9600_8N1 BC_UART_BAUDRATE_9600, BC_UART_SETTINGS_8N1
+
 //! @endcond
-
-typedef enum
-{
-	BC_UART_BAUDRATE_9600 = 9600,
-	BC_UART_BAUDRATE_115200 = 115200
-
-} bc_uart_baudrate_t;
-
-
-typedef enum
-{
-	BC_UART_DATA_BITS_8 = 0x00000000,
-	BC_UART_DATA_BITS_7 = 1
-
-} bc_uart_data_bits_t;
-
-typedef enum
-{
-	BC_UART_PARITY_NONE = 0x00000000,
-
-} bc_uart_parity_t;
-
-typedef enum
-{
-	BC_UART_STOP_BITS_1 = 0x00000000,
-
-} bc_uart_stop_bits_t;
-
-//! @brief UART configurations
-
-typedef struct
-{
-	bc_uart_baudrate_t baudrate;
-	bc_uart_data_bits_t data_bits;
-	bc_uart_parity_t parity;
-	bc_uart_stop_bits_t stop_bits;
-
-} bc_uart_config_t;
-
-
-//! @brief Configuration 8 bits, no parity, 1 stop bit
-extern const bc_uart_config_t BC_UART_CONFIG_9600_8N1;
 
 //! @brief UART channels
 
@@ -72,6 +33,23 @@ typedef enum
 	BC_UART_UART2 = 2
 
 } bc_uart_channel_t;
+
+//! @brief UART baudrate
+
+typedef enum
+{
+	BC_UART_BAUDRATE_9600 = 0,
+	BC_UART_BAUDRATE_115200 = 1
+
+} bc_uart_baudrate_t;
+
+//! @brief UART setting
+
+typedef enum
+{
+	BC_UART_SETTINGS_8N1
+
+} bc_uart_setting_t;
 
 //! @brief Callback events
 
@@ -92,7 +70,7 @@ typedef enum
 //! @param[in] channel UART channel
 //! @param[in] config UART configuration
 
-void bc_uart_init(bc_uart_channel_t channel, bc_uart_config_t config);
+void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uart_setting_t setting);
 
 //! @brief Write data to UART channel (blocking call)
 //! @param[in] channel UART channel

@@ -27,27 +27,66 @@ static bc_uart_t _bc_uart[3] =
 	[BC_UART_UART2] = { .initialized = false },
 };
 
-const bc_uart_config_t BC_UART_CONFIG_9600_8N1 = {BC_UART_BAUDRATE_9600, BC_UART_DATA_BITS_8, BC_UART_PARITY_NONE, BC_UART_STOP_BITS_1};
+static uint32_t _bc_uart_brr_t[] =
+{
+		[BC_UART_BAUDRATE_9600] = 0xd05,
+		[BC_UART_BAUDRATE_115200] = 0x116
+};
 
 static void _bc_uart_async_write_task(void *param);
 static void _bc_uart_async_read_task(void *param);
 static void _bc_uart_irq_handler(bc_uart_channel_t channel);
 
-void bc_uart_init(bc_uart_channel_t channel, bc_uart_config_t config)
+void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uart_setting_t setting)
 {
-	(void) config;
+	(void) baudrate;
+	(void) setting;
 
 	memset(&_bc_uart[channel], 0, sizeof(_bc_uart[channel]));
+
+	// Enable GPIOA clock
+	RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
+
+	// Errata workaround
+	RCC->IOPENR;
+
 	switch(channel)
 	{
+		case BC_UART_UART0:
+		{
+
+			// Enable pull-up on RXD0 pin
+			GPIOA->PUPDR |= GPIO_PUPDR_PUPD1_0;
+
+			// Configure TXD0 and RXD0 pins as alternate function
+			GPIOA->MODER &= 0xfffffffa;
+
+			GPIOA->AFR[0] |= 0x66;
+
+		    RCC->APB1ENR |= RCC_APB1ENR_USART4EN;
+
+		    RCC->APB1ENR;
+
+			// Enable transmitter and receiver, peripheral enabled in stop mode
+		    USART4->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UESM;
+
+			// Clock enabled in stop mode, disable overrun detection, one bit sampling method
+		    USART4->CR3 = USART_CR3_UCESM | USART_CR3_OVRDIS | USART_CR3_ONEBIT;
+
+			// Configure baudrate
+		    USART4->BRR = _bc_uart_brr_t[baudrate];
+
+			// Enable
+		    USART4->CR1 |= USART_CR1_UE;
+
+			NVIC_EnableIRQ(USART4_5_IRQn);
+
+			_bc_uart[channel].USARTx = USART4;
+
+			break;
+		}
 		case BC_UART_UART1:
 		{
-			// Enable GPIOA clock
-			RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
-
-			// Errata workaround
-			RCC->IOPENR;
-
 			// Enable pull-up on RXD1 pin
 			GPIOA->PUPDR |= GPIO_PUPDR_PUPD3_0;
 
@@ -75,7 +114,7 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_config_t config)
 			// Configure baudrate
 			LPUART1->BRR = 0x369;
 
-			// Enable LPUART1
+			// Enable
 			LPUART1->CR1 |= USART_CR1_UE;
 
 			NVIC_EnableIRQ(LPUART1_IRQn);
@@ -85,12 +124,6 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_config_t config)
 		}
 		case BC_UART_UART2:
 		{
-			// Enable GPIOA clock
-			RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
-
-			// Errata workaround
-			RCC->IOPENR;
-
 			// Enable pull-up on RXD2 pin
 			GPIOA->PUPDR |= GPIO_PUPDR_PUPD10_0;
 
@@ -98,9 +131,6 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_config_t config)
 			GPIOA->MODER &= 0xffebffff;
 
 			GPIOA->AFR[1] |= 0x0440;
-
-		    // Set clock source
-		    RCC->CCIPR |= 0;
 
 		    RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
 
@@ -113,9 +143,9 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_config_t config)
 		    USART1->CR3 = USART_CR3_UCESM | USART_CR3_OVRDIS | USART_CR3_ONEBIT;
 
 			// Configure baudrate
-		    USART1->BRR = 0xd05; // 32000000 / 9600
+		    USART1->BRR = _bc_uart_brr_t[baudrate];
 
-			// Enable LPUART1
+			// Enable
 		    USART1->CR1 |= USART_CR1_UE;
 
 			NVIC_EnableIRQ(USART1_IRQn);
@@ -130,11 +160,6 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_config_t config)
 	}
 
 	_bc_uart[channel].initialized = true;
-}
-
-void bc_uart_set_baudrate()
-{
-
 }
 
 size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t length)
@@ -173,7 +198,6 @@ size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t lengt
 	bc_module_core_pll_disable();
 
 	return bytes_written;
-
 }
 
 size_t bc_uart_read(bc_uart_channel_t channel, void *buffer, size_t length, bc_tick_t timeout)
