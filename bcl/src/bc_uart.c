@@ -30,7 +30,11 @@ static bc_uart_t _bc_uart[3] =
 static uint32_t _bc_uart_brr_t[] =
 {
 		[BC_UART_BAUDRATE_9600] = 0xd05,
-		[BC_UART_BAUDRATE_115200] = 0x116
+		[BC_UART_BAUDRATE_19200] = 0x682,
+		[BC_UART_BAUDRATE_38400] = 0x341,
+		[BC_UART_BAUDRATE_57600] = 0x22b,
+		[BC_UART_BAUDRATE_115200] = 0x116,
+		[BC_UART_BAUDRATE_921600] = 0x22
 };
 
 static void _bc_uart_async_write_task(void *param);
