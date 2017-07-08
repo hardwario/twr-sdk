@@ -64,6 +64,13 @@ size_t bc_fifo_irq_write(bc_fifo_t *fifo, const void *buffer, size_t length);
 
 size_t bc_fifo_irq_read(bc_fifo_t *fifo, void *buffer, size_t length);
 
+//! @brief Is empty
+//! @param[in] fifo FIFO instance
+//! @return true When is empty
+//! @return false When is not empty
+
+bool bc_fifo_is_empty(bc_fifo_t *fifo);
+
 //! @}
 
 #endif /* _BC_FIFO_H */

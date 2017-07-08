@@ -151,3 +151,14 @@ size_t bc_fifo_irq_read(bc_fifo_t *fifo, void *buffer, size_t length)
     // Return number of bytes read
     return length;
 }
+
+bool bc_fifo_is_empty(bc_fifo_t *fifo)
+{
+    bc_irq_disable();
+
+	bool result = fifo->tail == fifo->head;
+
+	bc_irq_enable();
+
+	return result;
+}
