@@ -67,6 +67,8 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
 
 		    RCC->APB1ENR;
 
+		    USART4->CR1 &= ~USART_CR1_UE;
+
 			// Enable transmitter and receiver, peripheral enabled in stop mode
 		    USART4->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UESM;
 
@@ -75,9 +77,6 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
 
 			// Configure baudrate
 		    USART4->BRR = _bc_uart_brr_t[baudrate];
-
-			// Enable
-		    USART4->CR1 |= USART_CR1_UE;
 
 			NVIC_EnableIRQ(USART4_5_IRQn);
 
@@ -105,6 +104,8 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
 			// Errata workaround
 			RCC->APB1ENR;
 
+			LPUART1->CR1 &= ~USART_CR1_UE;
+
 			// Enable transmitter and receiver, peripheral enabled in stop mode
 			LPUART1->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UESM;
 
@@ -113,9 +114,6 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
 
 			// Configure baudrate
 			LPUART1->BRR = 0x369;
-
-			// Enable
-			LPUART1->CR1 |= USART_CR1_UE;
 
 			NVIC_EnableIRQ(LPUART1_IRQn);
 
@@ -136,6 +134,8 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
 
 		    RCC->APB2ENR;
 
+		    USART1->CR1 &= ~USART_CR1_UE;
+
 			// Enable transmitter and receiver, peripheral enabled in stop mode
 		    USART1->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UESM;
 
@@ -144,9 +144,6 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
 
 			// Configure baudrate
 		    USART1->BRR = _bc_uart_brr_t[baudrate];
-
-			// Enable
-		    USART1->CR1 |= USART_CR1_UE;
 
 			NVIC_EnableIRQ(USART1_IRQn);
 
@@ -158,6 +155,36 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
 			return;
 		}
 	}
+
+	// Stop bits
+	_bc_uart[channel].USARTx->CR2 &= ~USART_CR2_STOP_Msk;
+	_bc_uart[channel].USARTx->CR2 |= ((uint32_t)setting & 0x03) << USART_CR2_STOP_Pos;
+
+	// Parity
+	_bc_uart[channel].USARTx->CR1 &= ~(USART_CR1_PCE_Msk | USART_CR1_PS_Msk);
+	_bc_uart[channel].USARTx->CR1 |= (((uint32_t)setting >> 2) & 0x03) << USART_CR1_PS_Pos;
+
+	// Word length
+	_bc_uart[channel].USARTx->CR1 &= ~(USART_CR1_M1_Msk | USART_CR1_M0_Msk);
+
+	uint32_t word_length = setting >> 4;
+	if ((setting & 0x0c) != 0x00)
+	{
+		word_length++;
+	}
+
+	if (word_length == 0x07)
+	{
+		word_length = 0x10;
+		_bc_uart[channel].USARTx->CR1 |= 1 << USART_CR1_M1_Pos;
+	}
+	else if (word_length == 0x09)
+	{
+		_bc_uart[channel].USARTx->CR1 |= 1 << USART_CR1_M0_Pos;
+	}
+
+	// Enable
+	_bc_uart[channel].USARTx->CR1 |= USART_CR1_UE;
 
 	_bc_uart[channel].initialized = true;
 }
