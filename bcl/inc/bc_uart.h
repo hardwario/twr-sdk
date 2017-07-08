@@ -8,17 +8,6 @@
 //! @brief Driver for UART (universal asynchronous receiver/transmitter)
 //! @{
 
-//! @cond
-
-#define _BC_UART_DATA_BITS_8 0x00000000
-#define _BC_UART_PARITY_NONE 0x00000000
-#define _BC_UART_STOP_BITS_1 0x00000000
-
-// Todo remove
-#define BC_UART_CONFIG_9600_8N1 BC_UART_BAUDRATE_9600, BC_UART_SETTINGS_8N1
-
-//! @endcond
-
 //! @brief UART channels
 
 typedef enum
@@ -47,7 +36,7 @@ typedef enum
 
 typedef enum
 {
-	BC_UART_SETTINGS_8N1
+	BC_UART_SETTING_8N1
 
 } bc_uart_setting_t;
 
