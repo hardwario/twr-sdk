@@ -43,9 +43,6 @@ static void _bc_uart_irq_handler(bc_uart_channel_t channel);
 
 void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uart_setting_t setting)
 {
-	(void) baudrate;
-	(void) setting;
-
 	memset(&_bc_uart[channel], 0, sizeof(_bc_uart[channel]));
 
 	// Enable GPIOA clock
@@ -58,14 +55,14 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
 	{
 		case BC_UART_UART0:
 		{
-
 			// Enable pull-up on RXD0 pin
 			GPIOA->PUPDR |= GPIO_PUPDR_PUPD1_0;
 
 			// Configure TXD0 and RXD0 pins as alternate function
-			GPIOA->MODER &= 0xfffffffa;
+			GPIOA->MODER &= ~(1 << GPIO_MODER_MODE1_Pos | 1 << GPIO_MODER_MODE0_Pos);
 
-			GPIOA->AFR[0] |= 0x66;
+			// Select AF6 alternate function for TXD0 and RXD0 pins
+			GPIOA->AFR[0] |= 6 << GPIO_AFRL_AFRL1_Pos | 6 << GPIO_AFRL_AFRL0_Pos;
 
 		    RCC->APB1ENR |= RCC_APB1ENR_USART4EN;
 
@@ -96,32 +93,62 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
 			// Configure TXD1 and RXD1 pins as alternate function
 			GPIOA->MODER &= ~(1 << GPIO_MODER_MODE3_Pos | 1 << GPIO_MODER_MODE2_Pos);
 
-			// Select AF6 alternate function for TXD1 and RXD1 pins
-			GPIOA->AFR[0] |= 6 << GPIO_AFRL_AFRL3_Pos | 6 << GPIO_AFRL_AFRL2_Pos;
+			if (baudrate <= BC_UART_BAUDRATE_9600)
+			{
+				// Select AF6 alternate function for TXD1 and RXD1 pins
+				GPIOA->AFR[0] |= 6 << GPIO_AFRL_AFRL3_Pos | 6 << GPIO_AFRL_AFRL2_Pos;
 
-			// Set LSE as LPUART1 clock source
-			RCC->CCIPR |= RCC_CCIPR_LPUART1SEL_1 | RCC_CCIPR_LPUART1SEL_0;
+				// Set LSE as LPUART1 clock source
+				RCC->CCIPR |= RCC_CCIPR_LPUART1SEL_1 | RCC_CCIPR_LPUART1SEL_0;
 
-			// Enable clock for LPUART1
-			RCC->APB1ENR |= RCC_APB1ENR_LPUART1EN;
+				// Enable clock for LPUART1
+				RCC->APB1ENR |= RCC_APB1ENR_LPUART1EN;
 
-			// Errata workaround
-			RCC->APB1ENR;
+				// Errata workaround
+				RCC->APB1ENR;
 
-			LPUART1->CR1 &= ~USART_CR1_UE;
+				LPUART1->CR1 &= ~USART_CR1_UE;
 
-			// Enable transmitter and receiver, peripheral enabled in stop mode
-			LPUART1->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UESM;
+				// Enable transmitter and receiver, peripheral enabled in stop mode
+				LPUART1->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UESM;
 
-			// Clock enabled in stop mode, disable overrun detection, one bit sampling method
-			LPUART1->CR3 = USART_CR3_UCESM | USART_CR3_OVRDIS | USART_CR3_ONEBIT;
+				// Clock enabled in stop mode, disable overrun detection, one bit sampling method
+				LPUART1->CR3 = USART_CR3_UCESM | USART_CR3_OVRDIS | USART_CR3_ONEBIT;
 
-			// Configure baudrate
-			LPUART1->BRR = 0x369;
+				// Configure baudrate
+				LPUART1->BRR = 0x369;
 
-			NVIC_EnableIRQ(LPUART1_IRQn);
+				NVIC_EnableIRQ(LPUART1_IRQn);
 
-			_bc_uart[channel].USARTx = LPUART1;
+				_bc_uart[channel].USARTx = LPUART1;
+			}
+			else
+			{
+				// Select AF4 alternate function for TXD1 and RXD1 pins
+				GPIOA->AFR[0] |= 4 << GPIO_AFRL_AFRL3_Pos | 4 << GPIO_AFRL_AFRL2_Pos;
+
+				// Enable clock for LPUART1
+				RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+
+				// Errata workaround
+				RCC->APB1ENR;
+
+				USART2->CR1 &= ~USART_CR1_UE;
+
+				// Enable transmitter and receiver, peripheral enabled in stop mode
+				USART2->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UESM;
+
+				// Clock enabled in stop mode, disable overrun detection, one bit sampling method
+				USART2->CR3 = USART_CR3_UCESM | USART_CR3_OVRDIS | USART_CR3_ONEBIT;
+
+				// Configure baudrate
+				USART2->BRR = _bc_uart_brr_t[baudrate];
+
+				NVIC_EnableIRQ(USART2_IRQn);
+
+				_bc_uart[channel].USARTx = USART2;
+			}
+
 			break;
 		}
 		case BC_UART_UART2:
@@ -130,9 +157,10 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
 			GPIOA->PUPDR |= GPIO_PUPDR_PUPD10_0;
 
 			// Configure TXD2 and RXD2 pins as alternate function
-			GPIOA->MODER &= 0xffebffff;
+			GPIOA->MODER &= ~(1 << GPIO_MODER_MODE10_Pos | 1 << GPIO_MODER_MODE9_Pos);
 
-			GPIOA->AFR[1] |= 0x0440;
+			// Select AF4 alternate function for TXD2 and RXD2 pins
+			GPIOA->AFR[1] |= 4 << GPIO_AFRH_AFRH2_Pos | 4 << GPIO_AFRH_AFRH1_Pos;
 
 		    RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
 
@@ -204,8 +232,10 @@ size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t lengt
 
 	size_t bytes_written = 0;
 
-	// TODO Not needed anymore?
-	bc_module_core_pll_enable();
+	if (_bc_uart[channel].USARTx != LPUART1)
+	{
+		bc_module_core_pll_enable();
+	}
 
 	while (bytes_written != length)
 	{
@@ -225,8 +255,10 @@ size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t lengt
 		continue;
 	}
 
-	// TODO Not needed anymore?
-	bc_module_core_pll_disable();
+	if (_bc_uart[channel].USARTx != LPUART1)
+	{
+		bc_module_core_pll_disable();
+	}
 
 	return bytes_written;
 }
@@ -242,8 +274,10 @@ size_t bc_uart_read(bc_uart_channel_t channel, void *buffer, size_t length, bc_t
 
     size_t bytes_read = 0;
 
-    // TODO Not needed anymore?
-    bc_module_core_pll_enable();
+    if (_bc_uart[channel].USARTx != LPUART1)
+	{
+		bc_module_core_pll_enable();
+	}
 
     bc_tick_t tick_timeout = timeout == BC_TICK_INFINITY ? BC_TICK_INFINITY : bc_tick_get() + timeout;
 
@@ -265,8 +299,10 @@ size_t bc_uart_read(bc_uart_channel_t channel, void *buffer, size_t length, bc_t
         *((uint8_t *) buffer + bytes_read++) = USARTx->RDR;
     }
 
-    // TODO Not needed anymore?
-    bc_module_core_pll_disable();
+    if (_bc_uart[channel].USARTx != LPUART1)
+	{
+    	bc_module_core_pll_disable();
+	}
 
     return bytes_read;
 }
@@ -298,8 +334,14 @@ size_t bc_uart_async_write(bc_uart_channel_t channel, const void *buffer, size_t
         {
         	_bc_uart[channel].async_write_task_id = bc_scheduler_register(_bc_uart_async_write_task, &_bc_uart[channel], BC_TICK_INFINITY);
 
-            // TODO Better replace with disable sleep?
-            bc_module_core_pll_enable();
+        	if (_bc_uart[channel].USARTx == LPUART1)
+        	{
+        		bc_module_core_deep_sleep_disable();
+        	}
+        	else
+        	{
+        		bc_module_core_pll_enable();
+        	}
         }
         else
         {
@@ -383,7 +425,14 @@ static void _bc_uart_async_write_task(void *param)
 
     bc_scheduler_unregister(uart->async_write_task_id);
 
-    bc_module_core_pll_disable();
+    if (uart->USARTx == LPUART1)
+	{
+    	bc_module_core_deep_sleep_enable();
+	}
+    else
+    {
+    	bc_module_core_pll_disable();
+    }
 
     if (uart->event_handler != NULL)
     {
@@ -465,6 +514,11 @@ void AES_RNG_LPUART1_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
     _bc_uart_irq_handler(BC_UART_UART2);
+}
+
+void USART2_IRQHandler(void)
+{
+    _bc_uart_irq_handler(BC_UART_UART1);
 }
 
 void USART4_5_IRQHandler(void)
