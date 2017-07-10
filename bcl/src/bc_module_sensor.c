@@ -42,7 +42,7 @@ bool bc_module_sensor_init(void)
     return true;
 }
 
-bool bc_module_sensor_set_digital_output_mode(bc_module_channel_t channel)
+bool bc_module_sensor_set_digital_output_mode(bc_module_sensor_channel_t channel)
 {
     switch(channel)
     {
@@ -59,7 +59,7 @@ bool bc_module_sensor_set_digital_output_mode(bc_module_channel_t channel)
     }
 }
 
-bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_sensor_pull_t pull)
+bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sensor_pull_t pull)
 {
 	if (!_bc_module_sensor.initialized)
 	{
@@ -102,7 +102,7 @@ bool bc_module_sensor_set_pull(bc_module_channel_t channel, bc_module_sensor_pul
     return true;
 }
 
-void bc_module_sensor_set_digital_output(bc_module_channel_t channel, bool value) {
+void bc_module_sensor_set_digital_output(bc_module_sensor_channel_t channel, bool value) {
     bc_gpio_channel_t output_channel;
     switch(channel)
     {
