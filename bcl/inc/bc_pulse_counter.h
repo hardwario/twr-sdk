@@ -57,7 +57,7 @@ void bc_pulse_counter_set_update_interval(bc_module_sensor_channel_t channel, bc
 //! @param[in] channel Sensor Module channel pulse counter is connected to
 //! @param[in] debounce_time Desired debounce time in ticks
 
-void bc_pulse_counter_set_debounce_time(bc_module_sensor_channel_t channel, bc_tick_t debounce_time);
+void bc_pulse_counter_set_debounce_time(bc_module_sensor_channel_t channel, int debounce_time);
 
 //! @brief Set count
 //! @param[in] channel Sensor Module channel pulse counter is connected to

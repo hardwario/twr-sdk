@@ -9,7 +9,7 @@ typedef struct
 	bc_module_sensor_channel_t _channel;
 	int _count;
 	bc_pulse_counter_edge_t _edge;
-	bc_tick_t _debounce_time;
+	int _debounce_time;
 	bc_tick_t _update_interval;
 	void (*_event_handler)(bc_module_sensor_channel_t, bc_pulse_counter_event_t, void *);
 	void *_event_param;
@@ -77,7 +77,7 @@ void bc_pulse_counter_set_update_interval(bc_module_sensor_channel_t channel, bc
 	}
 }
 
-void bc_pulse_counter_set_debounce_time(bc_module_sensor_channel_t channel, bc_tick_t debounce_time)
+void bc_pulse_counter_set_debounce_time(bc_module_sensor_channel_t channel, int debounce_time)
 {
 	bc_module_pulse_counter[channel]._debounce_time = debounce_time;
 }
