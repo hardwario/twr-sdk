@@ -131,7 +131,7 @@ start:
 			{
 				case BC_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_A:
 				{
-					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_UP_4K7))
+					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A_P4, BC_MODULE_SENSOR_PULL_UP_4K7))
 					{
 						goto start;
 					}
@@ -140,7 +140,7 @@ start:
 				}
 				case BC_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_B:
 				{
-					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_PULL_UP_4K7))
+					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B_P5, BC_MODULE_SENSOR_PULL_UP_4K7))
 					{
 						goto start;
 					}
@@ -166,7 +166,7 @@ start:
 				{
 					self->_alarm = bc_gpio_get_input(BC_GPIO_P4) == 1;
 
-					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_NONE))
+					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A_P4, BC_MODULE_SENSOR_PULL_NONE))
 					{
 						goto start;
 					}
@@ -176,7 +176,7 @@ start:
 				{
 					self->_alarm = bc_gpio_get_input(BC_GPIO_P5) == 1;
 
-					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_PULL_NONE))
+					if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B_P5, BC_MODULE_SENSOR_PULL_NONE))
 					{
 						goto start;
 					}

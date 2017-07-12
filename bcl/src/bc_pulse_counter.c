@@ -1,178 +1,138 @@
+#include <stm32l0xx.h>
 #include <bc_pulse_counter.h>
+#include <bc_module_core.h>
 
-#define _BC_PULSE_COUNTER_SCAN_INTERVAL 20
-#define _BC_PULSE_COUNTER_DEBOUNCE_TIME 50
-#define _BC_PULSE_COUNTER_UPDATE_INTERVAL 1000
+#define _BC_PULSE_COUNTER_DEBOUNCE_TIME_DEFAULT_US 20
 
-static void _bc_pulse_counter_task_update(void *param);
-
-static void _bc_pulse_counter_task(void *param);
-
-static void _bc_pulse_counter_gpio_init(bc_pulse_counter_t *self);
-
-static int _bc_pulse_counter_gpio_get_input(bc_pulse_counter_t *self);
-
-static const bc_pulse_counter_driver_t _bc_counter_driver_gpio =
+typedef struct
 {
-    .init = _bc_pulse_counter_gpio_init,
-    .get_input = _bc_pulse_counter_gpio_get_input
+	bc_module_sensor_channel_t _channel;
+	int _count;
+	bc_pulse_counter_edge_t _edge;
+	int _debounce_time;
+	bc_tick_t _update_interval;
+	void (*_event_handler)(bc_module_sensor_channel_t, bc_pulse_counter_event_t, void *);
+	void *_event_param;
+	int _idle;
+	bc_scheduler_task_id_t _task_id;
+
+} bc_pulse_counter_t;
+
+typedef void (*bc_pulse_counter_exti_callback_t)(bc_exti_line_t, void *);
+typedef void (*bc_pulse_counter_task)(void *);
+
+static bc_pulse_counter_t bc_module_pulse_counter[2];
+
+static bc_exti_line_t bc_pulse_counter_exti_line[2] =
+{
+	BC_EXTI_LINE_PA4,
+	BC_EXTI_LINE_PA5
 };
 
-void bc_pulse_counter_init(bc_pulse_counter_t *self, bc_gpio_channel_t gpio_channel, bc_pulse_counter_edge_t edge)
+static void _bc_pulse_counter_channel_a_task_update(void *param);
+static void _bc_pulse_counter_channel_b_task_update(void *param);
+static void _bc_pulse_counter_channel_a_exti(bc_exti_line_t line, void *param);
+static void _bc_pulse_counter_channel_b_exti(bc_exti_line_t line, void *param);
+
+void bc_pulse_counter_init(bc_module_sensor_channel_t channel, bc_pulse_counter_edge_t edge)
 {
-    memset(self, 0, sizeof(*self));
+	const bc_pulse_counter_exti_callback_t bc_pulse_counter_irq[2] =
+	{ [0] = _bc_pulse_counter_channel_a_exti, [1] = _bc_pulse_counter_channel_b_exti };
 
-    self->_channel.gpio = gpio_channel;
-    self->_edge = edge;
-    self->_debounce_time = _BC_PULSE_COUNTER_DEBOUNCE_TIME;
-    self->_state = BC_COUNTER_STATE_IDLE;
+	const bc_pulse_counter_task bc_pulse_counter_update_task[2] =
+	{ [0] = _bc_pulse_counter_channel_a_task_update, [1] = _bc_pulse_counter_channel_b_task_update };
 
-    self->_driver = &_bc_counter_driver_gpio;
-    self->_driver->init(self);
-    self->_idle = self->_driver->get_input(self);
+	memset(&bc_module_pulse_counter[channel], 0, sizeof(bc_module_pulse_counter[channel]));
 
-    self->_task_id_interval = bc_scheduler_register(_bc_pulse_counter_task_update, self, BC_TICK_INFINITY);
-    bc_scheduler_register(_bc_pulse_counter_task, self, _BC_PULSE_COUNTER_SCAN_INTERVAL);
+	bc_module_sensor_init();
+	bc_module_sensor_set_mode(channel, BC_MODULE_SENSOR_MODE_INPUT);
+	bc_module_sensor_set_pull(channel, BC_MODULE_SENSOR_PULL_UP_INTERNAL);
+
+	bc_module_pulse_counter[channel]._edge = edge;
+	bc_module_pulse_counter[channel]._debounce_time = _BC_PULSE_COUNTER_DEBOUNCE_TIME_DEFAULT_US;
+	bc_module_pulse_counter[channel]._update_interval = BC_TICK_INFINITY;
+	bc_module_pulse_counter[channel]._idle = bc_module_sensor_get_input(channel);
+	bc_module_pulse_counter[channel]._task_id = bc_scheduler_register(bc_pulse_counter_update_task[channel], NULL, BC_TICK_INFINITY);
+
+	bc_exti_register(bc_pulse_counter_exti_line[channel], (bc_exti_edge_t) edge, (void (*)(bc_exti_line_t, void *)) (bc_pulse_counter_irq[channel]), NULL);
 }
 
-void bc_pulse_counter_init_virtual(bc_pulse_counter_t *self, int channel, const bc_pulse_counter_driver_t *driver, bc_pulse_counter_edge_t edge)
+void bc_pulse_counter_set_event_handler(bc_module_sensor_channel_t channel, void (*event_handler)(bc_module_sensor_channel_t channel, bc_pulse_counter_event_t, void *), void *event_param)
 {
-    memset(self, 0, sizeof(*self));
-
-    self->_channel.virtual = channel;
-    self->_edge = edge;
-    self->_debounce_time = _BC_PULSE_COUNTER_DEBOUNCE_TIME;
-    self->_state = BC_COUNTER_STATE_IDLE;
-
-    self->_driver = driver;
-    self->_driver->init(self);
-    self->_idle = self->_driver->get_input(self);
-
-    self->_task_id_interval = bc_scheduler_register(_bc_pulse_counter_task_update, self, BC_TICK_INFINITY);
-    bc_scheduler_register(_bc_pulse_counter_task, self, _BC_PULSE_COUNTER_SCAN_INTERVAL);
+	bc_module_pulse_counter[channel]._event_handler = event_handler;
+	bc_module_pulse_counter[channel]._event_param = event_param;
 }
 
-void bc_pulse_counter_set_event_handler(bc_pulse_counter_t *self, void (*event_handler)(bc_pulse_counter_t *, bc_pulse_counter_event_t, void *), void *event_param)
+void bc_pulse_counter_set_update_interval(bc_module_sensor_channel_t channel, bc_tick_t interval)
 {
-    self->_event_handler = event_handler;
-    self->_event_param = event_param;
+	bc_module_pulse_counter[channel]._update_interval = interval;
+
+	if (bc_module_pulse_counter[channel]._update_interval == BC_TICK_INFINITY)
+	{
+		bc_scheduler_plan_absolute(bc_module_pulse_counter[channel]._task_id, BC_TICK_INFINITY);
+	}
+	else
+	{
+		bc_scheduler_plan_relative(bc_module_pulse_counter[channel]._task_id, bc_module_pulse_counter[channel]._update_interval);
+	}
 }
 
-void bc_pulse_counter_set_update_interval(bc_pulse_counter_t *self, bc_tick_t interval)
+void bc_pulse_counter_set_debounce_time(bc_module_sensor_channel_t channel, int debounce_time)
 {
-    self->_update_interval = interval;
-
-    if (self->_update_interval == BC_TICK_INFINITY)
-    {
-        bc_scheduler_plan_absolute(self->_task_id_interval, BC_TICK_INFINITY);
-    }
-    else
-    {
-        bc_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
-    }
+	bc_module_pulse_counter[channel]._debounce_time = debounce_time;
 }
 
-void bc_pulse_counter_set_debounce_time(bc_pulse_counter_t *self, bc_tick_t debounce_time)
+void bc_pulse_counter_set(bc_module_sensor_channel_t channel, int count)
 {
-    self->_debounce_time = debounce_time;
+	bc_module_pulse_counter[channel]._count = count;
 }
 
-void bc_pulse_counter_set(bc_pulse_counter_t *self, int count)
+unsigned int bc_pulse_counter_get(bc_module_sensor_channel_t channel)
 {
-    self->_count = count;
+	return bc_module_pulse_counter[channel]._count;
 }
 
-int bc_pulse_counter_get(bc_pulse_counter_t *self)
+void bc_pulse_counter_reset(bc_module_sensor_channel_t channel)
 {
-    return self->_count;
+	bc_module_pulse_counter[channel]._count = 0;
 }
 
-void bc_pulse_counter_reset(bc_pulse_counter_t *self)
+static void _bc_pulse_counter_channel_a_task_update(void *param)
 {
-    self->_count = 0;
+	(void) param;
+
+	if (bc_module_pulse_counter[BC_MODULE_SENSOR_CHANNEL_A_P4]._event_handler != NULL)
+	{
+		bc_module_pulse_counter[BC_MODULE_SENSOR_CHANNEL_A_P4]._event_handler(BC_MODULE_SENSOR_CHANNEL_A_P4, BC_COUNTER_EVENT_UPDATE, bc_module_pulse_counter[BC_MODULE_SENSOR_CHANNEL_A_P4]._event_param);
+	}
+
+	bc_scheduler_plan_current_relative(bc_module_pulse_counter[BC_MODULE_SENSOR_CHANNEL_A_P4]._update_interval);
 }
 
-static void _bc_pulse_counter_task_update(void *param)
+static void _bc_pulse_counter_channel_b_task_update(void *param)
 {
-    bc_pulse_counter_t *self = param;
+	(void) param;
 
-    self->_event_handler(self, BC_COUNTER_EVENT_UPDATE, self->_event_param);
+	if (bc_module_pulse_counter[BC_MODULE_SENSOR_CHANNEL_B_P5]._event_handler != NULL)
+	{
+		bc_module_pulse_counter[BC_MODULE_SENSOR_CHANNEL_B_P5]._event_handler(BC_MODULE_SENSOR_CHANNEL_B_P5, BC_COUNTER_EVENT_UPDATE, bc_module_pulse_counter[BC_MODULE_SENSOR_CHANNEL_B_P5]._event_param);
+	}
 
-    bc_scheduler_plan_current_relative(self->_update_interval);
+	bc_scheduler_plan_current_relative(bc_module_pulse_counter[BC_MODULE_SENSOR_CHANNEL_B_P5]._update_interval);
 }
 
-static void _bc_pulse_counter_task(void *param)
+static void _bc_pulse_counter_channel_a_exti(bc_exti_line_t line, void *param)
 {
-    bc_pulse_counter_t *self = param;
+	(void) line;
+	(void) param;
 
-    // Get state of present counter input
-    int value = self->_driver->get_input(self);
-
-    switch (self->_state)
-    {
-        case BC_COUNTER_STATE_IDLE:
-        {
-            // If the state of input has changed...
-            if (value != self->_idle)
-            {
-                self->_changed = value;
-                self->_state = BC_COUNTER_STATE_DEBOUNCE;
-                bc_scheduler_plan_current_relative(self->_debounce_time);
-                return;
-            }
-
-            break;
-        }
-        case BC_COUNTER_STATE_DEBOUNCE:
-        {
-            // If state is valid...
-            if (self->_changed == value)
-            {
-                // ...increment on watched edge
-                if (self->_changed != 0)
-                {
-                    if ((self->_edge == BC_COUNTER_EDGE_RISE) || (self->_edge == BC_COUNTER_EDGE_RISE_FALL))
-                    {
-                        self->_count++;
-                    }
-                }
-                else
-                {
-                    if ((self->_edge == BC_COUNTER_EDGE_RISE_FALL) || (self->_edge == BC_COUNTER_EDGE_FALL))
-                    {
-                        self->_count++;
-                    }
-                }
-
-                // Update idle state
-                self->_idle = value;
-            }
-
-            // Update internal stae to idle
-            self->_state = BC_COUNTER_STATE_IDLE;
-
-            break;
-        }
-        default:
-        {
-            for(;;);
-            break;
-        }
-    }
-
-    bc_scheduler_plan_current_relative(_BC_PULSE_COUNTER_SCAN_INTERVAL);
-
-    return;
+	bc_module_pulse_counter[BC_MODULE_SENSOR_CHANNEL_A_P4]._count++;
 }
 
-static void _bc_pulse_counter_gpio_init(bc_pulse_counter_t *self)
+static void _bc_pulse_counter_channel_b_exti(bc_exti_line_t line, void *param)
 {
-    bc_gpio_init(self->_channel.gpio);
-    bc_gpio_set_mode(self->_channel.gpio, BC_GPIO_MODE_INPUT);
-}
+	(void) line;
+	(void) param;
 
-static int _bc_pulse_counter_gpio_get_input(bc_pulse_counter_t *self)
-{
-    return bc_gpio_get_input(self->_channel.gpio);
+	bc_module_pulse_counter[BC_MODULE_SENSOR_CHANNEL_B_P5]._count++;
 }
-
