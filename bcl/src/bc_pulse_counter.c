@@ -1,178 +1,106 @@
 #include <bc_pulse_counter.h>
+#include <bc_module_core.h>
 
-#define _BC_PULSE_COUNTER_SCAN_INTERVAL 20
-#define _BC_PULSE_COUNTER_DEBOUNCE_TIME 50
-#define _BC_PULSE_COUNTER_UPDATE_INTERVAL 1000
-
-static void _bc_pulse_counter_task_update(void *param);
-
-static void _bc_pulse_counter_task(void *param);
-
-static void _bc_pulse_counter_gpio_init(bc_pulse_counter_t *self);
-
-static int _bc_pulse_counter_gpio_get_input(bc_pulse_counter_t *self);
-
-static const bc_pulse_counter_driver_t _bc_counter_driver_gpio =
+typedef struct
 {
-    .init = _bc_pulse_counter_gpio_init,
-    .get_input = _bc_pulse_counter_gpio_get_input
-};
+    bc_module_sensor_channel_t channel;
+    unsigned int count;
+    bc_pulse_counter_edge_t edge;
+    bc_tick_t update_interval;
+    void (*event_handler)(bc_module_sensor_channel_t, bc_pulse_counter_event_t, void *);
+    void *event_param;
+    bc_pulse_counter_event_t pending_event;
+    bc_scheduler_task_id_t task_id;
 
-void bc_pulse_counter_init(bc_pulse_counter_t *self, bc_gpio_channel_t gpio_channel, bc_pulse_counter_edge_t edge)
+} bc_pulse_counter_t;
+
+static bc_pulse_counter_t _bc_module_pulse_counter[2];
+
+static void _bc_pulse_counter_channel_task_update(void *param);
+static void _bc_pulse_counter_channel_exti(bc_exti_line_t line, void *param);
+
+void bc_pulse_counter_init(bc_module_sensor_channel_t channel, bc_pulse_counter_edge_t edge)
 {
-    memset(self, 0, sizeof(*self));
-
-    self->_channel.gpio = gpio_channel;
-    self->_edge = edge;
-    self->_debounce_time = _BC_PULSE_COUNTER_DEBOUNCE_TIME;
-    self->_state = BC_COUNTER_STATE_IDLE;
-
-    self->_driver = &_bc_counter_driver_gpio;
-    self->_driver->init(self);
-    self->_idle = self->_driver->get_input(self);
-
-    self->_task_id_interval = bc_scheduler_register(_bc_pulse_counter_task_update, self, BC_TICK_INFINITY);
-    bc_scheduler_register(_bc_pulse_counter_task, self, _BC_PULSE_COUNTER_SCAN_INTERVAL);
-}
-
-void bc_pulse_counter_init_virtual(bc_pulse_counter_t *self, int channel, const bc_pulse_counter_driver_t *driver, bc_pulse_counter_edge_t edge)
-{
-    memset(self, 0, sizeof(*self));
-
-    self->_channel.virtual = channel;
-    self->_edge = edge;
-    self->_debounce_time = _BC_PULSE_COUNTER_DEBOUNCE_TIME;
-    self->_state = BC_COUNTER_STATE_IDLE;
-
-    self->_driver = driver;
-    self->_driver->init(self);
-    self->_idle = self->_driver->get_input(self);
-
-    self->_task_id_interval = bc_scheduler_register(_bc_pulse_counter_task_update, self, BC_TICK_INFINITY);
-    bc_scheduler_register(_bc_pulse_counter_task, self, _BC_PULSE_COUNTER_SCAN_INTERVAL);
-}
-
-void bc_pulse_counter_set_event_handler(bc_pulse_counter_t *self, void (*event_handler)(bc_pulse_counter_t *, bc_pulse_counter_event_t, void *), void *event_param)
-{
-    self->_event_handler = event_handler;
-    self->_event_param = event_param;
-}
-
-void bc_pulse_counter_set_update_interval(bc_pulse_counter_t *self, bc_tick_t interval)
-{
-    self->_update_interval = interval;
-
-    if (self->_update_interval == BC_TICK_INFINITY)
+    static const bc_exti_line_t bc_pulse_counter_exti_line[2] =
     {
-        bc_scheduler_plan_absolute(self->_task_id_interval, BC_TICK_INFINITY);
+        BC_EXTI_LINE_PA4,
+        BC_EXTI_LINE_PA5
+    };
+
+    memset(&_bc_module_pulse_counter[channel], 0, sizeof(_bc_module_pulse_counter[channel]));
+
+    bc_module_sensor_init();
+    bc_module_sensor_set_mode(channel, BC_MODULE_SENSOR_MODE_INPUT);
+    bc_module_sensor_set_pull(channel, BC_MODULE_SENSOR_PULL_UP_INTERNAL);
+
+    _bc_module_pulse_counter[channel].channel = channel;
+    _bc_module_pulse_counter[channel].edge = edge;
+    _bc_module_pulse_counter[channel].update_interval = BC_TICK_INFINITY;
+    _bc_module_pulse_counter[channel].task_id = bc_scheduler_register(_bc_pulse_counter_channel_task_update, &_bc_module_pulse_counter[channel], BC_TICK_INFINITY);
+
+    bc_exti_register(bc_pulse_counter_exti_line[channel], (bc_exti_edge_t) edge, _bc_pulse_counter_channel_exti, &_bc_module_pulse_counter[channel].channel);
+}
+
+void bc_pulse_counter_set_event_handler(bc_module_sensor_channel_t channel, void (*event_handler)(bc_module_sensor_channel_t channel, bc_pulse_counter_event_t, void *), void *event_param)
+{
+    _bc_module_pulse_counter[channel].event_handler = event_handler;
+    _bc_module_pulse_counter[channel].event_param = event_param;
+}
+
+void bc_pulse_counter_set_update_interval(bc_module_sensor_channel_t channel, bc_tick_t interval)
+{
+    _bc_module_pulse_counter[channel].update_interval = interval;
+
+    if (_bc_module_pulse_counter[channel].update_interval == BC_TICK_INFINITY)
+    {
+        bc_scheduler_plan_absolute(_bc_module_pulse_counter[channel].task_id, BC_TICK_INFINITY);
     }
     else
     {
-        bc_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
+        bc_scheduler_plan_relative(_bc_module_pulse_counter[channel].task_id, _bc_module_pulse_counter[channel].update_interval);
     }
 }
 
-void bc_pulse_counter_set_debounce_time(bc_pulse_counter_t *self, bc_tick_t debounce_time)
+void bc_pulse_counter_set(bc_module_sensor_channel_t channel, unsigned int count)
 {
-    self->_debounce_time = debounce_time;
+    _bc_module_pulse_counter[channel].count = count;
 }
 
-void bc_pulse_counter_set(bc_pulse_counter_t *self, int count)
+unsigned int bc_pulse_counter_get(bc_module_sensor_channel_t channel)
 {
-    self->_count = count;
+    return _bc_module_pulse_counter[channel].count;
 }
 
-int bc_pulse_counter_get(bc_pulse_counter_t *self)
+void bc_pulse_counter_reset(bc_module_sensor_channel_t channel)
 {
-    return self->_count;
+    _bc_module_pulse_counter[channel].count = 0;
 }
 
-void bc_pulse_counter_reset(bc_pulse_counter_t *self)
-{
-    self->_count = 0;
-}
-
-static void _bc_pulse_counter_task_update(void *param)
+static void _bc_pulse_counter_channel_task_update(void *param)
 {
     bc_pulse_counter_t *self = param;
 
-    self->_event_handler(self, BC_COUNTER_EVENT_UPDATE, self->_event_param);
-
-    bc_scheduler_plan_current_relative(self->_update_interval);
-}
-
-static void _bc_pulse_counter_task(void *param)
-{
-    bc_pulse_counter_t *self = param;
-
-    // Get state of present counter input
-    int value = self->_driver->get_input(self);
-
-    switch (self->_state)
+    if (self->event_handler != NULL)
     {
-        case BC_COUNTER_STATE_IDLE:
-        {
-            // If the state of input has changed...
-            if (value != self->_idle)
-            {
-                self->_changed = value;
-                self->_state = BC_COUNTER_STATE_DEBOUNCE;
-                bc_scheduler_plan_current_relative(self->_debounce_time);
-                return;
-            }
-
-            break;
-        }
-        case BC_COUNTER_STATE_DEBOUNCE:
-        {
-            // If state is valid...
-            if (self->_changed == value)
-            {
-                // ...increment on watched edge
-                if (self->_changed != 0)
-                {
-                    if ((self->_edge == BC_COUNTER_EDGE_RISE) || (self->_edge == BC_COUNTER_EDGE_RISE_FALL))
-                    {
-                        self->_count++;
-                    }
-                }
-                else
-                {
-                    if ((self->_edge == BC_COUNTER_EDGE_RISE_FALL) || (self->_edge == BC_COUNTER_EDGE_FALL))
-                    {
-                        self->_count++;
-                    }
-                }
-
-                // Update idle state
-                self->_idle = value;
-            }
-
-            // Update internal stae to idle
-            self->_state = BC_COUNTER_STATE_IDLE;
-
-            break;
-        }
-        default:
-        {
-            for(;;);
-            break;
-        }
+        self->event_handler(self->channel, BC_PULSE_COUNTER_EVENT_UPDATE, self->event_param);
     }
 
-    bc_scheduler_plan_current_relative(_BC_PULSE_COUNTER_SCAN_INTERVAL);
+    if (self->pending_event == BC_PULSE_COUNTER_EVENT_OVERFLOW)
+    {
+        self->pending_event = BC_PULSE_COUNTER_EVENT_UPDATE;
+    }
 
-    return;
+    bc_scheduler_plan_current_relative(self->update_interval);
 }
 
-static void _bc_pulse_counter_gpio_init(bc_pulse_counter_t *self)
+static void _bc_pulse_counter_channel_exti(bc_exti_line_t line, void *param)
 {
-    bc_gpio_init(self->_channel.gpio);
-    bc_gpio_set_mode(self->_channel.gpio, BC_GPIO_MODE_INPUT);
-}
+    (void) line;
+    bc_module_sensor_channel_t channel = *(bc_module_sensor_channel_t *) param;
 
-static int _bc_pulse_counter_gpio_get_input(bc_pulse_counter_t *self)
-{
-    return bc_gpio_get_input(self->_channel.gpio);
+    _bc_module_pulse_counter[channel].count++;
+    if (_bc_module_pulse_counter[channel].count == 0)
+    {
+        _bc_module_pulse_counter[channel].pending_event = BC_PULSE_COUNTER_EVENT_OVERFLOW;
+    }
 }
-
