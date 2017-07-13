@@ -68,5 +68,8 @@ void radio_event_handler(bc_radio_event_t event, void *event_param)
 
 void bc_radio_on_push_button(uint64_t *peer_device_address, uint16_t *event_count)
 {
+	(void) peer_device_address;
+	(void) event_count;
+
     bc_led_pulse(&led, 100);
 }

@@ -30,7 +30,7 @@ void application_init(void)
     bc_tag_temperature_set_event_handler(&temperature_tag, temperature_tag_event_handler, NULL);
 
     // Initialize SigFox Module
-    bc_module_sigfox_init(&sigfox_module);
+    bc_module_sigfox_init(&sigfox_module, BC_MODULE_SIGFOX_REVISION_R2);
     bc_module_sigfox_set_event_handler(&sigfox_module, sigfox_module_event_handler, NULL);
 }
 
