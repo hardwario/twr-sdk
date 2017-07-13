@@ -9,6 +9,9 @@ bc_led_t led;
 // Button instance
 bc_button_t button;
 
+// Led strip instance;
+bc_led_strip_t led_strip;
+
 float distance;
 
 void hc_sr04_event_handler(bc_hc_sr04_event_t event, void *event_param)
@@ -30,22 +33,23 @@ void hc_sr04_event_handler(bc_hc_sr04_event_t event, void *event_param)
         {
             if (centimeters > (i + 1))
             {
-                bc_module_power_led_strip_set_pixel_from_uint32(i, 0xff000000);
+            	bc_led_strip_set_pixel(&led_strip, i, 0xff000000);
             }
             else
             {
-                bc_module_power_led_strip_set_pixel_from_uint32(i, 0);
+            	bc_led_strip_set_pixel(&led_strip, i, 0);
             }
         }
 
-        bc_module_power_led_strip_write();
+        bc_led_strip_write(&led_strip);
     }
 }
 
 void application_init(void)
 {
     bc_module_power_init();
-    bc_module_power_led_strip_init(&bc_led_strip_rgbw_144);
+
+    bc_led_strip_init(&led_strip, bc_module_power_get_led_strip_driver(), &bc_module_power_led_strip_buffer_rgbw_144);
 
     // Initialize LED
     bc_led_init(&led, BC_GPIO_LED, false, false);

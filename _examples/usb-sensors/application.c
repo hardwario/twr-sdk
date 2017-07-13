@@ -66,7 +66,7 @@ void lux_meter_event_handler(bc_tag_lux_meter_t *self, bc_tag_lux_meter_event_t 
     (void) event;
     (void) event_param;
 
-    i2c_sensors.luminosity.valid = bc_tag_lux_meter_get_luminosity_lux(self, &i2c_sensors.luminosity.value);
+    i2c_sensors.luminosity.valid = bc_tag_lux_meter_get_illuminance_lux(self, &i2c_sensors.luminosity.value);
 }
 
 void barometer_tag_event_handler(bc_tag_barometer_t *self, bc_tag_barometer_event_t event, void *event_param)
