@@ -41,7 +41,7 @@ void bc_pulse_counter_init(bc_module_sensor_channel_t channel, bc_pulse_counter_
     bc_exti_register(bc_pulse_counter_exti_line[channel], (bc_exti_edge_t) edge, _bc_pulse_counter_channel_exti, &_bc_module_pulse_counter[channel].channel);
 }
 
-void bc_pulse_counter_set_event_handler(bc_module_sensor_channel_t channel, void (*event_handler)(bc_module_sensor_channel_t channel, bc_pulse_counter_event_t, void *), void *event_param)
+void bc_pulse_counter_set_event_handler(bc_module_sensor_channel_t channel, void (*event_handler)(bc_module_sensor_channel_t, bc_pulse_counter_event_t, void *), void *event_param)
 {
     _bc_module_pulse_counter[channel].event_handler = event_handler;
     _bc_module_pulse_counter[channel].event_param = event_param;
@@ -82,12 +82,15 @@ static void _bc_pulse_counter_channel_task_update(void *param)
 
     if (self->event_handler != NULL)
     {
-        self->event_handler(self->channel, BC_PULSE_COUNTER_EVENT_UPDATE, self->event_param);
-    }
-
-    if (self->pending_event == BC_PULSE_COUNTER_EVENT_OVERFLOW)
-    {
-        self->pending_event = BC_PULSE_COUNTER_EVENT_UPDATE;
+        if (self->pending_event == BC_PULSE_COUNTER_EVENT_OVERFLOW)
+        {
+            self->event_handler(self->channel, BC_PULSE_COUNTER_EVENT_OVERFLOW, self->event_param);
+            self->pending_event = BC_PULSE_COUNTER_EVENT_UPDATE;
+        }
+        else
+        {
+            self->event_handler(self->channel, BC_PULSE_COUNTER_EVENT_UPDATE, self->event_param);
+        }
     }
 
     bc_scheduler_plan_current_relative(self->update_interval);
@@ -102,5 +105,6 @@ static void _bc_pulse_counter_channel_exti(bc_exti_line_t line, void *param)
     if (_bc_module_pulse_counter[channel].count == 0)
     {
         _bc_module_pulse_counter[channel].pending_event = BC_PULSE_COUNTER_EVENT_OVERFLOW;
+        bc_scheduler_plan_now(_bc_module_pulse_counter[channel].task_id);
     }
 }
