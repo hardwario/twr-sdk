@@ -2,10 +2,6 @@ language: generic
 dist: trusty
 sudo: false
 
-branches:
-  only:
-    - master
-
 env:
   global:
     - GH_REPO_REF: github.com/bigclownlabs/bc-core-module-sdk.git
@@ -17,9 +13,20 @@ env:
 
 addons:
   apt:
+    sources:
+      - sourceline: 'ppa:team-gcc-arm-embedded/ppa'
     packages:
       - doxygen
       - graphviz
+      - gcc-arm-embedded
 
 script:
-  - /bin/sh deploy-doc.sh
+  - /bin/sh test-build-examples.sh
+
+deploy:
+  provider: script
+  script:
+    - /bin/sh deploy-doc.sh
+  skip_cleanup: true
+  on:
+    branch: master
