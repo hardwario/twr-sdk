@@ -4,9 +4,6 @@ sudo: false
 
 env:
   global:
-    - GH_REPO_REF: github.com/bigclownlabs/bc-core-module-sdk.git
-    - GH_REPO_NAME: bc-core-module-sdk
-    - GH_PAGES_BRANCH: gh-pages
     - GH_PAGES_CNAME: sdk.bigclown.com
     - DOXYFILE: $TRAVIS_BUILD_DIR/Doxyfile
     - HTML_DIR: $TRAVIS_BUILD_DIR/doc/html
@@ -21,12 +18,15 @@ addons:
       - gcc-arm-embedded
 
 script:
+  - /bin/sh build-doc.sh
   - /bin/sh test-build-examples.sh
 
 deploy:
-  provider: script
-  script:
-    - /bin/sh deploy-doc.sh
+  provider: pages
   skip_cleanup: true
+  local_dir: $HTML_DIR
+  github_token: $GH_REPO_TOKEN
+  target_branch: gh-pages
+  fqdn: sdk.bigclown.com
   on:
     branch: master
