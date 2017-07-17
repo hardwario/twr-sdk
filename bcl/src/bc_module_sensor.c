@@ -64,8 +64,16 @@ bool bc_module_sensor_init(void)
 
 bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sensor_pull_t pull)
 {
+	if (!_bc_module_sensor.initialized)
+	{
+		return false;
+	}
+
     uint8_t p;
-    bc_tca9534a_read_port(&_bc_module_sensor.tca9534a, &p);
+    if (!bc_tca9534a_read_port(&_bc_module_sensor.tca9534a, &p))
+    {
+    	return false;
+    }
 
     p |= _bc_module_sensor_channel_virtual_4k7_lut[channel] | _bc_module_sensor_channel_virtual_56r_lut[channel];
 
@@ -81,14 +89,14 @@ bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sen
         }
         case BC_MODULE_SENSOR_PULL_UP_4K7:
         {
-            p &= ~_bc_module_sensor_channel_virtual_56r_lut[channel];
+            p &= ~_bc_module_sensor_channel_virtual_4k7_lut[channel];
             bc_gpio_set_pull(_bc_module_sensor_channel_gpio_lut[channel], BC_GPIO_PULL_NONE);
 
             return bc_tca9534a_write_port(&_bc_module_sensor.tca9534a, p);
         }
         case BC_MODULE_SENSOR_PULL_UP_56R:
         {
-            p &= ~_bc_module_sensor_channel_virtual_4k7_lut[channel];
+            p &= ~_bc_module_sensor_channel_virtual_56r_lut[channel];
             bc_gpio_set_pull(_bc_module_sensor_channel_gpio_lut[channel], BC_GPIO_PULL_NONE);
 
             return bc_tca9534a_write_port(&_bc_module_sensor.tca9534a, p);
