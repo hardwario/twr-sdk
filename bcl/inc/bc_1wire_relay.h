@@ -20,7 +20,7 @@ typedef enum
 	BC_1WIRE_RELAY_Q5 = 4,
 	BC_1WIRE_RELAY_Q6 = 5,
 	BC_1WIRE_RELAY_Q7 = 6,
-	BC_1WIRE_RELAY_Q8 = 7,
+	BC_1WIRE_RELAY_Q8 = 7
 
 } bc_1wire_relay_q_t;
 
@@ -43,7 +43,7 @@ bool bc_1wire_relay_init(bc_1wire_relay_t *self, uint64_t device_number, bc_modu
 
 //! @brief Set relay to specified state
 //! @param[in] self Instance
-//! @param[in] q
+//! @param[in] q Q
 //! @param[in] state Desired relay state
 //! @return true On success
 //! @return false On failure
@@ -52,7 +52,7 @@ bool bc_1wire_relay_set_state(bc_1wire_relay_t *self, bc_1wire_relay_q_t q, bool
 
 //! @brief Get current relay state
 //! @param[in] self Instance
-//! @param[in] q
+//! @param[in] q Q
 //! @param[out] state
 //! @return true When value is valid
 //! @return false When value is invalid

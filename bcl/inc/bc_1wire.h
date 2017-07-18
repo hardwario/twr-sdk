@@ -7,14 +7,17 @@
 //! @brief Driver for 1-Wire
 //! @{
 
+#define DEVICE_NUMBER_SKIP_ROM 0
+
 //! @brief 1-Wire instance
 
-typedef struct{
+typedef struct
+{
     bc_gpio_channel_t _gpio_channel;
-	uint8_t _last_discrepancy;
-	uint8_t _last_family_discrepancy;
-	bool _last_device_flag;
-	uint8_t _last_rom_no[8];
+    uint8_t _last_discrepancy;
+    uint8_t _last_family_discrepancy;
+    bool _last_device_flag;
+    uint8_t _last_rom_no[8];
 
 } bc_1wire_search_t;
 
@@ -25,14 +28,14 @@ void bc_1wire_init(bc_gpio_channel_t channel);
 
 //! @brief Reset the 1-Wire bus and return the presence of any device
 //! @param channel GPIO channel
-//! @return true  device present
-//! @return false no device present
+//! @return true Device present
+//! @return false No device present
 
 bool bc_1wire_reset(bc_gpio_channel_t channel);
 
 //! @brief Select device
 //! @param channel GPIO channel
-//! @param[in] device_number, for 0 skip ROM
+//! @param[in] device_number Device number (for 0 skip ROM)
 
 void bc_1wire_select(bc_gpio_channel_t channel, uint64_t *device_number);
 
@@ -88,15 +91,15 @@ void bc_1wire_search_reset(bc_1wire_search_t *self);
 
 //! @brief Setup the search to find the device type 'family code' on the next call
 //! @param[in] self Instance
-//! @param[in] family_code family code
+//! @param[in] family_code Family code
 
 void bc_1wire_search_target_setup(bc_1wire_search_t *self, uint8_t family_code);
 
 //! @brief Perform the 1-Wire Search Algorithm on the 1-Wire bus using the existing search state.
 //! @param[in] self Instance
-//! @param[out] device_number
-//! @return true  device found
-//! @return false device not found, end of search
+//! @param[out] device_number Device number
+//! @return true  Device found
+//! @return false Device not found, end of search
 
 bool bc_1wire_search(bc_1wire_search_t *self, uint64_t *device_number);
 
@@ -105,7 +108,7 @@ bool bc_1wire_search(bc_1wire_search_t *self, uint64_t *device_number);
 //! @param[in] length Number of bytes
 //! @return crc
 
-uint8_t bc_1wire_crc8(uint8_t *buffer, size_t length);
+uint8_t bc_1wire_crc8(void *buffer, size_t length);
 
 //! @brief Calculate crc16
 //! @param[in] buffer
@@ -113,7 +116,7 @@ uint8_t bc_1wire_crc8(uint8_t *buffer, size_t length);
 //! @param[in] The crc starting value
 //! @return crc
 
-uint16_t bc_1wire_crc16(const uint8_t* buffer, uint16_t length, uint16_t crc);
+uint16_t bc_1wire_crc16(const void *buffer, uint16_t length, uint16_t crc);
 
 //! @}
 
