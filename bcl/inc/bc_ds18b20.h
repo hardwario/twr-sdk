@@ -75,6 +75,8 @@ struct bc_ds18b20_t
 
 //! @brief Initialize 1-wire dalas temperature
 //! @param[in] self Instance
+//! @param[in] device_number
+//! @param[in] channel
 //! @return true On success
 //! @return false On failure
 
