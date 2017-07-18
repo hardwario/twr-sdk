@@ -287,6 +287,27 @@ uint8_t bc_1wire_crc8(uint8_t *buffer, size_t length)
 	return crc;
 }
 
+uint16_t bc_1wire_crc16(const uint8_t* buffer, uint16_t length, uint16_t crc)
+{
+    static const uint8_t oddparity[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
+
+    uint16_t i;
+    for (i = 0 ; i < length ; i++) {
+      uint16_t cdata = buffer[i];
+      cdata = (cdata ^ crc) & 0xff;
+      crc >>= 8;
+
+      if (oddparity[cdata & 0x0F] ^ oddparity[cdata >> 4])
+          crc ^= 0xC001;
+
+      cdata <<= 6;
+      crc ^= cdata;
+      cdata <<= 1;
+      crc ^= cdata;
+    }
+    return crc;
+}
+
 static bool _bc_1wire_reset(bc_gpio_channel_t channel)
 {
     int i;

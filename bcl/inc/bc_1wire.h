@@ -103,9 +103,17 @@ bool bc_1wire_search(bc_1wire_search_t *self, uint64_t *device_number);
 //! @brief Calculate crc8
 //! @param[in] buffer
 //! @param[in] length Number of bytes
-//! @return crc8
+//! @return crc
 
 uint8_t bc_1wire_crc8(uint8_t *buffer, size_t length);
+
+//! @brief Calculate crc16
+//! @param[in] buffer
+//! @param[in] length Number of bytes
+//! @param[in] The crc starting value
+//! @return crc
+
+uint16_t bc_1wire_crc16(const uint8_t* buffer, uint16_t length, uint16_t crc);
 
 //! @}
 
