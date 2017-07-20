@@ -83,7 +83,8 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
     // Address lines
     uint8_t line;
     uint32_t offs;
-    for (line = 0x01, offs = 1; line <= 128; line++, offs += 18) {
+    for (line = 0x01, offs = 1; line <= 128; line++, offs += 18)
+    {
         // Fill the gate line addresses on the exact place in the buffer
         _bc_module_lcd.framebuffer[offs] = _bc_module_lcd_reverse(line);
     }
@@ -111,7 +112,6 @@ bool bc_module_lcd_is_ready(void)
 
 void bc_module_lcd_clear(void)
 {
-	bc_module_lcd_t *self = &_bc_module_lcd;
 	uint8_t line;
 	uint32_t offs;
 	uint8_t col;
@@ -119,7 +119,7 @@ void bc_module_lcd_clear(void)
 	{
 		for (col = 0; col < 16; col++)
 		{
-			self->framebuffer[offs + col] = 0xff;
+			_bc_module_lcd.framebuffer[offs + col] = 0xff;
 		}
 	}
 }
@@ -245,10 +245,10 @@ void bc_module_lcd_printf(uint8_t line, /*uint8_t size, font, */const uint8_t *s
 
 void bc_module_lcd_draw_line(int x0, int y0, int x1, int y1, bool color)
 {
-    int16_t steep = abs(y1 - y0) > abs(x1 - x0);
+    int16_t step = abs(y1 - y0) > abs(x1 - x0);
     int16_t tmp;
 
-    if (steep)
+    if (step)
     {
         tmp = x0;
         x0 = y0;
@@ -276,7 +276,8 @@ void bc_module_lcd_draw_line(int x0, int y0, int x1, int y1, bool color)
     int16_t err = dx / 2;
     int16_t ystep;
 
-    if (y0 < y1) {
+    if (y0 < y1)
+    {
         ystep = 1;
     } else {
         ystep = -1;
@@ -284,7 +285,7 @@ void bc_module_lcd_draw_line(int x0, int y0, int x1, int y1, bool color)
 
     for (; x0 <= x1; x0++)
     {
-        if (steep)
+        if (step)
         {
             bc_module_lcd_draw_pixel(y0, x0, color);
         }
