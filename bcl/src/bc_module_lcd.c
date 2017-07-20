@@ -173,7 +173,7 @@ void bc_module_lcd_draw_pixel(int x, int y, bool value)
     }
 }
 
-int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
+int bc_module_lcd_draw_char(int left, int top, uint8_t ch, bool color)
 {
     const bc_font_t *font = _bc_module_lcd.font;
 
@@ -204,11 +204,11 @@ int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
 
                     if (font->chars[i].image->image[byteIndex] & bitMask)
                     {
-                        bc_module_lcd_draw_pixel(left + x, top + y, false);
+                        bc_module_lcd_draw_pixel(left + x, top + y, !color);
                     }
                     else
                     {
-                        bc_module_lcd_draw_pixel(left + x, top + y, true);
+                        bc_module_lcd_draw_pixel(left + x, top + y, color);
                     }
                 }
             }
@@ -218,11 +218,11 @@ int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
     return w;
 }
 
-int bc_module_lcd_draw_string(int left, int top, char *str)
+int bc_module_lcd_draw_string(int left, int top, char *str, bool color)
 {
     while(*str)
     {
-        left += bc_module_lcd_draw_char(left, top, *str);
+        left += bc_module_lcd_draw_char(left, top, *str, color);
         str++;
     }
     return left;
