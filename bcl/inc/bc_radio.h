@@ -3,7 +3,9 @@
 
 #include <bc_common.h>
 
+#ifndef BC_RADIO_MAX_DEVICES
 #define BC_RADIO_MAX_DEVICES 8
+#endif
 
 typedef enum
 {
