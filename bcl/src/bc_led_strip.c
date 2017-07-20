@@ -2,7 +2,8 @@
 
 #define BC_LED_STRIP_NULL_TASK BC_SCHEDULER_MAX_TASKS + 1
 
-uint32_t _bc_led_strip_wheel(int position);
+static uint32_t _bc_led_strip_wheel(int position);
+static void _bc_led_strip_get_heat_map_color(float value, float *red, float *green, float *blue);
 
 void bc_led_strip_init(bc_led_strip_t *self, const bc_led_strip_driver_t *driver, const bc_led_strip_buffer_t *buffer)
 {
@@ -321,7 +322,53 @@ void bc_led_strip_effect_theater_chase_rainbow(bc_led_strip_t *self, bc_tick_t w
     self->_effect.task_id = bc_scheduler_register(_bc_led_strip_effect_theater_chase_rainbow_task, self, 0);
 }
 
-uint32_t _bc_led_strip_wheel(int position) {
+void bc_led_strip_thermometer(bc_led_strip_t *self, float temperature, float min, float max, uint8_t brightness, uint8_t white)
+{
+    temperature -= min;
+
+    int max_i = (self->_buffer->count / (int)(fabs(max) + fabs(min))) * temperature;
+
+    if (max_i > self->_buffer->count)
+    {
+        max_i = self->_buffer->count;
+    }
+
+    if (max_i < 0)
+    {
+        max_i = 0;
+    }
+
+    float red;
+    float green;
+    float blue;
+
+    for (int i = 0; i < max_i; i++)
+    {
+        _bc_led_strip_get_heat_map_color((float)i / self->_buffer->count, &red, &green, &blue);
+
+        bc_led_strip_set_pixel_rgbw(self, i, brightness * red, brightness * green, brightness * blue, 0);
+    }
+
+    if (self->_buffer->type == BC_LED_STRIP_TYPE_RGBW)
+    {
+        for (int i = max_i; i < self->_buffer->count; i++)
+        {
+           bc_led_strip_set_pixel_rgbw(self, i, 0, 0, 0, white);
+        }
+    }
+    else
+    {
+        for (int i = max_i; i < self->_buffer->count; i++)
+        {
+           bc_led_strip_set_pixel_rgbw(self, i, white, white, white, 0);
+        }
+    }
+
+
+    bc_led_strip_write(self);
+}
+
+static uint32_t _bc_led_strip_wheel(int position) {
     if(position < 85)
     {
       return ((position * 3) << 24) | ((255 - position * 3) << 16);
@@ -338,4 +385,32 @@ uint32_t _bc_led_strip_wheel(int position) {
     }
 }
 
+static void _bc_led_strip_get_heat_map_color(float value, float *red, float *green, float *blue)
+{
+    const int NUM_COLORS = 4;
+    const float color[4][3] = { {0,0,1}, {0,1,0}, {1,1,0}, {1,0,0} };
 
+    int idx1;        // Our desired color will be between these two indexes in "color".
+    int idx2;
+    float fractBetween = 0; // Fraction between "idx1" and "idx2" where our value is.
+
+    if(value <= 0)
+    {
+        idx1 = idx2 = 0;
+    }
+    else if(value >= 1)
+    {
+        idx1 = idx2 = NUM_COLORS - 1;
+    }
+    else
+    {
+        value = value * (NUM_COLORS - 1);      // Will multiply value by 3.
+        idx1  = floor(value);                  // Our desired color will be after this index.
+        idx2  = idx1 + 1;                      // ... and before this index (inclusive).
+        fractBetween = value - (float)idx1;    // Distance between the two indexes (0-1).
+    }
+
+    *red   = (color[idx2][0] - color[idx1][0]) * fractBetween + color[idx1][0];
+    *green = (color[idx2][1] - color[idx1][1]) * fractBetween + color[idx1][1];
+    *blue  = (color[idx2][2] - color[idx1][2]) * fractBetween + color[idx1][2];
+}
