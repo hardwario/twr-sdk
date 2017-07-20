@@ -111,16 +111,17 @@ bool bc_module_lcd_is_ready(void)
 
 void bc_module_lcd_clear(void)
 {
-    uint32_t x;
-    uint32_t y;
-
-    for (y = 0; y < 128; y++)
-    {
-        for (x = 0; x < 128; x++)
-        {
-            bc_module_lcd_draw_pixel(x, y, false);
-        }
-    }
+	bc_module_lcd_t *self = &_bc_module_lcd;
+	uint8_t line;
+	uint32_t offs;
+	uint8_t col;
+	for (line = 0x01, offs = 2; line <= 128; line++, offs += 18)
+	{
+		for (col = 0; col < 16; col++)
+		{
+			self->framebuffer[offs + col] = 0xff;
+		}
+	}
 }
 
 void bc_module_lcd_draw_pixel(int x, int y, bool value)
@@ -241,6 +242,65 @@ void bc_module_lcd_printf(uint8_t line, /*uint8_t size, font, */const uint8_t *s
     (void) line;
     (void) string;
 }
+
+void bc_module_lcd_draw_line(int x0, int y0, int x1, int y1, bool color)
+{
+    int16_t steep = abs(y1 - y0) > abs(x1 - x0);
+    int16_t tmp;
+
+    if (steep)
+    {
+        tmp = x0;
+        x0 = y0;
+        y0 = tmp;
+
+        tmp = x1;
+        x1 = y1;
+        y1 = tmp;
+    }
+
+    if (x0 > x1)
+    {
+        tmp = x0;
+        x0 = x1;
+        x1 = tmp;
+
+        tmp = y0;
+        y0 = y1;
+        y1 = tmp;
+    }
+
+    int16_t dx = x1 - x0;
+    int16_t dy = abs(y1 - y0);
+
+    int16_t err = dx / 2;
+    int16_t ystep;
+
+    if (y0 < y1) {
+        ystep = 1;
+    } else {
+        ystep = -1;
+    }
+
+    for (; x0 <= x1; x0++)
+    {
+        if (steep)
+        {
+            bc_module_lcd_draw_pixel(y0, x0, color);
+        }
+        else
+        {
+            bc_module_lcd_draw_pixel(x0, y0, color);
+        }
+        err -= dy;
+        if (err < 0)
+        {
+            y0 += ystep;
+            err += dx;
+        }
+    }
+}
+
 /*
 
 Framebuffer format for updating multiple lines, ideal for later DMA TX:
