@@ -83,7 +83,8 @@ void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer)
     // Address lines
     uint8_t line;
     uint32_t offs;
-    for (line = 0x01, offs = 1; line <= 128; line++, offs += 18) {
+    for (line = 0x01, offs = 1; line <= 128; line++, offs += 18)
+    {
         // Fill the gate line addresses on the exact place in the buffer
         _bc_module_lcd.framebuffer[offs] = _bc_module_lcd_reverse(line);
     }
@@ -111,16 +112,16 @@ bool bc_module_lcd_is_ready(void)
 
 void bc_module_lcd_clear(void)
 {
-    uint32_t x;
-    uint32_t y;
-
-    for (y = 0; y < 128; y++)
-    {
-        for (x = 0; x < 128; x++)
-        {
-            bc_module_lcd_draw_pixel(x, y, false);
-        }
-    }
+	uint8_t line;
+	uint32_t offs;
+	uint8_t col;
+	for (line = 0x01, offs = 2; line <= 128; line++, offs += 18)
+	{
+		for (col = 0; col < 16; col++)
+		{
+			_bc_module_lcd.framebuffer[offs + col] = 0xff;
+		}
+	}
 }
 
 void bc_module_lcd_draw_pixel(int x, int y, bool value)
@@ -173,7 +174,7 @@ void bc_module_lcd_draw_pixel(int x, int y, bool value)
     }
 }
 
-int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
+int bc_module_lcd_draw_char(int left, int top, uint8_t ch, bool color)
 {
     const bc_font_t *font = _bc_module_lcd.font;
 
@@ -204,11 +205,11 @@ int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
 
                     if (font->chars[i].image->image[byteIndex] & bitMask)
                     {
-                        bc_module_lcd_draw_pixel(left + x, top + y, false);
+                        bc_module_lcd_draw_pixel(left + x, top + y, !color);
                     }
                     else
                     {
-                        bc_module_lcd_draw_pixel(left + x, top + y, true);
+                        bc_module_lcd_draw_pixel(left + x, top + y, color);
                     }
                 }
             }
@@ -218,11 +219,11 @@ int bc_module_lcd_draw_char(int left, int top, uint8_t ch)
     return w;
 }
 
-int bc_module_lcd_draw_string(int left, int top, char *str)
+int bc_module_lcd_draw_string(int left, int top, char *str, bool color)
 {
     while(*str)
     {
-        left += bc_module_lcd_draw_char(left, top, *str);
+        left += bc_module_lcd_draw_char(left, top, *str, color);
         str++;
     }
     return left;
@@ -241,6 +242,66 @@ void bc_module_lcd_printf(uint8_t line, /*uint8_t size, font, */const uint8_t *s
     (void) line;
     (void) string;
 }
+
+void bc_module_lcd_draw_line(int x0, int y0, int x1, int y1, bool color)
+{
+    int16_t step = abs(y1 - y0) > abs(x1 - x0);
+    int16_t tmp;
+
+    if (step)
+    {
+        tmp = x0;
+        x0 = y0;
+        y0 = tmp;
+
+        tmp = x1;
+        x1 = y1;
+        y1 = tmp;
+    }
+
+    if (x0 > x1)
+    {
+        tmp = x0;
+        x0 = x1;
+        x1 = tmp;
+
+        tmp = y0;
+        y0 = y1;
+        y1 = tmp;
+    }
+
+    int16_t dx = x1 - x0;
+    int16_t dy = abs(y1 - y0);
+
+    int16_t err = dx / 2;
+    int16_t ystep;
+
+    if (y0 < y1)
+    {
+        ystep = 1;
+    } else {
+        ystep = -1;
+    }
+
+    for (; x0 <= x1; x0++)
+    {
+        if (step)
+        {
+            bc_module_lcd_draw_pixel(y0, x0, color);
+        }
+        else
+        {
+            bc_module_lcd_draw_pixel(x0, y0, color);
+        }
+        err -= dy;
+        if (err < 0)
+        {
+            y0 += ystep;
+            err += dx;
+        }
+    }
+}
+
 /*
 
 Framebuffer format for updating multiple lines, ideal for later DMA TX:
