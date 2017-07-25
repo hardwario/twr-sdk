@@ -207,6 +207,20 @@ void bc_adc_get_result(bc_adc_channel_t channel, void *result)
     }
 }
 
+bool bc_adc_get_vdda(float *vdda)
+{
+    if(_bc_adc.real_vdda ==  0.0f)
+    {
+        return false;
+    }
+    else
+    {
+        *vdda = _bc_adc.real_vdda;
+
+        return true;
+    }
+}
+
 void ADC1_COMP_IRQHandler(void)
 {
     // ADC offset calibrated !!
@@ -299,6 +313,8 @@ static inline void _bc_adc_calibration(void)
 
 static void _bc_adc_task(void *param)
 {
+    (void) param;
+
     bc_adc_channel_config_t *adc = &_bc_adc.channel_table[_bc_adc.channel_in_progress];
     bc_adc_channel_t pending_result_channel;
 
