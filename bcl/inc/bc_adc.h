@@ -110,6 +110,13 @@ bool bc_adc_async_read(bc_adc_channel_t channel);
 
 void bc_adc_get_result(bc_adc_channel_t channel, void *result);
 
+//! @brief Get the actual VDDA
+//! @param[out] VDDA Pointer to destination where VDDA will be stored
+//! @return true On valid VDDA
+//! @return false On valid VDDA
+
+bool bc_adc_get_vdda(float *vdda);
+
 //! @}
 
 #endif // _BC_ADC_H
