@@ -30,7 +30,7 @@ static struct
     bool initialized;
     bc_adc_channel_t channel_in_progress;
     uint16_t vrefint;
-    float real_vdda;
+    float real_vdda_voltage;
     bc_adc_state_t state;
     bc_scheduler_task_id_t task_id;
     bc_adc_channel_config_t channel_table[7];
@@ -182,7 +182,7 @@ void bc_adc_get_result(bc_adc_channel_t channel, void *result)
 {
     uint32_t data = ADC1->DR;
 
-    data *= _bc_adc.real_vdda / 3.3f;
+    data *= _bc_adc.real_vdda_voltage / 3.3f;
 
     switch (_bc_adc.channel_table[channel].format)
     {
@@ -207,15 +207,15 @@ void bc_adc_get_result(bc_adc_channel_t channel, void *result)
     }
 }
 
-bool bc_adc_get_vdda(float *vdda)
+bool bc_adc_get_vdda_voltage(float *vdda_voltage)
 {
-    if(_bc_adc.real_vdda ==  0.0f)
+    if(_bc_adc.real_vdda_voltage ==  0.0f)
     {
         return false;
     }
     else
     {
-        *vdda = _bc_adc.real_vdda;
+        *vdda_voltage = _bc_adc.real_vdda_voltage;
 
         return true;
     }
@@ -254,7 +254,7 @@ void ADC1_COMP_IRQHandler(void)
         ADC->CCR &= ~ADC_CCR_VREFEN;
 
         // Compute actual VDDA
-        _bc_adc.real_vdda = 3. * ((float) _bc_adc.vrefint / (float) ADC1->DR);
+        _bc_adc.real_vdda_voltage = 3. * ((float) _bc_adc.vrefint / (float) ADC1->DR);
 
         // Set ADC channel
         ADC1->CHSELR = _bc_adc.channel_table[_bc_adc.channel_in_progress].chselr;
@@ -305,7 +305,7 @@ static inline void _bc_adc_calibration(void)
     }
 
     // Compute actual VDDA
-    _bc_adc.real_vdda = 3. * ((float) _bc_adc.vrefint / (float) ADC1->DR);
+    _bc_adc.real_vdda_voltage = 3. * ((float) _bc_adc.vrefint / (float) ADC1->DR);
 
     // Disable internal reference
     ADC->CCR &= ~ADC_CCR_VREFEN;
