@@ -2,6 +2,15 @@
 #include <bc_1wire.h>
 #include <bc_module_core.h>
 
+static struct
+{
+    uint8_t last_discrepancy;
+    uint8_t last_family_discrepancy;
+    bool last_device_flag;
+    uint8_t last_rom_no[8];
+
+} _bc_1wire_search;
+
 static bool _bc_1wire_reset(bc_gpio_channel_t channel);
 static void _bc_1wire_write_byte(bc_gpio_channel_t channel, uint8_t byte);
 static uint8_t _bc_1wire_read_byte(bc_gpio_channel_t channel);
@@ -10,6 +19,10 @@ static uint8_t _bc_1wire_read_bit(bc_gpio_channel_t channel);
 static void _bc_1wire_start(void);
 static void _bc_1wire_stop(void);
 static void _bc_1wire_delay(uint32_t micro_second);
+static void _bc_1wire_search_reset(void);
+static void _bc_1wire_search_target_setup(uint8_t family_code);
+static bool _bc_1wire_search_next(bc_gpio_channel_t channel, uint64_t *device_number);
+static int _bc_1wire_search_devices(bc_gpio_channel_t channel, uint64_t *device_numbers, size_t length);
 
 void bc_1wire_init(bc_gpio_channel_t channel)
 {
@@ -34,7 +47,7 @@ void bc_1wire_select(bc_gpio_channel_t channel, uint64_t *device_number)
 {
     _bc_1wire_start();
 
-    if (*device_number == 0x00) // Skip ROM
+    if (*device_number == BC_1WIRE_NO_DEVICE_NUMBER) // Skip ROM
     {
         _bc_1wire_write_byte(channel, 0xCC);
     }
@@ -51,7 +64,7 @@ void bc_1wire_select(bc_gpio_channel_t channel, uint64_t *device_number)
     _bc_1wire_stop();
 }
 
-void bc_1wire_write(bc_gpio_channel_t channel, void *buffer, size_t length)
+void bc_1wire_write(bc_gpio_channel_t channel,const void *buffer, size_t length)
 {
     _bc_1wire_start();
     for (size_t i = 0; i < length; i++)
@@ -101,174 +114,28 @@ uint8_t bc_1wire_read_bit(bc_gpio_channel_t channel)
     return bit;
 }
 
-void bc_1wire_search_init(bc_1wire_search_t *self, bc_gpio_channel_t channel)
+int bc_1wire_search(bc_gpio_channel_t channel, uint64_t *device_numbers, size_t length)
 {
-    memset(self, 0, sizeof(*self));
-    self->_gpio_channel = channel;
-    bc_1wire_init(channel);
+    _bc_1wire_search_reset();
+
+    return _bc_1wire_search_devices(channel, device_numbers, length);
 }
 
-void bc_1wire_search_reset(bc_1wire_search_t *self)
+int bc_1wire_search_target(bc_gpio_channel_t channel, uint8_t family_code, uint64_t *device_numbers, size_t length)
 {
-    self->_last_discrepancy = 0;
-    self->_last_device_flag = false;
-    self->_last_family_discrepancy = 0;
+    _bc_1wire_search_target_setup(family_code);
+
+    return _bc_1wire_search_devices(channel, device_numbers, length);
 }
 
-void bc_1wire_search_target_setup(bc_1wire_search_t *self, uint8_t family_code)
+uint8_t bc_1wire_crc8(const void *buffer, size_t length, uint8_t crc)
 {
-    memset(self->_last_rom_no, 0, sizeof(self->_last_rom_no));
-    self->_last_rom_no[0] = family_code;
-    self->_last_discrepancy = 64;
-    self->_last_family_discrepancy = 0;
-    self->_last_device_flag = false;
-}
-
-bool bc_1wire_search(bc_1wire_search_t *self, uint64_t *device_number)
-{
-    bool search_result = false;
-    uint8_t id_bit_number;
-    uint8_t last_zero, rom_byte_number;
-    uint8_t id_bit, cmp_id_bit;
-    uint8_t rom_byte_mask, search_direction;
-
-    /* Initialize for search */
-    id_bit_number = 1;
-    last_zero = 0;
-    rom_byte_number = 0;
-    rom_byte_mask = 1;
-
-    if (!self->_last_device_flag)
-    {
-
-        _bc_1wire_start();
-
-        if (!_bc_1wire_reset(self->_gpio_channel))
-        {
-            bc_1wire_search_reset(self);
-            _bc_1wire_stop();
-            return false;
-        }
-
-        // issue the search command
-        _bc_1wire_write_byte(self->_gpio_channel, 0xf0);
-
-        // loop to do the search
-        do
-        {
-            id_bit = _bc_1wire_read_bit(self->_gpio_channel);
-            cmp_id_bit = _bc_1wire_read_bit(self->_gpio_channel);
-
-            // check for no devices on 1-wire
-            if ((id_bit == 1) && (cmp_id_bit == 1))
-            {
-                break;
-            }
-            else
-            {
-                /* All devices coupled have 0 or 1 */
-                if (id_bit != cmp_id_bit)
-                {
-                    /* Bit write value for search */
-                    search_direction = id_bit;
-                }
-                else
-                {
-                    /* If this discrepancy is before the Last Discrepancy on a previous next then pick the same as last time */
-                    if (id_bit_number < self->_last_discrepancy)
-                    {
-                        search_direction = ((self->_last_rom_no[rom_byte_number] & rom_byte_mask) > 0);
-                    }
-                    else
-                    {
-                        /* If equal to last pick 1, if not then pick 0 */
-                        search_direction = (id_bit_number == self->_last_discrepancy);
-                    }
-
-                    /* If 0 was picked then record its position in LastZero */
-                    if (search_direction == 0)
-                    {
-                        last_zero = id_bit_number;
-
-                        /* Check for Last discrepancy in family */
-                        if (last_zero < 9)
-                        {
-                            self->_last_family_discrepancy = last_zero;
-                        }
-                    }
-                }
-
-                /* Set or clear the bit in the ROM byte rom_byte_number with mask rom_byte_mask */
-                if (search_direction == 1)
-                {
-                    self->_last_rom_no[rom_byte_number] |= rom_byte_mask;
-                }
-                else
-                {
-                    self->_last_rom_no[rom_byte_number] &= ~rom_byte_mask;
-                }
-
-                /* Serial number search direction write bit */
-                _bc_1wire_write_bit(self->_gpio_channel, search_direction);
-
-                /* Increment the byte counter id_bit_number and shift the mask rom_byte_mask */
-                id_bit_number++;
-                rom_byte_mask <<= 1;
-
-                /* If the mask is 0 then go to new SerialNum byte rom_byte_number and reset mask */
-                if (rom_byte_mask == 0)
-                {
-                    rom_byte_number++;
-                    rom_byte_mask = 1;
-                }
-            }
-        } while (rom_byte_number < 8);
-
-        /* If the search was successful then */
-        if (!(id_bit_number < 65))
-        {
-            /* Search successful so set LastDiscrepancy, LastDeviceFlag, search_result */
-            self->_last_discrepancy = last_zero;
-
-            /* Check for last device */
-            if (self->_last_discrepancy == 0)
-            {
-                self->_last_device_flag = true;
-            }
-
-            search_result = !self->_last_rom_no[0] ? false : true;
-        }
-
-        _bc_1wire_stop();
-    }
-
-    if (search_result && bc_1wire_crc8(self->_last_rom_no, sizeof(self->_last_rom_no)) != 0)
-    {
-        search_result = false;
-    }
-
-    if (search_result)
-    {
-        memcpy(device_number, self->_last_rom_no, sizeof(self->_last_rom_no));
-    }
-    else
-    {
-        bc_1wire_search_reset(self);
-    }
-
-    return search_result;
-}
-
-uint8_t bc_1wire_crc8(void *buffer, size_t length)
-{
-    uint8_t crc = 0;
     uint8_t inbyte;
     uint8_t i;
-    uint8_t *_buffer = buffer;
 
     while (length--)
     {
-        inbyte = *_buffer++;
+        inbyte = *((uint8_t *) buffer++);
         for (i = 8; i; i--)
         {
             if ((crc ^ inbyte) & 0x01)
@@ -287,16 +154,15 @@ uint8_t bc_1wire_crc8(void *buffer, size_t length)
     return crc;
 }
 
-uint16_t bc_1wire_crc16(const void* buffer, uint16_t length, uint16_t crc)
+uint16_t bc_1wire_crc16(const void *buffer, size_t length, uint16_t crc)
 {
-    const uint8_t *_buffer = buffer;
     static const uint8_t oddparity[16] =
     { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
 
     uint16_t i;
     for (i = 0; i < length; i++)
     {
-        uint16_t cdata = _buffer[i];
+        uint16_t cdata = ((uint8_t *) buffer)[i];
         cdata = (cdata ^ crc) & 0xff;
         crc >>= 8;
 
@@ -451,3 +317,167 @@ static void _bc_1wire_delay(uint32_t micro_second)
     }
 }
 
+static void _bc_1wire_search_reset(void)
+{
+    _bc_1wire_search.last_discrepancy = 0;
+    _bc_1wire_search.last_device_flag = false;
+    _bc_1wire_search.last_family_discrepancy = 0;
+}
+
+static void _bc_1wire_search_target_setup(uint8_t family_code)
+{
+    memset(_bc_1wire_search.last_rom_no, 0, sizeof(_bc_1wire_search.last_rom_no));
+    _bc_1wire_search.last_rom_no[0] = family_code;
+    _bc_1wire_search.last_discrepancy = 64;
+    _bc_1wire_search.last_family_discrepancy = 0;
+    _bc_1wire_search.last_device_flag = false;
+}
+
+static bool _bc_1wire_search_next(bc_gpio_channel_t channel, uint64_t *device_number)
+{
+    bool search_result = false;
+    uint8_t id_bit_number;
+    uint8_t last_zero, rom_byte_number;
+    uint8_t id_bit, cmp_id_bit;
+    uint8_t rom_byte_mask, search_direction;
+
+    /* Initialize for search */
+    id_bit_number = 1;
+    last_zero = 0;
+    rom_byte_number = 0;
+    rom_byte_mask = 1;
+
+    if (!_bc_1wire_search.last_device_flag)
+    {
+
+        _bc_1wire_start();
+
+        if (!_bc_1wire_reset(channel))
+        {
+            _bc_1wire_search_reset();
+            _bc_1wire_stop();
+            return false;
+        }
+
+        // issue the search command
+        _bc_1wire_write_byte(channel, 0xf0);
+
+        // loop to do the search
+        do
+        {
+            id_bit = _bc_1wire_read_bit(channel);
+            cmp_id_bit = _bc_1wire_read_bit(channel);
+
+            // check for no devices on 1-wire
+            if ((id_bit == 1) && (cmp_id_bit == 1))
+            {
+                break;
+            }
+            else
+            {
+                /* All devices coupled have 0 or 1 */
+                if (id_bit != cmp_id_bit)
+                {
+                    /* Bit write value for search */
+                    search_direction = id_bit;
+                }
+                else
+                {
+                    /* If this discrepancy is before the Last Discrepancy on a previous next then pick the same as last time */
+                    if (id_bit_number < _bc_1wire_search.last_discrepancy)
+                    {
+                        search_direction = ((_bc_1wire_search.last_rom_no[rom_byte_number] & rom_byte_mask) > 0);
+                    }
+                    else
+                    {
+                        /* If equal to last pick 1, if not then pick 0 */
+                        search_direction = (id_bit_number == _bc_1wire_search.last_discrepancy);
+                    }
+
+                    /* If 0 was picked then record its position in LastZero */
+                    if (search_direction == 0)
+                    {
+                        last_zero = id_bit_number;
+
+                        /* Check for Last discrepancy in family */
+                        if (last_zero < 9)
+                        {
+                            _bc_1wire_search.last_family_discrepancy = last_zero;
+                        }
+                    }
+                }
+
+                /* Set or clear the bit in the ROM byte rom_byte_number with mask rom_byte_mask */
+                if (search_direction == 1)
+                {
+                    _bc_1wire_search.last_rom_no[rom_byte_number] |= rom_byte_mask;
+                }
+                else
+                {
+                    _bc_1wire_search.last_rom_no[rom_byte_number] &= ~rom_byte_mask;
+                }
+
+                /* Serial number search direction write bit */
+                _bc_1wire_write_bit(channel, search_direction);
+
+                /* Increment the byte counter id_bit_number and shift the mask rom_byte_mask */
+                id_bit_number++;
+                rom_byte_mask <<= 1;
+
+                /* If the mask is 0 then go to new SerialNum byte rom_byte_number and reset mask */
+                if (rom_byte_mask == 0)
+                {
+                    rom_byte_number++;
+                    rom_byte_mask = 1;
+                }
+            }
+        } while (rom_byte_number < 8);
+
+        /* If the search was successful then */
+        if (!(id_bit_number < 65))
+        {
+            /* Search successful so set LastDiscrepancy, LastDeviceFlag, search_result */
+            _bc_1wire_search.last_discrepancy = last_zero;
+
+            /* Check for last device */
+            if (_bc_1wire_search.last_discrepancy == 0)
+            {
+                _bc_1wire_search.last_device_flag = true;
+            }
+
+            search_result = !_bc_1wire_search.last_rom_no[0] ? false : true;
+        }
+
+        _bc_1wire_stop();
+    }
+
+    if (search_result && bc_1wire_crc8(_bc_1wire_search.last_rom_no, sizeof(_bc_1wire_search.last_rom_no), 0x00) != 0)
+    {
+        search_result = false;
+    }
+
+    if (search_result)
+    {
+        memcpy(device_number, _bc_1wire_search.last_rom_no, sizeof(_bc_1wire_search.last_rom_no));
+    }
+    else
+    {
+        _bc_1wire_search_reset();
+    }
+
+    return search_result;
+}
+
+static int _bc_1wire_search_devices(bc_gpio_channel_t channel, uint64_t *device_numbers, size_t length)
+{
+    int devices = 0;
+    int max_devices = length / sizeof(uint64_t);
+
+    while ((devices < max_devices) && _bc_1wire_search_next(channel, device_numbers))
+    {
+        device_numbers++;
+        devices++;
+    }
+
+    return devices;
+}
