@@ -10,6 +10,7 @@
 
 // Peripheral drivers
 
+#include <bc_adc.h>
 #include <bc_button.h>
 #include <bc_dac.h>
 #include <bc_eeprom.h>
