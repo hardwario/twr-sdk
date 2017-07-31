@@ -18,7 +18,10 @@ typedef enum
     BC_I2C_I2C0 = 0,
 
     //! @brief I2C channel I2C1
-    BC_I2C_I2C1 = 1
+    BC_I2C_I2C1 = 1,
+
+    //! @brief I2C channel 1wire
+    BC_I2C_I2C_1W = 2
 
 } bc_i2c_channel_t;
 
@@ -79,7 +82,7 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed);
 
 bc_i2c_speed_t bc_i2c_get_speed(bc_i2c_channel_t channel);
 
-//! @brief Set speed I2C channel
+//! @brief Set I2C channel speed
 //! @param[in] channel I2C channel
 //! @param[in] speed I2C communication speed
 
