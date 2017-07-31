@@ -18,7 +18,10 @@ typedef enum
     BC_I2C_I2C0 = 0,
 
     //! @brief I2C channel I2C1
-    BC_I2C_I2C1 = 1
+    BC_I2C_I2C1 = 1,
+
+	//! @brief I2C channel 1wire
+	BC_I2C_I2C_1W = 2
 
 } bc_i2c_channel_t;
 

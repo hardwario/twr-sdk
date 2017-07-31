@@ -3,6 +3,8 @@
 #include <bc_tick.h>
 #include <stm32l0xx.h>
 #include <bc_scheduler.h>
+#include <bc_ds28e17.h>
+#include <bc_module_sensor.h>
 
 #define _BC_I2C_TX_TIMEOUT_ADJUST_FACTOR 1.5
 #define _BC_I2C_RX_TIMEOUT_ADJUST_FACTOR 1.5
@@ -21,16 +23,18 @@
 
 static struct
 {
-    bool i2c0_initialized;
-    bool i2c1_initialized;
+	bool initialized;
+	bc_i2c_speed_t speed;
+	I2C_TypeDef *i2c;
 
-    bc_i2c_speed_t i2c0_speed;
-    bc_i2c_speed_t i2c1_speed;
-
-} _bc_i2c =
-{ .i2c0_initialized = false, .i2c1_initialized = false };
+} _bc_i2c[] = {
+	[BC_I2C_I2C0] = { .initialized = false, .i2c = I2C2 },
+	[BC_I2C_I2C1] = { .initialized = false, .i2c = I2C1 },
+	[BC_I2C_I2C_1W]= { .initialized = false, .i2c = NULL }
+};
 
 static bc_tick_t tick_timeout;
+static bc_ds28e17_t ds28e17;
 
 static bool _bc_i2c_mem_write(I2C_TypeDef *i2c, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, uint8_t *buffer, uint16_t length);
 static bool _bc_i2c_mem_read(I2C_TypeDef *i2c, uint8_t device_address, uint16_t memory_address, uint16_t memory_address_length, uint8_t *buffer, uint16_t length);
@@ -49,13 +53,13 @@ static void _bc_i2c_restore_bus(I2C_TypeDef *i2c);
 
 void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 {
+	if (_bc_i2c[channel].initialized)
+	{
+		return;
+	}
+
     if (channel == BC_I2C_I2C0)
     {
-        if (_bc_i2c.i2c0_initialized)
-        {
-            return;
-        }
-
         // Initialize I2C2 pins
         RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
 
@@ -80,15 +84,10 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         bc_i2c_set_speed(channel, speed);
 
         // Update state
-        _bc_i2c.i2c0_initialized = true;
+        _bc_i2c[channel].initialized = true;
     }
-    else
+    else if (channel == BC_I2C_I2C1)
     {
-        if (_bc_i2c.i2c1_initialized)
-        {
-            return;
-        }
-
         // Initialize I2C1 pins
         RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
 
@@ -113,25 +112,42 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         bc_i2c_set_speed(channel, speed);
 
         // Update state
-        _bc_i2c.i2c1_initialized = true;
+        _bc_i2c[channel].initialized = true;
+    }
+    else if (channel == BC_I2C_I2C_1W)
+    {
+        bc_module_sensor_init();
+        bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_UP_56R);
+        bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_PULL_UP_4K7);
+
+        bc_ds28e17_init(&ds28e17, 0x00, BC_GPIO_P5);
+
+        _bc_i2c[channel].initialized = true;
+
+        bc_i2c_set_speed(channel, speed);
     }
 }
 
 bc_i2c_speed_t bc_i2c_get_speed(bc_i2c_channel_t channel)
 {
-    if (channel == BC_I2C_I2C0)
-    {
-        return _bc_i2c.i2c0_speed;
-    }
-    else
-    {
-        return _bc_i2c.i2c1_speed;
-    }
+	return _bc_i2c[channel].speed;
 }
 
 void bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 {
     uint32_t timingr;
+
+    if (channel == BC_I2C_I2C_1W)
+    {
+    	if (!_bc_i2c[channel].initialized)
+    	{
+    		return;
+    	}
+
+    	bc_ds28e17_set_speed(&ds28e17, speed);
+    	_bc_i2c[channel].speed = speed;
+    	return;
+    }
 
     if (speed == BC_I2C_SPEED_400_KHZ)
     {
@@ -146,94 +162,77 @@ void bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
     {
         I2C2->CR1 &= ~I2C_CR1_PE;
         I2C2->TIMINGR = timingr;
-        _bc_i2c.i2c0_speed = speed;
         I2C2->CR1 |= I2C_CR1_PE;
     }
-    else
+    else if (channel == BC_I2C_I2C1)
     {
         I2C1->CR1 &= ~I2C_CR1_PE;
         I2C1->TIMINGR = timingr;
-        _bc_i2c.i2c1_speed = speed;
         I2C1->CR1 |= I2C_CR1_PE;
     }
+
+    _bc_i2c[channel].speed = speed;
 }
 
 bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
 {
-    I2C_TypeDef *i2c;
+	if (!_bc_i2c[channel].initialized)
+	{
+		return false;
+	}
 
-    if (channel == BC_I2C_I2C0)
+    if (channel == BC_I2C_I2C_1W)
     {
-        if (!_bc_i2c.i2c0_initialized)
-        {
-            return false;
-        }
-
-        i2c = I2C2;
-    }
-    else
-    {
-        if (!_bc_i2c.i2c1_initialized)
-        {
-            return false;
-        }
-
-        i2c = I2C1;
+    	return bc_ds28e17_write(&ds28e17, transfer);
     }
 
-    bc_module_core_pll_enable();
+	I2C_TypeDef *i2c = _bc_i2c[channel].i2c;
 
-    // Get maximum allowed timeout in ms
-    uint32_t timeout_ms = _BC_I2C_TX_TIMEOUT_ADJUST_FACTOR * bc_i2c_get_timeout_ms(channel, transfer->length);
+	bc_module_core_pll_enable();
 
-    _bc_i2c_timeout_begin(timeout_ms);
+	// Get maximum allowed timeout in ms
+	uint32_t timeout_ms = _BC_I2C_TX_TIMEOUT_ADJUST_FACTOR * bc_i2c_get_timeout_ms(channel, transfer->length);
 
-    bool status = false;
+	_bc_i2c_timeout_begin(timeout_ms);
 
-    // Wait until bus is not busy
-    if (_bc_i2c_watch_flag(i2c, I2C_ISR_BUSY, SET))
-    {
-        // Configure I2C peripheral and try to get ACK on device address write
-        _bc_i2c_config(i2c, transfer->device_address << 1, transfer->length, I2C_CR2_AUTOEND, _BC_I2C_GENERATE_START_WRITE);
+	bool status = false;
 
-        // Try to transmit buffer and update status
-        status = _bc_i2c_write(i2c, transfer->buffer, transfer->length);
-    }
+	// Wait until bus is not busy
+	if (_bc_i2c_watch_flag(i2c, I2C_ISR_BUSY, SET))
+	{
+		// Configure I2C peripheral and try to get ACK on device address write
+		_bc_i2c_config(i2c, transfer->device_address << 1, transfer->length, I2C_CR2_AUTOEND, _BC_I2C_GENERATE_START_WRITE);
 
-    // If error occured ( timeout | NACK | ... ) ...
-    if (status == false)
-    {
-        // Reset I2C peripheral to generate STOP conditions immediately
-        __BC_I2C_RESET_PERIPHERAL(i2c);
-    }
+		// Try to transmit buffer and update status
+		status = _bc_i2c_write(i2c, transfer->buffer, transfer->length);
+	}
 
-    bc_module_core_pll_disable();
+	// If error occured ( timeout | NACK | ... ) ...
+	if (status == false)
+	{
+		// Reset I2C peripheral to generate STOP conditions immediately
+		__BC_I2C_RESET_PERIPHERAL(i2c);
+	}
 
-    return status;
+	bc_module_core_pll_disable();
+
+	return status;
+
 }
 
 bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
 {
-    I2C_TypeDef *i2c;
+	if (!_bc_i2c[channel].initialized)
+	{
+		return false;
+	}
 
-    if (channel == BC_I2C_I2C0)
+    if (channel == BC_I2C_I2C_1W)
     {
-        if (!_bc_i2c.i2c0_initialized)
-        {
-            return false;
-        }
-
-        i2c = I2C2;
+    	return bc_ds28e17_read(&ds28e17, transfer);
     }
-    else
-    {
-        if (!_bc_i2c.i2c1_initialized)
-        {
-            return false;
-        }
 
-        i2c = I2C1;
-    }
+	I2C_TypeDef *i2c = _bc_i2c[channel].i2c;
 
     bc_module_core_pll_enable();
 
@@ -267,26 +266,17 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
 
 bool bc_i2c_memory_write(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t *transfer)
 {
-    I2C_TypeDef *i2c;
+	if (!_bc_i2c[channel].initialized)
+	{
+		return false;
+	}
 
-    if (channel == BC_I2C_I2C0)
+    if (channel == BC_I2C_I2C_1W)
     {
-        if (!_bc_i2c.i2c0_initialized)
-        {
-            return false;
-        }
-
-        i2c = I2C2;
+    	return bc_ds28e17_memory_write(&ds28e17, transfer);
     }
-    else
-    {
-        if (!_bc_i2c.i2c1_initialized)
-        {
-            return false;
-        }
 
-        i2c = I2C1;
-    }
+	I2C_TypeDef *i2c = _bc_i2c[channel].i2c;
 
     // Enable PLL and disable sleep
     bc_module_core_pll_enable();
@@ -314,26 +304,17 @@ bool bc_i2c_memory_write(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_
 
 bool bc_i2c_memory_read(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t *transfer)
 {
-    I2C_TypeDef *i2c;
+	if (!_bc_i2c[channel].initialized)
+	{
+		return false;
+	}
 
-    if (channel == BC_I2C_I2C0)
+    if (channel == BC_I2C_I2C_1W)
     {
-        if (!_bc_i2c.i2c0_initialized)
-        {
-            return false;
-        }
-
-        i2c = I2C2;
+    	return bc_ds28e17_memory_read(&ds28e17, transfer);
     }
-    else
-    {
-        if (!_bc_i2c.i2c1_initialized)
-        {
-            return false;
-        }
 
-        i2c = I2C1;
-    }
+	I2C_TypeDef *i2c = _bc_i2c[channel].i2c;
 
     // Enable PLL and disable sleep
     bc_module_core_pll_enable();
