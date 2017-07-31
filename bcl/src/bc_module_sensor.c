@@ -64,10 +64,12 @@ bool bc_module_sensor_init(void)
 
 bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sensor_pull_t pull)
 {
-    uint8_t p;
-    bc_tca9534a_read_port(&_bc_module_sensor.tca9534a, &p);
+    uint8_t port_actual;
+    uint8_t port_new;
 
-    p |= _bc_module_sensor_channel_virtual_4k7_lut[channel] | _bc_module_sensor_channel_virtual_56r_lut[channel];
+    bc_tca9534a_read_port(&_bc_module_sensor.tca9534a, &port_actual);
+
+    port_new = port_actual | _bc_module_sensor_channel_virtual_4k7_lut[channel] | _bc_module_sensor_channel_virtual_56r_lut[channel];
 
     switch (pull)
     {
@@ -77,37 +79,44 @@ bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sen
 
             bc_gpio_set_pull(_bc_module_sensor_channel_gpio_lut[channel], BC_GPIO_PULL_NONE);
 
-            return bc_tca9534a_write_port(&_bc_module_sensor.tca9534a, p);
+            break;
         }
         case BC_MODULE_SENSOR_PULL_UP_4K7:
         {
-            p &= ~_bc_module_sensor_channel_virtual_56r_lut[channel];
+            port_new &= ~_bc_module_sensor_channel_virtual_4k7_lut[channel];
             bc_gpio_set_pull(_bc_module_sensor_channel_gpio_lut[channel], BC_GPIO_PULL_NONE);
 
-            return bc_tca9534a_write_port(&_bc_module_sensor.tca9534a, p);
+            break;
         }
         case BC_MODULE_SENSOR_PULL_UP_56R:
         {
-            p &= ~_bc_module_sensor_channel_virtual_4k7_lut[channel];
+            port_new &= ~_bc_module_sensor_channel_virtual_56r_lut[channel];
             bc_gpio_set_pull(_bc_module_sensor_channel_gpio_lut[channel], BC_GPIO_PULL_NONE);
 
-            return bc_tca9534a_write_port(&_bc_module_sensor.tca9534a, p);
+            break;
         }
         case BC_MODULE_SENSOR_PULL_UP_INTERNAL:
         {
             bc_gpio_set_pull(_bc_module_sensor_channel_gpio_lut[channel], BC_GPIO_PULL_UP);
-            return true;
+            break;
         }
         case BC_MODULE_SENSOR_PULL_DOWN_INTERNAL:
         {
             bc_gpio_set_pull(_bc_module_sensor_channel_gpio_lut[channel], BC_GPIO_PULL_DOWN);
-            return true;
+            break;
         }
         default:
         {
             return false;
         }
     }
+
+    if (port_actual != port_new)
+    {
+        return bc_tca9534a_write_port(&_bc_module_sensor.tca9534a, port_new);
+    }
+
+    return true;
 }
 
 bc_module_sensor_pull_t bc_module_sensor_get_pull(bc_module_sensor_channel_t channel)
