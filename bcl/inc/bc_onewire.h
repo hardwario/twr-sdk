@@ -105,4 +105,4 @@ uint16_t bc_onewire_crc16(const void *buffer, size_t length, uint16_t crc);
 
 //! @}
 
-#endif /* _BC_1WIRE_H */
+#endif // _BC_1WIRE_H

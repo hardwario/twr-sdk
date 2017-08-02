@@ -13,4 +13,4 @@ void bc_rtc_init(void);
 
 //! @}
 
-#endif /* _BC_RTC_H */
+#endif // _BC_RTC_H

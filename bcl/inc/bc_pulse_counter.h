@@ -75,4 +75,4 @@ void bc_pulse_counter_reset(bc_module_sensor_channel_t channel);
 
 //! @}
 
-#endif /* BCL_INC_BC_PULSE_COUNTER_H_ */
+#endif // BCL_INC_BC_PULSE_COUNTER_H_

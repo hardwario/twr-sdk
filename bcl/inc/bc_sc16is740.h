@@ -82,4 +82,4 @@ uint8_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length,
 
 //! @}
 
-#endif /* _BC_SC16IS740_H */
+#endif // _BC_SC16IS740_H
