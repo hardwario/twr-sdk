@@ -379,6 +379,11 @@ bool bc_uart_async_read_start(bc_uart_channel_t channel, bc_tick_t timeout)
 
     bc_irq_enable();
 
+    if (_bc_uart[channel].USARTx != LPUART1)
+    {
+        bc_module_core_pll_enable();
+    }
+
     _bc_uart[channel].async_read_in_progress = true;
 
     return true;
@@ -399,6 +404,11 @@ bool bc_uart_async_read_cancel(bc_uart_channel_t channel)
     _bc_uart[channel].USARTx->CR1 &= ~USART_CR1_RXNEIE;
 
     bc_irq_enable();
+
+    if (_bc_uart[channel].USARTx != LPUART1)
+    {
+        bc_module_core_pll_disable();
+    }
 
     bc_scheduler_unregister(_bc_uart[channel].async_read_task_id);
 
