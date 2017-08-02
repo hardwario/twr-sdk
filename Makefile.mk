@@ -264,7 +264,6 @@ $(ELF): $(OBJ)
 	$(Q)$(ECHO) "Linking object files..."
 	$(Q)mkdir -p $(OUT_DIR)/$(TYPE)
 	$(Q)$(CC) $(LDFLAGS) $(OBJ) -o $(ELF)
-	$(Q)chmod -x $(MAP) $(ELF)
 
 ################################################################################
 # Print information about size of sections                                     #
@@ -285,7 +284,6 @@ bin: $(BIN)
 $(BIN): $(ELF)
 	$(Q)$(ECHO) "Creating $(BIN) from $(ELF)..."
 	$(Q)$(OBJCOPY) -O binary $(ELF) $(BIN)
-	$(Q)chmod -x $(BIN)
 
 ################################################################################
 # Compile source files                                                         #
