@@ -70,8 +70,8 @@ void bc_atsha204_set_event_handler(bc_atsha204_t *self, void (*event_handler)(bc
 
 //! @brief Check if is ready for commands
 //! @param[in] self Instance
-//! @return true if ready
-//! @return false if not ready
+//! @return true If ready
+//! @return false If not ready
 
 bool bc_atsha204_is_ready(bc_atsha204_t *self);
 
@@ -93,5 +93,5 @@ bool bc_atsha204_get_serial_number(bc_atsha204_t *self, void *destination, size_
 
 //! @}
 
-#endif /* _BC_ATSHA204_H */
+#endif // _BC_ATSHA204_H
 

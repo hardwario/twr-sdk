@@ -8,4 +8,4 @@ void bc_usb_cdc_start(void);
 bool bc_usb_cdc_write(const void *buffer, size_t length);
 size_t bc_usb_cdc_read(void *buffer, size_t length);
 
-#endif /* _BC_USB_CDC_H */
+#endif // _BC_USB_CDC_H

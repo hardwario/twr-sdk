@@ -90,8 +90,8 @@ void bc_td1207r_set_event_handler(bc_td1207r_t *self, void (*event_handler)(bc_t
 
 //! @brief Check if modem is ready for commands
 //! @param[in] self Instance
-//! @return true if ready
-//! @return false if not ready
+//! @return true If ready
+//! @return false If not ready
 
 bool bc_td1207r_is_ready(bc_td1207r_t *self);
 
@@ -99,8 +99,8 @@ bool bc_td1207r_is_ready(bc_td1207r_t *self);
 //! @param[in] self Instance
 //! @param[in] buffer Pointer to data to be transmitted
 //! @param[in] length Length of data to be transmitted in bytes (must be from 1 to 12 bytes)
-//! @return true if command was accepted for processing
-//! @return false if command was denied for processing
+//! @return true If command was accepted for processing
+//! @return false If command was denied for processing
 
 bool bc_td1207r_send_rf_frame(bc_td1207r_t *self, const void *buffer, size_t length);
 

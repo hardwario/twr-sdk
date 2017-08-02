@@ -70,8 +70,8 @@ bool bc_module_co2_measure(void);
 
 //! @brief Get co2 concentration
 //! @param[out] concentration in ppm
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_module_co2_get_concentration(float *concentration);
 

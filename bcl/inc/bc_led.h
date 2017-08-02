@@ -123,8 +123,8 @@ void bc_led_pulse(bc_led_t *self, bc_tick_t duration);
 
 //! @brief Check if there is ongoing LED pulse
 //! @param[in] self Instance
-//! @return true if pulse is now active
-//! @return false if pulse is now inactive
+//! @return true If pulse is now active
+//! @return false If pulse is now inactive
 
 bool bc_led_is_pulse(bc_led_t *self);
 

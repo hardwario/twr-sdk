@@ -88,32 +88,32 @@ void bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed);
 //! @brief Write to I2C channel
 //! @param[in] channel I2C channel
 //! @param[in] transfer Pointer to I2C transfer parameters instance
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer);
 
 //! @brief Read from I2C channel
 //! @param[in] channel I2C channel
 //! @param[in] transfer Pointer to I2C transfer parameters instance
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer);
 
 //! @brief Memory write to I2C channel
 //! @param[in] channel I2C channel
 //! @param[in] transfer Pointer to I2C memory transfer parameters instance
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_i2c_memory_write(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t *transfer);
 
 //! @brief Memory read from I2C channel
 //! @param[in] channel I2C channel
 //! @param[in] transfer Pointer to I2C memory transfer parameters instance
-//! @return true on success
-//! @return false on failure
+//! @return true On success
+//! @return false On failure
 
 bool bc_i2c_memory_read(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t *transfer);
 

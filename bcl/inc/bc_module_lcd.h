@@ -188,4 +188,4 @@ const bc_button_driver_t *bc_module_lcd_get_button_driver(void);
 
 //! @}
 
-#endif /* _BC_MODULE_LCD */
+#endif // _BC_MODULE_LCD

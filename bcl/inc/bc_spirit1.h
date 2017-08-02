@@ -77,4 +77,4 @@ void bc_spirit1_sleep(void);
 
 //! @}
 
-#endif /* _BC_SPIRIT1_H */
+#endif // _BC_SPIRIT1_H

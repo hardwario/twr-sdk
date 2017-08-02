@@ -73,4 +73,4 @@ bool bc_fifo_is_empty(bc_fifo_t *fifo);
 
 //! @}
 
-#endif /* _BC_FIFO_H */
+#endif // _BC_FIFO_H
