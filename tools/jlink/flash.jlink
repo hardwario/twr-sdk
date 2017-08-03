@@ -1,0 +1,5 @@
+si 1
+speed 4000
+r
+loadbin out/debug/firmware.bin,0x08000000
+exit

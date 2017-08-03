@@ -199,17 +199,17 @@ clean:
 .clean-out:
 	$(Q)$(ECHO) "Clean output ..."
 	$(Q)rm -f "$(ELF)" "$(MAP)" "$(BIN)"
-	
+
 ################################################################################
 # Flash firmware using DFU bootloader                                          #
 ################################################################################
 
 .PHONY: dfu-release
-dfu-release:	
+dfu-release:
 	$(Q)$(MAKE) dfu TYPE=release
 
 .PHONY: dfu-debug
-dfu-debug:	
+dfu-debug:
 	$(Q)$(MAKE) dfu
 
 .PHONY: dfu
@@ -252,6 +252,31 @@ ozone: debug
 code:
 	$(Q)$(ECHO) "Opening project in Visual Code..."
 	$(Q)$(VSCODE) .
+
+################################################################################
+# J-Link                                          #
+################################################################################
+
+.PHONY: jlink-flash
+jlink-flash:
+ifeq ($(OS),Windows_NT)
+	JLink -device stm32l083cz -CommanderScript $(SDK_DIR)/tools/jlink/flash.jlink
+else
+	JLinkExe -device stm32l083cz -CommanderScript $(SDK_DIR)/tools/jlink/flash.jlink
+endif
+
+.PHONY: jlink-gdbserver
+jlink-gdbserver:
+ifeq ($(OS),Windows_NT)
+	JLinkGDBServerCL -singlerun -device stm32l083cz -if swd -speed 4000 -localhostonly -reset
+else
+	JLinkGDBServer -singlerun -device stm32l083cz -if swd -speed 4000 -localhostonly -reset
+endif
+
+.PHONY: jlink
+jlink:
+	$(Q)$(MAKE) jlink-flash
+	$(Q)$(MAKE) jlink-gdbserver
 
 ################################################################################
 # Link object files                                                            #
