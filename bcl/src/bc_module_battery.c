@@ -6,18 +6,21 @@
 
 #define _BC_MODULE_BATTERY_CELL_VOLTAGE 1.6f
 
-#define _BC_MODULE_BATTERY_DEFAULT_LEVEL_LOW        1.2
-#define _BC_MODULE_BATTERY_DEFAULT_LEVEL_CRITICAL   1.0
+#define _BC_MODULE_BATTERY_STANDATD_DEFAULT_LEVEL_LOW        (1.2 * 4)
+#define _BC_MODULE_BATTERY_DEFAULT_DEFAULT_LEVEL_CRITICAL   (1.0 * 4)
 
-#define _BC_MODULE_BATTERY_MINI_VOLTAGE_ON_BATTERY_TO_PERCENTAGE(__VOLTAGE__)      ((100. * __VOLTAGE__) / _BC_MODULE_BATTERY_CELL_VOLTAGE)
-#define _BC_MODULE_BATTERY_STANDARD_VOLTAGE_ON_BATTERY_TO_PERCENTAGE(__VOLTAGE__)  ((100. * __VOLTAGE__) / _BC_MODULE_BATTERY_CELL_VOLTAGE)
+#define _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_LOW        (1.2 * 2)
+#define _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_CRITICAL   (1.0 * 2)
 
-#define _BC_MODULE_BATTERY_MINI_RESULT_TO_VOLTAGE_ON_BATTERY(__RESULT__)       (((__RESULT__) * (1 / 0.33)) / 2.)
-#define _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE_ON_BATTERY(__RESULT__)   (((__RESULT__) * (1 / 0.13)) / 4.)
+#define _BC_MODULE_BATTERY_MINI_VOLTAGE_ON_BATTERY_TO_PERCENTAGE(__VOLTAGE__)      ((100. * __VOLTAGE__) / (_BC_MODULE_BATTERY_CELL_VOLTAGE * 2))
+#define _BC_MODULE_BATTERY_STANDARD_VOLTAGE_ON_BATTERY_TO_PERCENTAGE(__VOLTAGE__)  ((100. * __VOLTAGE__) / (_BC_MODULE_BATTERY_CELL_VOLTAGE * 4))
+
+#define _BC_MODULE_BATTERY_MINI_RESULT_TO_VOLTAGE(__RESULT__)       ((__RESULT__) * (1 / 0.33))
+#define _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(__RESULT__)   ((__RESULT__) * (1 / 0.13))
 
 static struct
 {
-    float voltage_on_battery;
+    float voltage;
     bc_module_battery_format_t format;
     float level_low_threshold;
     float level_critical_threshold;
@@ -40,8 +43,17 @@ void bc_module_battery_init(bc_module_battery_format_t format)
 
     _bc_module_battery.task_id = bc_scheduler_register(_bc_module_battery_task, NULL, BC_TICK_INFINITY);
     _bc_module_battery.format = format;
-    _bc_module_battery.level_low_threshold = _BC_MODULE_BATTERY_DEFAULT_LEVEL_LOW;
-    _bc_module_battery.level_critical_threshold = _BC_MODULE_BATTERY_DEFAULT_LEVEL_CRITICAL;
+
+    if (format == BC_MODULE_BATTERY_FORMAT_STANDARD)
+    {
+        _bc_module_battery.level_low_threshold = _BC_MODULE_BATTERY_STANDATD_DEFAULT_LEVEL_LOW;
+        _bc_module_battery.level_critical_threshold = _BC_MODULE_BATTERY_DEFAULT_DEFAULT_LEVEL_CRITICAL;
+    }
+    else
+    {
+        _bc_module_battery.level_low_threshold = _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_LOW;
+        _bc_module_battery.level_critical_threshold = _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_CRITICAL;
+    }
 
     bc_gpio_init(BC_GPIO_P1);
     _bc_module_battery_measurement(DISABLE);
@@ -96,11 +108,11 @@ bool bc_module_battery_measure(void)
     return true;
 }
 
-bool bc_module_battery_update_voltage_on_battery(float *voltage)
+bool bc_module_battery_get_voltage(float *voltage)
 {
     if(_bc_module_battery.valid == true)
     {
-        *voltage = _bc_module_battery.voltage_on_battery;
+        *voltage = _bc_module_battery.voltage;
 
         return true;
     }
@@ -110,12 +122,10 @@ bool bc_module_battery_update_voltage_on_battery(float *voltage)
 
 bool bc_module_battery_get_charge_level(int *percentage)
 {
-    if (_bc_module_battery.valid == true)
+    float voltage;
+
+    if (bc_module_battery_get_voltage(&voltage))
     {
-        float voltage;
-
-        bc_module_battery_update_voltage_on_battery(&voltage);
-
         // Calculate the percentage of charge
         if (_bc_module_battery.format == BC_MODULE_BATTERY_FORMAT_MINI)
         {
@@ -168,11 +178,11 @@ static void _bc_module_battery_adc_event_handler(bc_adc_channel_t channel, bc_ad
         if (_bc_module_battery.event_handler != NULL)
         {
             // Notify event based on calculated percentage
-            if (_bc_module_battery.voltage_on_battery <= _bc_module_battery.level_critical_threshold)
+            if (_bc_module_battery.voltage <= _bc_module_battery.level_critical_threshold)
             {
                 _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_LEVEL_CRITICAL, _bc_module_battery.event_param);
             }
-            else if (_bc_module_battery.voltage_on_battery <= _bc_module_battery.level_low_threshold)
+            else if (_bc_module_battery.voltage <= _bc_module_battery.level_low_threshold)
             {
                 _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_LEVEL_LOW, _bc_module_battery.event_param);
             }
@@ -207,10 +217,10 @@ static void _bc_module_battery_update_voltage_on_battery(void)
 
     if (_bc_module_battery.format == BC_MODULE_BATTERY_FORMAT_MINI)
     {
-        _bc_module_battery.voltage_on_battery = _BC_MODULE_BATTERY_MINI_RESULT_TO_VOLTAGE_ON_BATTERY(v);
+        _bc_module_battery.voltage = _BC_MODULE_BATTERY_MINI_RESULT_TO_VOLTAGE(v);
     }
     else
     {
-        _bc_module_battery.voltage_on_battery = _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE_ON_BATTERY(v);
+        _bc_module_battery.voltage = _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(v);
     }
 }
