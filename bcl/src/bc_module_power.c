@@ -27,7 +27,8 @@ const bc_led_strip_driver_t bc_module_power_led_strip_driver =
     .init = bc_ws2812b_init,
     .write = bc_ws2812b_write,
     .set_pixel = bc_ws2812b_set_pixel_from_uint32,
-    .set_pixel_rgbw = bc_ws2812b_set_pixel_from_rgb
+    .set_pixel_rgbw = bc_ws2812b_set_pixel_from_rgb,
+    .is_ready = bc_ws2812b_is_ready
 };
 
 static struct

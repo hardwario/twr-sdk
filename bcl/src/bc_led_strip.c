@@ -95,6 +95,11 @@ bool bc_led_strip_write(bc_led_strip_t *self)
     return self->_driver->write();
 }
 
+bool bc_led_strip_is_ready(bc_led_strip_t *self)
+{
+    return self->_driver->is_ready();
+}
+
 void bc_led_strip_set_brightness(bc_led_strip_t *self, uint8_t brightness)
 {
     self->_brightness = brightness;

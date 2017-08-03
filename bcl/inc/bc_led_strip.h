@@ -24,6 +24,7 @@ typedef struct
     void (*set_pixel)(int position, uint32_t color);
     void (*set_pixel_rgbw)(int position, uint8_t r, uint8_t g, uint8_t b, uint8_t w);
     bool (*write)(void);
+    bool (*is_ready)(void);
 
 } bc_led_strip_driver_t;
 
@@ -72,6 +73,8 @@ bool bc_led_strip_set_rgbw_framebuffer(bc_led_strip_t *self, uint8_t *framebuffe
 void bc_led_strip_fill(bc_led_strip_t *self, uint32_t color);
 
 bool bc_led_strip_write(bc_led_strip_t *self);
+
+bool bc_led_strip_is_ready(bc_led_strip_t *self);
 
 void bc_led_strip_set_brightness(bc_led_strip_t *self, uint8_t brightness);
 
