@@ -3,11 +3,11 @@
 
 #include <bc_tick.h>
 
-//! @addtogroup bc_module_batery bc_module_batery
-//! @brief Driver for Batery Module
+//! @addtogroup bc_module_battery bc_module_battery
+//! @brief Driver for Battery Module
 //! @{
 
-//! @brief Batery Module format
+//! @brief Battery Module format
 
 typedef enum
 {
@@ -19,7 +19,7 @@ typedef enum
 
 } bc_module_battery_format_t;
 
-//! @brief Batery Module event
+//! @brief Battery Module event
 
 typedef enum
 {
@@ -34,8 +34,8 @@ typedef enum
 
 } bc_module_battery_event_t;
 
-//! @brief Initialize Batery Module
-//! @param[in] format Batery Module format
+//! @brief Initialize Battery Module
+//! @param[in] format Battery Module format
 
 void bc_module_battery_init(bc_module_battery_format_t format);
 
@@ -62,14 +62,14 @@ void bc_module_battery_set_threshold_levels(float level_low_threshold, float lev
 
 bool bc_module_battery_measure(void);
 
-//! @brief Get Batery Module voltage
+//! @brief Get Battery Module voltage
 //! @param[out] voltage Measured voltage
 //! @return true On success
 //! @return false On failure
 
-bool bc_module_battery_update_voltage_on_battery(float *voltage);
+bool bc_module_battery_get_voltage(float *voltage);
 
-//! @brief Get Batery Module charge in percents
+//! @brief Get Battery Module charge in percents
 //! @param[out] percentage Measured charge
 //! @return true On success
 //! @return false On failure
