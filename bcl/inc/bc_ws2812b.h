@@ -25,6 +25,8 @@ void bc_ws2812b_set_pixel_from_uint32(int position, uint32_t color);
 
 bool bc_ws2812b_write(void);
 
+bool bc_ws2812b_is_ready(void);
+
 //! @}
 
 #endif // _BC_WS2812B_H

@@ -12,6 +12,7 @@ void bc_led_strip_init(bc_led_strip_t *self, const bc_led_strip_driver_t *driver
     self->_driver = driver;
     self->_effect.task_id = BC_LED_STRIP_NULL_TASK;
     self->_driver->init(self->_buffer);
+    self->_brightness = 255;
 }
 
 void bc_led_strip_set_event_handler(bc_led_strip_t *self, void (*event_handler)(bc_led_strip_t *, bc_led_strip_event_t, void *), void *event_param)
@@ -32,11 +33,25 @@ bc_led_strip_type_t bc_led_strip_get_strip_type(bc_led_strip_t *self)
 
 void bc_led_strip_set_pixel(bc_led_strip_t *self, int position, uint32_t color)
 {
-    self->_driver->set_pixel(position, color);
+    if (self->_brightness != 255)
+    {
+        bc_led_strip_set_pixel_rgbw(self, position, color >> 24, color >> 16, color >> 8, color);
+    }
+    else
+    {
+        self->_driver->set_pixel(position, color);
+    }
 }
 
 void bc_led_strip_set_pixel_rgbw(bc_led_strip_t *self, int position, uint8_t r, uint8_t g, uint8_t b, uint8_t w)
 {
+    if (self->_brightness != 255)
+    {
+        r = ((uint16_t) r * self->_brightness) >> 8;
+        g = ((uint16_t) g * self->_brightness) >> 8;
+        b = ((uint16_t) b * self->_brightness) >> 8;
+        w = ((uint16_t) w * self->_brightness) >> 8;
+    }
     self->_driver->set_pixel_rgbw(position, r, g, b, w);
 }
 
@@ -71,7 +86,7 @@ void bc_led_strip_fill(bc_led_strip_t *self, uint32_t color)
 {
     for (int i = 0; i < self->_buffer->count; i++)
     {
-        self->_driver->set_pixel(i, color);
+        bc_led_strip_set_pixel(self, i, color);
     }
 }
 
@@ -80,6 +95,15 @@ bool bc_led_strip_write(bc_led_strip_t *self)
     return self->_driver->write();
 }
 
+bool bc_led_strip_is_ready(bc_led_strip_t *self)
+{
+    return self->_driver->is_ready();
+}
+
+void bc_led_strip_set_brightness(bc_led_strip_t *self, uint8_t brightness)
+{
+    self->_brightness = brightness;
+}
 
 void bc_led_strip_effect_stop(bc_led_strip_t *self)
 {
@@ -173,7 +197,7 @@ static void _bc_led_strip_effect_rainbow_task(void *param)
     bc_led_strip_t *self = (bc_led_strip_t *)param;
 
     for(int i = 0; i< self->_buffer->count; i++) {
-        self->_driver->set_pixel(i, _bc_led_strip_wheel((i + self->_effect.round) & 255));
+        bc_led_strip_set_pixel(self, i, _bc_led_strip_wheel((i + self->_effect.round) & 255));
     }
 
     self->_effect.round++;
@@ -198,7 +222,7 @@ static void _bc_led_strip_effect_rainbow_cycle_task(void *param)
     bc_led_strip_t *self = (bc_led_strip_t *)param;
 
     for(int i = 0; i< self->_buffer->count; i++) {
-        self->_driver->set_pixel(i, _bc_led_strip_wheel(((i * 256 / self->_buffer->count) + self->_effect.round) & 255));
+        bc_led_strip_set_pixel(self, i, _bc_led_strip_wheel(((i * 256 / self->_buffer->count) + self->_effect.round) & 255));
     }
 
     self->_effect.round++;
@@ -222,7 +246,7 @@ static void _bc_led_strip_effect_color_wipe_task(void *param)
 {
     bc_led_strip_t *self = (bc_led_strip_t *)param;
 
-    self->_driver->set_pixel(self->_effect.led++, self->_effect.color);
+    bc_led_strip_set_pixel(self, self->_effect.led++, self->_effect.color);
 
     if (self->_effect.led == self->_buffer->count)
     {
@@ -251,8 +275,8 @@ static void _bc_led_strip_effect_theater_chase_task(void *param)
 {
     bc_led_strip_t *self = (bc_led_strip_t *)param;
 
-    for (int i = 0; i < self->_buffer->count; i += 3) {
-        self->_driver->set_pixel(i + self->_effect.led, 0);    //turn every third pixel off
+    for (int i = self->_effect.led; i < self->_buffer->count; i += 3) {
+        self->_driver->set_pixel(i, 0);    //turn every third pixel off
     }
 
     self->_effect.led++;
@@ -262,8 +286,8 @@ static void _bc_led_strip_effect_theater_chase_task(void *param)
         self->_effect.led = 0;
     }
 
-    for (int i = 0; i < self->_buffer->count; i += 3) {
-        self->_driver->set_pixel(i + self->_effect.led, self->_effect.color);    //turn every third pixel on
+    for (int i = self->_effect.led ; i < self->_buffer->count; i += 3) {
+        bc_led_strip_set_pixel(self, i, self->_effect.color);    //turn every third pixel on
     }
 
     self->_driver->write();
@@ -288,8 +312,8 @@ static void _bc_led_strip_effect_theater_chase_rainbow_task(void *param)
 {
     bc_led_strip_t *self = (bc_led_strip_t *)param;
 
-    for (int i = 0; i < self->_buffer->count; i += 3) {
-        self->_driver->set_pixel(i + self->_effect.led, 0);    //turn every third pixel off
+    for (int i = self->_effect.led; i < self->_buffer->count; i += 3) {
+        self->_driver->set_pixel(i, 0);    //turn every third pixel off
     }
 
     self->_effect.led++;
@@ -299,8 +323,8 @@ static void _bc_led_strip_effect_theater_chase_rainbow_task(void *param)
         self->_effect.led = 0;
     }
 
-    for (int i = 0; i < self->_buffer->count; i += 3) {
-        self->_driver->set_pixel(i + self->_effect.led, _bc_led_strip_wheel((i + self->_effect.round) % 255) );    //turn every third pixel on
+    for (int i = self->_effect.led; i < self->_buffer->count; i += 3) {
+        bc_led_strip_set_pixel(self, i, _bc_led_strip_wheel((i + self->_effect.round) % 255) );    //turn every third pixel on
     }
 
     self->_driver->write();
@@ -322,7 +346,7 @@ void bc_led_strip_effect_theater_chase_rainbow(bc_led_strip_t *self, bc_tick_t w
     self->_effect.task_id = bc_scheduler_register(_bc_led_strip_effect_theater_chase_rainbow_task, self, 0);
 }
 
-void bc_led_strip_thermometer(bc_led_strip_t *self, float temperature, float min, float max, uint8_t brightness, uint8_t white)
+void bc_led_strip_thermometer(bc_led_strip_t *self, float temperature, float min, float max, uint8_t white)
 {
     temperature -= min;
 
@@ -346,21 +370,21 @@ void bc_led_strip_thermometer(bc_led_strip_t *self, float temperature, float min
     {
         _bc_led_strip_get_heat_map_color((float)i / self->_buffer->count, &red, &green, &blue);
 
-        bc_led_strip_set_pixel_rgbw(self, i, brightness * red, brightness * green, brightness * blue, 0);
+        self->_driver->set_pixel_rgbw(i, self->_brightness * red, self->_brightness * green, self->_brightness * blue, 0);
     }
 
     if (self->_buffer->type == BC_LED_STRIP_TYPE_RGBW)
     {
         for (int i = max_i; i < self->_buffer->count; i++)
         {
-           bc_led_strip_set_pixel_rgbw(self, i, 0, 0, 0, white);
+            self->_driver->set_pixel_rgbw(i, 0, 0, 0, white);
         }
     }
     else
     {
         for (int i = max_i; i < self->_buffer->count; i++)
         {
-           bc_led_strip_set_pixel_rgbw(self, i, white, white, white, 0);
+            self->_driver->set_pixel_rgbw(i, white, white, white, 0);
         }
     }
 

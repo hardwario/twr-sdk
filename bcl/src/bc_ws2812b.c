@@ -225,6 +225,11 @@ bool bc_ws2812b_write(void)
     return true;
 }
 
+bool bc_ws2812b_is_ready(void)
+{
+    return !_bc_ws2812b.transfer;
+}
+
 void _bc_ws2812b_dma_transfer_complete_handler(DMA_HandleTypeDef *dma_handle)
 {
     (void)dma_handle;
@@ -278,9 +283,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     TIM2->EGR = TIM_EGR_UG;
     __HAL_TIM_CLEAR_FLAG(&_bc_ws2812b_timer2_handle, TIM_FLAG_UPDATE);
 
-    // set transfer_complete flag
-    _bc_ws2812b.transfer = false;
-
     bc_scheduler_plan_now(_bc_ws2812b.task_id);
 }
 
@@ -294,6 +296,9 @@ static void _bc_ws2812b_task(void *param)
     (void) param;
 
     bc_module_core_pll_disable();
+
+    // set transfer_complete flag
+    _bc_ws2812b.transfer = false;
 
     if (_bc_ws2812b.event_handler != NULL)
     {

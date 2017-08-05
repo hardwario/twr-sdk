@@ -24,6 +24,7 @@ typedef struct
     void (*set_pixel)(int position, uint32_t color);
     void (*set_pixel_rgbw)(int position, uint8_t r, uint8_t g, uint8_t b, uint8_t w);
     bool (*write)(void);
+    bool (*is_ready)(void);
 
 } bc_led_strip_driver_t;
 
@@ -49,6 +50,7 @@ struct bc_led_strip_t
         bc_scheduler_task_id_t task_id;
 
     } _effect;
+    uint8_t _brightness;
     void (*_event_handler)(bc_led_strip_t *, bc_led_strip_event_t, void *);
     void *_event_param;
 
@@ -72,6 +74,10 @@ void bc_led_strip_fill(bc_led_strip_t *self, uint32_t color);
 
 bool bc_led_strip_write(bc_led_strip_t *self);
 
+bool bc_led_strip_is_ready(bc_led_strip_t *self);
+
+void bc_led_strip_set_brightness(bc_led_strip_t *self, uint8_t brightness);
+
 void bc_led_strip_effect_stop();
 
 void bc_led_strip_effect_test(bc_led_strip_t *self);
@@ -89,6 +95,6 @@ void bc_led_strip_effect_theater_chase(bc_led_strip_t *self, uint32_t color, bc_
 
 void bc_led_strip_effect_theater_chase_rainbow(bc_led_strip_t *self, bc_tick_t wait);
 
-void bc_led_strip_thermometer(bc_led_strip_t *self, float temperature, float min, float max, uint8_t brightness, uint8_t white);
+void bc_led_strip_thermometer(bc_led_strip_t *self, float temperature, float min, float max, uint8_t white);
 
 #endif // _BC_LED_STRIP_H
