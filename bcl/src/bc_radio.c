@@ -330,9 +330,9 @@ bool bc_radio_pub_co2(float *concentration)
 
 bool bc_radio_pub_buffer(void *buffer, size_t length)
 {
-    uint8_t qbuffer[1 + BC_SPIRIT1_MAX_PACKET_SIZE - 8];
+    uint8_t qbuffer[BC_SPIRIT1_MAX_PACKET_SIZE - 8];
 
-    if (length > (1 + BC_SPIRIT1_MAX_PACKET_SIZE - 8))
+    if (length > sizeof(qbuffer) - 1)
     {
         return false;
     }
@@ -349,7 +349,6 @@ bool bc_radio_pub_buffer(void *buffer, size_t length)
     bc_scheduler_plan_now(_bc_radio.task_id);
 
     return true;
-
 }
 
 static void _bc_radio_task(void *param)
