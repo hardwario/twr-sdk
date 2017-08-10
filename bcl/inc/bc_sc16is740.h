@@ -53,7 +53,7 @@ bool bc_sc16is740_reset_fifo(bc_sc16is740_t *self, bc_sc16is740_fifo_t fifo);
 //! @return true On success
 //! @return false On failure
 
-bool bc_sc16is740_get_spaces_available(bc_sc16is740_t *self, uint8_t *spaces_available);
+bool bc_sc16is740_get_spaces_available(bc_sc16is740_t *self, size_t *spaces_available);
 
 //! @brief Write
 //! @param[in] self Instance
@@ -61,7 +61,7 @@ bool bc_sc16is740_get_spaces_available(bc_sc16is740_t *self, uint8_t *spaces_ava
 //! @param[in] length Number of bytes to be written
 //! @return Number of bytes written
 
-uint8_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length);
+size_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, size_t length);
 
 //! @brief Get RX FIXO available data
 //! @param[in] self Instance
@@ -69,7 +69,7 @@ uint8_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length
 //! @return true On success
 //! @return false On failure
 
-bool bc_sc16is740_available(bc_sc16is740_t *self, uint8_t *available);
+bool bc_sc16is740_available(bc_sc16is740_t *self, size_t *available);
 
 //! @brief Read
 //! @param[in] self Instance
@@ -78,7 +78,7 @@ bool bc_sc16is740_available(bc_sc16is740_t *self, uint8_t *available);
 //! @param[in] timeout Write operation timeout in ticks
 //! @return Number of bytes read
 
-uint8_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length, bc_tick_t timeout);
+size_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, size_t length, bc_tick_t timeout);
 
 //! @}
 

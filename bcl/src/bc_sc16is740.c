@@ -85,28 +85,37 @@ bool bc_sc16is740_reset_fifo(bc_sc16is740_t *self, bc_sc16is740_fifo_t fifo)
     return bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_FCR, register_fcr);
 }
 
-bool bc_sc16is740_get_spaces_available(bc_sc16is740_t *self, uint8_t *spaces_available)
+bool bc_sc16is740_get_spaces_available(bc_sc16is740_t *self, size_t *spaces_available)
 {
-    return bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_TXLVL, spaces_available);
+    uint8_t value;
+
+    if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_TXLVL, &value))
+    {
+        return false;
+    }
+
+    *spaces_available = value;
+
+    return true;
 }
 
-uint8_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length)
+size_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, size_t length)
 {
-    uint8_t spaces_available;
+    size_t spaces_available;
 
     if (length > _BC_SC16IS740_FIFO_SIZE)
     {
-        return false;
+        return 0;
     }
 
     if (!bc_sc16is740_get_spaces_available(self, &spaces_available))
     {
-        return false;
+        return 0;
     }
 
     if (spaces_available < length)
     {
-        return false;
+        return 0;
     }
 
     bc_i2c_memory_transfer_t transfer;
@@ -124,21 +133,29 @@ uint8_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length
     return length;
 }
 
-bool bc_sc16is740_available(bc_sc16is740_t *self, uint8_t *available)
+bool bc_sc16is740_available(bc_sc16is740_t *self, size_t *available)
 {
-    return bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_RXLVL, available);
+    uint8_t value;
+
+    if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_RXLVL, &value))
+    {
+        return false;
+    }
+
+    *available = value;
+
+    return true;
 }
 
-uint8_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length, bc_tick_t timeout)
+size_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, size_t length, bc_tick_t timeout)
 {
-    uint8_t read_length = 0;
+    size_t read_length = 0;
 
-    // TODO Should be tick_timeout and special exception BC_TICK_INFINITY must be handled
-    bc_tick_t stop = bc_tick_get() + timeout;
+    bc_tick_t stop = (timeout != BC_TICK_INFINITY) ? bc_tick_get() + timeout : BC_TICK_INFINITY;
 
-    while (bc_tick_get() < stop)
+    do
     {
-        uint8_t available;
+        size_t available;
 
         if (!bc_sc16is740_available(self, &available))
         {
@@ -176,11 +193,8 @@ uint8_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, uint8_t length,
                 return read_length;
             }
         }
-        else
-        {
-            // TODO Sleep or rewrite to task and callback
-        }
-    }
+
+    } while (bc_tick_get() > stop);
 
     return read_length;
 }
