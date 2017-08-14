@@ -44,7 +44,7 @@ bool bc_tca9534a_write_port(bc_tca9534a_t *self, uint8_t value)
     return true;
 }
 
-bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_state_t *value)
+bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, int *value)
 {
     uint8_t port;
 
@@ -53,25 +53,18 @@ bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534
         return false;
     }
 
-    if (((port >> (uint8_t) pin) & 1) == 0)
-    {
-        *value = BC_TCA9534A_PIN_STATE_LOW;
-    }
-    else
-    {
-        *value = BC_TCA9534A_PIN_STATE_HIGH;
-    }
+    *value = ((port >> (uint8_t) pin) & 0x01);
 
     return true;
 }
 
-bool bc_tca9534a_write_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_state_t value)
+bool bc_tca9534a_write_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, int value)
 {
     uint8_t port = self->_output_port;
 
     port &= ~(1 << (uint8_t) pin);
 
-    if (value != BC_TCA9534A_PIN_STATE_LOW)
+    if (value != 0)
     {
         port |= 1 << (uint8_t) pin;
     }

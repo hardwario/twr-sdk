@@ -4,6 +4,9 @@
 #include <bc_i2c.h>
 #include <bc_tick.h>
 
+#define BC_TCA9534A_PIN_STATE_LOW   0
+#define BC_TCA9534A_PIN_STATE_HIGH  1
+
 //! @addtogroup bc_tca9534a bc_tca9534a
 //! @brief Driver for TCA9534A I/O expander
 //! @{
@@ -33,13 +36,6 @@ typedef enum
 } bc_tca9534a_pin_direction_t;
 
 //! @brief Pin state
-
-typedef enum
-{
-    BC_TCA9534A_PIN_STATE_LOW = 0,
-    BC_TCA9534A_PIN_STATE_HIGH = 1
-
-} bc_tca9534a_state_t;
 
 //! @brief TCA9534A instance
 
@@ -82,7 +78,7 @@ bool bc_tca9534a_write_port(bc_tca9534a_t *self, uint8_t state);
 //! @return true On success
 //! @return false On failure
 
-bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_state_t *state);
+bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, int *state);
 
 //! @brief Write pin state
 //! @param[in] self Instance
@@ -91,7 +87,7 @@ bool bc_tca9534a_read_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534
 //! @return true On success
 //! @return false On failure
 
-bool bc_tca9534a_write_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, bc_tca9534a_state_t state);
+bool bc_tca9534a_write_pin(bc_tca9534a_t *self, bc_tca9534a_pin_t pin, int state);
 
 //! @brief Get direction of all pins
 //! @param[in] self Instance
