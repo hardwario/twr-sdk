@@ -123,8 +123,8 @@ bc_module_sensor_pull_t bc_module_sensor_get_pull(bc_module_sensor_channel_t cha
 {
     // TODO Implement better
 
-    bc_tca9534a_state_t weak;
-    bc_tca9534a_state_t strong;
+    int weak;
+    int strong;
     bc_gpio_pull_t internal;
 
     bc_tca9534a_read_pin(&_bc_module_sensor.tca9534a, _bc_module_sensor_channel_virtual_56r_lut[channel], &weak);
