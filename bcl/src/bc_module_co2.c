@@ -48,7 +48,7 @@ static struct
     bc_tca9534a_t tca9534a;
     bc_sc16is740_t sc16is740;
     bc_co2_sensor_t sensor;
-    bc_co2_sensor_driver_t driver;
+    const bc_co2_sensor_driver_t driver;
 
 } _bc_module_co2 = {
     .driver = {
@@ -161,14 +161,14 @@ static bool _bc_module_co2_enable(bool state)
 
 static bool _bc_module_co2_rdy(bool *state)
 {
-    bc_tca9534a_state_t rdy_pin_value;
+    int rdy_pin_value;
 
     if (!bc_tca9534a_read_pin(&_bc_module_co2.tca9534a, _BC_MODULE_CO2_PIN_RDY, &rdy_pin_value))
     {
         return false;
     }
 
-    *state = rdy_pin_value == BC_TCA9534A_PIN_STATE_HIGH;
+    *state = rdy_pin_value == 1;
 
     return true;
 }
