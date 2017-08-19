@@ -4,6 +4,7 @@
 #include <bc_hts221.h>
 #include <bc_hdc2080.h>
 #include <bc_sht20.h>
+#include <bc_sht30.h>
 
 //! @addtogroup bc_tag_humidity bc_tag_humidity
 //! @brief Driver for BigClown Humidity Tag
@@ -20,7 +21,11 @@ typedef enum
     BC_TAG_HUMIDITY_REVISION_R2 = 1,
 
     //! @brief Hardware revision R3
-    BC_TAG_HUMIDITY_REVISION_R3 = 2
+    BC_TAG_HUMIDITY_REVISION_R3 = 2,
+
+    //! @brief Hardware revision R4
+    BC_TAG_HUMIDITY_REVISION_R4 = 3
+
 
 } bc_tag_humidity_revision_t;
 
@@ -48,7 +53,7 @@ typedef enum
 
 } bc_tag_humidity_event_t;
 
-//! @brief BigClown Temperature Tag instance
+//! @brief BigClown Humidity Tag instance
 
 typedef struct bc_tag_humidity_t bc_tag_humidity_t;
 
@@ -64,6 +69,7 @@ struct bc_tag_humidity_t
         bc_hts221_t hts221;
         bc_hdc2080_t hdc2080;
         bc_sht20_t sht20;
+        bc_sht30_t sht30;
     } _sensor;
 };
 
