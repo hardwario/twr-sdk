@@ -6,7 +6,8 @@
 #define VREFINT_CAL_ADDR 0x1FF80078
 
 #define BC_ADC_CHANNEL_INTERNAL_REFERENCE 6
-#define BC_ADC_CHANNEL_NONE ((bc_adc_channel_t)7)
+#define BC_ADC_CHANNEL_NONE ((bc_adc_channel_t)(-1))
+#define BC_ADC_CHANNEL_COUNT ((bc_adc_channel_t)7)
 
 typedef enum
 {
@@ -21,6 +22,7 @@ typedef struct
     bc_adc_format_t format;
     void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *);
     void *event_param;
+    bool pending;
     uint32_t chselr;
 
 } bc_adc_channel_config_t;
@@ -47,13 +49,15 @@ _bc_adc =
         [BC_ADC_CHANNEL_A3].chselr = ADC_CHSELR_CHSEL3,
         [BC_ADC_CHANNEL_A4].chselr = ADC_CHSELR_CHSEL4,
         [BC_ADC_CHANNEL_A5].chselr = ADC_CHSELR_CHSEL5,
-        [BC_ADC_CHANNEL_INTERNAL_REFERENCE] = {BC_ADC_FORMAT_16_BIT, NULL, NULL, ADC_CHSELR_CHSEL17 }
+        [BC_ADC_CHANNEL_INTERNAL_REFERENCE] = {BC_ADC_FORMAT_16_BIT, NULL, NULL, false, ADC_CHSELR_CHSEL17 }
     }
 };
 
 static inline void _bc_adc_calibration(void);
 
 static void _bc_adc_task(void *param);
+
+static inline bool _bc_adc_get_pending(bc_adc_channel_t *next ,bc_adc_channel_t start);
 
 void bc_adc_init(bc_adc_channel_t channel, bc_adc_format_t format)
 {
@@ -65,14 +69,14 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_format_t format)
         // Errata workaround
         RCC->APB2ENR;
 
-        // Set auto-off mode, left align (TODO Deeper investigation of the align)
+        // Set auto-off mode, left align
         ADC1->CFGR1 |= ADC_CFGR1_AUTOFF | ADC_CFGR1_ALIGN;
 
-        // Enable Over-sampler with ratio (256x) and set PCLK/2 as a clock source
-        ADC1->CFGR2 = ADC_CFGR2_OVSE | ADC_CFGR2_OVSR_2 | ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0 | ADC_CFGR2_OVSS_2 | ADC_CFGR2_CKMODE_0;
+        // Enable Over-sampler with ratio (16x) and set PCLK/2 as a clock source
+        ADC1->CFGR2 = ADC_CFGR2_OVSE | ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0 | ADC_CFGR2_CKMODE_0;
 
-        // Sampling time selection (160.5 cycles)
-        ADC1->SMPR |= ADC_SMPR_SMP_2 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0;
+        // Sampling time selection (12.5 cycles)
+        ADC1->SMPR |= ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0;
 
         // Enable ADC voltage regulator
         ADC1->CR |= ADC_CR_ADVREGEN;
@@ -154,10 +158,13 @@ bool bc_adc_async_read(bc_adc_channel_t channel)
     // If ongoing conversion ...
     if (_bc_adc.channel_in_progress != BC_ADC_CHANNEL_NONE)
     {
-        return false;
+        _bc_adc.channel_table[channel].pending = true;
+
+        return true;
     }
 
     _bc_adc.channel_in_progress = channel;
+    _bc_adc.channel_table[channel].pending = false;
 
     // Update internal state
     _bc_adc.state = BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_BEGIN;
@@ -317,6 +324,7 @@ static void _bc_adc_task(void *param)
 
     bc_adc_channel_config_t *adc = &_bc_adc.channel_table[_bc_adc.channel_in_progress];
     bc_adc_channel_t pending_result_channel;
+    bc_adc_channel_t next;
 
     // Update pending channel result
     pending_result_channel = _bc_adc.channel_in_progress;
@@ -324,6 +332,42 @@ static void _bc_adc_task(void *param)
     // Release ADC for further conversion
     _bc_adc.channel_in_progress = BC_ADC_CHANNEL_NONE;
 
+    bc_irq_disable();
+
+    // Get pending
+    if (_bc_adc_get_pending(&next, pending_result_channel) == true)
+    {
+        bc_adc_async_read(next);
+    }
+
+    bc_irq_enable();
+
     // Perform event call-back
     adc->event_handler(pending_result_channel, BC_ADC_EVENT_DONE, adc->event_param);
+}
+
+static inline bool _bc_adc_get_pending(bc_adc_channel_t *next ,bc_adc_channel_t start)
+{
+    for (unsigned int i = start + 1; i != start; ++i)
+    {
+        if(i == BC_ADC_CHANNEL_COUNT)
+        {
+            if (start == BC_ADC_CHANNEL_A0)
+            {
+                break;
+            }
+            else
+            {
+                i = BC_ADC_CHANNEL_A0;
+            }
+        }
+
+        if (_bc_adc.channel_table[i].pending == true)
+        {
+            *next = i;
+            return true;
+        }
+    }
+
+    return false;
 }
