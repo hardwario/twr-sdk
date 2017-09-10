@@ -14,6 +14,18 @@
 
 void bc_onewire_init(bc_gpio_channel_t channel);
 
+//! @brief Start transaction, enable pll and run timer
+//! @return true On success
+//! @return false On failure
+
+bool bc_onewire_transaction_start(void);
+
+//! @brief Stop transaction
+//! @return true On success
+//! @return false On failure
+
+bool bc_onewire_transaction_stop(void);
+
 //! @brief Reset the 1-Wire bus and return the presence of any device
 //! @param channel GPIO channel
 //! @return true Device present
