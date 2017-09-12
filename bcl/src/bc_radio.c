@@ -197,6 +197,21 @@ bool bc_radio_peer_device_remove(uint64_t device_address)
 	return true;
 }
 
+bool bc_radio_peer_device_purge_all(void)
+{
+	for (int i = 0; i < BC_RADIO_MAX_DEVICES; i++)
+	{
+		if (_bc_radio.peer_devices[i].address != 0)
+		{
+			if (!bc_radio_peer_device_remove(_bc_radio.peer_devices[i].address))
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 void bc_radio_get_peer_devices_address(uint64_t *device_address, int length)
 {
 	for (int i = 0; (i < BC_RADIO_MAX_DEVICES) && (i < length); i++)
@@ -553,7 +568,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
                 if (!bc_radio_peer_device_add(_bc_radio.peer_device_address))
                 {
-                	bc_radio_peer_device_remove(_bc_radio.peer_device_address);
+                    bc_radio_peer_device_remove(_bc_radio.peer_device_address);
                 }
                 return;
             }

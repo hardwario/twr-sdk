@@ -35,6 +35,8 @@ bool bc_radio_peer_device_add(uint64_t device_address);
 
 bool bc_radio_peer_device_remove(uint64_t device_address);
 
+bool bc_radio_peer_device_purge_all(void);
+
 void bc_radio_get_peer_devices_address(uint64_t *device_address, int length);
 
 uint64_t bc_radio_get_device_address(void);
