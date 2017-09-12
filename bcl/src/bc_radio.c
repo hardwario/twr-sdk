@@ -7,6 +7,7 @@
 #include <bc_i2c.h>
 
 #define _BC_RADIO_EEPROM_PEER_DEVICE_ADDRESS 0x00
+#define _BC_RADIO_SCAN_CACHE_LENGTH	4
 
 typedef enum
 {
@@ -62,6 +63,12 @@ static struct
     uint64_t peer_device_address;
 
     bool listening;
+    bool scan;
+    uint64_t scan_cache[_BC_RADIO_SCAN_CACHE_LENGTH];
+    uint8_t scan_length;
+    uint8_t scan_head;
+
+    bool automatic_pairing;
 
 } _bc_radio;
 
@@ -197,12 +204,50 @@ bool bc_radio_peer_device_remove(uint64_t device_address)
 	return true;
 }
 
+bool bc_radio_peer_device_purge_all(void)
+{
+	for (int i = 0; i < BC_RADIO_MAX_DEVICES; i++)
+	{
+		if (_bc_radio.peer_devices[i].address != 0)
+		{
+			if (!bc_radio_peer_device_remove(_bc_radio.peer_devices[i].address))
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 void bc_radio_get_peer_devices_address(uint64_t *device_address, int length)
 {
 	for (int i = 0; (i < BC_RADIO_MAX_DEVICES) && (i < length); i++)
 	{
 		device_address[i] = _bc_radio.peer_devices[i].address;
 	}
+}
+
+void bc_radio_scan_start(void)
+{
+	memset(_bc_radio.scan_cache, 0x00, sizeof(_bc_radio.scan_cache));
+	_bc_radio.scan_length = 0;
+	_bc_radio.scan_head = 0;
+	_bc_radio.scan = true;
+}
+
+void bc_radio_scan_stop(void)
+{
+	_bc_radio.scan = false;
+}
+
+void bc_radio_automatic_pairing_start(void)
+{
+	_bc_radio.automatic_pairing = true;
+}
+
+void bc_radio_automatic_pairing_stop(void)
+{
+	_bc_radio.automatic_pairing = false;
 }
 
 uint64_t bc_radio_get_device_address(void)
@@ -508,6 +553,31 @@ static void _bc_radio_task(void *param)
     }
 }
 
+static bool _bc_radio_scan_cache_push(void)
+{
+	for (uint8_t i = 0; i < _bc_radio.scan_length; i++)
+	{
+		if (_bc_radio.scan_cache[i] == _bc_radio.peer_device_address)
+		{
+			return false;
+		}
+	}
+
+	if (_bc_radio.scan_length < _BC_RADIO_SCAN_CACHE_LENGTH)
+	{
+		_bc_radio.scan_length++;
+	}
+
+	_bc_radio.scan_cache[_bc_radio.scan_head++] = _bc_radio.peer_device_address;
+
+	if (_bc_radio.scan_head == _BC_RADIO_SCAN_CACHE_LENGTH)
+	{
+		_bc_radio.scan_head = 0;
+	}
+
+	return true;
+}
+
 static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *event_param)
 {
     (void) event_param;
@@ -549,12 +619,19 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
             if (_bc_radio.enrollment_mode && length == 9 && buffer[8] == BC_RADIO_HEADER_ENROLL)
             {
-                _bc_radio.enrollment_mode = false;
+            	if (_bc_radio.automatic_pairing)
+            	{
+            		bc_radio_peer_device_add(_bc_radio.peer_device_address);
+            	}
+            	else
+            	{
+            		_bc_radio.enrollment_mode = false;
 
-                if (!bc_radio_peer_device_add(_bc_radio.peer_device_address))
-                {
-                	bc_radio_peer_device_remove(_bc_radio.peer_device_address);
-                }
+					if (!bc_radio_peer_device_add(_bc_radio.peer_device_address))
+					{
+						bc_radio_peer_device_remove(_bc_radio.peer_device_address);
+					}
+            	}
                 return;
             }
 
@@ -576,7 +653,8 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
             	return;
             }
 
-            for (int i = 0; i < BC_RADIO_MAX_DEVICES; i++)
+            int i;
+            for (i = 0; i < BC_RADIO_MAX_DEVICES; i++)
             {
                 if (_bc_radio.peer_device_address == _bc_radio.peer_devices[i].address)
                 {
@@ -596,9 +674,25 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                             bc_queue_put(&_bc_radio.rx_queue, buffer, length);
 
                             bc_scheduler_plan_now(_bc_radio.task_id);
+
+                            return;
                         }
                     }
                 }
+            }
+
+            if (i == BC_RADIO_MAX_DEVICES)
+            {
+                if (_bc_radio.scan && (_bc_radio.event_handler != NULL) && _bc_radio_scan_cache_push())
+                {
+    				_bc_radio.event_handler(BC_RADIO_EVENT_SCAN_FIND_DEVICE, _bc_radio.event_param);
+                }
+
+                if (_bc_radio.automatic_pairing)
+    			{
+    				bc_radio_peer_device_add(_bc_radio.peer_device_address);
+    			}
+
             }
         }
     }
