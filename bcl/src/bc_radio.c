@@ -68,6 +68,8 @@ static struct
     uint8_t scan_length;
     uint8_t scan_head;
 
+    bool automatic_pairing;
+
 } _bc_radio;
 
 static void _bc_radio_task(void *param);
@@ -236,6 +238,16 @@ void bc_radio_scan_start(void)
 void bc_radio_scan_stop(void)
 {
 	_bc_radio.scan = false;
+}
+
+void bc_radio_automatic_pairing_start(void)
+{
+	_bc_radio.automatic_pairing = true;
+}
+
+void bc_radio_automatic_pairing_stop(void)
+{
+	_bc_radio.automatic_pairing = false;
 }
 
 uint64_t bc_radio_get_device_address(void)
@@ -607,12 +619,19 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
             if (_bc_radio.enrollment_mode && length == 9 && buffer[8] == BC_RADIO_HEADER_ENROLL)
             {
-               _bc_radio.enrollment_mode = false;
+            	if (_bc_radio.automatic_pairing)
+            	{
+            		bc_radio_peer_device_add(_bc_radio.peer_device_address);
+            	}
+            	else
+            	{
+            		_bc_radio.enrollment_mode = false;
 
-                if (!bc_radio_peer_device_add(_bc_radio.peer_device_address))
-                {
-                    bc_radio_peer_device_remove(_bc_radio.peer_device_address);
-                }
+					if (!bc_radio_peer_device_add(_bc_radio.peer_device_address))
+					{
+						bc_radio_peer_device_remove(_bc_radio.peer_device_address);
+					}
+            	}
                 return;
             }
 
@@ -664,6 +683,11 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
             if (i == BC_RADIO_MAX_DEVICES)
             {
+                if (_bc_radio.scan && (_bc_radio.event_handler != NULL) && _bc_radio_scan_cache_push())
+                {
+    				_bc_radio.event_handler(BC_RADIO_EVENT_SCAN_FIND_DEVICE, _bc_radio.event_param);
+                }
+
                 if (_bc_radio.automatic_pairing)
     			{
     				bc_radio_peer_device_add(_bc_radio.peer_device_address);

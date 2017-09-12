@@ -44,6 +44,10 @@ void bc_radio_scan_start(void);
 
 void bc_radio_scan_stop(void);
 
+void bc_radio_automatic_pairing_start(void);
+
+void bc_radio_automatic_pairing_stop(void);
+
 uint64_t bc_radio_get_device_address(void);
 
 uint64_t bc_radio_get_event_device_address(void);
