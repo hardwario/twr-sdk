@@ -67,7 +67,9 @@ bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sen
     uint8_t port_actual;
     uint8_t port_new;
 
-    bc_tca9534a_read_port(&_bc_module_sensor.tca9534a, &port_actual);
+    port_actual = _bc_module_sensor.tca9534a._output_port;
+
+//    bc_tca9534a_read_port(&_bc_module_sensor.tca9534a, &port_actual);
 
     port_new = port_actual | _bc_module_sensor_channel_virtual_4k7_lut[channel] | _bc_module_sensor_channel_virtual_56r_lut[channel];
 

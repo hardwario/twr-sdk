@@ -1,4 +1,4 @@
-#ifndef _BC_1WIRE_H
+#ifndef _BC_ONEWIRE_H
 #define _BC_ONEWIRE_H
 
 #include <bc_gpio.h>
@@ -13,6 +13,18 @@
 //! @param channel GPIO channel
 
 void bc_onewire_init(bc_gpio_channel_t channel);
+
+//! @brief Start transaction, enable pll and run timer
+//! @return true On success
+//! @return false On failure
+
+bool bc_onewire_transaction_start(void);
+
+//! @brief Stop transaction
+//! @return true On success
+//! @return false On failure
+
+bool bc_onewire_transaction_stop(void);
 
 //! @brief Reset the 1-Wire bus and return the presence of any device
 //! @param channel GPIO channel
@@ -105,4 +117,4 @@ uint16_t bc_onewire_crc16(const void *buffer, size_t length, uint16_t crc);
 
 //! @}
 
-#endif // _BC_1WIRE_H
+#endif // _BC_ONEWIRE_H

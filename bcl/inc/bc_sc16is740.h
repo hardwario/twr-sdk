@@ -4,7 +4,7 @@
 #include <bc_i2c.h>
 #include <bc_tick.h>
 
-//! @addtogroup bc_tca9534a bc_tca9534a
+//! @addtogroup bc_sc16is740 bc_sc16is740
 //! @brief Driver for SC16IS740 single UART with I2C-bus interface, 64 bytes of transmit and receive FIFOs
 //! @{
 
@@ -17,7 +17,7 @@ typedef enum
 
 } bc_sc16is740_fifo_t;
 
-//! @brief TCA9534A instance
+//! @brief SC16IS740 instance
 
 //! @cond
 

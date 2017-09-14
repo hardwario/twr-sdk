@@ -12,6 +12,8 @@ static struct
 
 } _bc_onewire_search;
 
+static bool _bc_onewire_transaction = false;
+
 static bool _bc_onewire_reset(bc_gpio_channel_t channel);
 static void _bc_onewire_write_byte(bc_gpio_channel_t channel, uint8_t byte);
 static uint8_t _bc_onewire_read_byte(bc_gpio_channel_t channel);
@@ -19,7 +21,7 @@ static void _bc_onewire_write_bit(bc_gpio_channel_t channel, uint8_t bit);
 static uint8_t _bc_onewire_read_bit(bc_gpio_channel_t channel);
 static void _bc_onewire_start(void);
 static void _bc_onewire_stop(void);
-static void _bc_onewire_delay(uint32_t micro_second);
+static void _bc_onewire_delay(uint16_t micro_second);
 static void _bc_onewire_search_reset(void);
 static void _bc_onewire_search_target_setup(uint8_t family_code);
 static bool _bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number);
@@ -29,6 +31,34 @@ void bc_onewire_init(bc_gpio_channel_t channel)
 {
     bc_gpio_init(channel);
     bc_gpio_set_pull(channel, BC_GPIO_PULL_NONE);
+}
+
+bool bc_onewire_transaction_start(void)
+{
+	if (_bc_onewire_transaction)
+	{
+		return false;
+	}
+
+	_bc_onewire_start();
+
+	_bc_onewire_transaction = true;
+
+	return true;
+}
+
+bool bc_onewire_transaction_stop(void)
+{
+	if (!_bc_onewire_transaction)
+	{
+		return false;
+	}
+
+	_bc_onewire_transaction = false;
+
+	_bc_onewire_stop();
+
+	return true;
 }
 
 bool bc_onewire_reset(bc_gpio_channel_t channel)
@@ -297,6 +327,11 @@ static uint8_t _bc_onewire_read_bit(bc_gpio_channel_t channel)
 
 static void _bc_onewire_start(void)
 {
+	if (_bc_onewire_transaction)
+	{
+		return;
+	}
+
     bc_module_core_pll_enable();
 
     // Enable clock for TIM6
@@ -323,6 +358,11 @@ static void _bc_onewire_start(void)
 
 static void _bc_onewire_stop(void)
 {
+	if (_bc_onewire_transaction)
+	{
+		return;
+	}
+
     TIM6->CR1 &= ~TIM_CR1_CEN;
 
     RCC->APB1ENR &= ~RCC_APB1ENR_TIM6EN;
@@ -330,9 +370,9 @@ static void _bc_onewire_stop(void)
     bc_module_core_pll_disable();
 }
 
-static void _bc_onewire_delay(uint32_t micro_second)
+static void _bc_onewire_delay(uint16_t micro_second)
 {
-    uint32_t stop = TIM6->CNT + micro_second - 1;
+    uint16_t stop = TIM6->CNT + micro_second - 1;
 
     while (TIM6->CNT < stop)
     {
