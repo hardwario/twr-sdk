@@ -62,7 +62,7 @@ void bc_ccs811_get_baseline(bc_ccs811_t *self, uint16_t *baseline)
 
 void bc_ccs811_set_baseline(bc_ccs811_t *self, uint16_t baseline)
 {
-        self->_baseline = baseline;
+    self->_baseline = baseline;
 }
 
 bool bc_ccs811_measure(bc_ccs811_t *self)
