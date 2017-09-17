@@ -1,12 +1,13 @@
 #include <bc_ccs811.h>
+#include <bc_spi.h>
 
 #define _BC_CCS811_DELAY_RESTART 100
 #define _BC_CCS811_DELAY_MEASURE 2000
 
 #define _BC_CCS811_DEFAULT_BASELINE 58483
 
-#define _BC_CCS811_WAKE_ON() bc_gpio_set_output(BC_GPIO_P0, 0)
-#define _BC_CCS811_WAKE_OFF() bc_gpio_set_output(BC_GPIO_P0, 1)
+#define _BC_CCS811_WAKE_ON() bc_gpio_set_output(BC_GPIO_P15, 0)
+#define _BC_CCS811_WAKE_OFF() bc_gpio_set_output(BC_GPIO_P15, 1)
 
 static void _bc_ccs811_task_interval(void *param);
 
@@ -26,11 +27,10 @@ void bc_ccs811_init(bc_ccs811_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c
     self->_task_id_interval = bc_scheduler_register(_bc_ccs811_task_interval, self, BC_TICK_INFINITY);
     self->_task_id_measure = bc_scheduler_register(_bc_ccs811_task_measure, self, BC_TICK_INFINITY);
 
-    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_100_KHZ);
 
-    bc_gpio_set_mode(BC_GPIO_P0, BC_GPIO_MODE_OUTPUT);
-    bc_gpio_set_output(BC_GPIO_P0, 1);
-    bc_gpio_init(BC_GPIO_P0);
+    // TODO Just for Sensation
+    bc_spi_init(BC_SPI_SPEED_1_MHZ, BC_SPI_MODE_0);
 }
 
 void bc_ccs811_set_event_handler(bc_ccs811_t *self, void (*event_handler)(bc_ccs811_t *, bc_ccs811_event_t, void *), void *event_param)
@@ -114,6 +114,9 @@ static void _bc_ccs811_task_measure(void *param)
 
                 self->_measurement_active = false;
 
+                // TODO Just for Sensation
+                bc_spi_unlock();
+
                 if (self->_event_handler != NULL)
                 {
                     self->_event_handler(self, BC_CCS811_EVENT_ERROR, self->_event_param);
@@ -126,6 +129,14 @@ static void _bc_ccs811_task_measure(void *param)
             case BC_CCS811_STATE_RESTART:
             {
                 static const uint8_t _bc_ccs811_cmd_reset[5] = { 0xff, 0x11, 0xe5, 0x72, 0x8a };
+
+                // TODO Just for Sensation
+                if (!bc_spi_lock())
+                {
+                    bc_scheduler_plan_current_absolute(bc_tick_get() + 100);
+
+                    return;
+                }
 
                 _BC_CCS811_WAKE_ON();
 
@@ -247,6 +258,9 @@ static void _bc_ccs811_task_measure(void *param)
                     }
 
                     _BC_CCS811_WAKE_OFF();
+
+                    // TODO Just for Sensation
+                    bc_spi_unlock();
                 }
 
                 continue;
