@@ -25,6 +25,7 @@
 #include <bc_lis2dh12.h>
 #include <bc_spirit1.h>
 #include <bc_hc_sr04.h>
+#include <bc_cp201t.h>
 
 // BigClown tags
 
