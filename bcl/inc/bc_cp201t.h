@@ -1,5 +1,5 @@
-#ifndef _BC_CP210T_H
-#define _BC_CP210T_H
+#ifndef _BC_CP201T_H
+#define _BC_CP201T_H
 
 #include <bc_module_sensor.h>
 #include <bc_scheduler.h>
@@ -7,14 +7,14 @@
 typedef enum
 {
     //! @brief Error event
-    BC_CP201T_EVENT_ERROR,
+    BC_CP201T_EVENT_ERROR = 0,
 
     //! @brief Update event
-    BC_CP201T_EVENT_UPDATE
+    BC_CP201T_EVENT_UPDATE = 1
 
 } bc_cp201t_event_t;
 
-//! @brief Initialize cp201t thermistor
+//! @brief Initialize CP-201T thermistor
 //! @param[in] channel Channel of Sensor Module that sensor is connected to
 //! @return true When successfully initialized
 //! @return false When not successfully initialized
@@ -42,4 +42,4 @@ void bc_cp201t_set_update_interval(bc_module_sensor_channel_t channel, bc_tick_t
 
 bool bc_cp201t_get_temperature_celsius(bc_module_sensor_channel_t channel, float *celsius);
 
-#endif // _BC_CP210T_H
+#endif // _BC_CP201T_H
