@@ -34,7 +34,7 @@ static bc_cp201t_t _bc_cp201t[2] =
     }
 };
 
-static const uint16_t _thermistor_conversion_table[1024];
+static const uint16_t _bc_cp201t_lut[1024];
 
 static void _bc_cp201t_adc_event_handler(bc_adc_channel_t channel, bc_adc_event_t event, void *param);
 
@@ -53,7 +53,7 @@ bool bc_cp201t_init(bc_module_sensor_channel_t channel)
             return false;
         }
 
-        // Initialize ADC to measure voltage on cp201t (temperature)
+        // Initialize ADC to measure voltage on CP-201T (temperature)
         bc_adc_init(cp201t->channel_adc, BC_ADC_FORMAT_16_BIT);
         bc_adc_set_event_handler(cp201t->channel_adc, _bc_cp201t_adc_event_handler, cp201t);
 
@@ -119,7 +119,7 @@ bool bc_cp201t_get_temperature_celsius(bc_module_sensor_channel_t channel, float
     data = 0xffff - data;
 
     // Find temperature in LUT
-    temp_code = _thermistor_conversion_table[data >> 6];
+    temp_code = _bc_cp201t_lut[data >> 6];
 
     // If temperature is valid...
     if (temp_code != 0x7fff)
@@ -173,14 +173,14 @@ static void _bc_cp201t_adc_event_handler(bc_adc_channel_t channel, bc_adc_event_
 
         cp201t->event_handler(cp201t->channel, BC_CP201T_EVENT_UPDATE, cp201t->event_param);
     }
-    else // if  (event == BC_ADC_EVENT_ERROR)
+    else
     {
         cp201t->event_handler(cp201t->channel, BC_CP201T_EVENT_ERROR, cp201t->event_param);
     }
 }
 
 // A value of 0x7FFF indicates out of range signal
-static const uint16_t _thermistor_conversion_table[] =
+static const uint16_t _bc_cp201t_lut[] =
 {
     0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF,
     0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF,
