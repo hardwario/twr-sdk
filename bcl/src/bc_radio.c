@@ -619,19 +619,8 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
             if (_bc_radio.enrollment_mode && length == 9 && buffer[8] == BC_RADIO_HEADER_ENROLL)
             {
-            	if (_bc_radio.automatic_pairing)
-            	{
-            		bc_radio_peer_device_add(_bc_radio.peer_device_address);
-            	}
-            	else
-            	{
-            		_bc_radio.enrollment_mode = false;
+                bc_radio_peer_device_add(_bc_radio.peer_device_address);
 
-					if (!bc_radio_peer_device_add(_bc_radio.peer_device_address))
-					{
-						bc_radio_peer_device_remove(_bc_radio.peer_device_address);
-					}
-            	}
                 return;
             }
 
