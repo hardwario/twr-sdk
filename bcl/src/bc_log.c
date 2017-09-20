@@ -22,7 +22,7 @@ void bc_log_debug(const char *format, ...)
 {
     va_list ap;
 
-    if (_bc_log.level > BC_LOG_LEVEL_DEBUG)
+    if (_bc_log.level == BC_LOG_LEVEL_OFF || _bc_log.level > BC_LOG_LEVEL_DEBUG)
     {
         return;
     }
@@ -42,7 +42,7 @@ void bc_log_info(const char *format, ...)
 {
     va_list ap;
 
-    if (_bc_log.level > BC_LOG_LEVEL_INFO)
+    if (_bc_log.level == BC_LOG_LEVEL_OFF || _bc_log.level > BC_LOG_LEVEL_INFO)
     {
         return;
     }
@@ -62,7 +62,7 @@ void bc_log_warning(const char *format, ...)
 {
     va_list ap;
 
-    if (_bc_log.level > BC_LOG_LEVEL_WARNING)
+    if (_bc_log.level == BC_LOG_LEVEL_OFF || _bc_log.level > BC_LOG_LEVEL_WARNING)
     {
         return;
     }
@@ -82,7 +82,7 @@ void bc_log_error(const char *format, ...)
 {
     va_list ap;
 
-    if (_bc_log.level > BC_LOG_LEVEL_DEBUG)
+    if (_bc_log.level == BC_LOG_LEVEL_OFF || _bc_log.level > BC_LOG_LEVEL_ERROR)
     {
         return;
     }

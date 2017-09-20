@@ -11,6 +11,9 @@
 
 typedef enum
 {
+    //! @brief Logging disable
+    BC_LOG_LEVEL_OFF = -1,
+
     //! @brief Log level DEBUG
     BC_LOG_LEVEL_DEBUG = 0,
 
