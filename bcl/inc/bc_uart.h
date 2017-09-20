@@ -13,13 +13,13 @@
 typedef enum
 {
     //! @brief UART channel UART0
-	BC_UART_UART0 = 0,
+    BC_UART_UART0 = 0,
 
-	//! @brief UART channel UART1
-	BC_UART_UART1 = 1,
+    //! @brief UART channel UART1
+    BC_UART_UART1 = 1,
 
-	//! @brief UART channel UART2
-	BC_UART_UART2 = 2
+    //! @brief UART channel UART2
+    BC_UART_UART2 = 2
 
 } bc_uart_channel_t;
 
@@ -27,23 +27,23 @@ typedef enum
 
 typedef enum
 {
-	//! @brief UART baudrat 9600 bps
-	BC_UART_BAUDRATE_9600 = 0,
+    //! @brief UART baudrat 9600 bps
+    BC_UART_BAUDRATE_9600 = 0,
 
-	//! @brief UART baudrat 19200 bps
-	BC_UART_BAUDRATE_19200 = 1,
+    //! @brief UART baudrat 19200 bps
+    BC_UART_BAUDRATE_19200 = 1,
 
-	//! @brief UART baudrat 38400 bps
-	BC_UART_BAUDRATE_38400 = 2,
+    //! @brief UART baudrat 38400 bps
+    BC_UART_BAUDRATE_38400 = 2,
 
-	//! @brief UART baudrat 57600 bps
-	BC_UART_BAUDRATE_57600 = 3,
+    //! @brief UART baudrat 57600 bps
+    BC_UART_BAUDRATE_57600 = 3,
 
-	//! @brief UART baudrat 115200 bps
-	BC_UART_BAUDRATE_115200 = 4,
+    //! @brief UART baudrat 115200 bps
+    BC_UART_BAUDRATE_115200 = 4,
 
-	//! @brief UART baudrat 921600 bps
-	BC_UART_BAUDRATE_921600 = 5
+    //! @brief UART baudrat 921600 bps
+    BC_UART_BAUDRATE_921600 = 5
 
 } bc_uart_baudrate_t;
 
@@ -66,59 +66,59 @@ typedef enum
 
 typedef enum
 {
-	//! @brief 8N1: 8 data bits, none parity bit, 1 stop bit
-	BC_UART_SETTING_8N1 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_1,
+    //! @brief 8N1: 8 data bits, none parity bit, 1 stop bit
+    BC_UART_SETTING_8N1 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_1,
 
-	//! @brief 8E1: 8 data bits, even parity bit, 1 stop bit
-	BC_UART_SETTING_8E1 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_1,
+    //! @brief 8E1: 8 data bits, even parity bit, 1 stop bit
+    BC_UART_SETTING_8E1 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_1,
 
-	//! @brief 8O1: 8 data bits, odd parity bit, 1 stop bit
-	BC_UART_SETTING_8O1 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_ODD | _BC_UART_SETTING_STOP_BIT_1,
+    //! @brief 8O1: 8 data bits, odd parity bit, 1 stop bit
+    BC_UART_SETTING_8O1 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_ODD | _BC_UART_SETTING_STOP_BIT_1,
 
-	//! @brief 8N2: 8 data bits, none parity bit, 2 stop bits
-	BC_UART_SETTING_8N2 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_2,
+    //! @brief 8N2: 8 data bits, none parity bit, 2 stop bits
+    BC_UART_SETTING_8N2 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_2,
 
-	//! @brief 8E2: 8 data bits, even parity bit, 2 stop bit
-	BC_UART_SETTING_8E2 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_2,
+    //! @brief 8E2: 8 data bits, even parity bit, 2 stop bit
+    BC_UART_SETTING_8E2 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_2,
 
-	//! @brief 8O2: 8 data bits, odd parity bit, 2 stop bit
-	BC_UART_SETTING_8O2 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_2,
+    //! @brief 8O2: 8 data bits, odd parity bit, 2 stop bit
+    BC_UART_SETTING_8O2 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_2,
 
-	//! @brief 8N1_5: 8 data bits, none parity bit, 1.5 stop bits
-	BC_UART_SETTING_8N1_5 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_15,
+    //! @brief 8N1_5: 8 data bits, none parity bit, 1.5 stop bits
+    BC_UART_SETTING_8N1_5 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_15,
 
-	//! @brief 8E1_5: 8 data bits, even parity bit, 1.5 stop bit
-	BC_UART_SETTING_8E1_5 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_15,
+    //! @brief 8E1_5: 8 data bits, even parity bit, 1.5 stop bit
+    BC_UART_SETTING_8E1_5 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_15,
 
-	//! @brief 8O1_5: 8 data bits, odd parity bit, 1.5 stop bit
-	BC_UART_SETTING_8O1_5 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_15,
+    //! @brief 8O1_5: 8 data bits, odd parity bit, 1.5 stop bit
+    BC_UART_SETTING_8O1_5 = _BC_UART_SETTING_DATA_BITS_8 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_15,
 
-	//! @brief 7N1: 7 data bits, none parity bit, 1 stop bit
-	BC_UART_SETTING_7N1 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_1,
+    //! @brief 7N1: 7 data bits, none parity bit, 1 stop bit
+    BC_UART_SETTING_7N1 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_1,
 
-	//! @brief 7E1: 7 data bits, even parity bit, 1 stop bit
-	BC_UART_SETTING_7E1 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_1,
+    //! @brief 7E1: 7 data bits, even parity bit, 1 stop bit
+    BC_UART_SETTING_7E1 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_1,
 
-	//! @brief 7O1: 7 data bits, odd parity bit, 1 stop bit
-	BC_UART_SETTING_7O1 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_ODD | _BC_UART_SETTING_STOP_BIT_1,
+    //! @brief 7O1: 7 data bits, odd parity bit, 1 stop bit
+    BC_UART_SETTING_7O1 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_ODD | _BC_UART_SETTING_STOP_BIT_1,
 
-	//! @brief 7N2: 7 data bits, none parity bit, 2 stop bits
-	BC_UART_SETTING_7N2 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_2,
+    //! @brief 7N2: 7 data bits, none parity bit, 2 stop bits
+    BC_UART_SETTING_7N2 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_2,
 
-	//! @brief 7E2: 7 data bits, even parity bit, 2 stop bit
-	BC_UART_SETTING_7E2 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_2,
+    //! @brief 7E2: 7 data bits, even parity bit, 2 stop bit
+    BC_UART_SETTING_7E2 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_2,
 
-	//! @brief 7O2: 7 data bits, odd parity bit, 2 stop bit
-	BC_UART_SETTING_7O2 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_2,
+    //! @brief 7O2: 7 data bits, odd parity bit, 2 stop bit
+    BC_UART_SETTING_7O2 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_2,
 
-	//! @brief 7N1_5: 7 data bits, none parity bit, 1.5 stop bits
-	BC_UART_SETTING_7N1_5 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_15,
+    //! @brief 7N1_5: 7 data bits, none parity bit, 1.5 stop bits
+    BC_UART_SETTING_7N1_5 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_15,
 
-	//! @brief 7E1_5: 7 data bits, even parity bit, 1.5 stop bit
-	BC_UART_SETTING_7E1_5 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_15,
+    //! @brief 7E1_5: 7 data bits, even parity bit, 1.5 stop bit
+    BC_UART_SETTING_7E1_5 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_EVEN | _BC_UART_SETTING_STOP_BIT_15,
 
-	//! @brief 7O1_5: 7 data bits, odd parity bit, 1.5 stop bit
-	BC_UART_SETTING_7O1_5 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_15
+    //! @brief 7O1_5: 7 data bits, odd parity bit, 1.5 stop bit
+    BC_UART_SETTING_7O1_5 = _BC_UART_SETTING_DATA_BITS_7 | _BC_UART_SETTING_PARITY_NONE | _BC_UART_SETTING_STOP_BIT_15
 
 } bc_uart_setting_t;
 
