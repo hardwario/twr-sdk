@@ -55,20 +55,40 @@ bool bc_module_sigfox_read_device_id(bc_module_sigfox_t *self)
 {
     if (self->_revision == BC_MODULE_SIGFOX_REVISION_R1)
     {
-        return true;
+        return false;
     }
 
     return bc_wssfm10r1at_read_device_id(&self->_modem.wssfm10r1at);
+}
+
+bool bc_module_sigfox_get_device_id(bc_module_sigfox_t *self, char *buffer, size_t buffer_size)
+{
+    if (self->_revision == BC_MODULE_SIGFOX_REVISION_R1)
+    {
+        return false;
+    }
+
+    return bc_wssfm10r1at_get_device_id(&self->_modem.wssfm10r1at, buffer, buffer_size);
 }
 
 bool bc_module_sigfox_read_device_pac(bc_module_sigfox_t *self)
 {
     if (self->_revision == BC_MODULE_SIGFOX_REVISION_R1)
     {
-        return true;
+        return false;
     }
 
     return bc_wssfm10r1at_read_device_pac(&self->_modem.wssfm10r1at);
+}
+
+bool bc_module_sigfox_get_device_pac(bc_module_sigfox_t *self, char *buffer, size_t buffer_size)
+{
+    if (self->_revision == BC_MODULE_SIGFOX_REVISION_R1)
+    {
+        return false;
+    }
+
+    return bc_wssfm10r1at_get_device_pac(&self->_modem.wssfm10r1at, buffer, buffer_size);
 }
 
 bool bc_module_sigfox_continuous_wave(bc_module_sigfox_t *self)
