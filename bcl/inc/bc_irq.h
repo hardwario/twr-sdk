@@ -4,14 +4,14 @@
 #include <bc_common.h>
 
 //! @addtogroup bc_irq bc_irq
-//! @brief Functions to manipulate interrupt requests
+//! @brief Functions for interrupt request manipulation
 //! @{
 
-//! @brief Deny all interrupt requests
+//! @brief Disable interrupt requests globally (call can be nested)
 
 void bc_irq_disable(void);
 
-//! @brief Allow all interrupt requests
+//! @brief Enable interrupt requests globally (call can be nested)
 
 void bc_irq_enable(void);
 
