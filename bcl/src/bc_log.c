@@ -2,7 +2,7 @@
 #include <bc_uart.h>
 #include <bc_tick.h>
 
-static struct
+typedef struct
 {
     bc_log_level_t level;
     bc_log_timestamp_t timestamp;
@@ -10,7 +10,11 @@ static struct
 
     char buffer[256];
 
-} _bc_log;
+} bc_log_t;
+
+#ifdef DEBUG
+
+static bc_log_t _bc_log;
 
 static void _bc_log_message(bc_log_level_t level, char id, const char *format, va_list ap);
 
@@ -99,3 +103,5 @@ static void _bc_log_message(bc_log_level_t level, char id, const char *format, v
 
     bc_uart_write(BC_UART_UART2, _bc_log.buffer, strlen(_bc_log.buffer));
 }
+
+#endif

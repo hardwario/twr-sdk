@@ -76,6 +76,7 @@ void bc_log_error(const char *format, ...);
 
 #else
 
+#define bc_log_init(...)
 #define bc_log_debug(...)
 #define bc_log_info(...)
 #define bc_log_warning(...)
