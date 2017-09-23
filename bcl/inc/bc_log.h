@@ -4,7 +4,7 @@
 #include <bc_common.h>
 
 //! @addtogroup bc_log bc_log
-//! @brief Logging library (output at TXD2, parameters 115200 / 8N1)
+//! @brief Logging facility (output at TXD2, parameters 115200 / 8N1)
 //! @{
 
 //! @brief Log level
@@ -28,10 +28,27 @@ typedef enum
 
 } bc_log_level_t;
 
+//! @brief Log timestamp
+
+typedef enum
+{
+    //! @brief Timestamp logging disable
+    BC_LOG_TIMESTAMP_OFF = -1,
+
+    //! @brief Timestamp logging enabled (absolute time format)
+    BC_LOG_TIMESTAMP_ABS = 0,
+
+    //! @brief Timestamp logging enabled (relative time format)
+    BC_LOG_TIMESTAMP_REL = 1
+
+} bc_log_timestamp_t;
+
+#ifdef DEBUG
+
 //! @brief Initialize logging library
 //! @param[in] level Minimum required message level for propagation
 
-void bc_log_init(bc_log_level_t level);
+void bc_log_init(bc_log_level_t level, bc_log_timestamp_t timestamp);
 
 //! @brief Log DEBUG message (annotated in log as <D>)
 //! @param[in] format Format string (printf style)
@@ -56,6 +73,15 @@ void bc_log_warning(const char *format, ...);
 //! @param[in] ... Optional format arguments
 
 void bc_log_error(const char *format, ...);
+
+#else
+
+#define bc_log_debug(...)
+#define bc_log_info(...)
+#define bc_log_warning(...)
+#define bc_log_error(...)
+
+#endif
 
 //! @}
 

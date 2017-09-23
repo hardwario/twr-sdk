@@ -112,7 +112,9 @@ CFLAGS += -fdata-sections
 CFLAGS += -std=c11
 CFLAGS_DEBUG += -g3
 CFLAGS_DEBUG += -Og
+CFLAGS_DEBUG += -D'DEBUG'
 CFLAGS_RELEASE += -Os
+CFLAGS_RELEASE += -D'RELEASE'
 
 ################################################################################
 # Compiler flags for "s" files                                                 #
