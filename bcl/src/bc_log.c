@@ -22,6 +22,7 @@ void bc_log_init(bc_log_level_t level, bc_log_timestamp_t timestamp)
     _bc_log.timestamp = timestamp;
 
     bc_uart_init(BC_UART_UART2, BC_UART_BAUDRATE_115200, BC_UART_SETTING_8N1);
+    bc_uart_write(BC_UART_UART2, "\r\n", 2);
 }
 
 void bc_log_debug(const char *format, ...)
