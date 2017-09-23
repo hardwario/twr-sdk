@@ -4,14 +4,14 @@
 #include <bc_common.h>
 
 //! @addtogroup bc_log bc_log
-//! @brief Logging facility (output at TXD2, parameters 115200 / 8N1)
+//! @brief Logging facility (output on TXD2, format 115200 / 8N1)
 //! @{
 
 //! @brief Log level
 
 typedef enum
 {
-    //! @brief Logging disable
+    //! @brief Logging disabled
     BC_LOG_LEVEL_OFF = -1,
 
     //! @brief Log level DEBUG
@@ -32,7 +32,7 @@ typedef enum
 
 typedef enum
 {
-    //! @brief Timestamp logging disable
+    //! @brief Timestamp logging disabled
     BC_LOG_TIMESTAMP_OFF = -1,
 
     //! @brief Timestamp logging enabled (absolute time format)
@@ -43,10 +43,11 @@ typedef enum
 
 } bc_log_timestamp_t;
 
-#ifdef DEBUG
+#ifndef RELEASE
 
-//! @brief Initialize logging library
+//! @brief Initialize logging facility
 //! @param[in] level Minimum required message level for propagation
+//! @param[in] timestamp Timestamp logging setting
 
 void bc_log_init(bc_log_level_t level, bc_log_timestamp_t timestamp);
 
