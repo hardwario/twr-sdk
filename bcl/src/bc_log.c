@@ -1,6 +1,5 @@
 #include <bc_log.h>
 #include <bc_uart.h>
-#include <bc_tick.h>
 
 typedef struct
 {
@@ -12,7 +11,7 @@ typedef struct
 
 } bc_log_t;
 
-#ifdef DEBUG
+#ifndef RELEASE
 
 static bc_log_t _bc_log;
 
