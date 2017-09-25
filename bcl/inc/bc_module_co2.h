@@ -4,10 +4,6 @@
 #include <bc_tick.h>
 #include <bc_co2_sensor.h>
 
-
-#define BC_MODULE_CO2_I2C_GPIO_EXPANDER_ADDRESS 0x38
-#define BC_MODULE_CO2_I2C_UART_ADDRESS          0x4D
-
 //! @addtogroup bc_module_co2 bc_module_co2
 //! @brief Driver for BigClown CO2 Module
 //! @{
@@ -45,15 +41,15 @@ void bc_module_co2_set_update_interval(bc_tick_t interval);
 
 bool bc_module_co2_measure(void);
 
-//! @brief Get co2 concentration
-//! @param[out] concentration in ppm
+//! @brief Get CO2 concentration in ppm (parts per million)
+//! @param[out] ppm Pointer to variable where result will be stored
 //! @return true On success
 //! @return false On failure
 
-bool bc_module_co2_get_concentration(float *concentration);
+bool bc_module_co2_get_concentration_ppm(float *ppm);
 
-//! @brief Set calibration request
-//! @param[in] calibration type
+//! @brief Request sensor calibration
+//! @param[in] calibration Calibration type
 
 void bc_module_co2_calibration(bc_co2_sensor_calibration_t calibration);
 
