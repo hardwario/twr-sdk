@@ -51,20 +51,29 @@ typedef enum
 
 typedef struct bc_led_t bc_led_t;
 
+//! @brief LED driver interface
+
+typedef struct
+{
+    //! @brief Callback for initialization
+    void (*init)(bc_led_t *self);
+
+    //! @brief Callback for setting LED on
+    void (*on)(bc_led_t *self);
+
+    //! @brief Callback for setting LED off
+    void (*off)(bc_led_t *self);
+
+} bc_led_driver_t;
+
 //! @cond
 
 typedef union
 {
     bc_gpio_channel_t gpio_channel;
     int virtual_channel;
-} bc_led_channel_t;
 
-typedef struct
-{
-    void (*init)(bc_led_t *self);
-    void (*on)(bc_led_t *self);
-    void (*off)(bc_led_t *self);
-} bc_led_driver_t;
+} bc_led_channel_t;
 
 struct bc_led_t
 {
