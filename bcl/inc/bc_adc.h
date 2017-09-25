@@ -98,17 +98,18 @@ bool bc_adc_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc
 
 //! @brief Begins reading the ADC channel voltage in asynchronous mode
 //! @param[in] channel ADC channel
-//! @param[out] result Pointer to destination where ADC conversion will be stored
 //! @return true On success
 //! @return false On failure
 
 bool bc_adc_async_read(bc_adc_channel_t channel);
 
-//! @brief Get the measurement results
+//! @brief Get measurement result
 //! @param[in] channel ADC channel
-//! @param[out] result Pointer to destination where ADC conversion will be stored
+//! @param[out] result Pointer to variable where result will be stored
+//! @return true On success
+//! @return false On failure
 
-void bc_adc_get_result(bc_adc_channel_t channel, void *result);
+bool bc_adc_get_result(bc_adc_channel_t channel, void *result);
 
 //! @brief Get voltage on VDDA pin
 //! @param[out] vdda_voltage Pointer to destination where VDDA will be stored
