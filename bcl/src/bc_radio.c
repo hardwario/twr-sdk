@@ -21,6 +21,7 @@ typedef enum
     BC_RADIO_HEADER_PUB_BUFFER,
     BC_RADIO_HEADER_ATTACH,
 	BC_RADIO_HEADER_DETACH,
+	BC_RADIO_HEADER_PUB_BATTERY,
 
 } bc_radio_header_t;
 
@@ -85,6 +86,7 @@ __attribute__((weak)) void bc_radio_on_humidity(uint64_t *peer_device_address, u
 __attribute__((weak)) void bc_radio_on_lux_meter(uint64_t *peer_device_address, uint8_t *i2c, float *illuminance) { (void) peer_device_address; (void) i2c; (void) illuminance; }
 __attribute__((weak)) void bc_radio_on_barometer(uint64_t *peer_device_address, uint8_t *i2c, float *pressure, float *altitude) { (void) peer_device_address; (void) i2c; (void) pressure; (void) altitude; }
 __attribute__((weak)) void bc_radio_on_co2(uint64_t *peer_device_address, float *concentration) { (void) peer_device_address; (void) concentration; }
+__attribute__((weak)) void bc_radio_on_battery(uint64_t *peer_device_address, uint8_t *format, float *voltage) { (void) peer_device_address; (void) format; (void) voltage; }
 __attribute__((weak)) void bc_radio_on_buffer(uint64_t *peer_device_address, void *buffer, size_t *length) { (void) peer_device_address; (void) buffer; (void) length; }
 
 void bc_radio_init(void)
@@ -373,6 +375,25 @@ bool bc_radio_pub_co2(float *concentration)
     return true;
 }
 
+bool bc_radio_pub_battery(uint8_t format, float *voltage)
+{
+    uint8_t buffer[1 + sizeof(uint8_t) + sizeof(*voltage)];
+
+    buffer[0] = BC_RADIO_HEADER_PUB_BATTERY;
+    buffer[1] = format;
+
+    memcpy(&buffer[2], voltage, sizeof(*voltage));
+
+    if (!bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer)))
+    {
+        return false;
+    }
+
+    bc_scheduler_plan_now(_bc_radio.task_id);
+
+    return true;
+}
+
 bool bc_radio_pub_buffer(void *buffer, size_t length)
 {
     uint8_t qbuffer[BC_SPIRIT1_MAX_PACKET_SIZE - 8];
@@ -511,6 +532,14 @@ static void _bc_radio_task(void *param)
             memcpy(&concentration, &queue_item_buffer[8 + 1], sizeof(concentration));
 
             bc_radio_on_co2(&device_address, &concentration);
+        }
+        else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_BATTERY)
+        {
+            float voltage;
+
+            memcpy(&voltage, &queue_item_buffer[8 + 2], sizeof(voltage));
+
+            bc_radio_on_battery(&device_address, &queue_item_buffer[8 + 1], &voltage);
         }
         else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_BUFFER)
         {
