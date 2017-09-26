@@ -131,12 +131,30 @@ bool bc_wssfm10r1at_send_rf_frame(bc_wssfm10r1at_t *self, const void *buffer, si
 
 bool bc_wssfm10r1at_read_device_id(bc_wssfm10r1at_t *self);
 
+//! @brief Get device ID (can be called only in BC_WSSFM10R1AT_EVENT_READ_DEVICE_ID event)
+//! @param[in] self Instance
+//! @param[out] buffer Pointer to destination buffer
+//! @param[in] buffer_size Size of destination buffer
+//! @return true If device ID was retrieved
+//! @return false If device ID could not be retrieved
+
+bool bc_wssfm10r1at_get_device_id(bc_wssfm10r1at_t *self, char *buffer, size_t buffer_size);
+
 //! @brief Read device PAC command
 //! @param[in] self Instance
 //! @return true If command was accepted for processing
 //! @return false If command was denied for processing
 
 bool bc_wssfm10r1at_read_device_pac(bc_wssfm10r1at_t *self);
+
+//! @brief Get device PAC (can be called only in BC_WSSFM10R1AT_EVENT_READ_DEVICE_PAC event)
+//! @param[in] self Instance
+//! @param[out] buffer Pointer to destination buffer
+//! @param[in] buffer_size Size of destination buffer
+//! @return true If device PAC was retrieved
+//! @return false If device PAC could not be retrieved
+
+bool bc_wssfm10r1at_get_device_pac(bc_wssfm10r1at_t *self, char *buffer, size_t buffer_size);
 
 //! @brief Generate continuous wave command
 //! @param[in] self Instance

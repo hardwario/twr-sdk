@@ -89,6 +89,30 @@ bool bc_wssfm10r1at_read_device_id(bc_wssfm10r1at_t *self)
     return true;
 }
 
+bool bc_wssfm10r1at_get_device_id(bc_wssfm10r1at_t *self, char *buffer, size_t buffer_size)
+{
+    if (buffer_size < 8 + 1)
+    {
+        return false;
+    }
+
+    if (self->_state != BC_WSSFM10R1AT_STATE_READ_DEVICE_ID_RESPONSE)
+    {
+        return false;
+    }
+
+    if (strlen(self->_response) != 9 || self->_response[8] != '\r')
+    {
+        return false;
+    }
+
+    strncpy(buffer, self->_response, 8);
+
+    buffer[8] = '\0';
+
+    return true;
+}
+
 bool bc_wssfm10r1at_read_device_pac(bc_wssfm10r1at_t *self)
 {
     if (!bc_wssfm10r1at_is_ready(self))
@@ -97,6 +121,30 @@ bool bc_wssfm10r1at_read_device_pac(bc_wssfm10r1at_t *self)
     }
 
     _bc_wssfm10r1at_set_state(self, BC_WSSFM10R1AT_STATE_READ_DEVICE_PAC_COMMAND);
+
+    return true;
+}
+
+bool bc_wssfm10r1at_get_device_pac(bc_wssfm10r1at_t *self, char *buffer, size_t buffer_size)
+{
+    if (buffer_size < 16 + 1)
+    {
+        return false;
+    }
+
+    if (self->_state != BC_WSSFM10R1AT_STATE_READ_DEVICE_PAC_RESPONSE)
+    {
+        return false;
+    }
+
+    if (strlen(self->_response) != 17 || self->_response[16] != '\r')
+    {
+        return false;
+    }
+
+    strncpy(buffer, self->_response, 16);
+
+    buffer[16] = '\0';
 
     return true;
 }
@@ -356,10 +404,10 @@ static void _bc_wssfm10r1at_task(void *param)
             }
             case BC_WSSFM10R1AT_STATE_READ_DEVICE_ID_RESPONSE:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
-
                 if (!_bc_wssfm10r1at_read_response(self))
                 {
+                    self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+
                     continue;
                 }
 
@@ -393,10 +441,10 @@ static void _bc_wssfm10r1at_task(void *param)
             }
             case BC_WSSFM10R1AT_STATE_READ_DEVICE_PAC_RESPONSE:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
-
                 if (!_bc_wssfm10r1at_read_response(self))
                 {
+                    self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+
                     continue;
                 }
 
