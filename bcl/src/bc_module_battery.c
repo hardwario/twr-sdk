@@ -39,6 +39,8 @@ static void _bc_module_battery_update_voltage_on_battery(void);
 
 void bc_module_battery_init(bc_module_battery_format_t format)
 {
+    float temp;
+
     memset(&_bc_module_battery, 0, sizeof(_bc_module_battery));
 
     _bc_module_battery.task_id = bc_scheduler_register(_bc_module_battery_task, NULL, BC_TICK_INFINITY);
@@ -61,6 +63,7 @@ void bc_module_battery_init(bc_module_battery_format_t format)
 
     // Initialize ADC channel
     bc_adc_init(BC_ADC_CHANNEL_A0, BC_ADC_FORMAT_FLOAT);
+    bc_adc_read(BC_ADC_CHANNEL_A0, &temp); // the first measurement is inaccurate
     bc_adc_set_event_handler(BC_ADC_CHANNEL_A0, _bc_module_battery_adc_event_handler, NULL);
 }
 
