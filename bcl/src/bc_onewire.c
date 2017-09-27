@@ -86,7 +86,7 @@ void bc_onewire_select(bc_gpio_channel_t channel, uint64_t *device_number)
     {
         _bc_onewire_write_byte(channel, 0x55);
 
-        for (size_t i = 0; i < sizeof(u_int64_t); i++)
+        for (size_t i = 0; i < sizeof(uint64_t); i++)
         {
             _bc_onewire_write_byte(channel, ((uint8_t *) device_number)[i]);
         }
