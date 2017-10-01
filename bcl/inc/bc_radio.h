@@ -2,6 +2,8 @@
 #define _BC_RADIO_H
 
 #include <bc_common.h>
+#include <bc_button.h>
+#include <bc_led.h>
 
 #ifndef BC_RADIO_MAX_DEVICES
 #define BC_RADIO_MAX_DEVICES 8
@@ -54,5 +56,7 @@ bool bc_radio_pub_barometer(uint8_t i2c, float *pascal, float *meter);
 bool bc_radio_pub_co2(float *concentration);
 
 bool bc_radio_pub_buffer(void *buffer, size_t length);
+
+void bc_radio_button_pair(bc_button_t *button, bc_led_t *led);
 
 #endif // _BC_RADIO_H
