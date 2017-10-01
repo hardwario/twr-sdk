@@ -105,7 +105,7 @@ static void _bc_atsha204_task(void *param)
             }
 
             self->_state = BC_ATSHA204_STATE_READ_SERIAL_NUMBER2;
-            bc_scheduler_plan_current_relative(4);
+            bc_scheduler_plan_current_from_now(4);
             return;
         }
         case BC_ATSHA204_STATE_READ_SERIAL_NUMBER2:

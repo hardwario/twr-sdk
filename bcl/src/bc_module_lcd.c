@@ -126,33 +126,43 @@ void bc_module_lcd_clear(void)
 
 void bc_module_lcd_draw_pixel(int x, int y, bool value)
 {
-    if(x > 127 || y > 127 || x < 0 || y < 0)
+    if (x > 127 || y > 127 || x < 0 || y < 0)
     {
         return;
     }
 
     int tmp;
 
-    switch(_bc_module_lcd.rotation)
+    switch (_bc_module_lcd.rotation)
     {
-        case BC_MODULE_LCD_ROTATION_90 :
+        case BC_MODULE_LCD_ROTATION_90:
+        {
             tmp = x;
             x = 127 - y;
             y = tmp;
             break;
+        }
         case BC_MODULE_LCD_ROTATION_180:
+        {
             x = 127 - x;
             y = 127 - y;
             break;
+        }
         case BC_MODULE_LCD_ROTATION_270:
+        {
             tmp = y;
             y = 127 - x;
             x = tmp;
             break;
+        }
         case BC_MODULE_LCD_ROTATION_0:
+        {
             break;
+        }
         default:
+        {
             break;
+        }
     }
 
     // Skip mode byte + addr byte
@@ -164,7 +174,7 @@ void bc_module_lcd_draw_pixel(int x, int y, bool value)
 
     uint8_t bitMask = 1 << (7 - (x % 8));
 
-    if(!value)
+    if (!value)
     {
         _bc_module_lcd.framebuffer[byteIndex] |= bitMask;
     }
@@ -276,12 +286,7 @@ void bc_module_lcd_draw_line(int x0, int y0, int x1, int y1, bool color)
     int16_t err = dx / 2;
     int16_t ystep;
 
-    if (y0 < y1)
-    {
-        ystep = 1;
-    } else {
-        ystep = -1;
-    }
+    ystep = y0 < y1 ? 1 : -1;
 
     for (; x0 <= x1; x0++)
     {
@@ -293,7 +298,9 @@ void bc_module_lcd_draw_line(int x0, int y0, int x1, int y1, bool color)
         {
             bc_module_lcd_draw_pixel(x0, y0, color);
         }
+
         err -= dy;
+
         if (err < 0)
         {
             y0 += ystep;
@@ -313,7 +320,7 @@ Framebuffer format for updating multiple lines, ideal for later DMA TX:
 */
 bool bc_module_lcd_update(void)
 {
-    if(bc_spi_is_ready())
+    if (bc_spi_is_ready())
     {
         if (!_bc_module_lcd_tca9534a_init())
         {
@@ -349,7 +356,7 @@ bool bc_module_lcd_update(void)
 
 bool bc_module_lcd_clear_memory_command(void)
 {
-    uint8_t spi_data[2] = {0x20, 0x00};
+    uint8_t spi_data[2] = { 0x20, 0x00 };
 
     return _bc_module_lcd_spi_transfer(spi_data, sizeof(spi_data));
 }
@@ -373,9 +380,9 @@ const bc_led_driver_t *bc_module_lcd_get_led_driver(void)
 {
     static const bc_led_driver_t bc_module_lcd_led_driver =
     {
-            .init = _bc_module_lcd_led_init,
-            .on = _bc_module_lcd_led_on,
-            .off = _bc_module_lcd_led_off,
+        .init = _bc_module_lcd_led_init,
+        .on = _bc_module_lcd_led_on,
+        .off = _bc_module_lcd_led_off,
     };
 
     return &bc_module_lcd_led_driver;
@@ -385,8 +392,8 @@ const bc_button_driver_t *bc_module_lcd_get_button_driver(void)
 {
     static const bc_button_driver_t bc_module_lcd_button_driver =
     {
-            .init = _bc_module_lcd_button_init,
-            .get_input = _bc_module_lcd_button_get_input,
+        .init = _bc_module_lcd_button_init,
+        .get_input = _bc_module_lcd_button_get_input,
     };
 
     return &bc_module_lcd_button_driver;
@@ -394,9 +401,10 @@ const bc_button_driver_t *bc_module_lcd_get_button_driver(void)
 
 static inline uint8_t _bc_module_lcd_reverse(uint8_t b)
 {
-   b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
-   b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
-   b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+   b = (b & 0xf0) >> 4 | (b & 0x0f) << 4;
+   b = (b & 0xcc) >> 2 | (b & 0x33) << 2;
+   b = (b & 0xaa) >> 1 | (b & 0x55) << 1;
+
    return b;
 }
 
@@ -455,7 +463,7 @@ static void _bc_module_lcd_task(void *param)
     	_bc_module_lcd.vcom ^= 0x40;
     }
 
-    bc_scheduler_plan_current_relative(_BC_MODULE_LCD_VCOM_PERIOD);
+    bc_scheduler_plan_current_from_now(_BC_MODULE_LCD_VCOM_PERIOD);
 }
 
 static void _bc_spi_event_handler(bc_spi_event_t event, void *event_param)

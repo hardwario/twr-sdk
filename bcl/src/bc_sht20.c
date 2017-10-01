@@ -207,7 +207,7 @@ start:
 
             self->_state = BC_SHT20_STATE_READ_RH;
 
-            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_SHT20_DELAY_MEASUREMENT_RH);
+            bc_scheduler_plan_current_from_now(_BC_SHT20_DELAY_MEASUREMENT_RH);
 
             return;
         }
@@ -257,7 +257,7 @@ start:
 
             self->_state = BC_SHT20_STATE_READ_T;
 
-            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_SHT20_DELAY_MEASUREMENT_T);
+            bc_scheduler_plan_current_from_now(_BC_SHT20_DELAY_MEASUREMENT_T);
 
             return;
         }

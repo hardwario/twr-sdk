@@ -20,6 +20,7 @@
 #include <bc_led.h>
 #include <bc_rtc.h>
 #include <bc_uart.h>
+#include <bc_spi.h>
 
 // Chip drivers
 

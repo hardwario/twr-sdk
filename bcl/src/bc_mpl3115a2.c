@@ -156,7 +156,7 @@ start:
 
             self->_state = BC_MPL3115A2_STATE_READ_ALTITUDE;
 
-            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_MPL3115A2_DELAY_MEASUREMENT);
+            bc_scheduler_plan_current_from_now(_BC_MPL3115A2_DELAY_MEASUREMENT);
 
             return;
         }
@@ -223,7 +223,7 @@ start:
 
             self->_state = BC_MPL3115A2_STATE_READ_PRESSURE;
 
-            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_MPL3115A2_DELAY_MEASUREMENT);
+            bc_scheduler_plan_current_from_now(_BC_MPL3115A2_DELAY_MEASUREMENT);
 
             return;
         }

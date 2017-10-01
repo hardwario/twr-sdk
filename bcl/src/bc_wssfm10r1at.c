@@ -217,7 +217,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 self->_state = BC_WSSFM10R1AT_STATE_INITIALIZE_RESET_H;
 
-                bc_scheduler_plan_current_relative(BC_WSSFM10R1AT_DELAY_INITIALIZATION_RESET_H);
+                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_INITIALIZATION_RESET_H);
 
                 return;
             }
@@ -227,7 +227,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 self->_state = BC_WSSFM10R1AT_STATE_INITIALIZE_AT_COMMAND;
 
-                bc_scheduler_plan_current_relative(BC_WSSFM10R1AT_DELAY_INITIALIZATION_AT_COMMAND);
+                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_INITIALIZATION_AT_COMMAND);
 
                 return;
             }
@@ -250,7 +250,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 self->_state = BC_WSSFM10R1AT_STATE_INITIALIZE_AT_RESPONSE;
 
-                bc_scheduler_plan_current_relative(BC_WSSFM10R1AT_DELAY_INITIALIZATION_AT_RESPONSE);
+                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_INITIALIZATION_AT_RESPONSE);
 
                 return;
             }
@@ -287,7 +287,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 self->_state = BC_WSSFM10R1AT_STATE_SET_POWER_RESPONSE;
 
-                bc_scheduler_plan_current_relative(BC_WSSFM10R1AT_DELAY_SET_POWER_RESPONSE);
+                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_SET_POWER_RESPONSE);
 
                 return;
             }
@@ -356,7 +356,7 @@ static void _bc_wssfm10r1at_task(void *param)
                     self->_event_handler(self, BC_WSSFM10R1AT_EVENT_SEND_RF_FRAME_START, self->_event_param);
                 }
 
-                bc_scheduler_plan_current_relative(BC_WSSFM10R1AT_DELAY_SEND_RF_FRAME_RESPONSE);
+                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_SEND_RF_FRAME_RESPONSE);
 
                 return;
             }
@@ -398,7 +398,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 self->_state = BC_WSSFM10R1AT_STATE_READ_DEVICE_ID_RESPONSE;
 
-                bc_scheduler_plan_current_relative(BC_WSSFM10R1AT_DELAY_READ_PAC_RESPONSE);
+                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_READ_PAC_RESPONSE);
 
                 return;
             }
@@ -435,7 +435,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 self->_state = BC_WSSFM10R1AT_STATE_READ_DEVICE_PAC_RESPONSE;
 
-                bc_scheduler_plan_current_relative(BC_WSSFM10R1AT_DELAY_READ_PAC_RESPONSE);
+                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_READ_PAC_RESPONSE);
 
                 return;
             }
@@ -472,7 +472,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 self->_state = BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_RESPONSE;
 
-                bc_scheduler_plan_current_relative(BC_WSSFM10R1AT_DELAY_CONTINUOUS_WAVE_RESPONSE);
+                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_CONTINUOUS_WAVE_RESPONSE);
 
                 return;
             }
@@ -513,7 +513,7 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 self->_state = BC_WSSFM10R1AT_STATE_DEEP_SLEEP_RESPONSE;
 
-                bc_scheduler_plan_current_relative(BC_WSSFM10R1AT_DELAY_DEEP_SLEEP_RESPONSE);
+                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_DEEP_SLEEP_RESPONSE);
 
                 return;
             }

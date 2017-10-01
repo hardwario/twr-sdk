@@ -135,7 +135,7 @@ start:
 					{
 						goto start;
 					}
-					bc_scheduler_plan_current_relative(5);
+					bc_scheduler_plan_current_from_now(5);
 					break;
 				}
 				case BC_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_B:
@@ -144,7 +144,7 @@ start:
 					{
 						goto start;
 					}
-					bc_scheduler_plan_current_relative(5);
+					bc_scheduler_plan_current_from_now(5);
 					break;
 				}
 				default:

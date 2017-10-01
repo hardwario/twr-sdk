@@ -181,7 +181,7 @@ start:
 
             self->_state = BC_HDC2080_STATE_READ;
 
-            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_HDC2080_DELAY_MEASUREMENT);
+            bc_scheduler_plan_current_from_now(_BC_HDC2080_DELAY_MEASUREMENT);
 
             return;
         }

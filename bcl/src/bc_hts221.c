@@ -212,7 +212,7 @@ start:
 
             self->_state = BC_HTS221_STATE_READ;
 
-            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_HTS221_DELAY_MEASUREMENT);
+            bc_scheduler_plan_current_from_now(_BC_HTS221_DELAY_MEASUREMENT);
 
             return;
         }

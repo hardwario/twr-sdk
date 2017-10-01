@@ -147,7 +147,7 @@ start:
 
             self->_state = BC_CO2_SENSOR_STATE_CHARGE;
 
-            bc_scheduler_plan_current_relative(45000);
+            bc_scheduler_plan_current_from_now(45000);
 
             return;
         }
@@ -181,7 +181,7 @@ start:
 
             self->_tick_timeout = bc_tick_get() + 300;
 
-            bc_scheduler_plan_current_relative(140);
+            bc_scheduler_plan_current_from_now(140);
 
             return;
         }
@@ -216,7 +216,7 @@ start:
                 {
                     bc_log_debug("LP8: Signal RDY not asserted yet...");
 
-                    bc_scheduler_plan_current_relative(10);
+                    bc_scheduler_plan_current_from_now(10);
 
                     return;
                 }
@@ -298,7 +298,7 @@ start:
             // TODO This timeout has been changed from 70 ms - test - BC_CO2_SENSOR_STATE_BOOT_READ timed out
             self->_tick_timeout = bc_tick_get() + 80;
 
-            bc_scheduler_plan_current_relative(10);
+            bc_scheduler_plan_current_from_now(10);
 
             return;
         }
@@ -350,7 +350,7 @@ start:
 
                 self->_tick_timeout = bc_tick_get() + (self->_calibration_run ? 1000 : 250);
 
-                bc_scheduler_plan_current_relative(50);
+                bc_scheduler_plan_current_from_now(50);
 
                 return;
             }
@@ -364,7 +364,7 @@ start:
                 line = __LINE__; goto start;
             }
 
-            bc_scheduler_plan_current_relative(10);
+            bc_scheduler_plan_current_from_now(10);
 
             return;
         }
@@ -397,7 +397,7 @@ start:
                 {
                     bc_log_debug("LP8: Signal RDY not asserted yet...");
 
-                    bc_scheduler_plan_current_relative(10);
+                    bc_scheduler_plan_current_from_now(10);
 
                     return;
                 }
@@ -434,7 +434,7 @@ start:
 
             self->_tick_timeout = bc_tick_get() + 100;
 
-            bc_scheduler_plan_current_relative(10);
+            bc_scheduler_plan_current_from_now(10);
 
             return;
         }
@@ -560,7 +560,7 @@ start:
 
             bc_log_debug("LP8: Rescheduling task...");
 
-            bc_scheduler_plan_current_relative(10);
+            bc_scheduler_plan_current_from_now(10);
 
             return;
         }

@@ -183,7 +183,7 @@ void bc_led_pulse(bc_led_t *self, bc_tick_t duration)
 
     if (self->_pulse_active)
     {
-        bc_scheduler_plan_absolute(self->_pulse_task_id, bc_tick_get() + duration);
+        bc_scheduler_plan_from_now(self->_pulse_task_id, duration);
 
         return;
     }

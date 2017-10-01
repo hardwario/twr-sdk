@@ -112,7 +112,7 @@ start:
 
                 if (self->_driver->get_settling_interval != NULL)
                 {
-                    bc_scheduler_plan_current_absolute(bc_tick_get() + self->_driver->get_settling_interval(self));
+                    bc_scheduler_plan_current_from_now(self->_driver->get_settling_interval(self));
 
                     return;
                 }
