@@ -57,6 +57,6 @@ bool bc_radio_pub_co2(float *concentration);
 
 bool bc_radio_pub_buffer(void *buffer, size_t length);
 
-void bc_radio_button_pair(bc_button_t *button, bc_led_t *led);
+void bc_radio_init_pairing_button();
 
 #endif // _BC_RADIO_H

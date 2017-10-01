@@ -716,12 +716,11 @@ static bool _bc_radio_peer_device_remove(uint64_t device_address)
 void _bc_radio_button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param)
 {
     (void) self;
-    (void) event_param;
-    bc_led_t *led = (bc_led_t*)event_param;
+    bc_led_t *led = (bc_led_t*) event_param;
 
     if (event == BC_BUTTON_EVENT_PRESS)
     {
-        if(led)
+        if (led != NULL)
         {
             bc_led_pulse(led, 100);
         }
@@ -736,7 +735,7 @@ void _bc_radio_button_event_handler(bc_button_t *self, bc_button_event_t event, 
     {
         bc_radio_enroll_to_gateway();
 
-        if(led)
+        if (led != NULL)
         {
             bc_led_set_mode(led, BC_LED_MODE_OFF);
             bc_led_pulse(led, 1000);
@@ -744,16 +743,15 @@ void _bc_radio_button_event_handler(bc_button_t *self, bc_button_event_t event, 
     }
 }
 
-void bc_radio_button_pair(bc_button_t *button, bc_led_t *led)
+void bc_radio_init_pairing_button()
 {
-    // Init button and callback
-    bc_button_init(button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN, false);
-    // Pass led instance as a callback parameter, so we don't need to add it to the radio structure
-    bc_button_set_event_handler(button, _bc_radio_button_event_handler, led);
+    static bc_led_t led;
+    static bc_button_t button;
 
-    // Parameter led can be NULL
-    if(led)
-    {
-        bc_led_init(led, BC_GPIO_LED, false, false);
-    }
+    bc_button_init(&button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN, 0);
+    // Pass led instance as a callback parameter, so we don't need to add it to the radio structure
+    bc_button_set_event_handler(&button, _bc_radio_button_event_handler, &led);
+
+    bc_led_init(&led, BC_GPIO_LED, false, 0);
+
 }
