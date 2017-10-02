@@ -82,6 +82,11 @@ bool bc_co2_sensor_get_concentration_ppm(bc_co2_sensor_t *self, float *ppm)
 
     *ppm = (float) self->_concentration;
 
+    if (*ppm > 10000.f)
+    {
+        return false;
+    }
+
     return true;
 }
 
