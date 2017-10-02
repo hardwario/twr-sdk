@@ -55,7 +55,11 @@ void bc_button_init_virtual(bc_button_t *self, int channel, const bc_button_driv
     self->_tick_debounce = BC_TICK_INFINITY;
 
     self->_driver = driver;
-    self->_driver->init(self);
+
+    if (self->_driver->init != NULL)
+    {
+        self->_driver->init(self);
+    }
 
     bc_scheduler_register(_bc_button_task, self, self->_scan_interval);
 }
@@ -92,7 +96,16 @@ static void _bc_button_task(void *param)
 
     bc_tick_t tick_now = bc_scheduler_get_spin_tick();
 
-    int pin_state = self->_driver->get_input(self);
+    int pin_state;
+
+    if (self->_driver->get_input != NULL)
+    {
+        pin_state = self->_driver->get_input(self);
+    }
+    else
+    {
+        pin_state = self->_idle_state;
+    }
 
     if (self->_idle_state)
     {
