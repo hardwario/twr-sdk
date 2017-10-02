@@ -112,7 +112,7 @@ bool bc_adc_read(bc_adc_channel_t channel, void *result)
         return false;
     }
 
-    _bc_adc_calibration();
+    //_bc_adc_calibration();
 
     // Set ADC channel
     ADC1->CHSELR = _bc_adc.channel_table[channel].chselr;
@@ -132,7 +132,10 @@ bool bc_adc_read(bc_adc_channel_t channel, void *result)
         continue;
     }
 
-    bc_adc_get_result(channel, result);
+    if (result != NULL)
+    {
+        bc_adc_get_result(channel, result);
+    }
 
     return true;
 }
@@ -191,7 +194,7 @@ bool bc_adc_get_result(bc_adc_channel_t channel, void *result)
 {
     uint32_t data = ADC1->DR;
 
-    data *= _bc_adc.real_vdda_voltage / 3.3f;
+    //data *= _bc_adc.real_vdda_voltage / 3.3f;
 
     switch (_bc_adc.channel_table[channel].format)
     {
@@ -215,11 +218,13 @@ bool bc_adc_get_result(bc_adc_channel_t channel, void *result)
             *(uint32_t *) result = data << 16;
             break;
         }
+        /*
         case BC_ADC_FORMAT_FLOAT:
         {
             *(float *) result = data * (3.3f / 65536.f);
             break;
         }
+        */
         default:
         {
             return false;
@@ -231,7 +236,7 @@ bool bc_adc_get_result(bc_adc_channel_t channel, void *result)
 
 bool bc_adc_get_vdda_voltage(float *vdda_voltage)
 {
-    if(_bc_adc.real_vdda_voltage == 0.f)
+    if (_bc_adc.real_vdda_voltage == 0.f)
     {
         return false;
     }

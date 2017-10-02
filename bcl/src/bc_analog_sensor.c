@@ -122,17 +122,13 @@ start:
         }
         case BC_ANALOG_SENSOR_STATE_MEASURE:
         {
-            if (!bc_adc_async_read(self->_adc_channel))
+            if (!bc_adc_read(self->_adc_channel, NULL))
             {
                 self->_state = BC_ANALOG_SENSOR_STATE_ERROR;
 
                 goto start;
             }
 
-            return;
-        }
-        case BC_ANALOG_SENSOR_STATE_READ:
-        {
             self->_state = BC_ANALOG_SENSOR_STATE_DISABLE;
 
             goto start;
