@@ -164,13 +164,11 @@ DEP = $(OBJ:%.o=%.d)
 
 .PHONY: debug
 debug:
-	$(Q)rm -rf $(OUT).bin
 	$(Q)$(MAKE) .clean-out
 	$(Q)$(MAKE) .obj-debug
 	$(Q)$(MAKE) elf
 	$(Q)$(MAKE) size
 	$(Q)$(MAKE) bin
-	$(Q)cp "$(BIN)" $(OUT).bin
 
 ################################################################################
 # Release target                                                               #
@@ -178,14 +176,12 @@ debug:
 
 .PHONY: release
 release:
-	$(Q)rm -rf $(OUT).bin
 	$(Q)$(MAKE) clean TYPE=release
 	$(Q)$(MAKE) .obj-release TYPE=release
 	$(Q)$(MAKE) elf TYPE=release
 	$(Q)$(MAKE) size TYPE=release
 	$(Q)$(MAKE) bin TYPE=release
 	$(Q)$(MAKE) .clean-obj TYPE=release
-	$(Q)cp "$(BIN)" $(OUT).bin
 
 ################################################################################
 # Clean target                                                                 #
@@ -315,6 +311,8 @@ bin: $(BIN)
 $(BIN): $(ELF)
 	$(Q)$(ECHO) "Creating $(BIN) from $(ELF)..."
 	$(Q)$(OBJCOPY) -O binary $(ELF) $(BIN)
+	$(Q)rm -f $(OUT).bin
+	$(Q)cp $(BIN) $(OUT).bin
 
 ################################################################################
 # Compile source files                                                         #
