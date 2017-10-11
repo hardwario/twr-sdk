@@ -73,6 +73,12 @@ void bc_scheduler_plan_absolute(bc_scheduler_task_id_t task_id, bc_tick_t tick);
 
 void bc_scheduler_plan_relative(bc_scheduler_task_id_t task_id, bc_tick_t tick);
 
+//! @brief Schedule specified task to tick relative from now
+//! @param[in] task_id Task ID to be scheduled
+//! @param[in] tick Tick at which the task will be run as a relative value from now
+
+void bc_scheduler_plan_from_now(bc_scheduler_task_id_t task_id, bc_tick_t tick);
+
 //! @brief Schedule current task for immediate execution
 
 void bc_scheduler_plan_current_now(void);
@@ -87,6 +93,11 @@ void bc_scheduler_plan_current_absolute(bc_tick_t tick);
 
 void bc_scheduler_plan_current_relative(bc_tick_t tick);
 
+//! @brief Schedule current task to tick relative from now
+//! @param[in] tick Tick at which the task will be run as a relative value from now
+
+void bc_scheduler_plan_current_from_now(bc_tick_t tick);
+
 //! @}
 
-#endif
+#endif // _BC_SCHEDULER_H

@@ -20,6 +20,7 @@
 #include <bc_led.h>
 #include <bc_rtc.h>
 #include <bc_uart.h>
+#include <bc_spi.h>
 
 // Chip drivers
 
@@ -51,6 +52,7 @@
 
 // Other
 
+#include <bc_analog_sensor.h>
 #include <bc_data_stream.h>
 #include <bc_flood_detector.h>
 #include <bc_pulse_counter.h>

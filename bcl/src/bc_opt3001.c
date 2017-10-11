@@ -148,7 +148,7 @@ start:
 
             self->_state = BC_OPT3001_STATE_READ;
 
-            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_OPT3001_DELAY_MEASUREMENT);
+            bc_scheduler_plan_current_from_now(_BC_OPT3001_DELAY_MEASUREMENT);
 
             return;
         }

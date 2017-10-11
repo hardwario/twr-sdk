@@ -46,7 +46,8 @@ typedef enum
 
 //! @brief CO2 Sensor driver
 
-typedef struct {
+typedef struct
+{
     bool (*init)(void);
     bool (*charge)(bool state);
     bool (*enable)(bool state);
@@ -57,7 +58,7 @@ typedef struct {
 
 } bc_co2_sensor_driver_t;
 
-//! @brief CO2 Sensor state
+//! @cond
 
 typedef enum
 {
@@ -71,8 +72,6 @@ typedef enum
     BC_CO2_SENSOR_STATE_MEASURE_READ,
 
 } bc_co2_sensor_state_t;
-
-//! @brief CO2 Sensor instance
 
 typedef struct
 {
@@ -98,36 +97,43 @@ typedef struct
 
 } bc_co2_sensor_t;
 
-//! @brief Initialize BigClown CO2 Module
+//! @endcond
+
+//! @brief Initialize BigClown CO2 Sensor
 
 void bc_co2_sensor_init(bc_co2_sensor_t *self, const bc_co2_sensor_driver_t *driver);
 
 //! @brief Set callback function
+//! @param[in] self Instance
 //! @param[in] event_handler Function address
 //! @param[in] event_param Optional event parameter (can be NULL)
 
 void bc_co2_sensor_set_event_handler(bc_co2_sensor_t *self, void (*event_handler)(bc_co2_sensor_event_t, void *), void *event_param);
 
 //! @brief Set measurement interval
+//! @param[in] self Instance
 //! @param[in] interval Measurement interval
 
 void bc_co2_sensor_set_update_interval(bc_co2_sensor_t *self, bc_tick_t interval);
 
 //! @brief Start measurement manually
+//! @param[in] self Instance
 //! @return true On success
 //! @return False When other measurement is in progress
 
 bool bc_co2_sensor_measure(bc_co2_sensor_t *self);
 
-//! @brief Get co2 concentration
-//! @param[out] concentration in ppm
+//! @brief Get CO2 concentration in ppm (parts per million)
+//! @param[in] self Instance
+//! @param[out] ppm Pointer to variable where result will be stored
 //! @return true On success
 //! @return false On failure
 
-bool bc_co2_sensor_get_concentration(bc_co2_sensor_t *self, float *concentration);
+bool bc_co2_sensor_get_concentration_ppm(bc_co2_sensor_t *self, float *ppm);
 
-//! @brief Set calibration request
-//! @param[in] calibration type
+//! @brief Request sensor calibration
+//! @param[in] self Instance
+//! @param[in] calibration Calibration type
 
 void bc_co2_sensor_calibration(bc_co2_sensor_t *self, bc_co2_sensor_calibration_t calibration);
 

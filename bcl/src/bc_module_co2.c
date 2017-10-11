@@ -3,21 +3,15 @@
 #include <bc_i2c.h>
 #include <bc_tca9534a.h>
 #include <bc_sc16is740.h>
-#include <bc_tick.h>
 
-#define _BC_MODULE_CO2_PIN_DEFAULT            (~(1 << 0) & ~(1 << 4))
-#define _BC_MODULE_CO2_PIN_CAP_ON             (~(1 << 1))
-#define _BC_MODULE_CO2_PIN_VDD2_ON            (~(1 << 2))
-#define _BC_MODULE_CO2_PIN_EN                 (~(1 << 3))
-#define _BC_MODULE_CO2_PIN_UART_RESET         (~(1 << 6))
-#define _BC_MODULE_CO2_PIN_RDY                BC_TCA9534A_PIN_P7
-#define BC_MODULE_CO2_MODBUS_DEVICE_ADDRESS  0xFE
-#define BC_MODULE_CO2_MODBUS_WRITE           0x41
-#define BC_MODULE_CO2_MODBUS_READ            0x44
-#define BC_MODULE_CO2_INITIAL_MEASUREMENT    0x10
-#define BC_MODULE_CO2_SEQUENTIAL_MEASUREMENT 0x20
-#define BC_MODULE_CO2_RX_ERROR_STATUS0       (3+39)
-#define BC_MODULE_CO2_CALIBRATION_TIMEOUT    8 * 24 * 60 * 60 * 1000
+#define _BC_MODULE_CO2_I2C_GPIO_EXPANDER_ADDRESS 0x38
+#define _BC_MODULE_CO2_I2C_UART_ADDRESS 0x4d
+#define _BC_MODULE_CO2_PIN_DEFAULT (~(1 << 0) & ~(1 << 4))
+#define _BC_MODULE_CO2_PIN_CAP_ON (~(1 << 1))
+#define _BC_MODULE_CO2_PIN_VDD2_ON (~(1 << 2))
+#define _BC_MODULE_CO2_PIN_EN (~(1 << 3))
+#define _BC_MODULE_CO2_PIN_UART_RESET (~(1 << 6))
+#define _BC_MODULE_CO2_PIN_RDY BC_TCA9534A_PIN_P7
 
 typedef enum
 {
@@ -82,9 +76,9 @@ bool bc_module_co2_measure(void)
     return bc_co2_sensor_measure(&_bc_module_co2.sensor);
 }
 
-bool bc_module_co2_get_concentration(float *concentration)
+bool bc_module_co2_get_concentration_ppm(float *ppm)
 {
-    return bc_co2_sensor_get_concentration(&_bc_module_co2.sensor, concentration);
+    return bc_co2_sensor_get_concentration_ppm(&_bc_module_co2.sensor, ppm);
 }
 
 void bc_module_co2_calibration(bc_co2_sensor_calibration_t calibration)
@@ -94,7 +88,7 @@ void bc_module_co2_calibration(bc_co2_sensor_calibration_t calibration)
 
 static bool _bc_module_co2_init(void)
 {
-    if (!bc_tca9534a_init(&_bc_module_co2.tca9534a, BC_I2C_I2C0, BC_MODULE_CO2_I2C_GPIO_EXPANDER_ADDRESS))
+    if (!bc_tca9534a_init(&_bc_module_co2.tca9534a, BC_I2C_I2C0, _BC_MODULE_CO2_I2C_GPIO_EXPANDER_ADDRESS))
     {
         return false;
     }
@@ -127,7 +121,7 @@ static bool _bc_module_co2_init(void)
         continue;
     }
 
-    if (!bc_sc16is740_init(&_bc_module_co2.sc16is740, BC_I2C_I2C0, BC_MODULE_CO2_I2C_UART_ADDRESS))
+    if (!bc_sc16is740_init(&_bc_module_co2.sc16is740, BC_I2C_I2C0, _BC_MODULE_CO2_I2C_UART_ADDRESS))
     {
         return false;
     }

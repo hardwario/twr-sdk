@@ -14,11 +14,11 @@ static int _bc_button_gpio_get_input(bc_button_t *self);
 
 static const bc_button_driver_t _bc_button_driver_gpio =
 {
-        .init = _bc_button_gpio_init,
-        .get_input = _bc_button_gpio_get_input,
+    .init = _bc_button_gpio_init,
+    .get_input = _bc_button_gpio_get_input,
 };
 
-void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_pull_t gpio_pull, bool idle_state)
+void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_pull_t gpio_pull, int idle_state)
 {
     memset(self, 0, sizeof(*self));
 
@@ -30,17 +30,18 @@ void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_p
     self->_debounce_time = _BC_BUTTON_DEBOUNCE_TIME;
     self->_click_timeout = _BC_BUTTON_CLICK_TIMEOUT;
     self->_hold_time = _BC_BUTTON_HOLD_TIME;
+    self->_tick_debounce = BC_TICK_INFINITY;
 
     self->_driver = &_bc_button_driver_gpio;
-
     self->_driver->init(self);
+
     bc_gpio_set_pull(self->_channel.gpio_channel, self->_gpio_pull);
     bc_gpio_set_mode(self->_channel.gpio_channel, BC_GPIO_MODE_INPUT);
 
     bc_scheduler_register(_bc_button_task, self, self->_scan_interval);
 }
 
-void bc_button_init_virtual(bc_button_t *self, int channel, const bc_button_driver_t *driver, bool idle_state)
+void bc_button_init_virtual(bc_button_t *self, int channel, const bc_button_driver_t *driver, int idle_state)
 {
     memset(self, 0, sizeof(*self));
 
@@ -51,9 +52,14 @@ void bc_button_init_virtual(bc_button_t *self, int channel, const bc_button_driv
     self->_debounce_time = _BC_BUTTON_DEBOUNCE_TIME;
     self->_click_timeout = _BC_BUTTON_CLICK_TIMEOUT;
     self->_hold_time = _BC_BUTTON_HOLD_TIME;
+    self->_tick_debounce = BC_TICK_INFINITY;
 
     self->_driver = driver;
-    self->_driver->init(self);
+
+    if (self->_driver->init != NULL)
+    {
+        self->_driver->init(self);
+    }
 
     bc_scheduler_register(_bc_button_task, self, self->_scan_interval);
 }
@@ -90,20 +96,34 @@ static void _bc_button_task(void *param)
 
     bc_tick_t tick_now = bc_scheduler_get_spin_tick();
 
-    int pin_state = self->_driver->get_input(self);
+    int pin_state;
+
+    if (self->_driver->get_input != NULL)
+    {
+        pin_state = self->_driver->get_input(self);
+    }
+    else
+    {
+        pin_state = self->_idle_state;
+    }
 
     if (self->_idle_state)
     {
-        pin_state = pin_state != 0 ? 0 : 1;
+        pin_state = pin_state == 0 ? 1 : 0;
     }
 
-    if ((!self->_state && (pin_state != 0)) || (self->_state && (pin_state == 0)))
+    if ((self->_state == 0 && pin_state != 0) || (self->_state != 0 && pin_state == 0))
     {
+        if (self->_tick_debounce == BC_TICK_INFINITY)
+        {
+            self->_tick_debounce = tick_now + self->_debounce_time;
+        }
+
         if (tick_now >= self->_tick_debounce)
         {
-            self->_state = !self->_state;
+            self->_state = self->_state == 0 ? 1 : 0;
 
-            if (self->_state)
+            if (self->_state != 0)
             {
                 self->_tick_click_timeout = tick_now + self->_click_timeout;
                 self->_tick_hold_threshold = tick_now + self->_hold_time;
@@ -133,10 +153,10 @@ static void _bc_button_task(void *param)
     }
     else
     {
-        self->_tick_debounce = tick_now + self->_debounce_time;
+        self->_tick_debounce = BC_TICK_INFINITY;
     }
 
-    if (self->_state)
+    if (self->_state != 0)
     {
         if (!self->_hold_signalized)
         {

@@ -102,7 +102,7 @@ static void _bc_td1207r_task(void *param)
 
                 self->_state = BC_TD1207R_STATE_INITIALIZE_RESET_H;
 
-                bc_scheduler_plan_current_relative(BC_TD1207R_DELAY_INITIALIZATION_RESET_H);
+                bc_scheduler_plan_current_from_now(BC_TD1207R_DELAY_INITIALIZATION_RESET_H);
 
                 return;
             }
@@ -112,7 +112,7 @@ static void _bc_td1207r_task(void *param)
 
                 self->_state = BC_TD1207R_STATE_INITIALIZE_AT_COMMAND;
 
-                bc_scheduler_plan_current_relative(BC_TD1207R_DELAY_INITIALIZATION_AT_COMMAND);
+                bc_scheduler_plan_current_from_now(BC_TD1207R_DELAY_INITIALIZATION_AT_COMMAND);
 
                 return;
             }
@@ -133,7 +133,7 @@ static void _bc_td1207r_task(void *param)
 
                 self->_state = BC_TD1207R_STATE_INITIALIZE_AT_RESPONSE;
 
-                bc_scheduler_plan_current_relative(BC_TD1207R_DELAY_INITIALIZATION_AT_RESPONSE);
+                bc_scheduler_plan_current_from_now(BC_TD1207R_DELAY_INITIALIZATION_AT_RESPONSE);
 
                 return;
             }
@@ -212,7 +212,7 @@ static void _bc_td1207r_task(void *param)
                     self->_event_handler(self, BC_TD1207R_EVENT_SEND_RF_FRAME_START, self->_event_param);
                 }
 
-                bc_scheduler_plan_current_relative(BC_TD1207R_DELAY_SEND_RF_FRAME_RESPONSE);
+                bc_scheduler_plan_current_from_now(BC_TD1207R_DELAY_SEND_RF_FRAME_RESPONSE);
 
                 return;
             }

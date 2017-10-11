@@ -30,26 +30,33 @@ typedef enum
 
 typedef struct bc_button_t bc_button_t;
 
+//! @brief Button driver interface
+
+typedef struct
+{
+    //! @brief Callback for initialization
+    void (*init)(bc_button_t *self);
+
+    //! @brief Callback for reading input state
+    int (*get_input)(bc_button_t *self);
+
+} bc_button_driver_t;
+
 //! @cond
 
 typedef union
 {
     bc_gpio_channel_t gpio_channel;
     int virtual_channel;
-} bc_button_channel_t;
 
-typedef struct
-{
-    void (*init)(bc_button_t *self);
-    int (*get_input)(bc_button_t *self);
-} bc_button_driver_t;
+} bc_button_channel_t;
 
 struct bc_button_t
 {
     bc_button_channel_t _channel;
     const bc_button_driver_t *_driver;
     bc_gpio_pull_t _gpio_pull;
-    bool _idle_state;
+    int _idle_state;
     void (*_event_handler)(bc_button_t *, bc_button_event_t, void *);
     void *_event_param;
     bc_tick_t _scan_interval;
@@ -59,7 +66,7 @@ struct bc_button_t
     bc_tick_t _tick_debounce;
     bc_tick_t _tick_click_timeout;
     bc_tick_t _tick_hold_threshold;
-    bool _state;
+    int _state;
     bool _hold_signalized;
 };
 
@@ -71,15 +78,15 @@ struct bc_button_t
 //! @param[in] gpio_pull GPIO pull-up/pull-down setting
 //! @param[in] idle_state GPIO pin idle state (when button is not pressed)
 
-void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_pull_t gpio_pull, bool idle_state);
+void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_pull_t gpio_pull, int idle_state);
 
 //! @brief Initialize virtual button
 //! @param[in] self Instance
 //! @param[in] channel Virtual channel button is connected to
 //! @param[in] driver Virtual channel button driver
-//! @param[in] idle_state Virtual pin idle state (when LED is supposed to be off)
+//! @param[in] idle_state Virtual pin idle state (when button is not pressed)
 
-void bc_button_init_virtual(bc_button_t *self, int channel, const bc_button_driver_t *driver, bool idle_state);
+void bc_button_init_virtual(bc_button_t *self, int channel, const bc_button_driver_t *driver, int idle_state);
 
 //! @brief Set callback function
 //! @param[in] self Instance

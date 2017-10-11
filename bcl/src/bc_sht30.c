@@ -206,7 +206,7 @@ start:
 
             self->_state = BC_SHT30_STATE_READ;
 
-            bc_scheduler_plan_current_absolute(bc_tick_get() + _BC_SHT30_DELAY_MEASUREMENT);
+            bc_scheduler_plan_current_from_now(_BC_SHT30_DELAY_MEASUREMENT);
 
             return;
         }

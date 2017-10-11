@@ -1,18 +1,18 @@
-#include <stm32l083xx.h>
 #include <bc_adc.h>
 #include <bc_scheduler.h>
 #include <bc_irq.h>
+#include <stm32l083xx.h>
 
-#define VREFINT_CAL_ADDR 0x1FF80078
+#define VREFINT_CAL_ADDR 0x1ff80078
 
 #define BC_ADC_CHANNEL_INTERNAL_REFERENCE 6
-#define BC_ADC_CHANNEL_NONE ((bc_adc_channel_t)(-1))
-#define BC_ADC_CHANNEL_COUNT ((bc_adc_channel_t)7)
+#define BC_ADC_CHANNEL_NONE ((bc_adc_channel_t) (-1))
+#define BC_ADC_CHANNEL_COUNT ((bc_adc_channel_t) 7)
 
 typedef enum
 {
     BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_BEGIN,
-    BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_FINISH,
+    BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_END,
     BC_ADC_STATE_MEASURE_INPUT
 
 } bc_adc_state_t;
@@ -49,7 +49,7 @@ _bc_adc =
         [BC_ADC_CHANNEL_A3].chselr = ADC_CHSELR_CHSEL3,
         [BC_ADC_CHANNEL_A4].chselr = ADC_CHSELR_CHSEL4,
         [BC_ADC_CHANNEL_A5].chselr = ADC_CHSELR_CHSEL5,
-        [BC_ADC_CHANNEL_INTERNAL_REFERENCE] = {BC_ADC_FORMAT_16_BIT, NULL, NULL, false, ADC_CHSELR_CHSEL17 }
+        [BC_ADC_CHANNEL_INTERNAL_REFERENCE] = { BC_ADC_FORMAT_16_BIT, NULL, NULL, false, ADC_CHSELR_CHSEL17 }
     }
 };
 
@@ -112,7 +112,7 @@ bool bc_adc_read(bc_adc_channel_t channel, void *result)
         return false;
     }
 
-    _bc_adc_calibration();
+    //_bc_adc_calibration();
 
     // Set ADC channel
     ADC1->CHSELR = _bc_adc.channel_table[channel].chselr;
@@ -132,7 +132,10 @@ bool bc_adc_read(bc_adc_channel_t channel, void *result)
         continue;
     }
 
-    bc_adc_get_result(channel, result);
+    if (result != NULL)
+    {
+        bc_adc_get_result(channel, result);
+    }
 
     return true;
 }
@@ -155,7 +158,7 @@ bool bc_adc_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc
 
 bool bc_adc_async_read(bc_adc_channel_t channel)
 {
-    // If ongoing conversion ...
+    // If another conversion is ongoing...
     if (_bc_adc.channel_in_progress != BC_ADC_CHANNEL_NONE)
     {
         _bc_adc.channel_table[channel].pending = true;
@@ -169,6 +172,7 @@ bool bc_adc_async_read(bc_adc_channel_t channel)
     // Update internal state
     _bc_adc.state = BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_BEGIN;
 
+    // Disable interrupts
     bc_irq_disable();
 
     // Clear end of calibration flag
@@ -177,46 +181,62 @@ bool bc_adc_async_read(bc_adc_channel_t channel)
     // Enable end of calibration interrupt
     ADC1->IER = ADC_IER_EOCALIE;
 
-    bc_irq_enable();
-
     // Begin offset calibration
     ADC1->CR |= ADC_CR_ADCAL;
+
+    // Enable interrupts
+    bc_irq_enable();
 
     return true;
 }
 
-void bc_adc_get_result(bc_adc_channel_t channel, void *result)
+bool bc_adc_get_result(bc_adc_channel_t channel, void *result)
 {
     uint32_t data = ADC1->DR;
 
-    data *= _bc_adc.real_vdda_voltage / 3.3f;
+    //data *= _bc_adc.real_vdda_voltage / 3.3f;
 
     switch (_bc_adc.channel_table[channel].format)
     {
-    case BC_ADC_FORMAT_8_BIT:
-        *(uint8_t *) result = data >> 8;
-        break;
-    case BC_ADC_FORMAT_16_BIT:
-        *(uint16_t *) result = data;
-        break;
-    case BC_ADC_FORMAT_24_BIT:
-        memcpy((uint8_t *) result + 1, &data, 3);
-        break;
-    case BC_ADC_FORMAT_32_BIT:
-        *(uint32_t *) result = data << 16;
-        break;
-    case BC_ADC_FORMAT_FLOAT:
-        *(float *) result = data * (3.3f / 65536.f);
-        break;
-    default:
-        return;
-        break;
+        case BC_ADC_FORMAT_8_BIT:
+        {
+            *(uint8_t *) result = data >> 8;
+            break;
+        }
+        case BC_ADC_FORMAT_16_BIT:
+        {
+            *(uint16_t *) result = data;
+            break;
+        }
+        case BC_ADC_FORMAT_24_BIT:
+        {
+            memcpy((uint8_t *) result + 1, &data, 3);
+            break;
+        }
+        case BC_ADC_FORMAT_32_BIT:
+        {
+            *(uint32_t *) result = data << 16;
+            break;
+        }
+        /*
+        case BC_ADC_FORMAT_FLOAT:
+        {
+            *(float *) result = data * (3.3f / 65536.f);
+            break;
+        }
+        */
+        default:
+        {
+            return false;
+        }
     }
+
+    return true;
 }
 
 bool bc_adc_get_vdda_voltage(float *vdda_voltage)
 {
-    if(_bc_adc.real_vdda_voltage ==  0.0f)
+    if (_bc_adc.real_vdda_voltage == 0.f)
     {
         return false;
     }
@@ -230,7 +250,7 @@ bool bc_adc_get_vdda_voltage(float *vdda_voltage)
 
 void ADC1_COMP_IRQHandler(void)
 {
-    // ADC offset calibrated !!
+    // TODO ADC offset calibrated !!
 
     // Read internal reference channel
     if (_bc_adc.state == BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_BEGIN)
@@ -242,7 +262,7 @@ void ADC1_COMP_IRQHandler(void)
         ADC1->CHSELR = _bc_adc.channel_table[BC_ADC_CHANNEL_INTERNAL_REFERENCE].chselr;
 
         // Update internal state
-        _bc_adc.state = BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_FINISH;
+        _bc_adc.state = BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_END;
 
         // Clear end of sequence interrupt
         ADC1->ISR = ADC_ISR_EOS;
@@ -255,13 +275,13 @@ void ADC1_COMP_IRQHandler(void)
     }
 
     // Get real VDDA and begin analog channel measurement
-    else if (_bc_adc.state == BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_FINISH)
+    else if (_bc_adc.state == BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_END)
     {
         // Disable internal reference
         ADC->CCR &= ~ADC_CCR_VREFEN;
 
         // Compute actual VDDA
-        _bc_adc.real_vdda_voltage = 3. * ((float) _bc_adc.vrefint / (float) ADC1->DR);
+        _bc_adc.real_vdda_voltage = 3.f * ((float) _bc_adc.vrefint / (float) ADC1->DR);
 
         // Set ADC channel
         ADC1->CHSELR = _bc_adc.channel_table[_bc_adc.channel_in_progress].chselr;
@@ -306,13 +326,14 @@ static inline void _bc_adc_calibration(void)
 
     // Perform measurement on internal reference
     ADC1->CR |= ADC_CR_ADSTART;
+
     while ((ADC1->ISR & ADC_ISR_EOS) == 0)
     {
         continue;
     }
 
     // Compute actual VDDA
-    _bc_adc.real_vdda_voltage = 3. * ((float) _bc_adc.vrefint / (float) ADC1->DR);
+    _bc_adc.real_vdda_voltage = 3.f * ((float) _bc_adc.vrefint / (float) ADC1->DR);
 
     // Disable internal reference
     ADC->CCR &= ~ADC_CCR_VREFEN;
@@ -332,6 +353,7 @@ static void _bc_adc_task(void *param)
     // Release ADC for further conversion
     _bc_adc.channel_in_progress = BC_ADC_CHANNEL_NONE;
 
+    // Disable interrupts
     bc_irq_disable();
 
     // Get pending
@@ -340,6 +362,7 @@ static void _bc_adc_task(void *param)
         bc_adc_async_read(next);
     }
 
+    // Enable interrupts
     bc_irq_enable();
 
     // Perform event call-back
@@ -348,9 +371,9 @@ static void _bc_adc_task(void *param)
 
 static inline bool _bc_adc_get_pending(bc_adc_channel_t *next ,bc_adc_channel_t start)
 {
-    for (unsigned int i = start + 1; i != start; ++i)
+    for (int i = start + 1; i != start; i++)
     {
-        if(i == BC_ADC_CHANNEL_COUNT)
+        if (i == BC_ADC_CHANNEL_COUNT)
         {
             if (start == BC_ADC_CHANNEL_A0)
             {
@@ -365,6 +388,7 @@ static inline bool _bc_adc_get_pending(bc_adc_channel_t *next ,bc_adc_channel_t 
         if (_bc_adc.channel_table[i].pending == true)
         {
             *next = i;
+
             return true;
         }
     }

@@ -127,6 +127,11 @@ void bc_scheduler_plan_relative(bc_scheduler_task_id_t task_id, bc_tick_t tick)
     _bc_scheduler.pool[task_id].tick_execution = _bc_scheduler.tick_spin + tick;
 }
 
+void bc_scheduler_plan_from_now(bc_scheduler_task_id_t task_id, bc_tick_t tick)
+{
+    _bc_scheduler.pool[task_id].tick_execution = bc_tick_get() + tick;
+}
+
 void bc_scheduler_plan_current_now(void)
 {
     _bc_scheduler.pool[_bc_scheduler.current_task_id].tick_execution = 0;
@@ -140,4 +145,9 @@ void bc_scheduler_plan_current_absolute(bc_tick_t tick)
 void bc_scheduler_plan_current_relative(bc_tick_t tick)
 {
     _bc_scheduler.pool[_bc_scheduler.current_task_id].tick_execution = _bc_scheduler.tick_spin + tick;
+}
+
+void bc_scheduler_plan_current_from_now(bc_tick_t tick)
+{
+    _bc_scheduler.pool[_bc_scheduler.current_task_id].tick_execution = bc_tick_get() + tick;
 }
