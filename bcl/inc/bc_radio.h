@@ -2,6 +2,8 @@
 #define _BC_RADIO_H
 
 #include <bc_common.h>
+#include <bc_button.h>
+#include <bc_led.h>
 
 #ifndef BC_RADIO_MAX_DEVICES
 #define BC_RADIO_MAX_DEVICES 8
@@ -67,5 +69,7 @@ bool bc_radio_pub_co2(float *concentration);
 bool bc_radio_pub_battery(uint8_t format, float *voltage);
 
 bool bc_radio_pub_buffer(void *buffer, size_t length);
+
+void bc_radio_init_pairing_button();
 
 #endif // _BC_RADIO_H
