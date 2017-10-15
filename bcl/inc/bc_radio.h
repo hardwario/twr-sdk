@@ -70,6 +70,8 @@ bool bc_radio_pub_battery(uint8_t format, float *voltage);
 
 bool bc_radio_pub_buffer(void *buffer, size_t length);
 
+bool bc_radio_pub_info(char *firmware);
+
 void bc_radio_init_pairing_button();
 
 #endif // _BC_RADIO_H
