@@ -173,12 +173,9 @@ static void _bc_module_battery_adc_event_handler(bc_adc_channel_t channel, bc_ad
     {
         _bc_module_battery_update_voltage_on_battery();
 
-        // Security measures ...
-        _bc_module_battery.valid = true;
-
         _bc_module_battery_measurement(DISABLE);
 
-        if (_bc_module_battery.event_handler != NULL)
+        if (_bc_module_battery.valid && _bc_module_battery.event_handler != NULL)
         {
             // Notify event based on calculated percentage
             if (_bc_module_battery.voltage <= _bc_module_battery.level_critical_threshold)
@@ -216,7 +213,12 @@ static void _bc_module_battery_update_voltage_on_battery(void)
 {
     float v;
 
-    bc_adc_get_result(BC_ADC_CHANNEL_A0, &v);
+    _bc_module_battery.valid = bc_adc_get_result(BC_ADC_CHANNEL_A0, &v);
+
+    if (!_bc_module_battery.valid)
+    {
+        return;
+    }
 
     if (_bc_module_battery.format == BC_MODULE_BATTERY_FORMAT_MINI)
     {
