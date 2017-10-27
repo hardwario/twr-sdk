@@ -54,6 +54,8 @@ uint64_t bc_radio_get_device_address(void);
 
 uint64_t bc_radio_get_event_device_address(void);
 
+bool bc_radio_is_peer_device(uint64_t device_address);
+
 bool bc_radio_pub_push_button(uint16_t *event_count);
 
 bool bc_radio_pub_thermometer(uint8_t i2c, float *temperature);
