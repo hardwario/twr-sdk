@@ -41,13 +41,13 @@ bool bc_eeprom_write(uint32_t address, const void *buffer, size_t length)
         // Program data to address
         ((uint8_t *) address)[i] = ((uint8_t *) buffer)[i];
 
-        if (_bc_eeprom_is_busy(20))
+        while ((FLASH->SR & FLASH_SR_BSY) != 0UL)
         {
-            return false;
+            continue;
         }
     }
 
-    if (_bc_eeprom_is_busy(20))
+    if (_bc_eeprom_is_busy(10 * length))
     {
         return false;
     }
