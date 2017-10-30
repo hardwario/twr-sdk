@@ -9,6 +9,11 @@ int main(void)
 {
     bc_module_core_init();
 
+    while (bc_tick_get() < 500)
+    {
+        continue;
+    }
+
     bc_scheduler_init();
 
     bc_scheduler_register(application_task, NULL, 0);
