@@ -7,6 +7,7 @@
 #include <bc_i2c.h>
 
 #define _BC_RADIO_SCAN_CACHE_LENGTH	4
+#define _BC_RADIO_HEAD_SIZE         (6 + 2)
 
 typedef enum
 {
@@ -21,7 +22,8 @@ typedef enum
     BC_RADIO_HEADER_ATTACH,
 	BC_RADIO_HEADER_DETACH,
 	BC_RADIO_HEADER_PUB_BATTERY,
-	BC_RADIO_HEADER_PUB_INFO
+	BC_RADIO_HEADER_PUB_INFO,
+	BC_RADIO_HEADER_PUB_STATE
 
 } bc_radio_header_t;
 
@@ -93,6 +95,7 @@ __attribute__((weak)) void bc_radio_on_co2(uint64_t *peer_device_address, float 
 __attribute__((weak)) void bc_radio_on_battery(uint64_t *peer_device_address, uint8_t *format, float *voltage) { (void) peer_device_address; (void) format; (void) voltage; }
 __attribute__((weak)) void bc_radio_on_buffer(uint64_t *peer_device_address, void *buffer, size_t *length) { (void) peer_device_address; (void) buffer; (void) length; }
 __attribute__((weak)) void bc_radio_on_info(uint64_t *peer_device_address, char *firmware) { (void) peer_device_address; (void) firmware; }
+__attribute__((weak)) void bc_radio_on_state(uint64_t *peer_device_address, uint8_t who, int8_t *state) { (void) peer_device_address; (void) who; (void) state; }
 
 void bc_radio_init(void)
 {
@@ -443,6 +446,24 @@ bool bc_radio_pub_info(char *firmware)
     return true;
 }
 
+bool bc_radio_pub_state(uint8_t who, int8_t *state)
+{
+    uint8_t buffer[1 + sizeof(who) + sizeof(*state)];
+
+    buffer[0] = BC_RADIO_HEADER_PUB_STATE;
+    buffer[1] = who;
+    buffer[2] = *state;
+
+    if (!bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer)))
+    {
+        return false;
+    }
+
+    bc_scheduler_plan_now(_bc_radio.task_id);
+
+    return true;
+}
+
 static void _bc_radio_task(void *param)
 {
     (void) param;
@@ -582,6 +603,10 @@ static void _bc_radio_task(void *param)
             queue_item_buffer[queue_item_length - 1] = 0;
 
             bc_radio_on_info(&device_address, (char *)queue_item_buffer + 8 + 1);
+        }
+        else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_STATE)
+        {
+            bc_radio_on_state(&device_address, queue_item_buffer[_BC_RADIO_HEAD_SIZE + 1], (int8_t *) &queue_item_buffer[_BC_RADIO_HEAD_SIZE + 2]);
         }
 
     }

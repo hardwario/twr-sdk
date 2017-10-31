@@ -20,6 +20,14 @@ typedef enum
 
 } bc_radio_event_t;
 
+enum
+{
+    BC_RADIO_STATE_LED =                0,
+    BC_RADIO_STATE_RELAY_MODULE_0 =     1,
+    BC_RADIO_STATE_RELAY_MODULE_1 =     2,
+    BC_RADIO_STATE_POWER_MODULE_RELAY = 3
+};
+
 void bc_radio_init(void);
 
 void bc_radio_set_event_handler(void (*event_handler)(bc_radio_event_t, void *), void *event_param);
@@ -73,6 +81,8 @@ bool bc_radio_pub_battery(uint8_t format, float *voltage);
 bool bc_radio_pub_buffer(void *buffer, size_t length);
 
 bool bc_radio_pub_info(char *firmware);
+
+bool bc_radio_pub_state(uint8_t who, int8_t *state);
 
 void bc_radio_init_pairing_button();
 
