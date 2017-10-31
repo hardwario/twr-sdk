@@ -82,7 +82,11 @@ bool bc_radio_pub_buffer(void *buffer, size_t length);
 
 bool bc_radio_pub_info(char *firmware);
 
-bool bc_radio_pub_state(uint8_t who, int8_t *state);
+bool bc_radio_pub_state(uint8_t state_id, bool *state);
+
+bool bc_radio_node_state_set(uint64_t *id, uint8_t state_id, bool *state);
+
+bool bc_radio_node_state_get(uint64_t *id, uint8_t state_id);
 
 void bc_radio_init_pairing_button();
 
