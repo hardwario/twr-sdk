@@ -88,6 +88,12 @@ bool bc_radio_node_state_set(uint64_t *id, uint8_t state_id, bool *state);
 
 bool bc_radio_node_state_get(uint64_t *id, uint8_t state_id);
 
+bool bc_radio_pub_bool(const char *subtopic, bool *value);
+
+bool bc_radio_pub_int(const char *subtopic, int *value);
+
+bool bc_radio_pub_float(const char *subtopic, float *value);
+
 void bc_radio_init_pairing_button();
 
 #endif // _BC_RADIO_H
