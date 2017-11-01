@@ -63,7 +63,11 @@ void temperature_tag_event_handler(bc_tag_temperature_t *self, bc_tag_temperatur
 
             uint8_t buffer[5];
 
+            // First byte 0x02 says we are sending temperature
             buffer[0] = 0x02;
+            // Variable temperature is converted from float to uint32_t
+            // and then shifted. The decimal part is lost.
+            // If you need decimal part, first multiply float by * 100 and then do the casting to uint32_t
             buffer[1] = (uint32_t) temperature;
             buffer[2] = (uint32_t) temperature >> 8;
             buffer[3] = (uint32_t) temperature >> 16;
