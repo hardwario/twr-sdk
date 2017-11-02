@@ -18,24 +18,23 @@
 
 typedef enum
 {
-    BC_RADIO_HEADER_ENROLL,
+    BC_RADIO_HEADER_PAIRING,
+    BC_RADIO_HEADER_ATTACH,
+    BC_RADIO_HEADER_DETACH,
+    BC_RADIO_HEADER_PUB_TOPIC_BOOL,
+    BC_RADIO_HEADER_PUB_TOPIC_INT,
+    BC_RADIO_HEADER_PUB_TOPIC_FLOAT,
     BC_RADIO_HEADER_PUB_EVENT_COUNT,
+    BC_RADIO_HEADER_PUB_STATE,
+    BC_RADIO_HEADER_NODE_STATE_SET,
+    BC_RADIO_HEADER_NODE_STATE_GET,
+    BC_RADIO_HEADER_PUB_BUFFER,
     BC_RADIO_HEADER_PUB_THERMOMETER,
     BC_RADIO_HEADER_PUB_HUMIDITY,
     BC_RADIO_HEADER_PUB_LUX_METER,
     BC_RADIO_HEADER_PUB_BAROMETER,
     BC_RADIO_HEADER_PUB_CO2,
-    BC_RADIO_HEADER_PUB_BUFFER,
-    BC_RADIO_HEADER_ATTACH,
-	BC_RADIO_HEADER_DETACH,
 	BC_RADIO_HEADER_PUB_BATTERY,
-	BC_RADIO_HEADER_PUB_INFO,
-	BC_RADIO_HEADER_PUB_STATE,
-	BC_RADIO_HEADER_NODE_STATE_SET,
-	BC_RADIO_HEADER_NODE_STATE_GET,
-	BC_RADIO_HEADER_PUB_TOPIC_BOOL,
-	BC_RADIO_HEADER_PUB_TOPIC_INT,
-	BC_RADIO_HEADER_PUB_TOPIC_FLOAT
 
 } bc_radio_header_t;
 
@@ -57,6 +56,7 @@ typedef struct
 
 static struct
 {
+    bc_radio_mode_t mode;
     bc_atsha204_t atsha204;
     bc_radio_state_t state;
     uint64_t my_id;
@@ -66,6 +66,8 @@ static struct
     void *event_param;
     bc_scheduler_task_id_t task_id;
     bool enroll_to_gateway;
+    const char *firmware;
+    const char *firmware_version;
     bool enrollment_mode;
 
     bc_queue_t pub_queue;
@@ -94,7 +96,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 static void _bc_radio_load_old_peer_devices(void);
 static void _bc_radio_load_peer_devices(void);
 static void _bc_radio_save_peer_devices(void);
-static void atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t event, void *event_param);
+static void _bc_radio_atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t event, void *event_param);
 static bool _bc_radio_peer_device_add(uint64_t id);
 static bool _bc_radio_peer_device_remove(uint64_t id);
 static uint8_t *_bc_radio_id_to_buffer(uint64_t *id, uint8_t *buffer);
@@ -115,7 +117,7 @@ __attribute__((weak)) void bc_radio_on_barometer(uint64_t *id, uint8_t *i2c, flo
 __attribute__((weak)) void bc_radio_on_co2(uint64_t *id, float *concentration) { (void) id; (void) concentration; }
 __attribute__((weak)) void bc_radio_on_battery(uint64_t *id, uint8_t *format, float *voltage) { (void) id; (void) format; (void) voltage; }
 __attribute__((weak)) void bc_radio_on_buffer(uint64_t *id, void *buffer, size_t *length) { (void) id; (void) buffer; (void) length; }
-__attribute__((weak)) void bc_radio_on_info(uint64_t *id, char *firmware) { (void) id; (void) firmware; }
+__attribute__((weak)) void bc_radio_on_info(uint64_t *id, char *firmware, char *version) { (void) id; (void) firmware; (void) version; }
 __attribute__((weak)) void bc_radio_on_state(uint64_t *id, uint8_t state_id, bool *state) { (void) id; (void) state_id; (void) state; }
 __attribute__((weak)) void bc_radio_on_state_set(uint64_t *id, uint8_t state_id, bool *state) { (void) id; (void) state_id; (void) state; }
 __attribute__((weak)) void bc_radio_on_state_get(uint64_t *id, uint8_t state_id) { (void) id; (void) state_id; }
@@ -123,12 +125,14 @@ __attribute__((weak)) void bc_radio_on_bool(uint64_t *id, char *subtopic, bool *
 __attribute__((weak)) void bc_radio_on_int(uint64_t *id, char *subtopic, int *value) { (void) id; (void) subtopic; (void) value; }
 __attribute__((weak)) void bc_radio_on_float(uint64_t *id, char *subtopic, float *value) { (void) id; (void) subtopic; (void) value; }
 
-void bc_radio_init(void)
+void bc_radio_init(bc_radio_mode_t mode)
 {
     memset(&_bc_radio, 0, sizeof(_bc_radio));
 
+    _bc_radio.mode = mode;
+
     bc_atsha204_init(&_bc_radio.atsha204, BC_I2C_I2C0, 0x64);
-    bc_atsha204_set_event_handler(&_bc_radio.atsha204, atsha204_event_handler, NULL);
+    bc_atsha204_set_event_handler(&_bc_radio.atsha204, _bc_radio_atsha204_event_handler, NULL);
     bc_atsha204_read_serial_number(&_bc_radio.atsha204);
 
     bc_queue_init(&_bc_radio.pub_queue, _bc_radio.pub_queue_buffer, sizeof(_bc_radio.pub_queue_buffer));
@@ -140,6 +144,11 @@ void bc_radio_init(void)
     _bc_radio_load_peer_devices();
 
     _bc_radio.task_id = bc_scheduler_register(_bc_radio_task, NULL, BC_TICK_INFINITY);
+
+    if ((_bc_radio.mode == BC_RADIO_MODE_GATEWAY) || (_bc_radio.mode == BC_RADIO_MODE_NODE_LISTENING))
+    {
+        bc_radio_listen();
+    }
 }
 
 void bc_radio_set_event_handler(void (*event_handler)(bc_radio_event_t, void *), void *event_param)
@@ -162,19 +171,28 @@ void bc_radio_sleep(void)
     bc_scheduler_plan_now(_bc_radio.task_id);
 }
 
-void bc_radio_enroll_to_gateway(void)
+void bc_radio_pairing_request(const char *firmware, const char *version)
 {
+    if ((_bc_radio.firmware != NULL) || (_bc_radio.firmware_version != NULL))
+    {
+        return;
+    }
+
+    _bc_radio.firmware = firmware;
+
+    _bc_radio.firmware_version = version;
+
     _bc_radio.enroll_to_gateway = true;
 
     bc_scheduler_plan_now(_bc_radio.task_id);
 }
 
-void bc_radio_enrollment_start(void)
+void bc_radio_pairing_mode_start(void)
 {
     _bc_radio.enrollment_mode = true;
 }
 
-void bc_radio_enrollment_stop(void)
+void bc_radio_pairing_mode_stop(void)
 {
     _bc_radio.enrollment_mode = false;
 }
@@ -454,30 +472,6 @@ bool bc_radio_pub_buffer(void *buffer, size_t length)
     return true;
 }
 
-bool bc_radio_pub_info(char *firmware)
-{
-    uint8_t qbuffer[BC_SPIRIT1_MAX_PACKET_SIZE - 8];
-    size_t length = strlen(firmware);
-
-    if (length > (BC_SPIRIT1_MAX_PACKET_SIZE - 8 - 1))
-    {
-        return false;
-    }
-
-    qbuffer[0] = BC_RADIO_HEADER_PUB_INFO;
-
-    strncpy((char *)qbuffer + 1, firmware, sizeof(qbuffer) - 2);
-
-    if (!bc_queue_put(&_bc_radio.pub_queue, qbuffer, length + 2))
-    {
-        return false;
-    }
-
-    bc_scheduler_plan_now(_bc_radio.task_id);
-
-    return true;
-}
-
 bool bc_radio_pub_state(uint8_t state_id, bool *state)
 {
     uint8_t buffer[1 + sizeof(state_id) + sizeof(*state)];
@@ -652,6 +646,15 @@ static void _bc_radio_task(void *param)
     {
         _bc_radio.enroll_to_gateway = false;
 
+        size_t len_firmware = strlen(_bc_radio.firmware);
+
+        size_t len = len_firmware + strlen(_bc_radio.firmware_version);
+
+        if (len > _BC_RADIO_MAX_BUFFER_SIZE - 4)
+        {
+            return;
+        }
+
         uint8_t *buffer = bc_spirit1_get_tx_buffer();
 
         _bc_radio_id_to_buffer(&_bc_radio.my_id, buffer);
@@ -659,11 +662,15 @@ static void _bc_radio_task(void *param)
         buffer[6] = _bc_radio.message_id;
         buffer[7] = _bc_radio.message_id >> 8;
 
-        buffer[8] = BC_RADIO_HEADER_ENROLL;
+        buffer[8] = BC_RADIO_HEADER_PAIRING;
+        buffer[9] = len_firmware;
+
+        strncpy((char *)buffer + 10, _bc_radio.firmware, _BC_RADIO_MAX_BUFFER_SIZE - 2);
+        strncpy((char *)buffer + 10 + len_firmware + 1, _bc_radio.firmware_version, _BC_RADIO_MAX_BUFFER_SIZE - 2 - len_firmware - 1);
 
         _bc_radio.message_id++;
 
-        bc_spirit1_set_tx_length(9);
+        bc_spirit1_set_tx_length(10 + len + 2);
 
         bc_spirit1_tx();
 
@@ -753,12 +760,12 @@ static void _bc_radio_task(void *param)
             queue_item_length -= 8 + 1;
             bc_radio_on_buffer(&id, &queue_item_buffer[8 + 1], &queue_item_length);
         }
-        else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_INFO)
-        {
-            queue_item_buffer[queue_item_length - 1] = 0;
-
-            bc_radio_on_info(&id, (char *)queue_item_buffer + 8 + 1);
-        }
+//        else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_INFO)
+//        {
+//            queue_item_buffer[queue_item_length - 1] = 0;
+//
+//            bc_radio_on_info(&id, (char *)queue_item_buffer + 8 + 1);
+//        }
         else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_STATE)
         {
             bool *state = NULL;
@@ -913,9 +920,22 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
             _bc_radio_id_from_buffer(buffer, &_bc_radio.peer_id);
 
-            if (_bc_radio.enrollment_mode && length == 9 && buffer[8] == BC_RADIO_HEADER_ENROLL)
+            if (_bc_radio.enrollment_mode && buffer[8] == BC_RADIO_HEADER_PAIRING && length > 10)
             {
-                bc_radio_peer_device_add(_bc_radio.peer_id);
+                if (!bc_radio_peer_device_add(_bc_radio.peer_id))
+                {
+                    return;
+                }
+
+                if (10 + buffer[9] + 1 > length)
+                {
+                    return;
+                }
+
+                buffer[10 + buffer[9]] = 0;
+                buffer[length - 1] = 0;
+
+                bc_radio_on_info(&_bc_radio.peer_id, (char *)buffer + 10, (char *)buffer + 10 + buffer[9] + 1);
 
                 return;
             }
@@ -1106,7 +1126,7 @@ static void _bc_radio_save_peer_devices(void)
     }
 }
 
-static void atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t event, void *event_param)
+static void _bc_radio_atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t event, void *event_param)
 {
     (void) event_param;
 
@@ -1311,16 +1331,24 @@ static uint8_t *_bc_radio_float_from_buffer(uint8_t *buffer, float **value)
     return buffer + sizeof(float);
 }
 
+typedef struct
+{
+    bc_led_t *led;
+    const char *firmware;
+    const char *version;
+
+} _bc_radio_button_event_param_t;
+
 void _bc_radio_button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param)
 {
     (void) self;
-    bc_led_t *led = (bc_led_t*) event_param;
+    _bc_radio_button_event_param_t *param = (_bc_radio_button_event_param_t*) event_param;
 
     if (event == BC_BUTTON_EVENT_PRESS)
     {
-        if (led != NULL)
+        if (param->led != NULL)
         {
-            bc_led_pulse(led, 100);
+            bc_led_pulse(param->led, 100);
         }
 
         static uint16_t event_count = 0;
@@ -1331,24 +1359,28 @@ void _bc_radio_button_event_handler(bc_button_t *self, bc_button_event_t event, 
     }
     else if (event == BC_BUTTON_EVENT_HOLD)
     {
-        bc_radio_enroll_to_gateway();
+        bc_radio_pairing_request(param->firmware, param->version);
 
-        if (led != NULL)
+        if (param->led != NULL)
         {
-            bc_led_set_mode(led, BC_LED_MODE_OFF);
-            bc_led_pulse(led, 1000);
+            bc_led_set_mode(param->led, BC_LED_MODE_OFF);
+            bc_led_pulse(param->led, 1000);
         }
     }
 }
 
-void bc_radio_init_pairing_button()
+void bc_radio_init_pairing_button(const char *firmware, const char *version)
 {
     static bc_led_t led;
     static bc_button_t button;
+    static _bc_radio_button_event_param_t param;
+    param.led = &led;
+    param.firmware = firmware;
+    param.version = version;
 
     bc_button_init(&button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN, 0);
     // Pass led instance as a callback parameter, so we don't need to add it to the radio structure
-    bc_button_set_event_handler(&button, _bc_radio_button_event_handler, &led);
+    bc_button_set_event_handler(&button, _bc_radio_button_event_handler, &param);
 
     bc_led_init(&led, BC_GPIO_LED, false, 0);
 

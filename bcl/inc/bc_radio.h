@@ -6,8 +6,16 @@
 #include <bc_led.h>
 
 #ifndef BC_RADIO_MAX_DEVICES
-#define BC_RADIO_MAX_DEVICES 8
+#define BC_RADIO_MAX_DEVICES 4
 #endif
+
+typedef enum
+{
+    BC_RADIO_MODE_GATEWAY = 0,
+    BC_RADIO_MODE_NODE_SLEEPING = 1,
+    BC_RADIO_MODE_NODE_LISTENING = 2,
+
+} bc_radio_mode_t;
 
 typedef enum
 {
@@ -37,7 +45,7 @@ enum
     BC_RADIO_STATE_POWER_MODULE_RELAY = 3,
 };
 
-void bc_radio_init(void);
+void bc_radio_init(bc_radio_mode_t mode);
 
 void bc_radio_set_event_handler(void (*event_handler)(bc_radio_event_t, void *), void *event_param);
 
@@ -45,11 +53,11 @@ void bc_radio_listen(void);
 
 void bc_radio_sleep(void);
 
-void bc_radio_enroll_to_gateway(void);
+void bc_radio_pairing_request(const char *firmware, const char *version);
 
-void bc_radio_enrollment_start(void);
+void bc_radio_pairing_mode_start(void);
 
-void bc_radio_enrollment_stop(void);
+void bc_radio_pairing_mode_stop(void);
 
 bool bc_radio_peer_device_add(uint64_t id);
 
@@ -90,8 +98,6 @@ bool bc_radio_pub_co2(float *concentration);
 bool bc_radio_pub_battery(uint8_t format, float *voltage);
 
 bool bc_radio_pub_buffer(void *buffer, size_t length);
-
-bool bc_radio_pub_info(char *firmware);
 
 bool bc_radio_pub_state(uint8_t state_id, bool *state);
 
