@@ -19,7 +19,7 @@
 typedef enum
 {
     BC_RADIO_HEADER_ENROLL,
-    BC_RADIO_HEADER_PUB_PUSH_BUTTON,
+    BC_RADIO_HEADER_PUB_EVENT_COUNT,
     BC_RADIO_HEADER_PUB_THERMOMETER,
     BC_RADIO_HEADER_PUB_HUMIDITY,
     BC_RADIO_HEADER_PUB_LUX_METER,
@@ -106,6 +106,7 @@ static uint8_t *_bc_radio_bool_from_buffer(uint8_t *buffer, bool **value);
 static uint8_t *_bc_radio_int_from_buffer(uint8_t *buffer, int **value);
 static uint8_t *_bc_radio_float_from_buffer(uint8_t *buffer, float **value);
 
+__attribute__((weak)) void bc_radio_on_event_count(uint64_t *id, uint8_t event_id, uint16_t *event_count) { (void) id; (void) event_id; (void) event_count; }
 __attribute__((weak)) void bc_radio_on_push_button(uint64_t *peer_device_address, uint16_t *event_count) { (void) peer_device_address; (void) event_count; }
 __attribute__((weak)) void bc_radio_on_thermometer(uint64_t *peer_device_address, uint8_t *i2c, float *temperature) { (void) peer_device_address; (void) i2c; (void) temperature; }
 __attribute__((weak)) void bc_radio_on_humidity(uint64_t *peer_device_address, uint8_t *i2c, float *percentage) { (void) peer_device_address; (void) i2c; (void) percentage; }
@@ -292,13 +293,14 @@ bool bc_radio_is_peer_device(uint64_t device_address)
     return false;
 }
 
-bool bc_radio_pub_push_button(uint16_t *event_count)
+bool bc_radio_pub_event_count(uint8_t event_id, uint16_t *event_count)
 {
-    uint8_t buffer[1 + sizeof(*event_count)];
+    uint8_t buffer[1 + sizeof(event_id) + sizeof(*event_count)];
 
-    buffer[0] = BC_RADIO_HEADER_PUB_PUSH_BUTTON;
+    buffer[0] = BC_RADIO_HEADER_PUB_EVENT_COUNT;
+    buffer[1] = event_id;
 
-    memcpy(&buffer[1], event_count, sizeof(*event_count));
+    memcpy(buffer + 2, event_count, sizeof(*event_count));
 
     if (!bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer)))
     {
@@ -308,6 +310,11 @@ bool bc_radio_pub_push_button(uint16_t *event_count)
     bc_scheduler_plan_now(_bc_radio.task_id);
 
     return true;
+}
+
+bool bc_radio_pub_push_button(uint16_t *event_count)
+{
+    return bc_radio_pub_event_count(BC_RADIO_EVENT_PUSH_BUTTON, event_count);
 }
 
 bool bc_radio_pub_thermometer(uint8_t i2c, float *temperature)
@@ -686,13 +693,18 @@ static void _bc_radio_task(void *param)
 
         pbuffer = queue_item_buffer + _BC_RADIO_HEAD_SIZE;
 
-        if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_PUSH_BUTTON)
+        if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_EVENT_COUNT)
         {
             uint16_t event_count;
 
-            memcpy(&event_count, &queue_item_buffer[8 + 1], sizeof(event_count));
+            memcpy(&event_count, pbuffer + 2, sizeof(event_count));
 
-            bc_radio_on_push_button(&device_address, &event_count);
+            if (pbuffer[1] == BC_RADIO_EVENT_PUSH_BUTTON)
+            {
+                bc_radio_on_push_button(&device_address, &event_count);
+            }
+
+            bc_radio_on_event_count(&device_address, pbuffer[1], &event_count);
         }
         else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_THERMOMETER)
         {

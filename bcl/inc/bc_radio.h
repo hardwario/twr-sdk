@@ -22,10 +22,19 @@ typedef enum
 
 enum
 {
-    BC_RADIO_STATE_LED =                0,
-    BC_RADIO_STATE_RELAY_MODULE_0 =     1,
-    BC_RADIO_STATE_RELAY_MODULE_1 =     2,
-    BC_RADIO_STATE_POWER_MODULE_RELAY = 3
+    BC_RADIO_EVENT_PUSH_BUTTON = 0,
+    BC_RADIO_EVENT_PIR_MOTION = 1,
+    BC_RADIO_EVENT_LCD_BUTTON_LEFT = 2,
+    BC_RADIO_EVENT_LCD_BUTTON_RIGHT = 3,
+    BC_RADIO_EVENT_ACCELEROMETER_ALERT = 4
+};
+
+enum
+{
+    BC_RADIO_STATE_LED = 0,
+    BC_RADIO_STATE_RELAY_MODULE_0 = 1,
+    BC_RADIO_STATE_RELAY_MODULE_1 = 2,
+    BC_RADIO_STATE_POWER_MODULE_RELAY = 3,
 };
 
 void bc_radio_init(void);
@@ -63,6 +72,8 @@ uint64_t bc_radio_get_device_address(void);
 uint64_t bc_radio_get_event_device_address(void);
 
 bool bc_radio_is_peer_device(uint64_t device_address);
+
+bool bc_radio_pub_event_count(uint8_t event_id, uint16_t *event_count);
 
 bool bc_radio_pub_push_button(uint16_t *event_count);
 
