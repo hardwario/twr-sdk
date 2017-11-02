@@ -51,13 +51,13 @@ void bc_radio_enrollment_start(void);
 
 void bc_radio_enrollment_stop(void);
 
-bool bc_radio_peer_device_add(uint64_t device_address);
+bool bc_radio_peer_device_add(uint64_t id);
 
-bool bc_radio_peer_device_remove(uint64_t device_address);
+bool bc_radio_peer_device_remove(uint64_t id);
 
 bool bc_radio_peer_device_purge_all(void);
 
-void bc_radio_get_peer_devices_address(uint64_t *device_address, int length);
+void bc_radio_get_peer_id(uint64_t *id, int length);
 
 void bc_radio_scan_start(void);
 
@@ -67,11 +67,11 @@ void bc_radio_automatic_pairing_start(void);
 
 void bc_radio_automatic_pairing_stop(void);
 
-uint64_t bc_radio_get_device_address(void);
+uint64_t bc_radio_get_my_id(void);
 
-uint64_t bc_radio_get_event_device_address(void);
+uint64_t bc_radio_get_event_id(void);
 
-bool bc_radio_is_peer_device(uint64_t device_address);
+bool bc_radio_is_peer_device(uint64_t id);
 
 bool bc_radio_pub_event_count(uint8_t event_id, uint16_t *event_count);
 
