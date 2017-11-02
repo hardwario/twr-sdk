@@ -187,11 +187,11 @@ bool bc_radio_peer_device_add(uint64_t id)
 		return false;
 	}
 
-    uint8_t buffer[1 + sizeof(_bc_radio.my_id)];
+    uint8_t buffer[1 + _BC_RADIO_ID_SIZE];
 
     buffer[0] = BC_RADIO_HEADER_ATTACH;
 
-    memcpy(&buffer[1], &id, sizeof(id));
+    _bc_radio_id_to_buffer(&id, buffer + 1);
 
     bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer));
 
@@ -207,11 +207,11 @@ bool bc_radio_peer_device_remove(uint64_t id)
 		return false;
 	}
 
-    uint8_t buffer[1 + sizeof(_bc_radio.my_id)];
+    uint8_t buffer[1 + _BC_RADIO_ID_SIZE];
 
     buffer[0] = BC_RADIO_HEADER_DETACH;
 
-    memcpy(&buffer[1], &id, sizeof(id));
+    _bc_radio_id_to_buffer(&id, buffer + 1);
 
     bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer));
 
@@ -654,14 +654,11 @@ static void _bc_radio_task(void *param)
 
         uint8_t *buffer = bc_spirit1_get_tx_buffer();
 
-        buffer[0] = _bc_radio.my_id;
-        buffer[1] = _bc_radio.my_id >> 8;
-        buffer[2] = _bc_radio.my_id >> 16;
-        buffer[3] = _bc_radio.my_id >> 24;
-        buffer[4] = _bc_radio.my_id >> 32;
-        buffer[5] = _bc_radio.my_id >> 40;
+        _bc_radio_id_to_buffer(&_bc_radio.my_id, buffer);
+
         buffer[6] = _bc_radio.message_id;
         buffer[7] = _bc_radio.message_id >> 8;
+
         buffer[8] = BC_RADIO_HEADER_ENROLL;
 
         _bc_radio.message_id++;
@@ -684,12 +681,7 @@ static void _bc_radio_task(void *param)
 
     while (bc_queue_get(&_bc_radio.rx_queue, queue_item_buffer, &queue_item_length))
     {
-        id  = (uint64_t) queue_item_buffer[0];
-        id |= (uint64_t) queue_item_buffer[1] << 8;
-        id |= (uint64_t) queue_item_buffer[2] << 16;
-        id |= (uint64_t) queue_item_buffer[3] << 24;
-        id |= (uint64_t) queue_item_buffer[4] << 32;
-        id |= (uint64_t) queue_item_buffer[5] << 40;
+        _bc_radio_id_from_buffer(queue_item_buffer, &id);
 
         pbuffer = queue_item_buffer + _BC_RADIO_HEAD_SIZE;
 
@@ -837,12 +829,8 @@ static void _bc_radio_task(void *param)
     {
         uint8_t *buffer = bc_spirit1_get_tx_buffer();
 
-        buffer[0] = _bc_radio.my_id;
-        buffer[1] = _bc_radio.my_id >> 8;
-        buffer[2] = _bc_radio.my_id >> 16;
-        buffer[3] = _bc_radio.my_id >> 24;
-        buffer[4] = _bc_radio.my_id >> 32;
-        buffer[5] = _bc_radio.my_id >> 40;
+        _bc_radio_id_to_buffer(&_bc_radio.my_id, buffer);
+
         buffer[6] = _bc_radio.message_id;
         buffer[7] = _bc_radio.message_id >> 8;
 
@@ -923,12 +911,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
         {
             uint8_t *buffer = bc_spirit1_get_rx_buffer();
 
-            _bc_radio.peer_id = (uint64_t) buffer[0];
-            _bc_radio.peer_id |= (uint64_t) buffer[1] << 8;
-            _bc_radio.peer_id |= (uint64_t) buffer[2] << 16;
-            _bc_radio.peer_id |= (uint64_t) buffer[3] << 24;
-            _bc_radio.peer_id |= (uint64_t) buffer[4] << 32;
-            _bc_radio.peer_id |= (uint64_t) buffer[5] << 40;
+            _bc_radio_id_from_buffer(buffer, &_bc_radio.peer_id);
 
             if (_bc_radio.enrollment_mode && length == 9 && buffer[8] == BC_RADIO_HEADER_ENROLL)
             {
@@ -937,10 +920,12 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                 return;
             }
 
-            if ((length == 17) && ((buffer[8] == BC_RADIO_HEADER_ATTACH) || (buffer[8] == BC_RADIO_HEADER_DETACH)))
+            if ((length == 15) && ((buffer[8] == BC_RADIO_HEADER_ATTACH) || (buffer[8] == BC_RADIO_HEADER_DETACH)))
             {
             	uint64_t id;
-            	memcpy(&id, buffer + 9, sizeof(id));
+
+            	_bc_radio_id_from_buffer(buffer + 9, &id);
+
             	if (id == _bc_radio.my_id)
             	{
             		if (buffer[8] == BC_RADIO_HEADER_ATTACH)
