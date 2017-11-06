@@ -18,7 +18,7 @@ void application_init(void)
     bc_button_set_event_handler(&button, button_event_handler, NULL);
 
     // Initialize radio
-    bc_radio_init();
+    bc_radio_init(BC_RADIO_MODE_NODE_SLEEPING);
 }
 
 void button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param)
@@ -38,7 +38,7 @@ void button_event_handler(bc_button_t *self, bc_button_event_t event, void *even
     }
     else if (event == BC_BUTTON_EVENT_HOLD)
     {
-        bc_radio_enroll_to_gateway();
+        bc_radio_pairing_request("demo", "v1.0.0");
 
         bc_led_pulse(&led, 1000);
     }
