@@ -4,10 +4,18 @@
 #include <bc_common.h>
 #include <bc_button.h>
 #include <bc_led.h>
+#include <bc_spirit1.h>
 
 #ifndef BC_RADIO_MAX_DEVICES
 #define BC_RADIO_MAX_DEVICES 4
 #endif
+#define BC_RADIO_ID_SIZE           6
+#define BC_RADIO_HEAD_SIZE         (BC_RADIO_ID_SIZE + 2)
+#define BC_RADIO_MAX_BUFFER_SIZE   (BC_SPIRIT1_MAX_PACKET_SIZE - BC_RADIO_HEAD_SIZE)
+#define BC_RADIO_MAX_TOPIC_LEN     (BC_RADIO_MAX_BUFFER_SIZE - 1 - 4 - 1)
+#define BC_RADIO_NULL_BOOL         0xff
+#define BC_RADIO_NULL_INT          INT32_MIN
+#define BC_RADIO_NULL_FLOAT        NAN
 
 typedef enum
 {
@@ -30,22 +38,31 @@ typedef enum
 
 } bc_radio_event_t;
 
-enum
+typedef enum
 {
-    BC_RADIO_EVENT_PUSH_BUTTON = 0,
-    BC_RADIO_EVENT_PIR_MOTION = 1,
-    BC_RADIO_EVENT_LCD_BUTTON_LEFT = 2,
-    BC_RADIO_EVENT_LCD_BUTTON_RIGHT = 3,
-    BC_RADIO_EVENT_ACCELEROMETER_ALERT = 4
-};
+    BC_RADIO_HEADER_PAIRING = 0,
+    BC_RADIO_HEADER_ACK = 1,
 
-enum
-{
-    BC_RADIO_STATE_LED = 0,
-    BC_RADIO_STATE_RELAY_MODULE_0 = 1,
-    BC_RADIO_STATE_RELAY_MODULE_1 = 2,
-    BC_RADIO_STATE_POWER_MODULE_RELAY = 3,
-};
+    BC_RADIO_HEADER_NODE_ATTACH = 6,
+    BC_RADIO_HEADER_NODE_DETACH = 7,
+
+    BC_RADIO_HEADER_PUB_TOPIC_BOOL = 10,
+    BC_RADIO_HEADER_PUB_TOPIC_INT = 11,
+    BC_RADIO_HEADER_PUB_TOPIC_FLOAT = 12,
+    BC_RADIO_HEADER_PUB_EVENT_COUNT = 13,
+    BC_RADIO_HEADER_PUB_STATE = 14,
+    BC_RADIO_HEADER_NODE_STATE_SET = 15,
+    BC_RADIO_HEADER_NODE_STATE_GET = 16,
+    BC_RADIO_HEADER_PUB_BUFFER = 17,
+
+    BC_RADIO_HEADER_PUB_THERMOMETER = 80,
+    BC_RADIO_HEADER_PUB_HUMIDITY = 81,
+    BC_RADIO_HEADER_PUB_LUX_METER = 82,
+    BC_RADIO_HEADER_PUB_BAROMETER = 83,
+    BC_RADIO_HEADER_PUB_CO2 = 84,
+    BC_RADIO_HEADER_PUB_BATTERY = 85,
+
+} bc_radio_header_t;
 
 void bc_radio_init(bc_radio_mode_t mode);
 
@@ -83,35 +100,16 @@ uint64_t bc_radio_get_event_id(void);
 
 bool bc_radio_is_peer_device(uint64_t id);
 
-bool bc_radio_pub_event_count(uint8_t event_id, uint16_t *event_count);
+bool bc_radio_pub_queue_put(const void *buffer, size_t length);
 
-bool bc_radio_pub_push_button(uint16_t *event_count);
-
-bool bc_radio_pub_thermometer(uint8_t channel, float *temperature);
-
-bool bc_radio_pub_humidity(uint8_t channel, float *percentage);
-
-bool bc_radio_pub_luminosity(uint8_t channel, float *lux);
-
-bool bc_radio_pub_barometer(uint8_t channel, float *pascal, float *meter);
-
-bool bc_radio_pub_co2(float *concentration);
-
-bool bc_radio_pub_battery(float *voltage);
-
-bool bc_radio_pub_buffer(void *buffer, size_t length);
-
-bool bc_radio_pub_state(uint8_t state_id, bool *state);
-
-bool bc_radio_node_state_set(uint64_t *id, uint8_t state_id, bool *state);
-
-bool bc_radio_node_state_get(uint64_t *id, uint8_t state_id);
-
-bool bc_radio_pub_bool(const char *subtopic, bool *value);
-
-bool bc_radio_pub_int(const char *subtopic, int *value);
-
-bool bc_radio_pub_float(const char *subtopic, float *value);
+uint8_t *bc_radio_id_to_buffer(uint64_t *id, uint8_t *buffer);
+uint8_t *bc_radio_bool_to_buffer(bool *value, uint8_t *buffer);
+uint8_t *bc_radio_int_to_buffer(int *value, uint8_t *buffer);
+uint8_t *bc_radio_float_to_buffer(float *value, uint8_t *buffer);
+uint8_t *bc_radio_id_from_buffer(uint8_t *buffer, uint64_t *id);
+uint8_t *bc_radio_bool_from_buffer(uint8_t *buffer, bool **value);
+uint8_t *bc_radio_int_from_buffer(uint8_t *buffer, int **value);
+uint8_t *bc_radio_float_from_buffer(uint8_t *buffer, float **value);
 
 void bc_radio_init_pairing_button();
 
