@@ -19,6 +19,9 @@ enum
     BC_RADIO_PUB_CHANNEL_R3_I2C0_ADDRESS_ALTERNATE = 0x05,
     BC_RADIO_PUB_CHANNEL_R3_I2C1_ADDRESS_DEFAULT   = 0x84,
     BC_RADIO_PUB_CHANNEL_R3_I2C1_ADDRESS_ALTERNATE = 0x85,
+
+    BC_RADIO_PUB_CHANNEL_A                         = 0xf0,
+    BC_RADIO_PUB_CHANNEL_B                         = 0xf1
 };
 
 enum
@@ -59,14 +62,12 @@ bool bc_radio_pub_buffer(void *buffer, size_t length);
 
 bool bc_radio_pub_state(uint8_t state_id, bool *state);
 
-bool bc_radio_node_state_set(uint64_t *id, uint8_t state_id, bool *state);
-
-bool bc_radio_node_state_get(uint64_t *id, uint8_t state_id);
-
 bool bc_radio_pub_bool(const char *subtopic, bool *value);
 
 bool bc_radio_pub_int(const char *subtopic, int *value);
 
 bool bc_radio_pub_float(const char *subtopic, float *value);
+
+void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length);
 
 #endif // _BC_RADIO_PUB_H
