@@ -119,12 +119,12 @@ static uint8_t *_bc_radio_float_from_buffer(uint8_t *buffer, float **value);
 
 __attribute__((weak)) void bc_radio_on_event_count(uint64_t *id, uint8_t event_id, uint16_t *event_count) { (void) id; (void) event_id; (void) event_count; }
 __attribute__((weak)) void bc_radio_on_push_button(uint64_t *id, uint16_t *event_count) { (void) id; (void) event_count; }
-__attribute__((weak)) void bc_radio_on_thermometer(uint64_t *id, uint8_t *i2c, float *temperature) { (void) id; (void) i2c; (void) temperature; }
-__attribute__((weak)) void bc_radio_on_humidity(uint64_t *id, uint8_t *i2c, float *percentage) { (void) id; (void) i2c; (void) percentage; }
-__attribute__((weak)) void bc_radio_on_lux_meter(uint64_t *id, uint8_t *i2c, float *illuminance) { (void) id; (void) i2c; (void) illuminance; }
-__attribute__((weak)) void bc_radio_on_barometer(uint64_t *id, uint8_t *i2c, float *pressure, float *altitude) { (void) id; (void) i2c; (void) pressure; (void) altitude; }
+__attribute__((weak)) void bc_radio_on_thermometer(uint64_t *id, uint8_t *channel, float *temperature) { (void) id; (void) channel; (void) temperature; }
+__attribute__((weak)) void bc_radio_on_humidity(uint64_t *id, uint8_t *channel, float *percentage) { (void) id; (void) channel; (void) percentage; }
+__attribute__((weak)) void bc_radio_on_lux_meter(uint64_t *id, uint8_t *channel, float *illuminance) { (void) id; (void) channel; (void) illuminance; }
+__attribute__((weak)) void bc_radio_on_barometer(uint64_t *id, uint8_t *channel, float *pressure, float *altitude) { (void) id; (void) channel; (void) pressure; (void) altitude; }
 __attribute__((weak)) void bc_radio_on_co2(uint64_t *id, float *concentration) { (void) id; (void) concentration; }
-__attribute__((weak)) void bc_radio_on_battery(uint64_t *id, uint8_t *format, float *voltage) { (void) id; (void) format; (void) voltage; }
+__attribute__((weak)) void bc_radio_on_battery(uint64_t *id, float *voltage) { (void) id; (void) voltage; }
 __attribute__((weak)) void bc_radio_on_buffer(uint64_t *id, void *buffer, size_t *length) { (void) id; (void) buffer; (void) length; }
 __attribute__((weak)) void bc_radio_on_info(uint64_t *id, char *firmware, char *version) { (void) id; (void) firmware; (void) version; }
 __attribute__((weak)) void bc_radio_on_state(uint64_t *id, uint8_t state_id, bool *state) { (void) id; (void) state_id; (void) state; }
@@ -341,15 +341,15 @@ bool bc_radio_pub_event_count(uint8_t event_id, uint16_t *event_count)
 
 bool bc_radio_pub_push_button(uint16_t *event_count)
 {
-    return bc_radio_pub_event_count(BC_RADIO_EVENT_PUSH_BUTTON, event_count);
+    return bc_radio_pub_event_count(BC_RADIO_PUB_EVENT_PUSH_BUTTON, event_count);
 }
 
-bool bc_radio_pub_thermometer(uint8_t i2c, float *temperature)
+bool bc_radio_pub_thermometer(uint8_t channel, float *temperature)
 {
     uint8_t buffer[2 + sizeof(*temperature)];
 
     buffer[0] = BC_RADIO_HEADER_PUB_THERMOMETER;
-    buffer[1] = i2c;
+    buffer[1] = channel;
 
     memcpy(&buffer[2], temperature, sizeof(*temperature));
 
@@ -363,12 +363,12 @@ bool bc_radio_pub_thermometer(uint8_t i2c, float *temperature)
     return true;
 }
 
-bool bc_radio_pub_humidity(uint8_t i2c, float *percentage)
+bool bc_radio_pub_humidity(uint8_t channel, float *percentage)
 {
     uint8_t buffer[2 + sizeof(*percentage)];
 
     buffer[0] = BC_RADIO_HEADER_PUB_HUMIDITY;
-    buffer[1] = i2c;
+    buffer[1] = channel;
 
     memcpy(&buffer[2], percentage, sizeof(*percentage));
 
@@ -382,12 +382,12 @@ bool bc_radio_pub_humidity(uint8_t i2c, float *percentage)
     return true;
 }
 
-bool bc_radio_pub_luminosity(uint8_t i2c, float *lux)
+bool bc_radio_pub_luminosity(uint8_t channel, float *lux)
 {
     uint8_t buffer[2 + sizeof(*lux)];
 
     buffer[0] = BC_RADIO_HEADER_PUB_LUX_METER;
-    buffer[1] = i2c;
+    buffer[1] = channel;
 
     memcpy(&buffer[2], lux, sizeof(*lux));
 
@@ -401,12 +401,12 @@ bool bc_radio_pub_luminosity(uint8_t i2c, float *lux)
     return true;
 }
 
-bool bc_radio_pub_barometer(uint8_t i2c, float *pascal, float *meter)
+bool bc_radio_pub_barometer(uint8_t channel, float *pascal, float *meter)
 {
     uint8_t buffer[2 + sizeof(*pascal) + sizeof(*meter)];
 
     buffer[0] = BC_RADIO_HEADER_PUB_BAROMETER;
-    buffer[1] = i2c;
+    buffer[1] = channel;
 
     memcpy(&buffer[2], pascal, sizeof(*pascal));
     memcpy(&buffer[2 + sizeof(*pascal)], meter, sizeof(*meter));
@@ -439,14 +439,13 @@ bool bc_radio_pub_co2(float *concentration)
     return true;
 }
 
-bool bc_radio_pub_battery(uint8_t format, float *voltage)
+bool bc_radio_pub_battery(float *voltage)
 {
     uint8_t buffer[1 + sizeof(uint8_t) + sizeof(*voltage)];
 
     buffer[0] = BC_RADIO_HEADER_PUB_BATTERY;
-    buffer[1] = format;
 
-    memcpy(&buffer[2], voltage, sizeof(*voltage));
+    memcpy(&buffer[1], voltage, sizeof(*voltage));
 
     if (!bc_queue_put(&_bc_radio.pub_queue, buffer, sizeof(buffer)))
     {
@@ -766,9 +765,9 @@ static void _bc_radio_task(void *param)
         {
             float voltage;
 
-            memcpy(&voltage, &queue_item_buffer[8 + 2], sizeof(voltage));
+            memcpy(&voltage, &queue_item_buffer[8 + 1], sizeof(voltage));
 
-            bc_radio_on_battery(&id, &queue_item_buffer[8 + 1], &voltage);
+            bc_radio_on_battery(&id, &voltage);
         }
         else if (queue_item_buffer[8] == BC_RADIO_HEADER_PUB_BUFFER)
         {

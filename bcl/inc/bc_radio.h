@@ -87,17 +87,17 @@ bool bc_radio_pub_event_count(uint8_t event_id, uint16_t *event_count);
 
 bool bc_radio_pub_push_button(uint16_t *event_count);
 
-bool bc_radio_pub_thermometer(uint8_t i2c, float *temperature);
+bool bc_radio_pub_thermometer(uint8_t channel, float *temperature);
 
-bool bc_radio_pub_humidity(uint8_t i2c, float *percentage);
+bool bc_radio_pub_humidity(uint8_t channel, float *percentage);
 
-bool bc_radio_pub_luminosity(uint8_t i2c, float *lux);
+bool bc_radio_pub_luminosity(uint8_t channel, float *lux);
 
-bool bc_radio_pub_barometer(uint8_t i2c, float *pascal, float *meter);
+bool bc_radio_pub_barometer(uint8_t channel, float *pascal, float *meter);
 
 bool bc_radio_pub_co2(float *concentration);
 
-bool bc_radio_pub_battery(uint8_t format, float *voltage);
+bool bc_radio_pub_battery(float *voltage);
 
 bool bc_radio_pub_buffer(void *buffer, size_t length);
 
