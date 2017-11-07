@@ -1,6 +1,6 @@
 <a href="https://www.bigclown.com/"><img src="https://bigclown.sirv.com/logo.png" width="200" height="59" alt="BigClown Logo" align="right"></a>
 
-# Firmware SDK for BigClown Core Module
+# BigClown Firmware SDK
 
 [![Travis](https://img.shields.io/travis/bigclownlabs/bcf-sdk-core-module/master.svg)](https://travis-ci.org/bigclownlabs/bcf-sdk-core-module)
 [![Release](https://img.shields.io/github/release/bigclownlabs/bcf-sdk-core-module.svg)](https://github.com/bigclownlabs/bcf-sdk-core-module/releases)
