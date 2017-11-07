@@ -7,7 +7,11 @@
 [![License](https://img.shields.io/github/license/bigclownlabs/bcf-sdk-core-module.svg)](https://github.com/bigclownlabs/bcf-sdk-core-module/blob/master/LICENSE)
 [![Twitter](https://img.shields.io/twitter/follow/BigClownLabs.svg?style=social&label=Follow)](https://twitter.com/BigClownLabs)
 
-This repository contains firmware SDK for BigClown Core Module.
+This repository contains firmware SDK for:
+
+* BigClown Core Module
+* BigClown USB Dongle
+* BigClown Cloony
 
 ## Introduction
 
