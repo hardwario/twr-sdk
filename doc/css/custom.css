@@ -1,0 +1,8 @@
+#projectname {
+  margin: 10px 10px 10px 10px;
+  background-image: url(logo.png);
+  background-repeat: no-repeat;
+  background-position: left center;
+  padding: 0 0 0 180px;
+  white-space: nowrap;
+}
