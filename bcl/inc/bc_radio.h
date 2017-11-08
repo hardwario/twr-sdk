@@ -6,6 +6,10 @@
 #include <bc_led.h>
 #include <bc_spirit1.h>
 
+//! @addtogroup bc_radio bc_radio
+//! @brief Radio implementation
+//! @{
+
 #ifndef BC_RADIO_MAX_DEVICES
 #define BC_RADIO_MAX_DEVICES 4
 #endif
@@ -17,10 +21,17 @@
 #define BC_RADIO_NULL_INT          INT32_MIN
 #define BC_RADIO_NULL_FLOAT        NAN
 
+//! @brief Radio mode
+
 typedef enum
 {
+    //! @brief Gateway mode
     BC_RADIO_MODE_GATEWAY = 0,
+
+    //! @brief Node sleeping mode, suitable for battery
     BC_RADIO_MODE_NODE_SLEEPING = 1,
+
+    //! @brief Node listening mode
     BC_RADIO_MODE_NODE_LISTENING = 2,
 
 } bc_radio_mode_t;
@@ -54,6 +65,7 @@ typedef enum
     BC_RADIO_HEADER_NODE_STATE_SET = 15,
     BC_RADIO_HEADER_NODE_STATE_GET = 16,
     BC_RADIO_HEADER_PUB_BUFFER = 17,
+    BC_RADIO_HEADER_NODE_BUFFER = 18,
 
     BC_RADIO_HEADER_PUB_THERMOMETER = 80,
     BC_RADIO_HEADER_PUB_HUMIDITY = 81,
@@ -63,6 +75,9 @@ typedef enum
     BC_RADIO_HEADER_PUB_BATTERY = 85,
 
 } bc_radio_header_t;
+
+//! @brief Initialize radio
+//! @param[in] mode
 
 void bc_radio_init(bc_radio_mode_t mode);
 
@@ -112,5 +127,7 @@ uint8_t *bc_radio_int_from_buffer(uint8_t *buffer, int **value);
 uint8_t *bc_radio_float_from_buffer(uint8_t *buffer, float **value);
 
 void bc_radio_init_pairing_button();
+
+//! @}
 
 #endif // _BC_RADIO_H

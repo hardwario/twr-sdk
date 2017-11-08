@@ -2,6 +2,7 @@
 
 __attribute__((weak)) void bc_radio_node_on_state_set(uint64_t *id, uint8_t state_id, bool *state) { (void) id; (void) state_id; (void) state; }
 __attribute__((weak)) void bc_radio_node_on_state_get(uint64_t *id, uint8_t state_id) { (void) id; (void) state_id; }
+__attribute__((weak)) void bc_radio_node_on_buffer(uint64_t *id, void *buffer, size_t length) { (void) id; (void) buffer; (void) length; }
 
 bool bc_radio_node_state_set(uint64_t *id, uint8_t state_id, bool *state)
 {
@@ -29,6 +30,23 @@ bool bc_radio_node_state_get(uint64_t *id, uint8_t state_id)
     pbuffer[0] = state_id;
 
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
+}
+
+bool bc_radio_node_buffer(uint64_t *id, void *buffer, size_t length)
+{
+    uint8_t qbuffer[BC_RADIO_NODE_MAX_BUFFER_SIZE + 1];
+
+    if (length > BC_RADIO_NODE_MAX_BUFFER_SIZE)
+    {
+        return false;
+    }
+
+    qbuffer[0] = BC_RADIO_HEADER_NODE_BUFFER;
+    bc_radio_id_to_buffer(id, qbuffer + 1);
+
+    memcpy(qbuffer + 1 + BC_RADIO_ID_SIZE, buffer, length);
+
+    return bc_radio_pub_queue_put(qbuffer, length + 1 + BC_RADIO_ID_SIZE);
 }
 
 void bc_radio_node_decode(uint64_t *id, uint8_t *buffer, size_t length)
@@ -61,5 +79,9 @@ void bc_radio_node_decode(uint64_t *id, uint8_t *buffer, size_t length)
     else if (buffer[0] == BC_RADIO_HEADER_NODE_STATE_GET)
     {
         bc_radio_node_on_state_get(&for_id, buffer[0]);
+    }
+    else if (buffer[0] == BC_RADIO_HEADER_NODE_BUFFER)
+    {
+        bc_radio_node_on_buffer(id, buffer + 1 + BC_RADIO_ID_SIZE, length - 1 - BC_RADIO_ID_SIZE);
     }
 }
