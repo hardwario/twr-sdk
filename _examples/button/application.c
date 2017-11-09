@@ -18,13 +18,15 @@ void button_event_handler(bc_button_t *self, bc_button_event_t event, void *even
 
 void application_init(void)
 {
-    // Inicializuj LED
+    // Initialize LED
     bc_led_init(&led, BC_GPIO_LED, false, false);
     bc_led_set_mode(&led, BC_LED_MODE_OFF);
 
-    // Inicializuj tlačítko
+    // Initialize button
     bc_button_init(&button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN,0);
     bc_button_set_event_handler(&button, button_event_handler, NULL);
+
+    // Set HOLD time
     bc_button_set_hold_time(&button, 1500);
 }
 
