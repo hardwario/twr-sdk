@@ -2,13 +2,13 @@
 
 __attribute__((weak)) void bc_radio_pub_on_event_count(uint64_t *id, uint8_t event_id, uint16_t *event_count) { (void) id; (void) event_id; (void) event_count; }
 __attribute__((weak)) void bc_radio_pub_on_push_button(uint64_t *id, uint16_t *event_count) { (void) id; (void) event_count; }
-__attribute__((weak)) void bc_radio_pub_on_thermometer(uint64_t *id, uint8_t *channel, float *temperature) { (void) id; (void) channel; (void) temperature; }
+__attribute__((weak)) void bc_radio_pub_on_temperature(uint64_t *id, uint8_t *channel, float *celsius) { (void) id; (void) channel; (void) celsius; }
 __attribute__((weak)) void bc_radio_pub_on_humidity(uint64_t *id, uint8_t *channel, float *percentage) { (void) id; (void) channel; (void) percentage; }
 __attribute__((weak)) void bc_radio_pub_on_lux_meter(uint64_t *id, uint8_t *channel, float *illuminance) { (void) id; (void) channel; (void) illuminance; }
 __attribute__((weak)) void bc_radio_pub_on_barometer(uint64_t *id, uint8_t *channel, float *pressure, float *altitude) { (void) id; (void) channel; (void) pressure; (void) altitude; }
 __attribute__((weak)) void bc_radio_pub_on_co2(uint64_t *id, float *concentration) { (void) id; (void) concentration; }
 __attribute__((weak)) void bc_radio_pub_on_battery(uint64_t *id, float *voltage) { (void) id; (void) voltage; }
-__attribute__((weak)) void bc_radio_pub_on_buffer(uint64_t *id, void *buffer, size_t *length) { (void) id; (void) buffer; (void) length; }
+__attribute__((weak)) void bc_radio_pub_on_buffer(uint64_t *id, void *buffer, size_t length) { (void) id; (void) buffer; (void) length; }
 __attribute__((weak)) void bc_radio_pub_on_state(uint64_t *id, uint8_t state_id, bool *state) { (void) id; (void) state_id; (void) state; }
 __attribute__((weak)) void bc_radio_pub_on_bool(uint64_t *id, char *subtopic, bool *value) { (void) id; (void) subtopic; (void) value; }
 __attribute__((weak)) void bc_radio_pub_on_int(uint64_t *id, char *subtopic, int *value) { (void) id; (void) subtopic; (void) value; }
@@ -31,14 +31,14 @@ bool bc_radio_pub_push_button(uint16_t *event_count)
     return bc_radio_pub_event_count(BC_RADIO_PUB_EVENT_PUSH_BUTTON, event_count);
 }
 
-bool bc_radio_pub_thermometer(uint8_t channel, float *temperature)
+bool bc_radio_pub_temperature(uint8_t channel, float *celsius)
 {
-    uint8_t buffer[2 + sizeof(*temperature)];
+    uint8_t buffer[2 + sizeof(*celsius)];
 
-    buffer[0] = BC_RADIO_HEADER_PUB_THERMOMETER;
+    buffer[0] = BC_RADIO_HEADER_PUB_TEMPERATURE;
     buffer[1] = channel;
 
-    memcpy(&buffer[2], temperature, sizeof(*temperature));
+    memcpy(&buffer[2], celsius, sizeof(*celsius));
 
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
@@ -206,13 +206,13 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
 
         bc_radio_pub_on_event_count(id, buffer[1], &event_count);
     }
-    else if (buffer[0] == BC_RADIO_HEADER_PUB_THERMOMETER)
+    else if (buffer[0] == BC_RADIO_HEADER_PUB_TEMPERATURE)
     {
-        float temperature;
+        float celsius;
 
-        memcpy(&temperature, buffer + 2, sizeof(temperature));
+        memcpy(&celsius, buffer + 2, sizeof(celsius));
 
-        bc_radio_pub_on_thermometer(id, buffer + 1, &temperature);
+        bc_radio_pub_on_temperature(id, buffer + 1, &celsius);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_HUMIDITY)
     {
@@ -258,9 +258,7 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_BUFFER)
     {
-        length -= 1;
-
-        bc_radio_pub_on_buffer(id, buffer + 1, &length);
+        bc_radio_pub_on_buffer(id, buffer + 1, length - 1);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_STATE)
     {

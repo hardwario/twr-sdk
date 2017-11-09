@@ -3,6 +3,10 @@
 
 #include <bc_radio.h>
 
+//! @addtogroup bc_radio bc_radio
+//! @brief Radio implementation send to gateway
+//! @{
+
 enum
 {
     BC_RADIO_PUB_CHANNEL_R1_I2C0_ADDRESS_DEFAULT   = 0x00,
@@ -46,7 +50,7 @@ bool bc_radio_pub_event_count(uint8_t event_id, uint16_t *event_count);
 
 bool bc_radio_pub_push_button(uint16_t *event_count);
 
-bool bc_radio_pub_thermometer(uint8_t channel, float *temperature);
+bool bc_radio_pub_temperature(uint8_t channel, float *celsius);
 
 bool bc_radio_pub_humidity(uint8_t channel, float *percentage);
 
@@ -68,6 +72,13 @@ bool bc_radio_pub_int(const char *subtopic, int *value);
 
 bool bc_radio_pub_float(const char *subtopic, float *value);
 
+//! @brief Internal decode function for bc_radio.c
+//! @param[in] id Pointer on sender id
+//! @param[in] buffer Pointer to RX buffer
+//! @param[in] length RX buffer length
+
 void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length);
+
+//! @}
 
 #endif // _BC_RADIO_PUB_H
