@@ -25,7 +25,8 @@ enum
     BC_RADIO_PUB_CHANNEL_R3_I2C1_ADDRESS_ALTERNATE = 0x85,
 
     BC_RADIO_PUB_CHANNEL_A                         = 0xf0,
-    BC_RADIO_PUB_CHANNEL_B                         = 0xf1
+    BC_RADIO_PUB_CHANNEL_B                         = 0xf1,
+    BC_RADIO_PUB_CHANNEL_SET_POINT                 = 0xf2
 };
 
 enum
