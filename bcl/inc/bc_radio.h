@@ -68,7 +68,7 @@ bool bc_radio_pub_barometer(uint8_t i2c, float *pascal, float *meter);
 
 bool bc_radio_pub_co2(float *concentration);
 
-bool bc_radio_pub_battery(uint8_t format, float *voltage);
+bool bc_radio_pub_battery(uint8_t format, float *voltage, float *percentage);
 
 bool bc_radio_pub_buffer(void *buffer, size_t length);
 
