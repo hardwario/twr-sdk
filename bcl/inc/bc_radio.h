@@ -28,11 +28,11 @@ typedef enum
     //! @brief Gateway mode
     BC_RADIO_MODE_GATEWAY = 0,
 
-    //! @brief Node sleeping mode, suitable for battery
-    BC_RADIO_MODE_NODE_SLEEPING = 1,
-
     //! @brief Node listening mode
-    BC_RADIO_MODE_NODE_LISTENING = 2,
+    BC_RADIO_MODE_NODE_LISTENING = 1,
+
+    //! @brief Node sleeping mode, suitable for battery
+    BC_RADIO_MODE_NODE_SLEEPING = 2,
 
 } bc_radio_mode_t;
 

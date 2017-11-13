@@ -390,15 +390,21 @@ static void _bc_radio_task(void *param)
         if (_bc_radio.listening)
         {
             bc_spirit1_set_rx_timeout(BC_TICK_INFINITY);
-        }
-        else
-        {
-            bc_spirit1_set_rx_timeout(_BC_RADIO_SLEEP_RX_TIMEOUT);
-        }
 
-        bc_spirit1_rx();
+            bc_spirit1_rx();
 
-        _bc_radio.state = BC_RADIO_STATE_RX;
+            _bc_radio.state = BC_RADIO_STATE_RX;
+
+        }
+//        TODO: add mode or api function for enable
+//        else
+//        {
+//            bc_spirit1_set_rx_timeout(_BC_RADIO_SLEEP_RX_TIMEOUT);
+//        }
+//
+//        bc_spirit1_rx();
+//
+//        _bc_radio.state = BC_RADIO_STATE_RX;
     }
 
     if (_bc_radio.state == BC_RADIO_STATE_RX_TIMEOUT)
