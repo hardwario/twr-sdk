@@ -350,6 +350,21 @@ uint32_t bc_module_core_get_clk()
     return SystemCoreClock;
 }
 
+void bc_module_core_reset()
+{
+    NVIC_SystemReset();
+}
+
+__attribute__((weak)) void bc_module_core_hardfault_handler()
+{
+    bc_module_core_reset();
+}
+
+void HardFault_Handler(void)
+{
+    bc_module_core_hardfault_handler();
+}
+
 void RTC_IRQHandler(void)
 {
     // If wake-up timer flag is set...
