@@ -7,6 +7,8 @@
 #include <bc_irq.h>
 #include <bc_led_strip.h>
 #include <bc_radio.h>
+#include <bc_radio_pub.h>
+#include <bc_radio_node.h>
 #include <bc_log.h>
 
 // Peripheral drivers
