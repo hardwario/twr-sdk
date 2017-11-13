@@ -245,12 +245,12 @@ static void _bc_module_core_init_rtc(void)
     RTC->WPR = 0xff;
 }
 
-void bc_module_core_sleep()
+void bc_module_core_sleep(void)
 {
     __WFI();
 }
 
-void bc_module_core_deep_sleep_enable()
+void bc_module_core_deep_sleep_enable(void)
 {
     _bc_module_core_deep_sleep_disable_semaphore--;
     if (_bc_module_core_deep_sleep_disable_semaphore == 0)
@@ -259,7 +259,7 @@ void bc_module_core_deep_sleep_enable()
     }
 }
 
-void bc_module_core_deep_sleep_disable()
+void bc_module_core_deep_sleep_disable(void)
 {
     if (_bc_module_core_deep_sleep_disable_semaphore == 0)
     {
@@ -268,7 +268,7 @@ void bc_module_core_deep_sleep_disable()
     _bc_module_core_deep_sleep_disable_semaphore++;
 }
 
-void bc_module_core_pll_enable()
+void bc_module_core_pll_enable(void)
 {
     if (_bc_module_core_pll_enable_semaphore == 0)
     {
@@ -307,7 +307,7 @@ void bc_module_core_pll_enable()
     bc_scheduler_disable_sleep();
 }
 
-void bc_module_core_pll_disable()
+void bc_module_core_pll_disable(void)
 {
     _bc_module_core_pll_enable_semaphore--;
     bc_scheduler_enable_sleep();
@@ -345,12 +345,12 @@ void bc_module_core_pll_disable()
     }
 }
 
-uint32_t bc_module_core_get_clk()
+uint32_t bc_module_core_get_clk(void)
 {
     return SystemCoreClock;
 }
 
-void bc_module_core_reset()
+void bc_module_core_reset(void)
 {
     NVIC_SystemReset();
 }
