@@ -60,7 +60,7 @@ void bc_radio_node_decode(uint64_t *id, uint8_t *buffer, size_t length)
         return;
     }
 
-    buffer = bc_radio_id_from_buffer(buffer + 1, &for_id);
+    uint8_t *pbuffer = bc_radio_id_from_buffer(buffer + 1, &for_id);
 
     if (for_id != bc_radio_get_my_id())
     {
@@ -72,16 +72,16 @@ void bc_radio_node_decode(uint64_t *id, uint8_t *buffer, size_t length)
 
         bool *state = NULL;
 
-        bc_radio_bool_from_buffer(buffer + 1, &state);
+        bc_radio_bool_from_buffer(pbuffer + 1, &state);
 
-        bc_radio_node_on_state_set(&for_id, buffer[0], state);
+        bc_radio_node_on_state_set(&for_id, pbuffer[0], state);
     }
     else if (buffer[0] == BC_RADIO_HEADER_NODE_STATE_GET)
     {
-        bc_radio_node_on_state_get(&for_id, buffer[0]);
+        bc_radio_node_on_state_get(&for_id, pbuffer[0]);
     }
     else if (buffer[0] == BC_RADIO_HEADER_NODE_BUFFER)
     {
-        bc_radio_node_on_buffer(id, buffer + 1 + BC_RADIO_ID_SIZE, length - 1 - BC_RADIO_ID_SIZE);
+        bc_radio_node_on_buffer(id, pbuffer, length - 1 - BC_RADIO_ID_SIZE);
     }
 }
