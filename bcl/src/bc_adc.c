@@ -194,8 +194,6 @@ bool bc_adc_get_result(bc_adc_channel_t channel, void *result)
 {
     uint32_t data = ADC1->DR;
 
-    //data *= _bc_adc.real_vdda_voltage / 3.3f;
-
     switch (_bc_adc.channel_table[channel].format)
     {
         case BC_ADC_FORMAT_8_BIT:
@@ -218,13 +216,12 @@ bool bc_adc_get_result(bc_adc_channel_t channel, void *result)
             *(uint32_t *) result = data << 16;
             break;
         }
-        /*
         case BC_ADC_FORMAT_FLOAT:
         {
+            data *= _bc_adc.real_vdda_voltage / 3.3f;
             *(float *) result = data * (3.3f / 65536.f);
             break;
         }
-        */
         default:
         {
             return false;

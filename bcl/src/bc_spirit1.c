@@ -266,7 +266,7 @@ static void _bc_spirit1_enter_state_rx(void)
 {
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_RX;
 
-    if (_bc_spirit1.rx_timeout == 0)
+    if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
     {
         _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
     }
@@ -310,6 +310,15 @@ static void _bc_spirit1_check_state_rx(void)
         if (_bc_spirit1.event_handler != NULL)
         {
             _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_TIMEOUT, _bc_spirit1.event_param);
+        }
+
+        if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
+        {
+            _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
+        }
+        else
+        {
+            _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
         }
     }
 

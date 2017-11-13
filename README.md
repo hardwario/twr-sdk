@@ -1,13 +1,17 @@
-<a href="https://www.bigclown.com"><img src="https://s3.eu-central-1.amazonaws.com/bigclown/gh-readme-logo.png" alt="BigClown Logo" align="right"></a>
+<a href="https://www.bigclown.com/"><img src="https://bigclown.sirv.com/logo.png" width="200" height="59" alt="BigClown Logo" align="right"></a>
 
-# Firmware SDK for BigClown Core Module
+# BigClown Firmware SDK
 
 [![Travis](https://img.shields.io/travis/bigclownlabs/bcf-sdk-core-module/master.svg)](https://travis-ci.org/bigclownlabs/bcf-sdk-core-module)
 [![Release](https://img.shields.io/github/release/bigclownlabs/bcf-sdk-core-module.svg)](https://github.com/bigclownlabs/bcf-sdk-core-module/releases)
 [![License](https://img.shields.io/github/license/bigclownlabs/bcf-sdk-core-module.svg)](https://github.com/bigclownlabs/bcf-sdk-core-module/blob/master/LICENSE)
 [![Twitter](https://img.shields.io/twitter/follow/BigClownLabs.svg?style=social&label=Follow)](https://twitter.com/BigClownLabs)
 
-This repository contains firmware SDK for BigClown Core Module.
+This repository contains firmware SDK for:
+
+* BigClown Core Module
+* BigClown USB Dongle
+* BigClown Cloony
 
 ## Introduction
 
@@ -30,4 +34,4 @@ This project is licensed under the [MIT License](https://opensource.org/licenses
 
 ---
 
-Made with &#x2764;&nbsp; by [BigClown Labs s.r.o.](https://www.bigclown.com) in Czech Republic.
+Made with &#x2764;&nbsp; by [**HARDWARIO s.r.o.**](https://www.hardwario.com/) in the heart of Europe.

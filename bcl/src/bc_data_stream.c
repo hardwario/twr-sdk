@@ -88,7 +88,7 @@ bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
         }
         case BC_DATA_STREAM_TYPE_INT:
         {
-            int sum = 0;
+            int64_t sum = 0;
             int *buffer = (int *) self->_buffer->feed;
 
             for (int i = 0; i < length; i ++)

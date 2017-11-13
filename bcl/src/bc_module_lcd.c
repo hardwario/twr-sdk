@@ -309,6 +309,49 @@ void bc_module_lcd_draw_line(int x0, int y0, int x1, int y1, bool color)
     }
 }
 
+void bc_module_lcd_draw_rectangle(int x0, int y0, int x1, int y1, bool color)
+{
+    bc_module_lcd_draw_line(x0, y0, x0, y1, color);
+    bc_module_lcd_draw_line(x0, y1, x1, y1, color);
+    bc_module_lcd_draw_line(x1, y0, x1, y1, color);
+    bc_module_lcd_draw_line(x1, y0, x0, y0, color);
+}
+
+// Using Midpoint circle algorithm
+void bc_module_lcd_draw_circle(int x0, int y0, int radius, bool color)
+{
+    int x = radius-1;
+    int y = 0;
+    int dx = 1;
+    int dy = 1;
+    int err = dx - (radius << 1);
+
+    while (x >= y)
+    {
+        bc_module_lcd_draw_pixel(x0 + x, y0 + y, color);
+        bc_module_lcd_draw_pixel(x0 + y, y0 + x, color);
+        bc_module_lcd_draw_pixel(x0 - y, y0 + x, color);
+        bc_module_lcd_draw_pixel(x0 - x, y0 + y, color);
+        bc_module_lcd_draw_pixel(x0 - x, y0 - y, color);
+        bc_module_lcd_draw_pixel(x0 - y, y0 - x, color);
+        bc_module_lcd_draw_pixel(x0 + y, y0 - x, color);
+        bc_module_lcd_draw_pixel(x0 + x, y0 - y, color);
+
+        if (err <= 0)
+        {
+            y++;
+            err += dy;
+            dy += 2;
+        }
+        if (err > 0)
+        {
+            x--;
+            dx += 2;
+            err += (-radius << 1) + dx;
+        }
+    }
+}
+
 /*
 
 Framebuffer format for updating multiple lines, ideal for later DMA TX:

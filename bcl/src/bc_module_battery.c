@@ -39,6 +39,8 @@ static void _bc_module_battery_update_voltage_on_battery(void);
 
 void bc_module_battery_init(bc_module_battery_format_t format)
 {
+    float temp;
+
     memset(&_bc_module_battery, 0, sizeof(_bc_module_battery));
 
     _bc_module_battery.task_id = bc_scheduler_register(_bc_module_battery_task, NULL, BC_TICK_INFINITY);
@@ -61,6 +63,7 @@ void bc_module_battery_init(bc_module_battery_format_t format)
 
     // Initialize ADC channel
     bc_adc_init(BC_ADC_CHANNEL_A0, BC_ADC_FORMAT_FLOAT);
+    bc_adc_read(BC_ADC_CHANNEL_A0, &temp); // the first measurement is inaccurate
     bc_adc_set_event_handler(BC_ADC_CHANNEL_A0, _bc_module_battery_adc_event_handler, NULL);
 }
 
@@ -170,12 +173,9 @@ static void _bc_module_battery_adc_event_handler(bc_adc_channel_t channel, bc_ad
     {
         _bc_module_battery_update_voltage_on_battery();
 
-        // Security measures ...
-        _bc_module_battery.valid = true;
-
         _bc_module_battery_measurement(DISABLE);
 
-        if (_bc_module_battery.event_handler != NULL)
+        if (_bc_module_battery.valid && _bc_module_battery.event_handler != NULL)
         {
             // Notify event based on calculated percentage
             if (_bc_module_battery.voltage <= _bc_module_battery.level_critical_threshold)
@@ -213,7 +213,12 @@ static void _bc_module_battery_update_voltage_on_battery(void)
 {
     float v;
 
-    bc_adc_get_result(BC_ADC_CHANNEL_A0, &v);
+    _bc_module_battery.valid = bc_adc_get_result(BC_ADC_CHANNEL_A0, &v);
+
+    if (!_bc_module_battery.valid)
+    {
+        return;
+    }
 
     if (_bc_module_battery.format == BC_MODULE_BATTERY_FORMAT_MINI)
     {

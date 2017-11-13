@@ -311,6 +311,8 @@ bin: $(BIN)
 $(BIN): $(ELF)
 	$(Q)$(ECHO) "Creating $(BIN) from $(ELF)..."
 	$(Q)$(OBJCOPY) -O binary $(ELF) $(BIN)
+	$(Q)rm -f $(OUT).bin
+	$(Q)cp $(BIN) $(OUT).bin
 
 ################################################################################
 # Compile source files                                                         #

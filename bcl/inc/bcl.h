@@ -7,6 +7,8 @@
 #include <bc_irq.h>
 #include <bc_led_strip.h>
 #include <bc_radio.h>
+#include <bc_radio_pub.h>
+#include <bc_radio_node.h>
 #include <bc_log.h>
 
 // Peripheral drivers
@@ -58,7 +60,16 @@
 #include <bc_flood_detector.h>
 #include <bc_pulse_counter.h>
 
-//! @mainpage BigClown firmware SDK
-//! This is API documentation of BigClown SDK
+//! @mainpage Overview
+//! Here you will find all the documented firmware SDK APIs.
+//!
+//! The SDK currently supports the following hardware platforms:
+//! \li BigClown Core Module
+//! \li BigClown USB Dongle
+//! \li BigClown Cloony
+//!
+//! Go to the <a href="modules.html"><b>Modules</b></a> page for complete listing.
+//!
+//! For more information visit the <a href="https://bigclown.netlify.com/en/doc/firmware/basic-overview/" target="_blank"><b>Basic Overview</b></a> document in BigClown Documentation.
 
 #endif // _BCL_H
