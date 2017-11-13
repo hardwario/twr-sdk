@@ -44,16 +44,33 @@ typedef enum
 
 } bc_lp8_calibration_t;
 
-//! @brief CO2 Sensor driver
+//! @brief LP8 instance
+
+typedef struct bc_lp8_t bc_lp8_t;
+
+//! @brief LP8 driver
 
 typedef struct
 {
+    //! @brief Callback for initialization
     bool (*init)(void);
+
+    //! @brief Callback for charging control
     bool (*charge_enable)(bool state);
+
+    //! @brief Callback for device power control
     bool (*device_enable)(bool state);
+
+    //! @brief Callback for reading RDY signal
     bool (*read_signal_rdy)(int *value);
+
+    //! @brief Callback for UART control
     bool (*uart_enable)(bool state);
+
+    //! @brief Callback for UART write
     size_t (*uart_write)(uint8_t *buffer, size_t length);
+
+    //! @brief Callback for UART read
     size_t (*uart_read)(uint8_t *buffer, size_t length);
 
 } bc_lp8_driver_t;
@@ -74,7 +91,7 @@ typedef enum
 
 } bc_lp8_state_t;
 
-typedef struct
+struct bc_lp8_t
 {
     const bc_lp8_driver_t *_driver;
     bc_scheduler_task_id_t _task_id_interval;
@@ -96,7 +113,7 @@ typedef struct
     uint16_t _concentration;
     uint16_t _pressure;
 
-} bc_lp8_t;
+};
 
 //! @endcond
 
