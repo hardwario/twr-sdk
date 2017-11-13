@@ -4,7 +4,7 @@
 #include <bc_scheduler.h>
 #include <bc_tick.h>
 
-//! @addtogroup bc_co2 bc_co2
+//! @addtogroup bc_lp8 bc_lp8
 //! @brief Driver for LP8 CO2 sensor
 //! @{
 
