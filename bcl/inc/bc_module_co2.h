@@ -2,7 +2,7 @@
 #define _BC_MODULE_CO2_H
 
 #include <bc_tick.h>
-#include <bc_co2_sensor.h>
+#include <bc_lp8.h>
 
 //! @addtogroup bc_module_co2 bc_module_co2
 //! @brief Driver for BigClown CO2 Module
@@ -13,10 +13,10 @@
 typedef enum
 {
     //! @brief Error event
-    BC_MODULE_CO2_EVENT_ERROR = BC_CO2_SENSOR_EVENT_ERROR,
+    BC_MODULE_CO2_EVENT_ERROR = BC_LP8_EVENT_ERROR,
 
     //! @brief Update event
-    BC_MODULE_CO2_EVENT_UPDATE = BC_CO2_SENSOR_EVENT_UPDATE
+    BC_MODULE_CO2_EVENT_UPDATE = BC_LP8_EVENT_UPDATE
 
 } bc_module_co2_event_t;
 
@@ -51,7 +51,7 @@ bool bc_module_co2_get_concentration_ppm(float *ppm);
 //! @brief Request sensor calibration
 //! @param[in] calibration Calibration type
 
-void bc_module_co2_calibration(bc_co2_sensor_calibration_t calibration);
+void bc_module_co2_calibration(bc_lp8_calibration_t calibration);
 
 //! @}
 

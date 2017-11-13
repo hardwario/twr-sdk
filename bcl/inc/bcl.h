@@ -26,10 +26,11 @@
 
 // Chip drivers
 
-#include <bc_lis2dh12.h>
-#include <bc_spirit1.h>
-#include <bc_hc_sr04.h>
 #include <bc_cp201t.h>
+#include <bc_hc_sr04.h>
+#include <bc_lis2dh12.h>
+#include <bc_lp8.h>
+#include <bc_spirit1.h>
 
 // BigClown tags
 
@@ -58,7 +59,6 @@
 #include <bc_data_stream.h>
 #include <bc_flood_detector.h>
 #include <bc_pulse_counter.h>
-#include <bc_co2_sensor.h>
 
 //! @mainpage Overview
 //! Here you will find all the documented firmware SDK APIs.
