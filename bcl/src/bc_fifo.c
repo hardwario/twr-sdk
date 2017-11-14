@@ -9,6 +9,12 @@ void bc_fifo_init(bc_fifo_t *fifo, void *buffer, size_t size)
     fifo->tail = 0;
 }
 
+void bc_fifo_purge(bc_fifo_t *fifo)
+{
+    fifo->head = 0;
+    fifo->tail = 0;
+}
+
 size_t bc_fifo_write(bc_fifo_t *fifo, const void *buffer, size_t length)
 {
     // Disable interrupts

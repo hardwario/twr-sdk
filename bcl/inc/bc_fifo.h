@@ -32,6 +32,11 @@ typedef struct
 
 void bc_fifo_init(bc_fifo_t *fifo, void *buffer, size_t size);
 
+//! @brief Purge FIFO buffer
+//! @param[in] fifo FIFO instance
+
+void bc_fifo_purge(bc_fifo_t *fifo);
+
 //! @brief Write data to FIFO
 //! @param[in] fifo FIFO instance
 //! @param[in] buffer Pointer to buffer from which data will be written
