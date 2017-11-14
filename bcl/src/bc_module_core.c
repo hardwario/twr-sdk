@@ -355,9 +355,15 @@ void bc_module_core_reset(void)
     NVIC_SystemReset();
 }
 
-__attribute__((weak)) void bc_module_core_hardfault_handler()
+__attribute__((weak)) void bc_module_core_hardfault_handler(void)
 {
+
+#ifdef RELEASE
     bc_module_core_reset();
+#else
+    for (;;);
+#endif
+
 }
 
 void HardFault_Handler(void)
