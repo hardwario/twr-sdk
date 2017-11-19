@@ -358,6 +358,8 @@ static void _bc_radio_task(void *param)
     {
         bc_radio_id_from_buffer(queue_item_buffer, &id);
 
+        queue_item_length -= BC_RADIO_HEAD_SIZE;
+
         bc_radio_pub_decode(&id, queue_item_buffer + BC_RADIO_HEAD_SIZE, queue_item_length);
 
         bc_radio_node_decode(&id, queue_item_buffer + BC_RADIO_HEAD_SIZE, queue_item_length);
@@ -726,13 +728,6 @@ static void _bc_radio_load_peer_devices(void)
             _bc_radio.peer_devices[_bc_radio.peer_devices_lenght].message_id_synced = false;
             _bc_radio.peer_devices_lenght++;
         }
-    }
-
-    if (_bc_radio.peer_devices_lenght == 0)
-    {
-        _bc_radio_load_old_peer_devices();
-
-        _bc_radio.save_peer_devices = true;
     }
 }
 
