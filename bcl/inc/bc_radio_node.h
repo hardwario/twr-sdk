@@ -52,6 +52,14 @@ bool bc_radio_node_buffer(uint64_t *id, void *buffer, size_t length);
 
 bool bc_radio_node_led_strip_color_set(uint64_t *id, uint32_t color);
 
+//! @brief Send data to node
+//! @param[in] id Pointer to node id
+//! @param[in] brightness
+//! @return true On success
+//! @return false On failure
+
+bool bc_radio_node_led_strip_brightness_set(uint64_t *id, uint8_t brightness);
+
 //! @brief Internal decode function for bc_radio.c
 //! @param[in] id Pointer on own id
 //! @param[in] buffer Pointer to RX buffer
