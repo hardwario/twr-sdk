@@ -3,6 +3,7 @@
 __attribute__((weak)) void bc_radio_node_on_state_set(uint64_t *id, uint8_t state_id, bool *state) { (void) id; (void) state_id; (void) state; }
 __attribute__((weak)) void bc_radio_node_on_state_get(uint64_t *id, uint8_t state_id) { (void) id; (void) state_id; }
 __attribute__((weak)) void bc_radio_node_on_buffer(uint64_t *id, void *buffer, size_t length) { (void) id; (void) buffer; (void) length; }
+__attribute__((weak)) void bc_radio_node_on_led_strip_color_set(uint64_t *id, uint32_t *color) { (void) id; (void) color; }
 
 bool bc_radio_node_state_set(uint64_t *id, uint8_t state_id, bool *state)
 {
@@ -49,6 +50,19 @@ bool bc_radio_node_buffer(uint64_t *id, void *buffer, size_t length)
     return bc_radio_pub_queue_put(qbuffer, length + 1 + BC_RADIO_ID_SIZE);
 }
 
+bool bc_radio_node_led_strip_color_set(uint64_t *id, uint32_t color)
+{
+    uint8_t buffer[1 + BC_RADIO_ID_SIZE + sizeof(color)];
+
+    buffer[0] = BC_RADIO_HEADER_NODE_LED_STRIP_COLOR_SET;
+
+    uint8_t *pbuffer = bc_radio_id_to_buffer(id, buffer + 1);
+
+    bc_radio_data_to_buffer(&color, sizeof(color), pbuffer);
+
+    return bc_radio_pub_queue_put(buffer, sizeof(buffer));
+}
+
 void bc_radio_node_decode(uint64_t *id, uint8_t *buffer, size_t length)
 {
     (void) id;
@@ -83,5 +97,13 @@ void bc_radio_node_decode(uint64_t *id, uint8_t *buffer, size_t length)
     else if (buffer[0] == BC_RADIO_HEADER_NODE_BUFFER)
     {
         bc_radio_node_on_buffer(id, pbuffer, length - 1 - BC_RADIO_ID_SIZE);
+    }
+    else if (buffer[0] == BC_RADIO_HEADER_NODE_LED_STRIP_COLOR_SET)
+    {
+        uint32_t color;
+
+        bc_radio_data_from_buffer(pbuffer, &color, sizeof(color));
+
+        bc_radio_node_on_led_strip_color_set(id, &color);
     }
 }
