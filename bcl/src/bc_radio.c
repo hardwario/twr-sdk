@@ -69,7 +69,6 @@ static struct
 
 static void _bc_radio_task(void *param);
 static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *event_param);
-static void _bc_radio_load_old_peer_devices(void);
 static void _bc_radio_load_peer_devices(void);
 static void _bc_radio_save_peer_devices(void);
 static void _bc_radio_atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t event, void *event_param);
@@ -659,33 +658,6 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
     }
 }
 
-static void _bc_radio_load_old_peer_devices(void)
-{
-    uint64_t buffer[BC_RADIO_MAX_DEVICES + 1];
-
-    bc_eeprom_read(0x00, buffer, sizeof(buffer));
-
-    uint64_t checksum = buffer[BC_RADIO_MAX_DEVICES];
-
-    for (int i = 0; i < BC_RADIO_MAX_DEVICES; i++)
-    {
-        checksum ^= buffer[i];
-    }
-
-    if (checksum == 0)
-    {
-        for (int i = 0; i < BC_RADIO_MAX_DEVICES; i++)
-        {
-            if (buffer[i] != 0)
-            {
-                _bc_radio.peer_devices[_bc_radio.peer_devices_lenght].id = buffer[i];
-                _bc_radio.peer_devices[_bc_radio.peer_devices_lenght].message_id_synced = false;
-                _bc_radio.peer_devices_lenght++;
-            }
-        }
-    }
-}
-
 static void _bc_radio_load_peer_devices(void)
 {
     uint32_t address = (uint32_t) bc_eeprom_get_size() - 8;
@@ -915,6 +887,21 @@ uint8_t *bc_radio_float_to_buffer(float *value, uint8_t *buffer)
     return buffer + sizeof(float);
 }
 
+uint8_t *bc_radio_data_to_buffer(void *data, size_t length, uint8_t *buffer)
+{
+    if (data == NULL)
+    {
+        return buffer + length;
+    }
+
+    for (size_t i = 0; i < length; i++)
+    {
+        buffer[i] = ((uint8_t *) data)[i];
+    }
+
+    return buffer + length;
+}
+
 uint8_t *bc_radio_id_from_buffer(uint8_t *buffer, uint64_t *id)
 {
     *id  = (uint64_t) buffer[0];
@@ -975,6 +962,21 @@ uint8_t *bc_radio_float_from_buffer(uint8_t *buffer, float **value)
     }
 
     return buffer + sizeof(float);
+}
+
+uint8_t *bc_radio_data_from_buffer(uint8_t *buffer, void *data, size_t length)
+{
+    if (data == NULL)
+    {
+        return buffer + length;
+    }
+
+    for (size_t i = 0; i < length; i++)
+    {
+        ((uint8_t *) data)[i] = buffer[i];
+    }
+
+    return buffer + length;
 }
 
 typedef struct

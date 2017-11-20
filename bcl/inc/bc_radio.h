@@ -67,6 +67,8 @@ typedef enum
     BC_RADIO_HEADER_PUB_BUFFER = 17,
     BC_RADIO_HEADER_NODE_BUFFER = 18,
 
+    BC_RADIO_HEADER_NODE_LED_STRIP_COLOR_SET = 20,
+
     BC_RADIO_HEADER_PUB_TEMPERATURE = 80,
     BC_RADIO_HEADER_PUB_HUMIDITY = 81,
     BC_RADIO_HEADER_PUB_LUX_METER = 82,
@@ -121,10 +123,12 @@ uint8_t *bc_radio_id_to_buffer(uint64_t *id, uint8_t *buffer);
 uint8_t *bc_radio_bool_to_buffer(bool *value, uint8_t *buffer);
 uint8_t *bc_radio_int_to_buffer(int *value, uint8_t *buffer);
 uint8_t *bc_radio_float_to_buffer(float *value, uint8_t *buffer);
+uint8_t *bc_radio_data_to_buffer(void *data, size_t length, uint8_t *buffer);
 uint8_t *bc_radio_id_from_buffer(uint8_t *buffer, uint64_t *id);
 uint8_t *bc_radio_bool_from_buffer(uint8_t *buffer, bool **value);
 uint8_t *bc_radio_int_from_buffer(uint8_t *buffer, int **value);
 uint8_t *bc_radio_float_from_buffer(uint8_t *buffer, float **value);
+uint8_t *bc_radio_data_from_buffer(uint8_t *buffer, void *data, size_t length);
 
 void bc_radio_init_pairing_button();
 
