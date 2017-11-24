@@ -132,6 +132,11 @@ void bc_spirit1_set_tx_length(size_t length)
     _bc_spirit1.tx_length = length;
 }
 
+size_t bc_spirit1_get_tx_length(void)
+{
+    return _bc_spirit1.tx_length;
+}
+
 void *bc_spirit1_get_rx_buffer(void)
 {
     return _bc_spirit1.rx_buffer;
@@ -145,6 +150,20 @@ size_t bc_spirit1_get_rx_length(void)
 void bc_spirit1_set_rx_timeout(bc_tick_t timeout)
 {
     _bc_spirit1.rx_timeout = timeout;
+
+    if (_bc_spirit1.current_state == BC_SPIRIT1_STATE_RX)
+    {
+        if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
+        {
+            _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
+        }
+        else
+        {
+            _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
+        }
+
+        bc_scheduler_plan_absolute(_bc_spirit1.task_id, _bc_spirit1.rx_tick_timeout);
+    }
 }
 
 void bc_spirit1_tx(void)
@@ -171,6 +190,14 @@ void bc_spirit1_sleep(void)
 static void _bc_spirit1_task(void *param)
 {
     (void) param;
+
+    if ((_bc_spirit1.current_state == BC_SPIRIT1_STATE_RX) && (bc_tick_get() >= _bc_spirit1.rx_tick_timeout))
+    {
+        if (_bc_spirit1.event_handler != NULL)
+        {
+            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_TIMEOUT, _bc_spirit1.event_param);
+        }
+    }
 
     if (_bc_spirit1.desired_state != _bc_spirit1.current_state)
     {
@@ -259,6 +286,10 @@ static void _bc_spirit1_check_state_tx(void)
         {
             _bc_spirit1_enter_state_sleep();
         }
+        else if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_TX)
+        {
+            _bc_spirit1_enter_state_tx();
+        }
     }
 }
 
@@ -274,6 +305,8 @@ static void _bc_spirit1_enter_state_rx(void)
     {
         _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
     }
+
+    bc_scheduler_plan_current_absolute(_bc_spirit1.rx_tick_timeout);
 
     SpiritIrqs xIrqStatus;
 
@@ -299,28 +332,20 @@ static void _bc_spirit1_enter_state_rx(void)
 
     /* RX command */
     SpiritCmdStrobeRx();
-
-    bc_scheduler_plan_current_absolute(_bc_spirit1.rx_tick_timeout);
 }
 
 static void _bc_spirit1_check_state_rx(void)
 {
-    if (bc_tick_get() >= _bc_spirit1.rx_tick_timeout)
+    if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
     {
-        if (_bc_spirit1.event_handler != NULL)
-        {
-            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_TIMEOUT, _bc_spirit1.event_param);
-        }
-
-        if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
-        {
-            _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
-        }
-        else
-        {
-            _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
-        }
+        _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
     }
+    else
+    {
+        _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
+    }
+
+    bc_scheduler_plan_current_absolute(_bc_spirit1.rx_tick_timeout);
 
     SpiritIrqs xIrqStatus;
 

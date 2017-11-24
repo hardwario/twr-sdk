@@ -48,6 +48,11 @@ void *bc_spirit1_get_tx_buffer(void);
 
 void bc_spirit1_set_tx_length(size_t length);
 
+//! @brief Get TX buffer length
+//! @return Size of buffer
+
+size_t bc_spirit1_get_tx_length(void);
+
 //! @brief Get RX buffer
 //! @return Pointer to buffer
 
