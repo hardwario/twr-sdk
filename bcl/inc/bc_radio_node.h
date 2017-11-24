@@ -9,6 +9,8 @@
 //! @{
 
 #define BC_RADIO_NODE_MAX_BUFFER_SIZE (BC_RADIO_MAX_BUFFER_SIZE - BC_RADIO_ID_SIZE - 1)
+#define BC_RADIO_NODE_MAX_COMPOUND_PART (BC_RADIO_NODE_MAX_BUFFER_SIZE / 5)
+#define BC_RADIO_NODE_MAX_COMPOUND_BUFFER_SIZE (BC_RADIO_NODE_MAX_COMPOUND_PART * 5)
 
 enum
 {
@@ -59,6 +61,15 @@ bool bc_radio_node_led_strip_color_set(uint64_t *id, uint32_t color);
 //! @return false On failure
 
 bool bc_radio_node_led_strip_brightness_set(uint64_t *id, uint8_t brightness);
+
+//! @brief Send data to node
+//! @param[in] id Pointer to node id
+//! @param[in] compound Pointer to compound buffer
+//! @param[in] length Number of bytes to be send, must be modulo 5, max value is in BC_RADIO_NODE_MAX_COMPOUND_BUFFER_SIZE
+//! @return true On success
+//! @return false On failure
+
+bool bc_radio_node_led_strip_compound_set(uint64_t *id,  uint8_t *compound, size_t length);
 
 //! @brief Internal decode function for bc_radio.c
 //! @param[in] id Pointer on own id
