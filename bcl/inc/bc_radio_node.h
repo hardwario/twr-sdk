@@ -20,6 +20,17 @@ enum
     BC_RADIO_NODE_STATE_POWER_MODULE_RELAY = BC_RADIO_PUB_STATE_POWER_MODULE_RELAY,
 };
 
+typedef enum
+{
+    BC_RADIO_NODE_LED_STRIP_EFFECT_TEST = 0,
+    BC_RADIO_NODE_LED_STRIP_EFFECT_RAINBOW = 1,
+    BC_RADIO_NODE_LED_STRIP_EFFECT_RAINBOW_CYCLE = 2,
+    BC_RADIO_NODE_LED_STRIP_EFFECT_THEATER_CHASE_RAINBOW = 3,
+    BC_RADIO_NODE_LED_STRIP_EFFECT_COLOR_WIPE = 4,
+    BC_RADIO_NODE_LED_STRIP_EFFECT_THEATER_CHASE = 5
+
+} bc_radio_node_led_strip_effect_t;
+
 //! @brief Send request for set new state
 //! @param[in] id Pointer to node id
 //! @param[in] state_id State id from enum
@@ -70,6 +81,16 @@ bool bc_radio_node_led_strip_brightness_set(uint64_t *id, uint8_t brightness);
 //! @return false On failure
 
 bool bc_radio_node_led_strip_compound_set(uint64_t *id,  uint8_t *compound, size_t length);
+
+//! @brief Send data to node
+//! @param[in] id Pointer to node id
+//! @param[in] type Effect type
+//! @param[in] wait Interval between refresh
+//! @param[in] color Color in RGBW format
+//! @return true On success
+//! @return false On failure
+
+bool bc_radio_node_led_strip_effect_set(uint64_t *id, bc_radio_node_led_strip_effect_t type, uint16_t wait, uint32_t color)
 
 //! @brief Internal decode function for bc_radio.c
 //! @param[in] id Pointer on own id

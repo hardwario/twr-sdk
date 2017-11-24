@@ -6,6 +6,7 @@ __attribute__((weak)) void bc_radio_node_on_buffer(uint64_t *id, void *buffer, s
 __attribute__((weak)) void bc_radio_node_on_led_strip_color_set(uint64_t *id, uint32_t *color) { (void) id; (void) color; }
 __attribute__((weak)) void bc_radio_node_on_led_strip_brightness_set(uint64_t *id, uint8_t *brightness) { (void) id; (void) brightness; }
 __attribute__((weak)) void bc_radio_node_on_led_strip_compound_set(uint64_t *id, uint8_t *compound, size_t length) { (void) id; (void) compound; (void) length; }
+__attribute__((weak)) void bc_radio_node_on_led_strip_effect_set(uint64_t *id, bc_radio_node_led_strip_effect_t type, uint16_t wait, uint32_t color) { (void) id; (void) type; (void) wait; (void) color; }
 
 bool bc_radio_node_state_set(uint64_t *id, uint8_t state_id, bool *state)
 {
@@ -78,7 +79,7 @@ bool bc_radio_node_led_strip_brightness_set(uint64_t *id, uint8_t brightness)
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
 
-bool bc_radio_node_led_strip_compound_set(uint64_t *id,  uint8_t *compound, size_t length)
+bool bc_radio_node_led_strip_compound_set(uint64_t *id, uint8_t *compound, size_t length)
 {
     if ((length > BC_RADIO_NODE_MAX_BUFFER_SIZE) || (length % 5 != 0))
     {
@@ -94,6 +95,24 @@ bool bc_radio_node_led_strip_compound_set(uint64_t *id,  uint8_t *compound, size
     bc_radio_data_to_buffer(compound, length, pbuffer);
 
     return bc_radio_pub_queue_put(buffer, 1 + BC_RADIO_ID_SIZE + length);
+}
+
+bool bc_radio_node_led_strip_effect_set(uint64_t *id, bc_radio_node_led_strip_effect_t type, uint16_t wait, uint32_t color)
+{
+    uint8_t buffer[1 + BC_RADIO_ID_SIZE + 1 + sizeof(uint16_t) + sizeof(uint32_t)];
+
+    buffer[0] = BC_RADIO_HEADER_NODE_LED_STRIP_EFFECT_SET;
+
+    uint8_t *pbuffer = bc_radio_id_to_buffer(id, buffer + 1);
+
+    *pbuffer++ = type;
+
+    *pbuffer++ = (uint16_t) wait;
+    *pbuffer++ = (uint16_t) wait >> 8;
+
+    bc_radio_data_to_buffer(&color, sizeof(color), pbuffer);
+
+    return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
 
 void bc_radio_node_decode(uint64_t *id, uint8_t *buffer, size_t length)
@@ -146,5 +165,20 @@ void bc_radio_node_decode(uint64_t *id, uint8_t *buffer, size_t length)
     else if (buffer[0] == BC_RADIO_HEADER_NODE_LED_STRIP_COMPOUND_SET)
     {
         bc_radio_node_on_led_strip_compound_set(id, pbuffer, length);
+    }
+    else if (buffer[0] == BC_RADIO_HEADER_NODE_LED_STRIP_EFFECT_SET)
+    {
+        bc_radio_node_led_strip_effect_t type;
+        uint16_t wait = 0;
+        uint32_t color;
+
+        type = (bc_radio_node_led_strip_effect_t) *pbuffer++;
+
+        wait = (uint16_t) *pbuffer++;
+        wait |= (uint16_t) *pbuffer++ >> 8;
+
+        bc_radio_data_from_buffer(pbuffer, &color, sizeof(color));
+
+        bc_radio_node_on_led_strip_effect_set(id, type, wait, color);
     }
 }
