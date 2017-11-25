@@ -76,6 +76,7 @@ typedef enum
     BC_RADIO_HEADER_NODE_LED_STRIP_BRIGHTNESS_SET = 0x19,
     BC_RADIO_HEADER_NODE_LED_STRIP_COMPOUND_SET   = 0x1a,
     BC_RADIO_HEADER_NODE_LED_STRIP_EFFECT_SET     = 0x1b,
+    BC_RADIO_HEADER_NODE_LED_STRIP_THERMOMETER_SET = 0x1c,
 
     BC_RADIO_HEADER_ACK             = 0xaa,
 
@@ -128,9 +129,9 @@ uint8_t *bc_radio_int_to_buffer(int *value, uint8_t *buffer);
 uint8_t *bc_radio_float_to_buffer(float *value, uint8_t *buffer);
 uint8_t *bc_radio_data_to_buffer(void *data, size_t length, uint8_t *buffer);
 uint8_t *bc_radio_id_from_buffer(uint8_t *buffer, uint64_t *id);
-uint8_t *bc_radio_bool_from_buffer(uint8_t *buffer, bool **value);
-uint8_t *bc_radio_int_from_buffer(uint8_t *buffer, int **value);
-uint8_t *bc_radio_float_from_buffer(uint8_t *buffer, float **value);
+uint8_t *bc_radio_bool_from_buffer(void *buffer, bool *value, bool **pointer);
+uint8_t *bc_radio_int_from_buffer(void *buffer, int *value, int **pointer);
+uint8_t *bc_radio_float_from_buffer(void *buffer, float *value, float **pointer);
 uint8_t *bc_radio_data_from_buffer(uint8_t *buffer, void *data, size_t length);
 
 void bc_radio_init_pairing_button();
