@@ -346,7 +346,7 @@ void bc_led_strip_effect_theater_chase_rainbow(bc_led_strip_t *self, bc_tick_t w
     self->_effect.task_id = bc_scheduler_register(_bc_led_strip_effect_theater_chase_rainbow_task, self, 0);
 }
 
-void bc_led_strip_thermometer(bc_led_strip_t *self, float temperature, float min, float max, uint8_t white)
+void bc_led_strip_thermometer(bc_led_strip_t *self, float temperature, float min, float max, uint8_t white, float set_point, uint32_t color)
 {
     temperature -= min;
 
@@ -388,6 +388,14 @@ void bc_led_strip_thermometer(bc_led_strip_t *self, float temperature, float min
         }
     }
 
+    if ((min < set_point) && (max > set_point))
+    {
+        set_point -= min;
+
+        int color_i = (self->_buffer->count / (int)(fabs(max) + fabs(min))) * set_point;
+
+        self->_driver->set_pixel(color_i, color);
+    }
 
     bc_led_strip_write(self);
 }
