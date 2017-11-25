@@ -90,7 +90,19 @@ bool bc_radio_node_led_strip_compound_set(uint64_t *id,  uint8_t *compound, size
 //! @return true On success
 //! @return false On failure
 
-bool bc_radio_node_led_strip_effect_set(uint64_t *id, bc_radio_node_led_strip_effect_t type, uint16_t wait, uint32_t color)
+bool bc_radio_node_led_strip_effect_set(uint64_t *id, bc_radio_node_led_strip_effect_t type, uint16_t wait, uint32_t color);
+
+//! @brief Send data to node
+//! @param[in] id Pointer to node id
+//! @param[in] temperature
+//! @param[in] min Temperature on thermometer
+//! @param[in] max Temperature on thermometer
+//! @param[in] set_point Pointer to set point temperature, if NULL set_point and set_point_color not used
+//! @param[in] set_point_color Color in RGBW format
+//! @return true On success
+//! @return false On failure
+
+bool bc_radio_node_led_strip_thermometer_set(uint64_t *id, float temperature, int8_t min, int8_t max, float *set_point, uint32_t set_point_color);
 
 //! @brief Internal decode function for bc_radio.c
 //! @param[in] id Pointer on own id
