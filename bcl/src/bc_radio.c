@@ -82,9 +82,7 @@ static void _bc_radio_atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_ev
 static bool _bc_radio_peer_device_add(uint64_t id);
 static bool _bc_radio_peer_device_remove(uint64_t id);
 
-
 __attribute__((weak)) void bc_radio_on_info(uint64_t *id, char *firmware, char *version) { (void) id; (void) firmware; (void) version; }
-
 
 void bc_radio_init(bc_radio_mode_t mode)
 {
@@ -363,6 +361,13 @@ static void _bc_radio_task(void *param)
         bc_radio_pub_decode(&id, queue_item_buffer + BC_RADIO_HEAD_SIZE, queue_item_length);
 
         bc_radio_node_decode(&id, queue_item_buffer + BC_RADIO_HEAD_SIZE, queue_item_length);
+
+        if (queue_item_buffer[BC_RADIO_HEAD_SIZE] == BC_RADIO_HEADER_PUB_INFO)
+        {
+            queue_item_buffer[queue_item_length + BC_RADIO_HEAD_SIZE - 1] = 0;
+
+            bc_radio_on_info(&id, (char *) queue_item_buffer + BC_RADIO_HEAD_SIZE + 1, "");
+        }
     }
 
     if (bc_queue_get(&_bc_radio.pub_queue, queue_item_buffer, &queue_item_length))
