@@ -976,9 +976,9 @@ uint8_t *bc_radio_id_from_buffer(uint8_t *buffer, uint64_t *id)
     return buffer + BC_RADIO_ID_SIZE;
 }
 
-uint8_t *bc_radio_bool_from_buffer(void *buffer, bool *value, bool **pointer)
+uint8_t *bc_radio_bool_from_buffer(uint8_t *buffer, bool *value, bool **pointer)
 {
-    if (*(uint8_t *) buffer == BC_RADIO_NULL_BOOL)
+    if (*buffer == BC_RADIO_NULL_BOOL)
     {
         *pointer = NULL;
     }
@@ -988,10 +988,10 @@ uint8_t *bc_radio_bool_from_buffer(void *buffer, bool *value, bool **pointer)
         *pointer = value;
     }
 
-    return buffer + 1;
+    return  buffer + 1;
 }
 
-uint8_t *bc_radio_int_from_buffer(void *buffer, int *value, int **pointer)
+uint8_t *bc_radio_int_from_buffer(uint8_t *buffer, int *value, int **pointer)
 {
     memcpy(value, buffer, sizeof(float));
 
@@ -1007,7 +1007,7 @@ uint8_t *bc_radio_int_from_buffer(void *buffer, int *value, int **pointer)
     return buffer + sizeof(int);
 }
 
-uint8_t *bc_radio_float_from_buffer(void *buffer, float *value, float **pointer)
+uint8_t *bc_radio_float_from_buffer(uint8_t *buffer, float *value, float **pointer)
 {
     memcpy(value, buffer, sizeof(float));
 
