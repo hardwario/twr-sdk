@@ -340,13 +340,18 @@ size_t bc_uart_async_write(bc_uart_channel_t channel, const void *buffer, size_t
         return 0;
     }
 
-    size_t bytes_written = bc_fifo_write(_bc_uart[channel].write_fifo, buffer, length);
+    size_t bytes_written = 0;
+
+    for (size_t i = 0; i < length; i += 16)
+    {
+        bytes_written += bc_fifo_write(_bc_uart[channel].write_fifo, (uint8_t *)buffer + i, length - i  > 16 ? 16 : length - i);
+    }
 
     if (bytes_written != 0)
     {
         if (!_bc_uart[channel].async_write_in_progress)
         {
-            _bc_uart[channel].async_write_task_id = bc_scheduler_register(_bc_uart_async_write_task, &_bc_uart[channel], BC_TICK_INFINITY);
+            _bc_uart[channel].async_write_task_id = bc_scheduler_register(_bc_uart_async_write_task, (void *) channel, BC_TICK_INFINITY);
 
             if (_bc_uart[channel].usart == LPUART1)
             {
@@ -384,7 +389,7 @@ bool bc_uart_async_read_start(bc_uart_channel_t channel, bc_tick_t timeout)
 
     _bc_uart[channel].async_timeout = timeout;
 
-    _bc_uart[channel].async_read_task_id = bc_scheduler_register(_bc_uart_async_read_task, &_bc_uart[channel], _bc_uart[channel].async_timeout);
+    _bc_uart[channel].async_read_task_id = bc_scheduler_register(_bc_uart_async_read_task, (void *) channel, _bc_uart[channel].async_timeout);
 
     bc_irq_disable();
 
@@ -443,7 +448,8 @@ size_t bc_uart_async_read(bc_uart_channel_t channel, void *buffer, size_t length
 
 static void _bc_uart_async_write_task(void *param)
 {
-    bc_uart_t *uart = (bc_uart_t *) param;
+    bc_uart_channel_t channel = (bc_uart_channel_t) param;
+    bc_uart_t *uart = &_bc_uart[channel];
 
     uart->async_write_in_progress = false;
 
@@ -460,13 +466,14 @@ static void _bc_uart_async_write_task(void *param)
 
     if (uart->event_handler != NULL)
     {
-        uart->event_handler(BC_UART_UART1, BC_UART_EVENT_ASYNC_WRITE_DONE, uart->event_param);
+        uart->event_handler(channel, BC_UART_EVENT_ASYNC_WRITE_DONE, uart->event_param);
     }
 }
 
 static void _bc_uart_async_read_task(void *param)
 {
-    bc_uart_t *uart = (bc_uart_t *) param;
+    bc_uart_channel_t channel = (bc_uart_channel_t) param;
+    bc_uart_t *uart = &_bc_uart[channel];
 
     bc_scheduler_plan_current_relative(uart->async_timeout);
 
@@ -474,11 +481,11 @@ static void _bc_uart_async_read_task(void *param)
     {
         if (bc_fifo_is_empty(uart->read_fifo))
         {
-            uart->event_handler(BC_UART_UART1, BC_UART_EVENT_ASYNC_READ_TIMEOUT, uart->event_param);
+            uart->event_handler(channel, BC_UART_EVENT_ASYNC_READ_TIMEOUT, uart->event_param);
         }
         else
         {
-            uart->event_handler(BC_UART_UART1, BC_UART_EVENT_ASYNC_READ_DATA, uart->event_param);
+            uart->event_handler(channel, BC_UART_EVENT_ASYNC_READ_DATA, uart->event_param);
         }
     }
 }
@@ -486,6 +493,18 @@ static void _bc_uart_async_read_task(void *param)
 static void _bc_uart_irq_handler(bc_uart_channel_t channel)
 {
     USART_TypeDef *usart = _bc_uart[channel].usart;
+
+    if ((usart->CR1 & USART_CR1_RXNEIE) != 0 && (usart->ISR & USART_ISR_RXNE) != 0)
+    {
+        uint8_t character;
+
+        // Read receive data register
+        character = usart->RDR;
+
+        bc_fifo_irq_write(_bc_uart[channel].read_fifo, &character, 1);
+
+        bc_scheduler_plan_now(_bc_uart[channel].async_read_task_id);
+    }
 
     // If it is transmit interrupt...
     if ((usart->CR1 & USART_CR1_TXEIE) != 0 && (usart->ISR & USART_ISR_TXE) != 0)
@@ -515,18 +534,6 @@ static void _bc_uart_irq_handler(bc_uart_channel_t channel)
         usart->CR1 &= ~USART_CR1_TCIE;
 
         bc_scheduler_plan_now(_bc_uart[channel].async_write_task_id);
-    }
-
-    if ((usart->CR1 & USART_CR1_RXNEIE) != 0 && (usart->ISR & USART_ISR_RXNE) != 0)
-    {
-        uint8_t character;
-
-        // Read receive data register
-        character = usart->RDR;
-
-        bc_fifo_irq_write(_bc_uart[channel].read_fifo, &character, 1);
-
-        bc_scheduler_plan_now(_bc_uart[channel].async_read_task_id);
     }
 }
 

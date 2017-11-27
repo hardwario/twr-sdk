@@ -28,11 +28,10 @@ typedef enum
 
 } bc_module_co2_state_t;
 
-
 static bool _bc_module_co2_init(void);
-static bool _bc_module_co2_charge(bool state);
-static bool _bc_module_co2_enable(bool state);
-static bool _bc_module_co2_rdy(bool *state);
+static bool _bc_module_co2_charge_enable(bool state);
+static bool _bc_module_co2_device_enable(bool state);
+static bool _bc_module_co2_read_signal_rdy(int *value);
 static bool _bc_module_co2_uart_enable(bool state);
 static size_t _bc_module_co2_uart_write(uint8_t *buffer, size_t length);
 static size_t _bc_module_co2_uart_read(uint8_t *buffer, size_t length);
@@ -41,15 +40,15 @@ static struct
 {
     bc_tca9534a_t tca9534a;
     bc_sc16is740_t sc16is740;
-    bc_co2_sensor_t sensor;
-    const bc_co2_sensor_driver_t driver;
+    bc_lp8_t sensor;
+    const bc_lp8_driver_t driver;
 
 } _bc_module_co2 = {
     .driver = {
         .init = _bc_module_co2_init,
-        .charge = _bc_module_co2_charge,
-        .enable = _bc_module_co2_enable,
-        .rdy = _bc_module_co2_rdy,
+        .charge_enable = _bc_module_co2_charge_enable,
+        .device_enable = _bc_module_co2_device_enable,
+        .read_signal_rdy = _bc_module_co2_read_signal_rdy,
         .uart_enable = _bc_module_co2_uart_enable,
         .uart_write = _bc_module_co2_uart_write,
         .uart_read = _bc_module_co2_uart_read
@@ -58,32 +57,32 @@ static struct
 
 void bc_module_co2_init(void)
 {
-    bc_co2_sensor_init(&_bc_module_co2.sensor, &_bc_module_co2.driver);
+    bc_lp8_init(&_bc_module_co2.sensor, &_bc_module_co2.driver);
 }
 
 void bc_module_co2_set_event_handler(void (*event_handler)(bc_module_co2_event_t, void *), void *event_param)
 {
-    bc_co2_sensor_set_event_handler(&_bc_module_co2.sensor, (void (*)(bc_co2_sensor_event_t, void *)) event_handler, event_param);
+    bc_lp8_set_event_handler(&_bc_module_co2.sensor, (void (*)(bc_lp8_event_t, void *)) event_handler, event_param);
 }
 
 void bc_module_co2_set_update_interval(bc_tick_t interval)
 {
-    bc_co2_sensor_set_update_interval(&_bc_module_co2.sensor, interval);
+    bc_lp8_set_update_interval(&_bc_module_co2.sensor, interval);
 }
 
 bool bc_module_co2_measure(void)
 {
-    return bc_co2_sensor_measure(&_bc_module_co2.sensor);
+    return bc_lp8_measure(&_bc_module_co2.sensor);
 }
 
 bool bc_module_co2_get_concentration_ppm(float *ppm)
 {
-    return bc_co2_sensor_get_concentration_ppm(&_bc_module_co2.sensor, ppm);
+    return bc_lp8_get_concentration_ppm(&_bc_module_co2.sensor, ppm);
 }
 
-void bc_module_co2_calibration(bc_co2_sensor_calibration_t calibration)
+void bc_module_co2_calibration(bc_lp8_calibration_t calibration)
 {
-    bc_co2_sensor_calibration(&_bc_module_co2.sensor, calibration);
+    bc_lp8_calibration(&_bc_module_co2.sensor, calibration);
 }
 
 static bool _bc_module_co2_init(void)
@@ -98,14 +97,14 @@ static bool _bc_module_co2_init(void)
         return false;
     }
 
-    // Reset sc16is740
+    // Reset SC16IS740
     if (!bc_tca9534a_set_port_direction(&_bc_module_co2.tca9534a, _BC_MODULE_CO2_PIN_DEFAULT & _BC_MODULE_CO2_PIN_UART_RESET))
     {
         return false;
     }
 
     // Reset pulse width > 3us
-    for (int i = 0; i < 100; i++)
+    for (volatile int i = 0; i < 100; i++)
     {
         continue;
     }
@@ -116,7 +115,7 @@ static bool _bc_module_co2_init(void)
     }
 
     // Delay time width > 10us
-    for (int i = 0; i < 1000; i++)
+    for (volatile int i = 0; i < 1000; i++)
     {
         continue;
     }
@@ -129,7 +128,7 @@ static bool _bc_module_co2_init(void)
     return true;
 }
 
-static bool _bc_module_co2_charge(bool state)
+static bool _bc_module_co2_charge_enable(bool state)
 {
     uint8_t direction = _BC_MODULE_CO2_PIN_DEFAULT;
 
@@ -141,7 +140,7 @@ static bool _bc_module_co2_charge(bool state)
     return bc_tca9534a_set_port_direction(&_bc_module_co2.tca9534a, direction);
 }
 
-static bool _bc_module_co2_enable(bool state)
+static bool _bc_module_co2_device_enable(bool state)
 {
     uint8_t direction = _BC_MODULE_CO2_PIN_DEFAULT;
 
@@ -153,16 +152,12 @@ static bool _bc_module_co2_enable(bool state)
     return bc_tca9534a_set_port_direction(&_bc_module_co2.tca9534a, direction);
 }
 
-static bool _bc_module_co2_rdy(bool *state)
+static bool _bc_module_co2_read_signal_rdy(int *value)
 {
-    int rdy_pin_value;
-
-    if (!bc_tca9534a_read_pin(&_bc_module_co2.tca9534a, _BC_MODULE_CO2_PIN_RDY, &rdy_pin_value))
+    if (!bc_tca9534a_read_pin(&_bc_module_co2.tca9534a, _BC_MODULE_CO2_PIN_RDY, value))
     {
         return false;
     }
-
-    *state = rdy_pin_value == 1;
 
     return true;
 }
