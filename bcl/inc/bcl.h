@@ -57,6 +57,8 @@
 #include <bc_flood_detector.h>
 #include <bc_pulse_counter.h>
 #include <bc_co2_sensor.h>
+#include <bc_font_common.h>
+#include <bc_image.h>
 
 //! @mainpage BigClown firmware SDK
 //! This is API documentation of BigClown SDK
