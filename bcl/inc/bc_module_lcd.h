@@ -3,6 +3,7 @@
 
 
 #include <bc_font_common.h>
+#include <bc_image.h>
 #include <bc_led.h>
 #include <bc_button.h>
 
@@ -162,6 +163,13 @@ void bc_module_lcd_draw_rectangle(int x0, int y0, int x1, int y1, bool color);
 //! @param[in] color Pixels state
 
 void bc_module_lcd_draw_circle(int x0, int y0, int radius, bool color);
+
+//! @brief Lcd draw image
+//! @param[in] left Pixels from left edge
+//! @param[in] top Pixels from top edge
+//! @param[in] img Pointer to the image
+
+void bc_module_lcd_draw_image(int left, int top, const bc_image_t *img);
 
 //void bc_module_lcd_draw(const uint8_t *frame, uint8_t width, uint8_t height); // In pixels
 //void bc_module_lcd_printf(uint8_t line, /*uint8_t size, font, */const uint8_t *string/*, ...*/);

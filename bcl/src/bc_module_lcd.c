@@ -352,6 +352,31 @@ void bc_module_lcd_draw_circle(int x0, int y0, int radius, bool color)
     }
 }
 
+void bc_module_lcd_draw_image(int left, int top, const bc_image_t *img)
+{
+    uint8_t line;
+	uint8_t row;
+    uint8_t bytes_per_row = img->width / 8;
+
+    if(img->width % 8 != 0)
+    {
+        bytes_per_row++;
+    }
+
+    bc_tick_t start = bc_tick_get();
+
+        for (row = 0; row < img->height; row++) {
+            for (line = 0; line < img->width; line++) {
+                uint32_t byte_offset = line / 8 + row * bytes_per_row;
+                uint32_t bit = line % 8;
+                bc_module_lcd_draw_pixel(line + left, row + top, (img->data[byte_offset]) & (1 << bit));
+			}
+		}
+    volatile bc_tick_t duration = bc_tick_get() - start;
+    (void)duration;
+
+}
+
 /*
 
 Framebuffer format for updating multiple lines, ideal for later DMA TX:

@@ -59,6 +59,9 @@
 #include <bc_data_stream.h>
 #include <bc_flood_detector.h>
 #include <bc_pulse_counter.h>
+#include <bc_font_common.h>
+#include <bc_image.h>
+
 
 //! @mainpage Overview
 //! Here you will find all the documented firmware SDK APIs.
