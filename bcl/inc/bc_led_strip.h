@@ -95,6 +95,6 @@ void bc_led_strip_effect_theater_chase(bc_led_strip_t *self, uint32_t color, bc_
 
 void bc_led_strip_effect_theater_chase_rainbow(bc_led_strip_t *self, bc_tick_t wait);
 
-void bc_led_strip_thermometer(bc_led_strip_t *self, float temperature, float min, float max, uint8_t white);
+void bc_led_strip_thermometer(bc_led_strip_t *self, float temperature, float min, float max, uint8_t white, float set_point, uint32_t color);
 
 #endif // _BC_LED_STRIP_H

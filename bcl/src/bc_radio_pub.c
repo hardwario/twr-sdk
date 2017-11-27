@@ -93,7 +93,7 @@ bool bc_radio_pub_co2(float *concentration)
 
 bool bc_radio_pub_battery(float *voltage)
 {
-    uint8_t buffer[1 + sizeof(uint8_t) + sizeof(*voltage)];
+    uint8_t buffer[1 + sizeof(*voltage)];
 
     buffer[0] = BC_RADIO_HEADER_PUB_BATTERY;
 
@@ -193,7 +193,17 @@ bool bc_radio_pub_float(const char *subtopic, float *value)
 void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
 {
 
-    if (buffer[0] == BC_RADIO_HEADER_PUB_EVENT_COUNT)
+    if (buffer[0] == BC_RADIO_HEADER_PUB_PUSH_BUTTON)
+    {
+        uint16_t event_count;
+
+        memcpy(&event_count, buffer + 1, sizeof(event_count));
+
+        bc_radio_pub_on_push_button(id, &event_count);
+
+        bc_radio_pub_on_event_count(id, BC_RADIO_PUB_EVENT_PUSH_BUTTON, &event_count);
+    }
+    else if (buffer[0] == BC_RADIO_HEADER_PUB_EVENT_COUNT)
     {
         uint16_t event_count;
 
@@ -252,7 +262,7 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
     {
         float voltage;
 
-        memcpy(&voltage, buffer + 1, sizeof(voltage));
+        memcpy(&voltage, buffer + (length == 5 ? 1 : 2), sizeof(voltage));
 
         bc_radio_pub_on_battery(id, &voltage);
     }
@@ -262,40 +272,44 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_STATE)
     {
-        bool *state = NULL;
+        bool state;
+        bool *pstate = NULL;
 
-        bc_radio_bool_from_buffer(buffer + 2, &state);
+        bc_radio_bool_from_buffer(buffer + 2, &state, &pstate);
 
-        bc_radio_pub_on_state(id, buffer[1], state);
+        bc_radio_pub_on_state(id, buffer[1], pstate);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_TOPIC_BOOL)
     {
-        bool *value = NULL;
+        bool value;
+        bool *pvalue;
 
-        buffer = bc_radio_bool_from_buffer(buffer + 1, &value);
+        buffer = bc_radio_bool_from_buffer(buffer + 1, &value, &pvalue);
 
         buffer[length - 1] = 0;
 
-        bc_radio_pub_on_bool(id, (char *) buffer, value);
+        bc_radio_pub_on_bool(id, (char *) buffer, pvalue);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_TOPIC_INT)
     {
-        int *value = NULL;
+        int value;
+        int *pvalue;
 
-        buffer = bc_radio_int_from_buffer(buffer + 1, &value);
+        buffer = bc_radio_int_from_buffer(buffer + 1, &value, &pvalue);
 
         buffer[length - 1] = 0;
 
-        bc_radio_pub_on_int(id, (char *) buffer, value);
+        bc_radio_pub_on_int(id, (char *) buffer, pvalue);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_TOPIC_FLOAT)
     {
-        float *value = NULL;
+        float value;
+        float *pvalue;
 
-        buffer = bc_radio_float_from_buffer(buffer + 1, &value);
+        buffer = bc_radio_float_from_buffer(buffer + 1, &value, &pvalue);
 
         buffer[length - 1] = 0;
 
-        bc_radio_pub_on_float(id, (char *) buffer, value);
+        bc_radio_pub_on_float(id, (char *) buffer, pvalue);
     }
 }

@@ -340,7 +340,12 @@ size_t bc_uart_async_write(bc_uart_channel_t channel, const void *buffer, size_t
         return 0;
     }
 
-    size_t bytes_written = bc_fifo_write(_bc_uart[channel].write_fifo, buffer, length);
+    size_t bytes_written = 0;
+
+    for (size_t i = 0; i < length; i += 16)
+    {
+        bytes_written += bc_fifo_write(_bc_uart[channel].write_fifo, (uint8_t *)buffer + i, length - i  > 16 ? 16 : length - i);
+    }
 
     if (bytes_written != 0)
     {
@@ -489,6 +494,18 @@ static void _bc_uart_irq_handler(bc_uart_channel_t channel)
 {
     USART_TypeDef *usart = _bc_uart[channel].usart;
 
+    if ((usart->CR1 & USART_CR1_RXNEIE) != 0 && (usart->ISR & USART_ISR_RXNE) != 0)
+    {
+        uint8_t character;
+
+        // Read receive data register
+        character = usart->RDR;
+
+        bc_fifo_irq_write(_bc_uart[channel].read_fifo, &character, 1);
+
+        bc_scheduler_plan_now(_bc_uart[channel].async_read_task_id);
+    }
+
     // If it is transmit interrupt...
     if ((usart->CR1 & USART_CR1_TXEIE) != 0 && (usart->ISR & USART_ISR_TXE) != 0)
     {
@@ -517,18 +534,6 @@ static void _bc_uart_irq_handler(bc_uart_channel_t channel)
         usart->CR1 &= ~USART_CR1_TCIE;
 
         bc_scheduler_plan_now(_bc_uart[channel].async_write_task_id);
-    }
-
-    if ((usart->CR1 & USART_CR1_RXNEIE) != 0 && (usart->ISR & USART_ISR_RXNE) != 0)
-    {
-        uint8_t character;
-
-        // Read receive data register
-        character = usart->RDR;
-
-        bc_fifo_irq_write(_bc_uart[channel].read_fifo, &character, 1);
-
-        bc_scheduler_plan_now(_bc_uart[channel].async_read_task_id);
     }
 }
 

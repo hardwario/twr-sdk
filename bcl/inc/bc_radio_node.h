@@ -9,6 +9,8 @@
 //! @{
 
 #define BC_RADIO_NODE_MAX_BUFFER_SIZE (BC_RADIO_MAX_BUFFER_SIZE - BC_RADIO_ID_SIZE - 1)
+#define BC_RADIO_NODE_MAX_COMPOUND_PART (BC_RADIO_NODE_MAX_BUFFER_SIZE / 5)
+#define BC_RADIO_NODE_MAX_COMPOUND_BUFFER_SIZE (BC_RADIO_NODE_MAX_COMPOUND_PART * 5)
 
 enum
 {
@@ -17,6 +19,17 @@ enum
     BC_RADIO_NODE_STATE_RELAY_MODULE_1 = BC_RADIO_PUB_STATE_RELAY_MODULE_1,
     BC_RADIO_NODE_STATE_POWER_MODULE_RELAY = BC_RADIO_PUB_STATE_POWER_MODULE_RELAY,
 };
+
+typedef enum
+{
+    BC_RADIO_NODE_LED_STRIP_EFFECT_TEST = 0,
+    BC_RADIO_NODE_LED_STRIP_EFFECT_RAINBOW = 1,
+    BC_RADIO_NODE_LED_STRIP_EFFECT_RAINBOW_CYCLE = 2,
+    BC_RADIO_NODE_LED_STRIP_EFFECT_THEATER_CHASE_RAINBOW = 3,
+    BC_RADIO_NODE_LED_STRIP_EFFECT_COLOR_WIPE = 4,
+    BC_RADIO_NODE_LED_STRIP_EFFECT_THEATER_CHASE = 5
+
+} bc_radio_node_led_strip_effect_t;
 
 //! @brief Send request for set new state
 //! @param[in] id Pointer to node id
@@ -43,6 +56,53 @@ bool bc_radio_node_state_get(uint64_t *id, uint8_t state_id);
 //! @return false On failure
 
 bool bc_radio_node_buffer(uint64_t *id, void *buffer, size_t length);
+
+//! @brief Send data to node
+//! @param[in] id Pointer to node id
+//! @param[in] color Color in RGBW format
+//! @return true On success
+//! @return false On failure
+
+bool bc_radio_node_led_strip_color_set(uint64_t *id, uint32_t color);
+
+//! @brief Send data to node
+//! @param[in] id Pointer to node id
+//! @param[in] brightness
+//! @return true On success
+//! @return false On failure
+
+bool bc_radio_node_led_strip_brightness_set(uint64_t *id, uint8_t brightness);
+
+//! @brief Send data to node
+//! @param[in] id Pointer to node id
+//! @param[in] compound Pointer to compound buffer
+//! @param[in] length Number of bytes to be send, must be modulo 5, max value is in BC_RADIO_NODE_MAX_COMPOUND_BUFFER_SIZE
+//! @return true On success
+//! @return false On failure
+
+bool bc_radio_node_led_strip_compound_set(uint64_t *id,  uint8_t *compound, size_t length);
+
+//! @brief Send data to node
+//! @param[in] id Pointer to node id
+//! @param[in] type Effect type
+//! @param[in] wait Interval between refresh
+//! @param[in] color Color in RGBW format
+//! @return true On success
+//! @return false On failure
+
+bool bc_radio_node_led_strip_effect_set(uint64_t *id, bc_radio_node_led_strip_effect_t type, uint16_t wait, uint32_t color);
+
+//! @brief Send data to node
+//! @param[in] id Pointer to node id
+//! @param[in] temperature
+//! @param[in] min Temperature on thermometer
+//! @param[in] max Temperature on thermometer
+//! @param[in] set_point Pointer to set point temperature, if NULL set_point and set_point_color not used
+//! @param[in] set_point_color Color in RGBW format
+//! @return true On success
+//! @return false On failure
+
+bool bc_radio_node_led_strip_thermometer_set(uint64_t *id, float temperature, int8_t min, int8_t max, float *set_point, uint32_t set_point_color);
 
 //! @brief Internal decode function for bc_radio.c
 //! @param[in] id Pointer on own id
