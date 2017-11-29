@@ -78,7 +78,7 @@ bool bc_led_strip_is_ready(bc_led_strip_t *self);
 
 void bc_led_strip_set_brightness(bc_led_strip_t *self, uint8_t brightness);
 
-void bc_led_strip_effect_stop();
+void bc_led_strip_effect_stop(bc_led_strip_t *self);
 
 void bc_led_strip_effect_test(bc_led_strip_t *self);
 
