@@ -7,7 +7,7 @@ __attribute__((weak)) void bc_radio_node_on_led_strip_color_set(uint64_t *id, ui
 __attribute__((weak)) void bc_radio_node_on_led_strip_brightness_set(uint64_t *id, uint8_t *brightness) { (void) id; (void) brightness; }
 __attribute__((weak)) void bc_radio_node_on_led_strip_compound_set(uint64_t *id, uint8_t *compound, size_t length) { (void) id; (void) compound; (void) length; }
 __attribute__((weak)) void bc_radio_node_on_led_strip_effect_set(uint64_t *id, bc_radio_node_led_strip_effect_t type, uint16_t wait, uint32_t *color) { (void) id; (void) type; (void) wait; (void) color; }
-__attribute__((weak)) void bc_radio_node_on_led_strip_thermometer_set(uint64_t *id, float *temperature, int8_t *min, int8_t *max, float *set_point, uint32_t *set_point_color) { (void) id; (void) temperature; (void) min; (void) max; (void) set_point; (void) set_point_color; }
+__attribute__((weak)) void bc_radio_node_on_led_strip_thermometer_set(uint64_t *id, float *temperature, int8_t *min, int8_t *max, uint8_t *white_dots, float *set_point, uint32_t *set_point_color) { (void) id; (void) temperature; (void) min; (void) max; (void) white_dots; (void) set_point; (void) set_point_color; }
 
 
 bool bc_radio_node_state_set(uint64_t *id, uint8_t state_id, bool *state)
@@ -117,9 +117,9 @@ bool bc_radio_node_led_strip_effect_set(uint64_t *id, bc_radio_node_led_strip_ef
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
 
-bool bc_radio_node_led_strip_thermometer_set(uint64_t *id, float temperature, int8_t min, int8_t max, float *set_point, uint32_t set_point_color)
+bool bc_radio_node_led_strip_thermometer_set(uint64_t *id, float temperature, int8_t min, int8_t max, uint8_t white_dots, float *set_point, uint32_t set_point_color)
 {
-    uint8_t buffer[1 + BC_RADIO_ID_SIZE + sizeof(float) + sizeof(int8_t) + sizeof(int8_t) + sizeof(float) + sizeof(uint32_t)];
+    uint8_t buffer[1 + BC_RADIO_ID_SIZE + sizeof(float) + sizeof(int8_t) + sizeof(int8_t) + sizeof(uint8_t) + sizeof(float) + sizeof(uint32_t)];
 
     buffer[0] = BC_RADIO_HEADER_NODE_LED_STRIP_THERMOMETER_SET;
 
@@ -130,6 +130,8 @@ bool bc_radio_node_led_strip_thermometer_set(uint64_t *id, float temperature, in
     *pbuffer++ = min;
 
     *pbuffer++ = max;
+
+    *pbuffer++ = white_dots;
 
     if ((set_point == NULL) || isnan(*set_point) || *set_point == BC_RADIO_NULL_FLOAT)
     {
@@ -212,21 +214,22 @@ void bc_radio_node_decode(uint64_t *id, uint8_t *buffer, size_t length)
     {
         float temperature;
         float *ptemperature;
-        float set_point;
-        float *pset_point;
-        uint32_t color;
+        float set_point = 0;
+        float *pset_point = NULL;
+        uint32_t color = 0;
 
         pbuffer = bc_radio_float_from_buffer(pbuffer, &temperature, &ptemperature);
         int8_t *min = (int8_t *) pbuffer;
         int8_t *max = (int8_t *) pbuffer + 1;
+        uint8_t *white_dots = (uint8_t *) pbuffer + 2;
 
-        if (length == sizeof(float) + sizeof(int8_t) + sizeof(int8_t) + sizeof(float) + sizeof(uint32_t))
+        if (length == sizeof(float) + sizeof(int8_t) + sizeof(int8_t) + sizeof(uint8_t) + sizeof(float) + sizeof(uint32_t))
         {
-            pbuffer = bc_radio_float_from_buffer(pbuffer + 2, &set_point, &pset_point);
+            pbuffer = bc_radio_float_from_buffer(pbuffer + 3, &set_point, &pset_point);
 
             bc_radio_data_from_buffer(pbuffer, &color, sizeof(color));
         }
 
-        bc_radio_node_on_led_strip_thermometer_set(id, ptemperature, min, max, pset_point, &color);
+        bc_radio_node_on_led_strip_thermometer_set(id, ptemperature, min, max, white_dots, pset_point, &color);
     }
 }
