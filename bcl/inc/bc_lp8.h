@@ -110,7 +110,7 @@ struct bc_lp8_t
     uint8_t _tx_buffer[33];
     uint8_t _sensor_state[23];
     bool _valid;
-    uint16_t _concentration;
+    int16_t _concentration;
     uint16_t _pressure;
 
 };

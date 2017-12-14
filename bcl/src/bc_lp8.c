@@ -5,7 +5,10 @@
 #define _BC_LP8_MODBUS_READ 0x44
 #define _BC_LP8_INITIAL_MEASUREMENT 0x10
 #define _BC_LP8_SEQUENTIAL_MEASUREMENT 0x20
-#define _BC_LP8_RX_ERROR_STATUS0 (3 + 39)
+#define _BC_LP8_RX_ERROR_STATUS0 (3 + 0xa7 - 0x80)
+#define _BC_LP8_RX_ERROR_STATUS1 (3 + 0xa6 - 0x80)
+#define _BC_LP8_RX_CONC (3 + 0x9a - 0x80)
+
 #define _BC_LP8_CALIBRATION_TIMEOUT (8 * 24 * 60 * 60 * 1000)
 
 static void _bc_lp8_task_interval(void *param);
@@ -74,15 +77,12 @@ bool bc_lp8_get_concentration_ppm(bc_lp8_t *self, float *ppm)
 {
     if (!self->_valid)
     {
+        *ppm = NAN;
+
         return false;
     }
 
     *ppm = (float) self->_concentration;
-
-    if (*ppm > 10000.f)
-    {
-        return false;
-    }
 
     return true;
 }
@@ -443,7 +443,7 @@ start:
                     goto start;
                 }
 
-                if (self->_rx_buffer[_BC_LP8_RX_ERROR_STATUS0] != 0)
+                if ((self->_rx_buffer[_BC_LP8_RX_ERROR_STATUS0] & 0xfd) != 0)
                 {
                     if (self->_calibration_run)
                     {
@@ -466,6 +466,13 @@ start:
                     }
                 }
 
+                if ((self->_rx_buffer[_BC_LP8_RX_ERROR_STATUS1] & 0xf7) != 0)
+                {
+                     self->_state = BC_LP8_STATE_ERROR;
+
+                     goto start;
+                }
+
                 if (self->_calibration_run)
                 {
                     self->_calibration = BC_LP8_CALIBRATION_ABC;
@@ -477,10 +484,10 @@ start:
 
                 self->_first_measurement_done = true;
 
-                self->_concentration = (uint16_t) self->_rx_buffer[29] << 8;
-                self->_concentration |= (uint16_t) self->_rx_buffer[30];
+                self->_concentration = (int16_t) self->_rx_buffer[_BC_LP8_RX_CONC] << 8;
+                self->_concentration |= (int16_t) self->_rx_buffer[_BC_LP8_RX_CONC + 1];
 
-                self->_valid = true;
+                self->_valid = (self->_concentration >= 0) && (self->_concentration <= 10000);
 
                 self->_state = BC_LP8_STATE_READY;
 
