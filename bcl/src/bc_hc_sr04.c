@@ -176,6 +176,8 @@ static void _bc_hc_sr04_task_notify(void *param)
 
     _bc_hc_sr04.measurement_active = false;
 
+    bc_scheduler_unregister(_bc_hc_sr04.task_id_notify);
+
     if (!_bc_hc_sr04.measurement_valid)
     {
         if (_bc_hc_sr04.event_handler != NULL)
@@ -187,8 +189,6 @@ static void _bc_hc_sr04_task_notify(void *param)
     {
         _bc_hc_sr04.event_handler(BC_HC_SR04_EVENT_UPDATE, _bc_hc_sr04.event_param);
     }
-
-    bc_scheduler_unregister(_bc_hc_sr04.task_id_notify);
 }
 
 void TIM3_IRQHandler(void)
