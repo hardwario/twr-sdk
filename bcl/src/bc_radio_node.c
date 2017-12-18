@@ -156,13 +156,8 @@ void bc_radio_node_decode(uint64_t *id, uint8_t *buffer, size_t length)
         return;
     }
 
-    uint8_t *pbuffer = bc_radio_id_from_buffer(buffer + 1, &for_id);
-    length = length - BC_RADIO_ID_SIZE - 1;
-
-    if (for_id != bc_radio_get_my_id())
-    {
-        return;
-    }
+    uint8_t *pbuffer = buffer + 1 + BC_RADIO_ID_SIZE;
+    length = length - 1 - BC_RADIO_ID_SIZE;
 
     if (buffer[0] == BC_RADIO_HEADER_NODE_STATE_SET)
     {

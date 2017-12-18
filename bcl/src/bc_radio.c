@@ -162,10 +162,10 @@ void bc_radio_pairing_mode_stop(void)
 bool bc_radio_peer_device_add(uint64_t id)
 {
 
-	if (!_bc_radio_peer_device_add(id))
-	{
-		return false;
-	}
+    if (!_bc_radio_peer_device_add(id))
+    {
+        return false;
+    }
 
     uint8_t buffer[1 + BC_RADIO_ID_SIZE];
 
@@ -177,15 +177,15 @@ bool bc_radio_peer_device_add(uint64_t id)
 
     bc_scheduler_plan_now(_bc_radio.task_id);
 
-	return true;
+    return true;
 }
 
 bool bc_radio_peer_device_remove(uint64_t id)
 {
-	if (!_bc_radio_peer_device_remove(id))
-	{
-		return false;
-	}
+    if (!_bc_radio_peer_device_remove(id))
+    {
+        return false;
+    }
 
     uint8_t buffer[1 + BC_RADIO_ID_SIZE];
 
@@ -197,58 +197,58 @@ bool bc_radio_peer_device_remove(uint64_t id)
 
     bc_scheduler_plan_now(_bc_radio.task_id);
 
-	return true;
+    return true;
 }
 
 bool bc_radio_peer_device_purge_all(void)
 {
-	for (int i = _bc_radio.peer_devices_lenght -1; i > -1 ; i--)
-	{
-		if (_bc_radio.peer_devices[i].id != 0)
-		{
-			if (!bc_radio_peer_device_remove(_bc_radio.peer_devices[i].id))
-			{
-				return false;
-			}
-		}
-	}
-	return true;
+    for (int i = _bc_radio.peer_devices_lenght -1; i > -1 ; i--)
+    {
+        if (_bc_radio.peer_devices[i].id != 0)
+        {
+            if (!bc_radio_peer_device_remove(_bc_radio.peer_devices[i].id))
+            {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 void bc_radio_get_peer_id(uint64_t *id, int length)
 {
     int i;
-	for (i = 0; (i < _bc_radio.peer_devices_lenght) && (i < length); i++)
-	{
-		id[i] = _bc_radio.peer_devices[i].id;
-	}
-	for (;i < length; i++)
-	{
-	    id[i] = 0;
-	}
+    for (i = 0; (i < _bc_radio.peer_devices_lenght) && (i < length); i++)
+    {
+        id[i] = _bc_radio.peer_devices[i].id;
+    }
+    for (;i < length; i++)
+    {
+        id[i] = 0;
+    }
 }
 
 void bc_radio_scan_start(void)
 {
-	memset(_bc_radio.scan_cache, 0x00, sizeof(_bc_radio.scan_cache));
-	_bc_radio.scan_length = 0;
-	_bc_radio.scan_head = 0;
-	_bc_radio.scan = true;
+    memset(_bc_radio.scan_cache, 0x00, sizeof(_bc_radio.scan_cache));
+    _bc_radio.scan_length = 0;
+    _bc_radio.scan_head = 0;
+    _bc_radio.scan = true;
 }
 
 void bc_radio_scan_stop(void)
 {
-	_bc_radio.scan = false;
+    _bc_radio.scan = false;
 }
 
 void bc_radio_automatic_pairing_start(void)
 {
-	_bc_radio.automatic_pairing = true;
+    _bc_radio.automatic_pairing = true;
 }
 
 void bc_radio_automatic_pairing_stop(void)
 {
-	_bc_radio.automatic_pairing = false;
+    _bc_radio.automatic_pairing = false;
 }
 
 uint64_t bc_radio_get_my_id(void)
@@ -396,27 +396,27 @@ static void _bc_radio_task(void *param)
 
 static bool _bc_radio_scan_cache_push(void)
 {
-	for (uint8_t i = 0; i < _bc_radio.scan_length; i++)
-	{
-		if (_bc_radio.scan_cache[i] == _bc_radio.peer_id)
-		{
-			return false;
-		}
-	}
+    for (uint8_t i = 0; i < _bc_radio.scan_length; i++)
+    {
+        if (_bc_radio.scan_cache[i] == _bc_radio.peer_id)
+        {
+            return false;
+        }
+    }
 
-	if (_bc_radio.scan_length < _BC_RADIO_SCAN_CACHE_LENGTH)
-	{
-		_bc_radio.scan_length++;
-	}
+    if (_bc_radio.scan_length < _BC_RADIO_SCAN_CACHE_LENGTH)
+    {
+        _bc_radio.scan_length++;
+    }
 
-	_bc_radio.scan_cache[_bc_radio.scan_head++] = _bc_radio.peer_id;
+    _bc_radio.scan_cache[_bc_radio.scan_head++] = _bc_radio.peer_id;
 
-	if (_bc_radio.scan_head == _BC_RADIO_SCAN_CACHE_LENGTH)
-	{
-		_bc_radio.scan_head = 0;
-	}
+    if (_bc_radio.scan_head == _BC_RADIO_SCAN_CACHE_LENGTH)
+    {
+        _bc_radio.scan_head = 0;
+    }
 
-	return true;
+    return true;
 }
 
 static void _bc_radio_send_ack(void)
@@ -693,21 +693,38 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
             {
                 if (_bc_radio.peer_id == _bc_radio.peer_devices[i].id)
                 {
-                    if (_bc_radio.peer_devices[i].message_id != message_id || !_bc_radio.peer_devices[i].message_id_synced)
+                    if (_bc_radio.peer_devices[i].message_id != message_id)
                     {
                         _bc_radio.peer_devices[i].message_id = message_id;
 
-                        _bc_radio.peer_devices[i].message_id_synced = true;
+                        _bc_radio.peer_devices[i].message_id_synced = false;
 
                         if (length > 9)
                         {
+                            if ((buffer[8] >= 0x15) && (buffer[8] <= 0x1c) && (length > 14))
+                            {
+                                uint64_t for_id;
+
+                                bc_radio_id_from_buffer(buffer + 9, &for_id);
+
+                                if (for_id != _bc_radio.my_id)
+                                {
+                                    return;
+                                }
+                            }
+
                             bc_queue_put(&_bc_radio.rx_queue, buffer, length);
 
                             bc_scheduler_plan_now(_bc_radio.task_id);
+
+                            _bc_radio.peer_devices[i].message_id_synced = true;
                         }
                     }
 
-                    _bc_radio_send_ack();
+                    if (_bc_radio.peer_devices[i].message_id_synced)
+                    {
+                        _bc_radio_send_ack();
+                    }
 
                     return;
                 }
@@ -717,13 +734,13 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
             {
                 if (_bc_radio.scan && (_bc_radio.event_handler != NULL) && _bc_radio_scan_cache_push())
                 {
-    				_bc_radio.event_handler(BC_RADIO_EVENT_SCAN_FIND_DEVICE, _bc_radio.event_param);
+                    _bc_radio.event_handler(BC_RADIO_EVENT_SCAN_FIND_DEVICE, _bc_radio.event_param);
                 }
 
                 if (_bc_radio.automatic_pairing)
-    			{
-    				bc_radio_peer_device_add(_bc_radio.peer_id);
-    			}
+                {
+                    bc_radio_peer_device_add(_bc_radio.peer_id);
+                }
             }
         }
     }
@@ -849,64 +866,64 @@ static void _bc_radio_atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_ev
 
 static bool _bc_radio_peer_device_add(uint64_t id)
 {
-	if (_bc_radio.peer_devices_lenght + 1 == BC_RADIO_MAX_DEVICES)
-	{
-		if (_bc_radio.event_handler != NULL)
-		{
-			_bc_radio.peer_id = id;
-			_bc_radio.event_handler(BC_RADIO_EVENT_ATTACH_FAILURE, _bc_radio.event_param);
-		}
-		return false;
-	}
+    if (_bc_radio.peer_devices_lenght + 1 == BC_RADIO_MAX_DEVICES)
+    {
+        if (_bc_radio.event_handler != NULL)
+        {
+            _bc_radio.peer_id = id;
+            _bc_radio.event_handler(BC_RADIO_EVENT_ATTACH_FAILURE, _bc_radio.event_param);
+        }
+        return false;
+    }
 
-	if (bc_radio_is_peer_device(id))
-	{
-	    return false;
-	}
+    if (bc_radio_is_peer_device(id))
+    {
+        return false;
+    }
 
-	_bc_radio.peer_devices[_bc_radio.peer_devices_lenght].id = id;
-	_bc_radio.peer_devices[_bc_radio.peer_devices_lenght].message_id_synced = false;
-	_bc_radio.peer_devices_lenght++;
+    _bc_radio.peer_devices[_bc_radio.peer_devices_lenght].id = id;
+    _bc_radio.peer_devices[_bc_radio.peer_devices_lenght].message_id_synced = false;
+    _bc_radio.peer_devices_lenght++;
 
-	_bc_radio.save_peer_devices = true;
-	bc_scheduler_plan_now(_bc_radio.task_id);
+    _bc_radio.save_peer_devices = true;
+    bc_scheduler_plan_now(_bc_radio.task_id);
 
-	if (_bc_radio.event_handler != NULL)
-	{
-		_bc_radio.peer_id = id;
-		_bc_radio.event_handler(BC_RADIO_EVENT_ATTACH, _bc_radio.event_param);
-	}
+    if (_bc_radio.event_handler != NULL)
+    {
+        _bc_radio.peer_id = id;
+        _bc_radio.event_handler(BC_RADIO_EVENT_ATTACH, _bc_radio.event_param);
+    }
 
-	return true;
+    return true;
 }
 
 static bool _bc_radio_peer_device_remove(uint64_t id)
 {
-	for (int i = 0; i < _bc_radio.peer_devices_lenght; i++)
-	{
-		if (id == _bc_radio.peer_devices[i].id)
-		{
-		    _bc_radio.peer_devices_lenght--;
+    for (int i = 0; i < _bc_radio.peer_devices_lenght; i++)
+    {
+        if (id == _bc_radio.peer_devices[i].id)
+        {
+            _bc_radio.peer_devices_lenght--;
 
-		    if (i != _bc_radio.peer_devices_lenght)
-		    {
-		        memcpy(_bc_radio.peer_devices + i, _bc_radio.peer_devices + _bc_radio.peer_devices_lenght, sizeof(bc_radio_peer_t));
-		    }
+            if (i != _bc_radio.peer_devices_lenght)
+            {
+                memcpy(_bc_radio.peer_devices + i, _bc_radio.peer_devices + _bc_radio.peer_devices_lenght, sizeof(bc_radio_peer_t));
+            }
 
-		    _bc_radio.save_peer_devices = true;
-		    bc_scheduler_plan_now(_bc_radio.task_id);
+            _bc_radio.save_peer_devices = true;
+            bc_scheduler_plan_now(_bc_radio.task_id);
 
-			if (_bc_radio.event_handler != NULL)
-			{
-				_bc_radio.peer_id = id;
-				_bc_radio.event_handler(BC_RADIO_EVENT_DETACH, _bc_radio.event_param);
-			}
+            if (_bc_radio.event_handler != NULL)
+            {
+                _bc_radio.peer_id = id;
+                _bc_radio.event_handler(BC_RADIO_EVENT_DETACH, _bc_radio.event_param);
+            }
 
-			return true;
-		}
-	}
+            return true;
+        }
+    }
 
-	return false;
+    return false;
 }
 
 uint8_t *bc_radio_id_to_buffer(uint64_t *id, uint8_t *buffer)
