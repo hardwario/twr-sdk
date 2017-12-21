@@ -30,6 +30,8 @@ static struct
     bool measurement_active;
     bc_tick_t update_interval;
     bc_scheduler_task_id_t task_id;
+    bool first_measurement_done;
+
 } _bc_module_battery;
 
 static void _bc_module_battery_task();
@@ -39,10 +41,9 @@ static void _bc_module_battery_update_voltage_on_battery(void);
 
 void bc_module_battery_init(bc_module_battery_format_t format)
 {
-    float temp;
-
     memset(&_bc_module_battery, 0, sizeof(_bc_module_battery));
 
+    _bc_module_battery.update_interval = BC_TICK_INFINITY;
     _bc_module_battery.task_id = bc_scheduler_register(_bc_module_battery_task, NULL, BC_TICK_INFINITY);
     _bc_module_battery.format = format;
 
@@ -63,8 +64,6 @@ void bc_module_battery_init(bc_module_battery_format_t format)
 
     // Initialize ADC channel
     bc_adc_init(BC_ADC_CHANNEL_A0, BC_ADC_FORMAT_FLOAT);
-    bc_adc_read(BC_ADC_CHANNEL_A0, &temp); // the first measurement is inaccurate
-    bc_adc_set_event_handler(BC_ADC_CHANNEL_A0, _bc_module_battery_adc_event_handler, NULL);
 }
 
 void bc_module_battery_set_event_handler(void (*event_handler)(bc_module_battery_event_t, void *), void *event_param)
@@ -105,6 +104,8 @@ bool bc_module_battery_measure(void)
     _bc_module_battery.measurement_active = true;
 
     _bc_module_battery_measurement(ENABLE);
+
+    bc_adc_set_event_handler(BC_ADC_CHANNEL_A0, _bc_module_battery_adc_event_handler, NULL);
 
     bc_adc_async_read(BC_ADC_CHANNEL_A0);
 
@@ -156,12 +157,7 @@ static void _bc_module_battery_task(void *param)
 
     bc_scheduler_plan_current_relative(_bc_module_battery.update_interval);
 
-    _bc_module_battery_measurement(ENABLE);
-
-    // Lock measurement
-    _bc_module_battery.measurement_active = true;
-
-    bc_adc_async_read(BC_ADC_CHANNEL_A0);
+    bc_module_battery_measure();
 }
 
 static void _bc_module_battery_adc_event_handler(bc_adc_channel_t channel, bc_adc_event_t event, void *param)
@@ -175,6 +171,27 @@ static void _bc_module_battery_adc_event_handler(bc_adc_channel_t channel, bc_ad
 
         _bc_module_battery_measurement(DISABLE);
 
+        // Unlock measurement
+        _bc_module_battery.measurement_active = false;
+
+        if (!_bc_module_battery.first_measurement_done)
+        {
+            _bc_module_battery.first_measurement_done = true;
+
+            bc_scheduler_plan_relative(_bc_module_battery.task_id, 20);
+
+            return;
+        }
+
+        if ((_bc_module_battery.voltage < 0) || (_bc_module_battery.voltage > 10))
+        {
+            _bc_module_battery.valid = false;
+
+            bc_scheduler_plan_relative(_bc_module_battery.task_id, 1000);
+
+            return;
+        }
+
         if (_bc_module_battery.valid && _bc_module_battery.event_handler != NULL)
         {
             // Notify event based on calculated percentage
@@ -186,15 +203,10 @@ static void _bc_module_battery_adc_event_handler(bc_adc_channel_t channel, bc_ad
             {
                 _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_LEVEL_LOW, _bc_module_battery.event_param);
             }
-            else
-            {
-                _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_UPDATE, _bc_module_battery.event_param);
-            }
+
+            _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_UPDATE, _bc_module_battery.event_param);
         }
     }
-
-    // Unlock measurement
-    _bc_module_battery.measurement_active = false;
 }
 
 static void _bc_module_battery_measurement(int state)
