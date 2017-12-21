@@ -6,7 +6,8 @@
 #define _BC_LIS2DH12_DELAY_RUN 10
 #define _BC_LIS2DH12_DELAY_READ 10
 
-static void _bc_lis2dh12_task(void *param);
+static void _bc_lis2dh12_task_interval(void *param);
+static void _bc_lis2dh12_task_measure(void *param);
 static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self);
@@ -18,7 +19,6 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
 
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
-    self->_update_interval = 50;
 
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 
@@ -28,7 +28,8 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     // Set input mode
     GPIOB->MODER &= ~GPIO_MODER_MODE6_Msk;
 
-    self->_task_id = bc_scheduler_register(_bc_lis2dh12_task, self, _BC_LIS2DH12_DELAY_RUN);
+    self->_task_id_interval = bc_scheduler_register(_bc_lis2dh12_task_interval, self, BC_TICK_INFINITY);
+    self->_task_id_measure = bc_scheduler_register(_bc_lis2dh12_task_measure, self, _BC_LIS2DH12_DELAY_RUN);
 
     return true;
 }
@@ -42,6 +43,31 @@ void bc_lis2dh12_set_event_handler(bc_lis2dh12_t *self, void (*event_handler)(bc
 void bc_lis2dh12_set_update_interval(bc_lis2dh12_t *self, bc_tick_t interval)
 {
     self->_update_interval = interval;
+
+    if (self->_update_interval == BC_TICK_INFINITY)
+    {
+        bc_scheduler_plan_absolute(self->_task_id_interval, BC_TICK_INFINITY);
+    }
+    else
+    {
+        bc_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
+
+        bc_lis2dh12_measure(self);
+    }
+}
+
+bool bc_lis2dh12_measure(bc_lis2dh12_t *self)
+{
+    if (self->_measurement_active)
+    {
+        return false;
+    }
+
+    self->_measurement_active = true;
+
+    bc_scheduler_plan_now(self->_task_id_measure);
+
+    return true;
 }
 
 bool bc_lis2dh12_get_result_raw(bc_lis2dh12_t *self, bc_lis2dh12_result_raw_t *result_raw)
@@ -80,11 +106,20 @@ bool bc_lis2dh12_get_result_g(bc_lis2dh12_t *self, bc_lis2dh12_result_g_t *resul
     return true;
 }
 
+static void _bc_lis2dh12_task_interval(void *param)
+{
+    bc_lis2dh12_t *self = param;
+
+    bc_lis2dh12_measure(self);
+
+    bc_scheduler_plan_current_relative(self->_update_interval);
+}
+
 uint8_t int1_src;
 uint8_t int1_cfg_read;
 uint8_t ctrl_reg3_read;
 
-static void _bc_lis2dh12_task(void *param)
+static void _bc_lis2dh12_task_measure(void *param)
 {
     bc_lis2dh12_t *self = param;
 
@@ -96,14 +131,14 @@ static void _bc_lis2dh12_task(void *param)
             {
                 self->_accelerometer_valid = false;
 
+                self->_measurement_active = false;
+
                 if (self->_event_handler != NULL)
                 {
                     self->_event_handler(self, BC_LIS2DH12_EVENT_ERROR, self->_event_param);
                 }
 
                 self->_state = BC_LIS2DH12_STATE_INITIALIZE;
-
-                bc_scheduler_plan_current_relative(self->_update_interval);
 
                 return;
             }
@@ -130,7 +165,10 @@ static void _bc_lis2dh12_task(void *param)
 
                 self->_state = BC_LIS2DH12_STATE_MEASURE;
 
-                bc_scheduler_plan_current_relative(self->_update_interval);
+                if (self->_measurement_active)
+                {
+                    bc_scheduler_plan_current_relative(10);
+                }
 
                 return;
             }
@@ -177,6 +215,8 @@ static void _bc_lis2dh12_task(void *param)
             {
                 self->_state = BC_LIS2DH12_STATE_ERROR;
 
+                self->_measurement_active = false;
+
                 if (self->_event_handler != NULL)
                 {
                     self->_event_handler(self, BC_LIS2DH12_EVENT_UPDATE, self->_event_param);
@@ -202,8 +242,6 @@ static void _bc_lis2dh12_task(void *param)
                 }
 
                 self->_state = BC_LIS2DH12_STATE_MEASURE;
-
-                bc_scheduler_plan_current_relative(self->_update_interval);
 
                 return;
             }
@@ -349,6 +387,8 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
         bc_exti_unregister(BC_EXTI_LINE_PB6);
     }
 
+    bc_lis2dh12_measure(self);
+
     return true;
 }
 
@@ -360,5 +400,5 @@ static void _bc_lis2dh12_interrupt(bc_exti_line_t line, void *param)
 
     self->_irq_flag = true;
 
-    bc_scheduler_plan_now(self->_task_id);
+    bc_lis2dh12_measure(self);
 }

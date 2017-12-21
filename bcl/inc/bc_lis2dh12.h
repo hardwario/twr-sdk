@@ -103,7 +103,9 @@ struct bc_lis2dh12_t
     uint8_t _out_z_h;
     bool _alarm_active;
     bool _irq_flag;
-    bc_scheduler_task_id_t _task_id;
+    bc_scheduler_task_id_t _task_id_interval;
+    bc_scheduler_task_id_t _task_id_measure;
+    bool _measurement_active;
 };
 
 //! @endcond
@@ -127,6 +129,13 @@ void bc_lis2dh12_set_event_handler(bc_lis2dh12_t *self, void (*event_handler)(bc
 //! @param[in] interval Measurement interval
 
 void bc_lis2dh12_set_update_interval(bc_lis2dh12_t *self, bc_tick_t interval);
+
+//! @brief Start measurement manually
+//! @param[in] self Instance
+//! @return true On success
+//! @return false When other measurement is in progress
+
+bool bc_lis2dh12_measure(bc_lis2dh12_t *self);
 
 //! @brief Get measured acceleration as raw value
 //! @param[in] self Instance
