@@ -321,6 +321,12 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
         // Recalculate threshold to the 4g full-scale setting
         uint8_t int1_ths = (uint8_t)((alarm->threshold) / 0.031f);
 
+        // Ensure minimum threshold level
+        if (int1_ths == 0)
+        {
+            int1_ths = 1;
+        }
+
         if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x32, int1_ths))
         {
             return false;
