@@ -25,6 +25,9 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     // Enable GPIOB clock
     RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
 
+    // Errata workaround
+    RCC->IOPENR;
+
     // Set input mode
     GPIOB->MODER &= ~GPIO_MODER_MODE6_Msk;
 
@@ -115,10 +118,6 @@ static void _bc_lis2dh12_task_interval(void *param)
     bc_scheduler_plan_current_relative(self->_update_interval);
 }
 
-uint8_t int1_src;
-uint8_t int1_cfg_read;
-uint8_t ctrl_reg3_read;
-
 static void _bc_lis2dh12_task_measure(void *param)
 {
     bc_lis2dh12_t *self = param;
@@ -167,7 +166,7 @@ static void _bc_lis2dh12_task_measure(void *param)
 
                 if (self->_measurement_active)
                 {
-                    bc_scheduler_plan_current_relative(10);
+                    bc_scheduler_plan_current_from_now(10);
                 }
 
                 return;
@@ -183,7 +182,7 @@ static void _bc_lis2dh12_task_measure(void *param)
 
                 self->_state = BC_LIS2DH12_STATE_READ;
 
-                bc_scheduler_plan_current_relative(_BC_LIS2DH12_DELAY_READ);
+                bc_scheduler_plan_current_from_now(_BC_LIS2DH12_DELAY_READ);
 
                 return;
             }
@@ -225,6 +224,8 @@ static void _bc_lis2dh12_task_measure(void *param)
                 // When the interrupt alarm is active
                 if(self->_alarm_active)
                 {
+                    uint8_t int1_src;
+
                     if(!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x31, &int1_src))
                     {
                         continue;
