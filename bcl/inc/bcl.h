@@ -62,6 +62,7 @@
 #include <bc_font_common.h>
 #include <bc_image.h>
 
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 //! @mainpage Overview
 //! Here you will find all the documented firmware SDK APIs.
