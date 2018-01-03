@@ -182,7 +182,7 @@ bool bc_ws2812b_write(void)
 
     size_t dma_bit_buffer_size = _bc_ws2812b.buffer->count * _bc_ws2812b.buffer->type * 8;
 
-    bc_dma_setup_channel(BC_DMA_CHANNEL_2, BC_DMA_REQUEST_8, BC_DMA_DIRECTION_TO_PERIPHERAL, BC_DMA_SIZE_2, dma_bit_buffer_size, BC_DMA_MODE_CIRCULAR, (void *)_bc_ws2812b.dma_bit_buffer, (void *)&(TIM2->CCR2));
+    bc_dma_setup_channel(BC_DMA_CHANNEL_2, BC_DMA_REQUEST_8, BC_DMA_DIRECTION_TO_PERIPHERAL, BC_DMA_SIZE_2, dma_bit_buffer_size, BC_DMA_MODE_STANDARD, (void *)_bc_ws2812b.dma_bit_buffer, (void *)&(TIM2->CCR2));
 
     TIM2->CNT = _BC_WS2812_TIMER_PERIOD - 1;
 

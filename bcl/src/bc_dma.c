@@ -149,8 +149,8 @@ void bc_dma_setup_channel(bc_dma_channel_t channel, bc_dma_request_t request, bc
     // Configure DMA channel destination address
     dma_channel->CMAR = (uint32_t)address_memory;
 
-    // Enable the transfer complete and error interrupts
-    dma_channel->CCR |= DMA_CCR_TCIE | DMA_CCR_TEIE;
+    // Enable the transfer complete, half-complete and error interrupts
+    dma_channel->CCR |= DMA_CCR_TCIE | DMA_CCR_HTIE | DMA_CCR_TEIE;
 
     // Enable the peripheral
     dma_channel->CCR |= DMA_CCR_EN;
@@ -214,6 +214,10 @@ void DMA1_Channel1_IRQHandler(void)
     {
         _bc_dma_event_handler(BC_DMA_CHANNEL_1, BC_DMA_EVENT_ERROR);
     }
+    else if ((DMA1->ISR & DMA_ISR_HTIF1) != 0)
+    {
+        _bc_dma_event_handler(BC_DMA_CHANNEL_1, BC_DMA_EVENT_HALF_DONE);
+    }
     else if ((DMA1->ISR & DMA_ISR_TCIF1) != 0)
     {
         _bc_dma_event_handler(BC_DMA_CHANNEL_1, BC_DMA_EVENT_DONE);
@@ -230,6 +234,10 @@ void DMA1_Channel2_3_IRQHandler(void)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_2, BC_DMA_EVENT_ERROR);
         }
+        else if ((DMA1->ISR & DMA_ISR_HTIF2) != 0)
+        {
+            _bc_dma_event_handler(BC_DMA_CHANNEL_2, BC_DMA_EVENT_HALF_DONE);
+        }
         else if ((DMA1->ISR & DMA_ISR_TCIF2) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_2, BC_DMA_EVENT_DONE);
@@ -242,6 +250,10 @@ void DMA1_Channel2_3_IRQHandler(void)
         if ((DMA1->ISR & DMA_ISR_TEIF3) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_3, BC_DMA_EVENT_ERROR);
+        }
+        else if ((DMA1->ISR & DMA_ISR_HTIF3) != 0)
+        {
+            _bc_dma_event_handler(BC_DMA_CHANNEL_3, BC_DMA_EVENT_HALF_DONE);
         }
         else if ((DMA1->ISR & DMA_ISR_TCIF3) != 0)
         {
@@ -260,6 +272,10 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_4, BC_DMA_EVENT_ERROR);
         }
+        else if ((DMA1->ISR & DMA_ISR_HTIF4) != 0)
+        {
+            _bc_dma_event_handler(BC_DMA_CHANNEL_4, BC_DMA_EVENT_HALF_DONE);
+        }
         else if ((DMA1->ISR & DMA_ISR_TCIF4) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_4, BC_DMA_EVENT_DONE);
@@ -272,6 +288,10 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
         if ((DMA1->ISR & DMA_ISR_TEIF5) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_5, BC_DMA_EVENT_ERROR);
+        }
+        else if ((DMA1->ISR & DMA_ISR_HTIF5) != 0)
+        {
+            _bc_dma_event_handler(BC_DMA_CHANNEL_5, BC_DMA_EVENT_HALF_DONE);
         }
         else if ((DMA1->ISR & DMA_ISR_TCIF5) != 0)
         {
@@ -286,6 +306,10 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_6, BC_DMA_EVENT_ERROR);
         }
+        else if ((DMA1->ISR & DMA_ISR_HTIF6) != 0)
+        {
+            _bc_dma_event_handler(BC_DMA_CHANNEL_6, BC_DMA_EVENT_HALF_DONE);
+        }
         else if ((DMA1->ISR & DMA_ISR_TCIF6) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_6, BC_DMA_EVENT_DONE);
@@ -298,6 +322,10 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
         if ((DMA1->ISR & DMA_ISR_TEIF7) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_7, BC_DMA_EVENT_ERROR);
+        }
+        else if ((DMA1->ISR & DMA_ISR_HTIF7) != 0)
+        {
+            _bc_dma_event_handler(BC_DMA_CHANNEL_7, BC_DMA_EVENT_HALF_DONE);
         }
         else if ((DMA1->ISR & DMA_ISR_TCIF7) != 0)
         {
