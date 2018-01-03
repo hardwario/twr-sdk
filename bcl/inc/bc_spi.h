@@ -50,11 +50,8 @@ typedef enum
 
 typedef enum
 {
-    //! @brief SPI event is error
-    BC_SPI_EVENT_ERROR = 1,
-
     //! @brief SPI event is completed
-    BC_SPI_EVENT_DONE = 2
+    BC_SPI_EVENT_DONE = 1
 
 } bc_spi_event_t;
 
