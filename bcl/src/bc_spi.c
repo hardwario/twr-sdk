@@ -1,6 +1,7 @@
 #include <bc_spi.h>
 #include <bc_module_core.h>
 #include <bc_scheduler.h>
+#include <bc_dma.h>
 #include <stm32l0xx.h>
 
 #define _BC_SPI_EVENT_CLEAR 0
@@ -29,14 +30,15 @@ static struct
     void (*event_handler)(bc_spi_event_t event, void *_bc_spi_event_param);
     void *event_param;
     bool in_progress;
-    bc_spi_event_t pending_event;
+    bool pending_event_done;
     bool initilized;
     bc_scheduler_task_id_t task_id;
 } _bc_spi;
 
 static uint8_t _bc_spi_transfer_byte(uint8_t value);
-static inline void _bc_spi_transfer_error_handler();
-static inline void _bc_spi_transfer_done_handler();
+
+static void _bc_spi_dma_event_handler(bc_dma_channel_t channel, bc_dma_event_t event, void *event_param);
+
 static void _bc_spi_task();
 
 void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
@@ -82,9 +84,9 @@ void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
     // Enable SPI
     SPI2->CR1 |= SPI_CR1_SPE;
 
-    // Enable DMA 1 channel 5 interrupts
-    NVIC_SetPriority(DMA1_Channel4_5_6_7_IRQn, 0);
-    NVIC_EnableIRQ(DMA1_Channel4_5_6_7_IRQn);
+    bc_dma_init();
+
+    bc_dma_set_event_handler(BC_DMA_CHANNEL_5, _bc_spi_dma_event_handler, NULL);
 
     _bc_spi.task_id = bc_scheduler_register(_bc_spi_task, NULL, BC_TICK_INFINITY);
 }
@@ -145,7 +147,7 @@ bc_spi_mode_t bc_spi_get_mode(void)
 
 bool bc_spi_is_ready(void)
 {
-	return (!_bc_spi.in_progress) && (_bc_spi.pending_event == _BC_SPI_EVENT_CLEAR);
+	return (!_bc_spi.in_progress) && (_bc_spi.pending_event_done == _BC_SPI_EVENT_CLEAR);
 }
 
 bool bc_spi_transfer(const void *source, void *destination, size_t length)
@@ -206,7 +208,7 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
 bool bc_spi_async_transfer(const void *source, void *destination, size_t length, void (*event_handler)(bc_spi_event_t event, void *event_param), void (*event_param))
 {
     // If another transfer cannot be executed now ...
-    if((_bc_spi.in_progress == true) || (_bc_spi.pending_event != _BC_SPI_EVENT_CLEAR))
+    if((_bc_spi.in_progress == true) || (_bc_spi.pending_event_done != _BC_SPI_EVENT_CLEAR))
     {
         // ... dont do it
         return false;
@@ -216,8 +218,12 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
     _bc_spi.event_handler = event_handler;
     _bc_spi.event_param = event_param;
 
+    /*
+
     // Enable DMA1
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+
+    */
 
     // Enable PLL and disable sleep
     bc_module_core_pll_enable();
@@ -233,29 +239,8 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
         // Update status
         _bc_spi.in_progress = true;
 
-        // Set memory incrementation, direction from memory and disable peripheral
-        DMA1_Channel5->CCR = DMA_CCR_DIR | DMA_CCR_MINC;
-
-        // Reset request selection for DMA1 Channel5
-        DMA1_CSELR->CSELR &= ~DMA_CSELR_C5S;
-
-        // Configure request 2 selection for DMA1 Channel5
-        DMA1_CSELR->CSELR |= (uint32_t) (2 << DMA_CSELR_C5S_Pos);
-
-        // Configure DMA channel data length
-        DMA1_Channel5->CNDTR = length;
-
-        // Configure DMA channel source address
-        DMA1_Channel5->CPAR = (uint32_t) &SPI2->DR;
-
-        // Configure DMA channel destination address
-        DMA1_Channel5->CMAR = (uint32_t) source;
-
-        // Enable the transfer complete and error interrupts
-        DMA1_Channel5->CCR |= DMA_IT_TC | DMA_IT_TE;
-
-        // Enable the peripheral
-        DMA1_Channel5->CCR |= DMA_CCR_EN;
+        // Setup DMA channel
+        bc_dma_setup_channel(BC_DMA_CHANNEL_5, BC_DMA_REQUEST_2, BC_DMA_DIRECTION_TO_PERIPHERAL, BC_DMA_SIZE_1, length, BC_DMA_MODE_STANDARD, (void *)source, (void *)&SPI2->DR);
 
         // Disable SPI2
         SPI2->CR1 &= ~SPI_CR1_SPE;
@@ -311,61 +296,26 @@ static uint8_t _bc_spi_transfer_byte(uint8_t value)
     return value;
 }
 
-void DMA1_Channel4_5_6_7_IRQHandler(void)
+static void _bc_spi_dma_event_handler(bc_dma_channel_t channel, bc_dma_event_t event, void *event_param)
 {
-    // Transfer error interrupt management
-    if ((DMA1->ISR & DMA_ISR_TEIF5) != 0)
-    {
-        // TODO Not sure what should happen here
+	(void) channel;
+	(void) event_param;
 
-        // Disable the transfer error interrupt
-        DMA1_Channel5->CCR &= ~DMA_CCR_TEIE;
+	if (event == BC_DMA_EVENT_DONE)
+	{
+	    // Update status
+	    _bc_spi.in_progress = false;
+	    _bc_spi.pending_event_done = true;
 
-        // Clear the transfer error flag
-        DMA1->IFCR = DMA_IFCR_CTEIF5;
+	    GPIOB->BSRR = GPIO_BSRR_BS_12;
 
-        // Transfer error callback
-        _bc_spi_transfer_error_handler();
-    }
-
-    // Transfer complete interrupt management
-    if ((DMA1->ISR & DMA_ISR_TCIF5) != 0)
-    {
-        // Disable the transfer error and complete interrupts
-        DMA1_Channel5->CCR &= ~(DMA_CCR_TEIE | DMA_CCR_TCIE);
-
-        // Clear the transfer complete flag
-        DMA1->IFCR = DMA_IFCR_CTCIF5;
-
-        // Transfer complete callback
-        _bc_spi_transfer_done_handler();
-    }
-}
-
-static inline void _bc_spi_transfer_error_handler()
-{
-    // TODO Not sure what should happen here
-
-    // Update status
-    _bc_spi.in_progress = false;
-    _bc_spi.pending_event |= BC_SPI_EVENT_ERROR;
-
-    GPIOB->BSRR = GPIO_BSRR_BS_12;
-
-    // Plan task that call event handler
-    bc_scheduler_plan_now(_bc_spi.task_id);
-}
-
-static inline void _bc_spi_transfer_done_handler()
-{
-    // Update status
-    _bc_spi.in_progress = false;
-    _bc_spi.pending_event |= BC_SPI_EVENT_DONE;
-
-    GPIOB->BSRR = GPIO_BSRR_BS_12;
-
-    // Plan task that call event handler
-    bc_scheduler_plan_now(_bc_spi.task_id);
+	    // Plan task that call event handler
+	    bc_scheduler_plan_now(_bc_spi.task_id);
+	}
+	else if (event == BC_DMA_EVENT_ERROR)
+	{
+	    bc_module_core_reset();
+	}
 }
 
 static void _bc_spi_task()
@@ -373,29 +323,12 @@ static void _bc_spi_task()
     // If is event handler valid ...
     if (_bc_spi.event_handler != NULL)
     {
-        if((_bc_spi.pending_event & BC_SPI_EVENT_ERROR) != 0)
-        {
-            // ... call event handler with BC_SPI_EVENT_ERROR
-            _bc_spi.event_handler(BC_SPI_EVENT_ERROR, _bc_spi.event_param);
-            _bc_spi.pending_event &= ~BC_SPI_EVENT_ERROR;
+        // ... call event handler
+        _bc_spi.event_handler(BC_SPI_EVENT_DONE, _bc_spi.event_param);
 
-            // TODO Not sure what should happen here (viz. _bc_spi_transfer_error_handler)
-
-            // Disable PLL and enable sleep
-            bc_module_core_pll_disable();
-        }
-        if ((_bc_spi.pending_event & BC_SPI_EVENT_DONE) != 0)
-        {
-            // ... call event handler with BC_SPI_EVENT_CPLT
-            _bc_spi.event_handler(BC_SPI_EVENT_DONE, _bc_spi.event_param);
-            _bc_spi.pending_event &= ~BC_SPI_EVENT_DONE;
-
-            // Disable PLL and enable sleep
-            bc_module_core_pll_disable();
-        }
+        // Disable PLL and enable sleep
+        bc_module_core_pll_disable();
     }
-    else
-    {
-        _bc_spi.pending_event = _BC_SPI_EVENT_CLEAR;
-    }
+
+    _bc_spi.pending_event_done = false;
 }
