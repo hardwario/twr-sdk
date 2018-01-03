@@ -61,6 +61,7 @@ typedef enum
 enum
 {
     BC_DMA_EVENT_ERROR,
+    BC_DMA_EVENT_HALF_DONE,
     BC_DMA_EVENT_DONE
 
 }; 
