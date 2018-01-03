@@ -33,7 +33,18 @@ static struct
     bool pending_event_done;
     bool initilized;
     bc_scheduler_task_id_t task_id;
+
 } _bc_spi;
+
+static bc_dma_channel_config_t _bc_spi_dma_config =
+{
+    .request = BC_DMA_REQUEST_2,
+    .direction = BC_DMA_DIRECTION_TO_PERIPHERAL,
+    .size = BC_DMA_SIZE_1,
+    .mode = BC_DMA_MODE_STANDARD,
+    .address_peripheral = (void *)&SPI2->DR,
+    .priority = BC_DMA_PRIORITY_HIGH
+};
 
 static uint8_t _bc_spi_transfer_byte(uint8_t value);
 
@@ -218,13 +229,6 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
     _bc_spi.event_handler = event_handler;
     _bc_spi.event_param = event_param;
 
-    /*
-
-    // Enable DMA1
-    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-
-    */
-
     // Enable PLL and disable sleep
     bc_module_core_pll_enable();
 
@@ -240,12 +244,14 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
         _bc_spi.in_progress = true;
 
         // Setup DMA channel
-        bc_dma_setup_channel(BC_DMA_CHANNEL_5, BC_DMA_REQUEST_2, BC_DMA_DIRECTION_TO_PERIPHERAL, BC_DMA_SIZE_1, length, BC_DMA_MODE_STANDARD, (void *)source, (void *)&SPI2->DR);
+        _bc_spi_dma_config.address_memory = (void *)source;
+        _bc_spi_dma_config.length = length;
+        bc_dma_channel_config(BC_DMA_CHANNEL_5, &_bc_spi_dma_config);
 
         // Disable SPI2
         SPI2->CR1 &= ~SPI_CR1_SPE;
 
-        // Enable Tx DMA request
+        // Enable TX DMA request
         SPI2->CR2 |= SPI_CR2_TXDMAEN;
 
         // Enable SPI2
@@ -256,7 +262,7 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
     // If receive only is requested ...
     else if ((source == NULL) && (destination != NULL))
     {
-        // TODO Ready to implement another dirrection
+        // TODO Ready to implement another direction
 
         // Disable PLL and disable sleep
         bc_module_core_pll_disable();
@@ -264,7 +270,7 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
     // If transmit and receive is requested ...
     else
     {
-        // TODO Ready to implement another dirrection
+        // TODO Ready to implement another direction
 
         // Disable PLL and disable sleep
         bc_module_core_pll_disable();

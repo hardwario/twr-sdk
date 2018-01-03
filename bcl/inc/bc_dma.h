@@ -1,18 +1,17 @@
 #ifndef _BC_DMA_H
 #define _BC_DMA_H
 
-enum
+typedef enum
 {
-    BC_DMA_CHANNEL_1,
-    BC_DMA_CHANNEL_2,
-    BC_DMA_CHANNEL_3,
-    BC_DMA_CHANNEL_4,
-    BC_DMA_CHANNEL_5,
-    BC_DMA_CHANNEL_6,
-    BC_DMA_CHANNEL_7
+    BC_DMA_CHANNEL_1 = 0,
+    BC_DMA_CHANNEL_2 = 1,
+    BC_DMA_CHANNEL_3 = 2,
+    BC_DMA_CHANNEL_4 = 3,
+    BC_DMA_CHANNEL_5 = 4,
+    BC_DMA_CHANNEL_6 = 5,
+    BC_DMA_CHANNEL_7 = 6
 
-};
-typedef uint8_t bc_dma_channel_t;
+} bc_dma_channel_t;
 
 typedef enum
 {
@@ -58,20 +57,41 @@ typedef enum
 
 } bc_dma_mode_t;
 
-enum
+typedef enum
 {
-    BC_DMA_EVENT_ERROR,
-    BC_DMA_EVENT_HALF_DONE,
-    BC_DMA_EVENT_DONE
+    BC_DMA_EVENT_ERROR = 0,
+    BC_DMA_EVENT_HALF_DONE = 1,
+    BC_DMA_EVENT_DONE = 2
 
-}; 
-typedef uint8_t bc_dma_event_t;
+} bc_dma_event_t;
+
+typedef enum
+{
+    BC_DMA_PRIORITY_LOW = 0,
+    BC_DMA_PRIORITY_MEDIUM = 1,
+    BC_DMA_PRIORITY_HIGH = 2,
+    BC_DMA_PRIORITY_VERY_HIGH = 3
+
+} bc_dma_priority_t;
+
+typedef struct
+{
+    bc_dma_request_t request;
+    bc_dma_direction_t direction;
+    bc_dma_size_t size;
+    uint32_t length;
+    bc_dma_mode_t mode;
+    void *address_memory;
+    void *address_peripheral;
+    bc_dma_priority_t priority;
+
+} bc_dma_channel_config_t;
 
 typedef void bc_dma_event_handler_t(bc_dma_channel_t, bc_dma_event_t, void *);
 
 void bc_dma_init(void);
 
-void bc_dma_setup_channel(bc_dma_channel_t channel, bc_dma_request_t request, bc_dma_direction_t direction, bc_dma_size_t size, uint32_t length,bc_dma_mode_t mode, void *address_memory, void *address_peripheral);
+void bc_dma_channel_config(bc_dma_channel_t channel, bc_dma_channel_config_t *config);
 
 void bc_dma_set_event_handler(bc_dma_channel_t channel, bc_dma_event_handler_t *event_handler, void *event_param);
 

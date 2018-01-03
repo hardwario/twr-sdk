@@ -25,6 +25,16 @@ static struct ws2812b_t
 
 } _bc_ws2812b;
 
+static bc_dma_channel_config_t _bc_ws2812b_dma_config =
+{
+    .request = BC_DMA_REQUEST_8,
+    .direction = BC_DMA_DIRECTION_TO_PERIPHERAL,
+    .size = BC_DMA_SIZE_2,
+    .mode = BC_DMA_MODE_STANDARD,
+    .address_peripheral = (void *)&(TIM2->CCR2),
+    .priority = BC_DMA_PRIORITY_VERY_HIGH
+};
+
 TIM_HandleTypeDef _bc_ws2812b_timer2_handle;
 TIM_OC_InitTypeDef _bc_ws2812b_timer2_oc1;
 
@@ -182,7 +192,10 @@ bool bc_ws2812b_write(void)
 
     size_t dma_bit_buffer_size = _bc_ws2812b.buffer->count * _bc_ws2812b.buffer->type * 8;
 
-    bc_dma_setup_channel(BC_DMA_CHANNEL_2, BC_DMA_REQUEST_8, BC_DMA_DIRECTION_TO_PERIPHERAL, BC_DMA_SIZE_2, dma_bit_buffer_size, BC_DMA_MODE_STANDARD, (void *)_bc_ws2812b.dma_bit_buffer, (void *)&(TIM2->CCR2));
+
+    _bc_ws2812b_dma_config.address_memory = (void *)_bc_ws2812b.dma_bit_buffer;
+    _bc_ws2812b_dma_config.length = dma_bit_buffer_size;
+    bc_dma_channel_config(BC_DMA_CHANNEL_2, &_bc_ws2812b_dma_config);
 
     TIM2->CNT = _BC_WS2812_TIMER_PERIOD - 1;
 
