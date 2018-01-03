@@ -5,14 +5,17 @@
 #include <bc_fifo.h>
 #include <stm32l083xx.h>
 
+#define BC_DMA_CHANNEL_ENABLE(__CHANNEL) (_bc_dma.channel[__CHANNEL].instance->CCR |= DMA_CCR_EN)
+#define BC_DMA_CHANNEL_DISABLE(__CHANNEL) (_bc_dma.channel[__CHANNEL].instance->CCR &= ~DMA_CCR_EN)
+
 typedef struct
 {
-    bc_dma_channel_t channel;
-    bc_dma_event_t event;
+    uint8_t channel : 4;
+    uint8_t event : 4;
 
 } bc_dma_pending_event_t;
 
-static bc_dma_pending_event_t _bc_dma_buffer[7 * sizeof(bc_dma_pending_event_t)];
+static bc_dma_pending_event_t _bc_dma_pending_event_buffer[2 * 7 * sizeof(bc_dma_pending_event_t)];
 
 static struct
 {
@@ -64,7 +67,7 @@ void bc_dma_init()
     _bc_dma.channel[BC_DMA_CHANNEL_7].instance = DMA1_Channel7;
     _bc_dma.channel[BC_DMA_CHANNEL_7].cselr_position = DMA_CSELR_C7S_Pos;
 
-    bc_fifo_init(&_bc_dma.fifo_pending, _bc_dma_buffer, sizeof(_bc_dma_buffer));
+    bc_fifo_init(&_bc_dma.fifo_pending, _bc_dma_pending_event_buffer, sizeof(_bc_dma_pending_event_buffer));
 
     _bc_dma.task_id = bc_scheduler_register(_bc_dma_task, NULL, BC_TICK_INFINITY);
 
@@ -84,7 +87,7 @@ void bc_dma_init()
     NVIC_EnableIRQ(DMA1_Channel4_5_6_7_IRQn);
 }
 
-void bc_dma_setup_channel(bc_dma_channel_t channel, bc_dma_request_t request, bc_dma_direction_t direction, bc_dma_size_t size, uint32_t length,bc_dma_mode_t mode, void *address_memory, void *address_peripheral)
+void bc_dma_channel_config(bc_dma_channel_t channel, bc_dma_channel_config_t *config)
 {
     DMA_Channel_TypeDef *dma_channel = _bc_dma.channel[channel].instance;
     uint32_t dma_cselr_pos = _bc_dma.channel[channel].cselr_position;
@@ -92,17 +95,17 @@ void bc_dma_setup_channel(bc_dma_channel_t channel, bc_dma_request_t request, bc
     // TODO Add Psize and Msize
 
     // Set DMA direction
-    if (direction == BC_DMA_DIRECTION_TO_PERIPHERAL)
+    if (config->direction == BC_DMA_DIRECTION_TO_PERIPHERAL)
     {
         dma_channel->CCR |= DMA_CCR_DIR;
 
         // Set data size
         dma_channel->CCR &= ~DMA_CCR_PSIZE_Msk;
-        if (size == BC_DMA_SIZE_2)
+        if (config->size == BC_DMA_SIZE_2)
         {
             dma_channel->CCR |= DMA_CCR_PSIZE_0;
         }
-        else if (size == BC_DMA_SIZE_4)
+        else if (config->size == BC_DMA_SIZE_4)
         {
             dma_channel->CCR |= DMA_CCR_PSIZE_1;
         }
@@ -113,22 +116,22 @@ void bc_dma_setup_channel(bc_dma_channel_t channel, bc_dma_request_t request, bc
 
         // Set data size
         dma_channel->CCR &= ~DMA_CCR_MSIZE_Msk;
-        if (size == BC_DMA_SIZE_2)
+        if (config->size == BC_DMA_SIZE_2)
         {
             dma_channel->CCR |= DMA_CCR_MSIZE_0;
         }
-        else if (size == BC_DMA_SIZE_4)
+        else if (config->size == BC_DMA_SIZE_4)
         {
             dma_channel->CCR |= DMA_CCR_MSIZE_1;
         }
     }
 
     // Set DMA mode
-    if (mode == BC_DMA_MODE_STANDARD)
+    if (config->mode == BC_DMA_MODE_STANDARD)
     {
         dma_channel->CCR &= ~DMA_CCR_CIRC;
     }
-    else if (mode == BC_DMA_MODE_CIRCULAR)
+    else if (config->mode == BC_DMA_MODE_CIRCULAR)
     {
         dma_channel->CCR |= DMA_CCR_CIRC;
     }
@@ -136,24 +139,28 @@ void bc_dma_setup_channel(bc_dma_channel_t channel, bc_dma_request_t request, bc
     // Set memory incrementation
     dma_channel->CCR |= DMA_CCR_MINC;
 
+    // Set DMA channel priority
+    dma_channel->CCR &= ~DMA_CCR_PL_Msk;
+    dma_channel->CCR |= config->priority << DMA_CCR_PL_Pos;
+
     // Configure request selection for DMA1 Channel
     DMA1_CSELR->CSELR &= ~(0xf << dma_cselr_pos);
-    DMA1_CSELR->CSELR |= (request << dma_cselr_pos);
+    DMA1_CSELR->CSELR |= (config->request << dma_cselr_pos);
 
     // Configure DMA channel data length
-    dma_channel->CNDTR = length;
+    dma_channel->CNDTR = config->length;
 
     // Configure DMA channel source address
-    dma_channel->CPAR = (uint32_t)address_peripheral;
+    dma_channel->CPAR = (uint32_t)config->address_peripheral;
 
     // Configure DMA channel destination address
-    dma_channel->CMAR = (uint32_t)address_memory;
+    dma_channel->CMAR = (uint32_t)config->address_memory;
 
     // Enable the transfer complete, half-complete and error interrupts
     dma_channel->CCR |= DMA_CCR_TCIE | DMA_CCR_HTIE | DMA_CCR_TEIE;
 
     // Enable the peripheral
-    dma_channel->CCR |= DMA_CCR_EN;
+    BC_DMA_CHANNEL_ENABLE(channel);
 }
 
 void bc_dma_set_event_handler(bc_dma_channel_t channel, bc_dma_event_handler_t *event_handler, void *event_param)
@@ -168,30 +175,19 @@ void _bc_dma_task(void *param)
 
     bc_dma_pending_event_t pending_event;
 
-nope:
+    // TODO Reinvestigate flow
 
-    while (bc_fifo_read(&_bc_dma.fifo_pending, &pending_event, sizeof(bc_dma_pending_event_t)) != 0)
+    while (bc_fifo_read(&_bc_dma.fifo_pending, &pending_event, sizeof(bc_dma_pending_event_t)) == sizeof(bc_dma_pending_event_t))
     {
         _bc_dma.channel[pending_event.channel].event_handler(pending_event.channel, pending_event.event, _bc_dma.channel[pending_event.channel].event_param);
     }
-
-    bc_irq_disable();
-
-    if (!bc_fifo_is_empty(&_bc_dma.fifo_pending))
-    {
-        bc_irq_enable();
-
-        goto nope;
-    }
-
+    
     _bc_dma.task_planned = false;
-
-    bc_irq_enable();
 }
 
 void _bc_dma_event_handler(bc_dma_channel_t channel, bc_dma_event_t event)
 {
-    _bc_dma.channel[channel].instance->CCR &= ~DMA_CCR_EN;
+    BC_DMA_CHANNEL_DISABLE(channel);
 
     if (_bc_dma.channel[channel].event_handler != NULL)
     {
