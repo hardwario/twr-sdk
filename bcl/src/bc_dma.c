@@ -5,8 +5,24 @@
 #include <bc_fifo.h>
 #include <stm32l083xx.h>
 
-#define BC_DMA_CHANNEL_ENABLE(__CHANNEL) (_bc_dma.channel[__CHANNEL].instance->CCR |= DMA_CCR_EN)
-#define BC_DMA_CHANNEL_DISABLE(__CHANNEL) (_bc_dma.channel[__CHANNEL].instance->CCR &= ~DMA_CCR_EN)
+#define _BC_DMA_CHECK_IRQ_OF_CHANNEL_(__CHANNEL)\
+    if ((DMA1->ISR & DMA_ISR_GIF##__CHANNEL) != 0)\
+    {\
+        if ((DMA1->ISR & DMA_ISR_TEIF##__CHANNEL) != 0)\
+        {\
+            _bc_dma_irq_handler(BC_DMA_CHANNEL_##__CHANNEL, BC_DMA_EVENT_ERROR);\
+        }\
+        else if ((DMA1->ISR & DMA_ISR_HTIF##__CHANNEL) != 0)\
+        {\
+            _bc_dma_irq_handler(BC_DMA_CHANNEL_##__CHANNEL, BC_DMA_EVENT_HALF_DONE);\
+            DMA1->IFCR |= DMA_IFCR_CHTIF##__CHANNEL;\
+        }\
+        else if ((DMA1->ISR & DMA_ISR_TCIF##__CHANNEL) != 0)\
+        {\
+            _bc_dma_irq_handler(BC_DMA_CHANNEL_##__CHANNEL, BC_DMA_EVENT_DONE);\
+            DMA1->IFCR |= DMA_IFCR_CTCIF##__CHANNEL;\
+        }\
+    }
 
 typedef struct
 {
@@ -20,7 +36,6 @@ static bc_dma_pending_event_t _bc_dma_pending_event_buffer[2 * 7 * sizeof(bc_dma
 static struct
 {
     bool is_initialized;
-    bool is_in_progress;
     struct
     {
         DMA_Channel_TypeDef *instance;
@@ -35,9 +50,13 @@ static struct
 
 } _bc_dma;
 
-void _bc_dma_task(void *param);
+static void _bc_dma_task(void *param);
 
-void _bc_dma_irq_handler(bc_dma_channel_t channel, bc_dma_event_t event);
+static void _bc_dma_irq_handler(bc_dma_channel_t channel, bc_dma_event_t event);
+
+static inline void _bc_dma_channel_enable(bc_dma_channel_t channel);
+
+static inline void _bc_dma_channel_disable(bc_dma_channel_t channel);
 
 void bc_dma_init()
 {
@@ -92,38 +111,28 @@ void bc_dma_channel_config(bc_dma_channel_t channel, bc_dma_channel_config_t *co
     DMA_Channel_TypeDef *dma_channel = _bc_dma.channel[channel].instance;
     uint32_t dma_cselr_pos = _bc_dma.channel[channel].cselr_position;
 
-    // TODO Add Psize and Msize
-
     // Set DMA direction
     if (config->direction == BC_DMA_DIRECTION_TO_PERIPHERAL)
     {
         dma_channel->CCR |= DMA_CCR_DIR;
-
-        // Set data size
-        dma_channel->CCR &= ~DMA_CCR_PSIZE_Msk;
-        if (config->size == BC_DMA_SIZE_2)
-        {
-            dma_channel->CCR |= DMA_CCR_PSIZE_0;
-        }
-        else if (config->size == BC_DMA_SIZE_4)
-        {
-            dma_channel->CCR |= DMA_CCR_PSIZE_1;
-        }
     }
     else
     {
         dma_channel->CCR &= DMA_CCR_DIR;
+    }
 
-        // Set data size
-        dma_channel->CCR &= ~DMA_CCR_MSIZE_Msk;
-        if (config->size == BC_DMA_SIZE_2)
-        {
-            dma_channel->CCR |= DMA_CCR_MSIZE_0;
-        }
-        else if (config->size == BC_DMA_SIZE_4)
-        {
-            dma_channel->CCR |= DMA_CCR_MSIZE_1;
-        }
+    // Set data size
+    dma_channel->CCR &= ~DMA_CCR_PSIZE_Msk;
+    dma_channel->CCR &= ~DMA_CCR_MSIZE_Msk;
+    if (config->size == BC_DMA_SIZE_2)
+    {
+        dma_channel->CCR |= DMA_CCR_PSIZE_0;
+        dma_channel->CCR |= DMA_CCR_MSIZE_0;
+    }
+    else if (config->size == BC_DMA_SIZE_4)
+    {
+        dma_channel->CCR |= DMA_CCR_PSIZE_1;
+        dma_channel->CCR |= DMA_CCR_MSIZE_1;
     }
 
     // Set DMA mode
@@ -148,7 +157,7 @@ void bc_dma_channel_config(bc_dma_channel_t channel, bc_dma_channel_config_t *co
     DMA1_CSELR->CSELR |= (config->request << dma_cselr_pos);
 
     // Configure DMA channel data length
-    dma_channel->CNDTR = config->length;    // TODO this will cause problem if data size is bigger than 1
+    dma_channel->CNDTR = config->length;
 
     // Configure DMA channel source address
     dma_channel->CPAR = (uint32_t)config->address_peripheral;
@@ -160,7 +169,7 @@ void bc_dma_channel_config(bc_dma_channel_t channel, bc_dma_channel_config_t *co
     dma_channel->CCR |= DMA_CCR_TCIE | DMA_CCR_HTIE | DMA_CCR_TEIE;
 
     // Enable the peripheral
-    BC_DMA_CHANNEL_ENABLE(channel);
+    _bc_dma_channel_enable(channel);
 }
 
 void bc_dma_set_event_handler(bc_dma_channel_t channel, bc_dma_event_handler_t *event_handler, void *event_param)
@@ -175,21 +184,30 @@ void _bc_dma_task(void *param)
 
     bc_dma_pending_event_t pending_event;
 
-    // TODO Reinvestigate flow
-
     while (bc_fifo_read(&_bc_dma.fifo_pending, &pending_event, sizeof(bc_dma_pending_event_t)) == sizeof(bc_dma_pending_event_t))
     {
         _bc_dma.channel[pending_event.channel].event_handler(pending_event.channel, pending_event.event, _bc_dma.channel[pending_event.channel].event_param);
     }
     
-    _bc_dma.task_planned = false;
+    bc_irq_disable();
+
+    if (bc_fifo_is_empty(&_bc_dma.fifo_pending))
+    {
+        _bc_dma.task_planned = false;
+    }
+    else
+    {
+        bc_scheduler_plan_current_now();
+    }
+
+    bc_irq_enable();
 }
 
 void _bc_dma_irq_handler(bc_dma_channel_t channel, bc_dma_event_t event)
 {
     if (event == BC_DMA_EVENT_DONE)
     {
-        BC_DMA_CHANNEL_DISABLE(channel);
+        _bc_dma_channel_disable(channel);
     }
 
     if (_bc_dma.channel[channel].event_handler != NULL)
@@ -207,144 +225,35 @@ void _bc_dma_irq_handler(bc_dma_channel_t channel, bc_dma_event_t event)
     }
 }
 
+static inline void _bc_dma_channel_enable(bc_dma_channel_t channel)
+{
+    _bc_dma.channel[channel].instance->CCR |= DMA_CCR_EN;
+}
+
+static inline void _bc_dma_channel_disable(bc_dma_channel_t channel)
+{
+    _bc_dma.channel[channel].instance->CCR &= ~DMA_CCR_EN;
+}
+
 void DMA1_Channel1_IRQHandler(void)
 {
-    if ((DMA1->ISR & DMA_ISR_TEIF1) != 0)
-    {
-        _bc_dma_irq_handler(BC_DMA_CHANNEL_1, BC_DMA_EVENT_ERROR);
-    }
-    else if ((DMA1->ISR & DMA_ISR_HTIF1) != 0)
-    {
-        _bc_dma_irq_handler(BC_DMA_CHANNEL_1, BC_DMA_EVENT_HALF_DONE);
-        
-        DMA1->IFCR |= DMA_IFCR_CHTIF1;
-    }
-    else if ((DMA1->ISR & DMA_ISR_TCIF1) != 0)
-    {
-        _bc_dma_irq_handler(BC_DMA_CHANNEL_1, BC_DMA_EVENT_DONE);
-        
-        DMA1->IFCR |= DMA_IFCR_CTCIF1;
-    }
+    _BC_DMA_CHECK_IRQ_OF_CHANNEL_(1);
 }
 
 void DMA1_Channel2_3_IRQHandler(void)
 {
-    if ((DMA1->ISR & DMA_ISR_GIF2) != 0)
-    {
-        if ((DMA1->ISR & DMA_ISR_TEIF2) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_2, BC_DMA_EVENT_ERROR);
-        }
-        else if ((DMA1->ISR & DMA_ISR_HTIF2) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_2, BC_DMA_EVENT_HALF_DONE);
+    _BC_DMA_CHECK_IRQ_OF_CHANNEL_(2);
 
-            DMA1->IFCR |= DMA_IFCR_CHTIF2;
-        }
-        else if ((DMA1->ISR & DMA_ISR_TCIF2) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_2, BC_DMA_EVENT_DONE);
-
-            DMA1->IFCR |= DMA_IFCR_CTCIF2;
-        }
-    }
-    else if ((DMA1->ISR & DMA_ISR_GIF3) != 0)
-    {
-        if ((DMA1->ISR & DMA_ISR_TEIF3) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_3, BC_DMA_EVENT_ERROR);
-        }
-        else if ((DMA1->ISR & DMA_ISR_HTIF3) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_3, BC_DMA_EVENT_HALF_DONE);
-
-            DMA1->IFCR |= DMA_IFCR_CHTIF3;
-        }
-        else if ((DMA1->ISR & DMA_ISR_TCIF3) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_3, BC_DMA_EVENT_DONE);
-
-            DMA1->IFCR |= DMA_IFCR_CTCIF3;
-        }
-    }
+    _BC_DMA_CHECK_IRQ_OF_CHANNEL_(3);
 }
 
 void DMA1_Channel4_5_6_7_IRQHandler(void)
 {
-    if ((DMA1->ISR & DMA_ISR_GIF4) != 0)
-    {
-        if ((DMA1->ISR & DMA_ISR_TEIF4) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_4, BC_DMA_EVENT_ERROR);
-        }
-        else if ((DMA1->ISR & DMA_ISR_HTIF4) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_4, BC_DMA_EVENT_HALF_DONE);
+    _BC_DMA_CHECK_IRQ_OF_CHANNEL_(4);
 
-            DMA1->IFCR |= DMA_IFCR_CHTIF4;
-        }
-        else if ((DMA1->ISR & DMA_ISR_TCIF4) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_4, BC_DMA_EVENT_DONE);
+    _BC_DMA_CHECK_IRQ_OF_CHANNEL_(5);
 
-            DMA1->IFCR |= DMA_IFCR_CTCIF4;
-        }
-    }
-    else if ((DMA1->ISR & DMA_ISR_GIF5) != 0)
-    {
-        if ((DMA1->ISR & DMA_ISR_TEIF5) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_5, BC_DMA_EVENT_ERROR);
-        }
-        else if ((DMA1->ISR & DMA_ISR_HTIF5) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_5, BC_DMA_EVENT_HALF_DONE);
+    _BC_DMA_CHECK_IRQ_OF_CHANNEL_(6);
 
-            DMA1->IFCR |= DMA_IFCR_CHTIF5;
-        }
-        else if ((DMA1->ISR & DMA_ISR_TCIF5) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_5, BC_DMA_EVENT_DONE);
-
-            DMA1->IFCR |= DMA_IFCR_CTCIF5;
-        }
-    }
-    else if ((DMA1->ISR & DMA_ISR_GIF6) != 0)
-    {
-        if ((DMA1->ISR & DMA_ISR_TEIF6) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_6, BC_DMA_EVENT_ERROR);
-        }
-        else if ((DMA1->ISR & DMA_ISR_HTIF6) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_6, BC_DMA_EVENT_HALF_DONE);
-
-            DMA1->IFCR |= DMA_IFCR_CHTIF6;
-        }
-        else if ((DMA1->ISR & DMA_ISR_TCIF6) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_6, BC_DMA_EVENT_DONE);
-
-            DMA1->IFCR |= DMA_IFCR_CTCIF6;
-        }
-    }
-    else if ((DMA1->ISR & DMA_ISR_GIF7) != 0)
-    {
-        if ((DMA1->ISR & DMA_ISR_TEIF7) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_7, BC_DMA_EVENT_ERROR);
-        }
-        else if ((DMA1->ISR & DMA_ISR_HTIF7) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_7, BC_DMA_EVENT_HALF_DONE);
-
-            DMA1->IFCR |= DMA_IFCR_CHTIF7;
-        }
-        else if ((DMA1->ISR & DMA_ISR_TCIF7) != 0)
-        {
-            _bc_dma_irq_handler(BC_DMA_CHANNEL_7, BC_DMA_EVENT_DONE);
-
-            DMA1->IFCR |= DMA_IFCR_CTCIF7;
-        }
-    }
+    _BC_DMA_CHECK_IRQ_OF_CHANNEL_(7);
 }
