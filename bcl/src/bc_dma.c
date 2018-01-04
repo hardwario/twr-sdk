@@ -216,13 +216,15 @@ void DMA1_Channel1_IRQHandler(void)
     else if ((DMA1->ISR & DMA_ISR_HTIF1) != 0)
     {
         _bc_dma_irq_handler(BC_DMA_CHANNEL_1, BC_DMA_EVENT_HALF_DONE);
+        
+        DMA1->IFCR |= DMA_IFCR_CHTIF1;
     }
     else if ((DMA1->ISR & DMA_ISR_TCIF1) != 0)
     {
         _bc_dma_irq_handler(BC_DMA_CHANNEL_1, BC_DMA_EVENT_DONE);
+        
+        DMA1->IFCR |= DMA_IFCR_CTCIF1;
     }
-
-    DMA1->IFCR |= DMA_IFCR_CGIF1;
 }
 
 void DMA1_Channel2_3_IRQHandler(void)
