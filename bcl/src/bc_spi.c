@@ -243,11 +243,6 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
         // Update status
         _bc_spi.in_progress = true;
 
-        // Setup DMA channel
-        _bc_spi_dma_config.address_memory = (void *)source;
-        _bc_spi_dma_config.length = length;
-        bc_dma_channel_config(BC_DMA_CHANNEL_5, &_bc_spi_dma_config);
-
         // Disable SPI2
         SPI2->CR1 &= ~SPI_CR1_SPE;
 
@@ -256,6 +251,11 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
 
         // Enable SPI2
         SPI2->CR1 |= SPI_CR1_SPE;
+
+        // Setup DMA channel
+        _bc_spi_dma_config.address_memory = (void *)source;
+        _bc_spi_dma_config.length = length;
+        bc_dma_channel_config(BC_DMA_CHANNEL_5, &_bc_spi_dma_config);
 
         return true;
     }

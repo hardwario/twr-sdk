@@ -192,7 +192,6 @@ bool bc_ws2812b_write(void)
 
     size_t dma_bit_buffer_size = _bc_ws2812b.buffer->count * _bc_ws2812b.buffer->type * 8;
 
-
     _bc_ws2812b_dma_config.address_memory = (void *)_bc_ws2812b.dma_bit_buffer;
     _bc_ws2812b_dma_config.length = dma_bit_buffer_size;
     bc_dma_channel_config(BC_DMA_CHANNEL_2, &_bc_ws2812b_dma_config);
@@ -225,29 +224,32 @@ static void _bc_ws2812b_dma_event_handler(bc_dma_channel_t channel, bc_dma_event
     (void) event;
     (void) event_param;
 
-    // Stop timer
-    TIM2->CR1 &= ~TIM_CR1_CEN;
+    if (event == BC_DMA_EVENT_DONE)
+    {
+        // Stop timer
+        TIM2->CR1 &= ~TIM_CR1_CEN;
 
-    // Disable the DMA requests
-    __HAL_TIM_DISABLE_DMA(&_bc_ws2812b_timer2_handle, TIM_DMA_UPDATE);
+        // Disable the DMA requests
+        __HAL_TIM_DISABLE_DMA(&_bc_ws2812b_timer2_handle, TIM_DMA_UPDATE);
 
-    // Disable PWM output Compare 2
-    (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 &= ~(TIM_CCMR1_OC2M_Msk);
-    (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC2M_2;
+        // Disable PWM output Compare 2
+        (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 &= ~(TIM_CCMR1_OC2M_Msk);
+        (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC2M_2;
 
-    // Set 50us period for Treset pulse
-    TIM2->ARR = _BC_WS2812_TIMER_RESET_PULSE_PERIOD;
-    // Reset the timer
-    TIM2->CNT = 0;
+        // Set 50us period for Treset pulse
+        TIM2->ARR = _BC_WS2812_TIMER_RESET_PULSE_PERIOD;
+        // Reset the timer
+        TIM2->CNT = 0;
 
-    // Generate an update event to reload the prescaler value immediately
-    TIM2->EGR = TIM_EGR_UG;
-    __HAL_TIM_CLEAR_FLAG(&_bc_ws2812b_timer2_handle, TIM_FLAG_UPDATE);
+        // Generate an update event to reload the prescaler value immediately
+        TIM2->EGR = TIM_EGR_UG;
+        __HAL_TIM_CLEAR_FLAG(&_bc_ws2812b_timer2_handle, TIM_FLAG_UPDATE);
 
-    // Enable TIM2 Update interrupt for Treset signal
-    __HAL_TIM_ENABLE_IT(&_bc_ws2812b_timer2_handle, TIM_IT_UPDATE);
-    // Enable timer
-    TIM2->CR1 |= TIM_CR1_CEN;
+        // Enable TIM2 Update interrupt for Treset signal
+        __HAL_TIM_ENABLE_IT(&_bc_ws2812b_timer2_handle, TIM_IT_UPDATE);
+        // Enable timer
+        TIM2->CR1 |= TIM_CR1_CEN;
+    }
 }
 
 void TIM2_IRQHandler(void)
