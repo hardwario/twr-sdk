@@ -39,13 +39,11 @@ static struct
     struct
     {
         DMA_Channel_TypeDef *instance;
-        uint32_t cselr_position;
         bc_dma_event_handler_t *event_handler;
         void *event_param;
 
     } channel[7];
     bc_fifo_t fifo_pending;
-    bool task_planned;
     bc_scheduler_task_id_t task_id;
 
 } _bc_dma;
@@ -65,26 +63,14 @@ void bc_dma_init()
         return;
     }
 
+    // Initialize channel instances
     _bc_dma.channel[BC_DMA_CHANNEL_1].instance = DMA1_Channel1;
-    _bc_dma.channel[BC_DMA_CHANNEL_1].cselr_position = DMA_CSELR_C1S_Pos;
-
     _bc_dma.channel[BC_DMA_CHANNEL_2].instance = DMA1_Channel2;
-    _bc_dma.channel[BC_DMA_CHANNEL_2].cselr_position = DMA_CSELR_C2S_Pos;
-
     _bc_dma.channel[BC_DMA_CHANNEL_3].instance = DMA1_Channel3;
-    _bc_dma.channel[BC_DMA_CHANNEL_3].cselr_position = DMA_CSELR_C3S_Pos;
-
     _bc_dma.channel[BC_DMA_CHANNEL_4].instance = DMA1_Channel4;
-    _bc_dma.channel[BC_DMA_CHANNEL_4].cselr_position = DMA_CSELR_C4S_Pos;
-
     _bc_dma.channel[BC_DMA_CHANNEL_5].instance = DMA1_Channel5;
-    _bc_dma.channel[BC_DMA_CHANNEL_5].cselr_position = DMA_CSELR_C5S_Pos;
-
     _bc_dma.channel[BC_DMA_CHANNEL_6].instance = DMA1_Channel6;
-    _bc_dma.channel[BC_DMA_CHANNEL_6].cselr_position = DMA_CSELR_C6S_Pos;
-
     _bc_dma.channel[BC_DMA_CHANNEL_7].instance = DMA1_Channel7;
-    _bc_dma.channel[BC_DMA_CHANNEL_7].cselr_position = DMA_CSELR_C7S_Pos;
 
     bc_fifo_init(&_bc_dma.fifo_pending, _bc_dma_pending_event_buffer, sizeof(_bc_dma_pending_event_buffer));
 
@@ -109,7 +95,7 @@ void bc_dma_init()
 void bc_dma_channel_config(bc_dma_channel_t channel, bc_dma_channel_config_t *config)
 {
     DMA_Channel_TypeDef *dma_channel = _bc_dma.channel[channel].instance;
-    uint32_t dma_cselr_pos = _bc_dma.channel[channel].cselr_position;
+    uint32_t dma_cselr_pos = channel * 4;
 
     // Set DMA direction
     if (config->direction == BC_DMA_DIRECTION_TO_PERIPHERAL)
@@ -188,19 +174,6 @@ void _bc_dma_task(void *param)
     {
         _bc_dma.channel[pending_event.channel].event_handler(pending_event.channel, pending_event.event, _bc_dma.channel[pending_event.channel].event_param);
     }
-    
-    bc_irq_disable();
-
-    if (bc_fifo_is_empty(&_bc_dma.fifo_pending))
-    {
-        _bc_dma.task_planned = false;
-    }
-    else
-    {
-        bc_scheduler_plan_current_now();
-    }
-
-    bc_irq_enable();
 }
 
 void _bc_dma_irq_handler(bc_dma_channel_t channel, bc_dma_event_t event)
@@ -216,11 +189,9 @@ void _bc_dma_irq_handler(bc_dma_channel_t channel, bc_dma_event_t event)
 
         bc_fifo_irq_write(&_bc_dma.fifo_pending, &pending_event, sizeof(bc_dma_pending_event_t));
 
-        if (!_bc_dma.task_planned)
+        if (!bc_scheduler_is_task_planned(_bc_dma.task_id))
         {
             bc_scheduler_plan_now(_bc_dma.task_id);
-
-            _bc_dma.task_planned = true;
         }
     }
 }

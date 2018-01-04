@@ -151,3 +151,15 @@ void bc_scheduler_plan_current_from_now(bc_tick_t tick)
 {
     _bc_scheduler.pool[_bc_scheduler.current_task_id].tick_execution = bc_tick_get() + tick;
 }
+
+bool bc_scheduler_is_task_planned(bc_scheduler_task_id_t task_id)
+{
+    if (_bc_scheduler.pool[task_id].tick_execution != BC_TICK_INFINITY)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
