@@ -187,7 +187,10 @@ void _bc_dma_task(void *param)
 
 void _bc_dma_event_handler(bc_dma_channel_t channel, bc_dma_event_t event)
 {
-    BC_DMA_CHANNEL_DISABLE(channel);
+    if (event == BC_DMA_EVENT_DONE)
+    {
+        BC_DMA_CHANNEL_DISABLE(channel);
+    }
 
     if (_bc_dma.channel[channel].event_handler != NULL)
     {
@@ -233,13 +236,15 @@ void DMA1_Channel2_3_IRQHandler(void)
         else if ((DMA1->ISR & DMA_ISR_HTIF2) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_2, BC_DMA_EVENT_HALF_DONE);
+
+            DMA1->IFCR |= DMA_IFCR_CHTIF2;
         }
         else if ((DMA1->ISR & DMA_ISR_TCIF2) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_2, BC_DMA_EVENT_DONE);
-        }
 
-        DMA1->IFCR |= DMA_IFCR_CGIF2;
+            DMA1->IFCR |= DMA_IFCR_CTCIF2;
+        }
     }
     else if ((DMA1->ISR & DMA_ISR_GIF3) != 0)
     {
@@ -250,13 +255,15 @@ void DMA1_Channel2_3_IRQHandler(void)
         else if ((DMA1->ISR & DMA_ISR_HTIF3) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_3, BC_DMA_EVENT_HALF_DONE);
+
+            DMA1->IFCR |= DMA_IFCR_CHTIF3;
         }
         else if ((DMA1->ISR & DMA_ISR_TCIF3) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_3, BC_DMA_EVENT_DONE);
-        }
 
-        DMA1->IFCR |= DMA_IFCR_CGIF3;
+            DMA1->IFCR |= DMA_IFCR_CTCIF3;
+        }
     }
 }
 
@@ -271,13 +278,15 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
         else if ((DMA1->ISR & DMA_ISR_HTIF4) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_4, BC_DMA_EVENT_HALF_DONE);
+
+            DMA1->IFCR |= DMA_IFCR_CHTIF4;
         }
         else if ((DMA1->ISR & DMA_ISR_TCIF4) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_4, BC_DMA_EVENT_DONE);
-        }
 
-        DMA1->IFCR |= DMA_IFCR_CGIF4;
+            DMA1->IFCR |= DMA_IFCR_CTCIF4;
+        }
     }
     else if ((DMA1->ISR & DMA_ISR_GIF5) != 0)
     {
@@ -288,13 +297,15 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
         else if ((DMA1->ISR & DMA_ISR_HTIF5) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_5, BC_DMA_EVENT_HALF_DONE);
+
+            DMA1->IFCR |= DMA_IFCR_CHTIF5;
         }
         else if ((DMA1->ISR & DMA_ISR_TCIF5) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_5, BC_DMA_EVENT_DONE);
-        }
 
-        DMA1->IFCR |= DMA_IFCR_CGIF5;
+            DMA1->IFCR |= DMA_IFCR_CTCIF5;
+        }
     }
     else if ((DMA1->ISR & DMA_ISR_GIF6) != 0)
     {
@@ -305,13 +316,15 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
         else if ((DMA1->ISR & DMA_ISR_HTIF6) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_6, BC_DMA_EVENT_HALF_DONE);
+
+            DMA1->IFCR |= DMA_IFCR_CHTIF6;
         }
         else if ((DMA1->ISR & DMA_ISR_TCIF6) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_6, BC_DMA_EVENT_DONE);
-        }
 
-        DMA1->IFCR |= DMA_IFCR_CGIF6;
+            DMA1->IFCR |= DMA_IFCR_CTCIF6;
+        }
     }
     else if ((DMA1->ISR & DMA_ISR_GIF7) != 0)
     {
@@ -322,12 +335,14 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
         else if ((DMA1->ISR & DMA_ISR_HTIF7) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_7, BC_DMA_EVENT_HALF_DONE);
+
+            DMA1->IFCR |= DMA_IFCR_CHTIF7;
         }
         else if ((DMA1->ISR & DMA_ISR_TCIF7) != 0)
         {
             _bc_dma_event_handler(BC_DMA_CHANNEL_7, BC_DMA_EVENT_DONE);
-        }
 
-        DMA1->IFCR |= DMA_IFCR_CGIF7;
+            DMA1->IFCR |= DMA_IFCR_CTCIF7;
+        }
     }
 }
