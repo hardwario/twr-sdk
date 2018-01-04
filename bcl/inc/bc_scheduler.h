@@ -98,6 +98,13 @@ void bc_scheduler_plan_current_relative(bc_tick_t tick);
 
 void bc_scheduler_plan_current_from_now(bc_tick_t tick);
 
+//! @brief Get current tick of spin in which task has been run
+//! @param[in] task_id Task ID
+//! @return true When task is planned
+//! @return false When task is not planned
+
+bool bc_scheduler_is_task_planned(bc_scheduler_task_id_t task_id);
+
 //! @}
 
 #endif // _BC_SCHEDULER_H
