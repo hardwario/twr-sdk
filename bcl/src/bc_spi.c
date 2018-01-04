@@ -1,6 +1,7 @@
 #include <bc_spi.h>
 #include <bc_module_core.h>
 #include <bc_scheduler.h>
+#include <bc_irq.h>
 #include <stm32l0xx.h>
 
 #define _BC_SPI_EVENT_CLEAR 0
@@ -35,8 +36,11 @@ static struct
 } _bc_spi;
 
 static uint8_t _bc_spi_transfer_byte(uint8_t value);
+
 static inline void _bc_spi_transfer_error_handler();
+
 static inline void _bc_spi_transfer_done_handler();
+
 static void _bc_spi_task();
 
 void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
@@ -146,6 +150,31 @@ bc_spi_mode_t bc_spi_get_mode(void)
 bool bc_spi_is_ready(void)
 {
 	return (!_bc_spi.in_progress) && (_bc_spi.pending_event == _BC_SPI_EVENT_CLEAR);
+}
+
+bool bc_spi_lock(void)
+{
+    bc_irq_disable();
+
+    if (bc_spi_is_ready())
+    {
+        _bc_spi.in_progress = true;
+
+        return true;
+    }
+
+    return false;
+
+    bc_irq_enable();
+}
+
+void bc_spi_unlock(void)
+{
+    bc_irq_disable();
+
+    _bc_spi.in_progress = false;
+
+    bc_irq_enable();
 }
 
 bool bc_spi_transfer(const void *source, void *destination, size_t length)

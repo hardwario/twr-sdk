@@ -90,6 +90,18 @@ bc_spi_mode_t bc_spi_get_mode(void);
 
 bool bc_spi_is_ready(void);
 
+//! @brief Lock SPI peripheral
+//! @return true If lock successful
+//! @return false If lock not successful
+
+bool bc_spi_lock(void);
+
+//! @brief Unlock SPI peripheral
+//! @return true If unlock successful
+//! @return false If unlock not successful
+
+void bc_spi_unlock(void);
+
 //! @brief Execute SPI transfer
 //! @param[in] source Pointer to source buffer
 //! @param[out] destination Pointer to destination buffer
