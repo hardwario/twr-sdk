@@ -40,7 +40,8 @@ static bc_dma_channel_config_t _bc_spi_dma_config =
 {
     .request = BC_DMA_REQUEST_2,
     .direction = BC_DMA_DIRECTION_TO_PERIPHERAL,
-    .size = BC_DMA_SIZE_1,
+    .data_size_memory = BC_DMA_SIZE_1,
+    .data_size_peripheral = BC_DMA_SIZE_1,
     .mode = BC_DMA_MODE_STANDARD,
     .address_peripheral = (void *)&SPI2->DR,
     .priority = BC_DMA_PRIORITY_HIGH

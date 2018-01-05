@@ -171,8 +171,11 @@ typedef struct
     //! @brief DMA channel direction
     bc_dma_direction_t direction;
     
-    //! @brief DMA channel data size
-    bc_dma_size_t size;
+    //! @brief DMA channel memory data size
+    bc_dma_size_t data_size_memory;
+
+    //! @brief DMA channel peripheral data size
+    bc_dma_size_t data_size_peripheral;
     
     //! @brief DMA channel data length
     uint32_t length;

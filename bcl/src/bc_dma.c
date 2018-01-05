@@ -107,18 +107,26 @@ void bc_dma_channel_config(bc_dma_channel_t channel, bc_dma_channel_config_t *co
         dma_channel->CCR &= DMA_CCR_DIR;
     }
 
-    // Set data size
-    dma_channel->CCR &= ~DMA_CCR_PSIZE_Msk;
+    // Set memory data size
     dma_channel->CCR &= ~DMA_CCR_MSIZE_Msk;
-    if (config->size == BC_DMA_SIZE_2)
+    if (config->data_size_memory == BC_DMA_SIZE_2)
     {
-        dma_channel->CCR |= DMA_CCR_PSIZE_0;
         dma_channel->CCR |= DMA_CCR_MSIZE_0;
     }
-    else if (config->size == BC_DMA_SIZE_4)
+    else if (config->data_size_memory == BC_DMA_SIZE_4)
+    {
+        dma_channel->CCR |= DMA_CCR_MSIZE_1;
+    }
+
+    // Set peripheral data size
+    dma_channel->CCR &= ~DMA_CCR_PSIZE_Msk;
+    if (config->data_size_peripheral == BC_DMA_SIZE_2)
+    {
+        dma_channel->CCR |= DMA_CCR_PSIZE_0;
+    }
+    else if (config->data_size_peripheral == BC_DMA_SIZE_4)
     {
         dma_channel->CCR |= DMA_CCR_PSIZE_1;
-        dma_channel->CCR |= DMA_CCR_MSIZE_1;
     }
 
     // Set DMA mode

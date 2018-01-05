@@ -29,7 +29,8 @@ static bc_dma_channel_config_t _bc_ws2812b_dma_config =
 {
     .request = BC_DMA_REQUEST_8,
     .direction = BC_DMA_DIRECTION_TO_PERIPHERAL,
-    .size = BC_DMA_SIZE_2,
+    .data_size_memory = BC_DMA_SIZE_1,
+    .data_size_peripheral = BC_DMA_SIZE_2,
     .mode = BC_DMA_MODE_STANDARD,
     .address_peripheral = (void *)&(TIM2->CCR2),
     .priority = BC_DMA_PRIORITY_VERY_HIGH
