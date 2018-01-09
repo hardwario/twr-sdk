@@ -56,7 +56,7 @@ typedef enum
 
 #define _BC_UART_SETTING_PARITY_NONE   0x00 << 2
 #define _BC_UART_SETTING_PARITY_EVEN   0x02 << 2
-#define _BC_UART_SETTING_PARITY_ODD 	 0x03 << 2
+#define _BC_UART_SETTING_PARITY_ODD    0x03 << 2
 
 #define _BC_UART_SETTING_STOP_BIT_1   0x00
 #define _BC_UART_SETTING_STOP_BIT_2   0x02
