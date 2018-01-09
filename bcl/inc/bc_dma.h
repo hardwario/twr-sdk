@@ -94,10 +94,7 @@ typedef enum
     BC_DMA_DIRECTION_TO_PERIPHERAL,
     
     //! @brief DMA channel direction from peripheral to RAM
-    BC_DMA_DIRECTION_TO_RAM,
-    
-    //! @brief DMA channel direction from RAM to RAM
-    BC_DMA_DIRECTION_M2M // TODO not implemented
+    BC_DMA_DIRECTION_TO_RAM
 
 } bc_dma_direction_t;
 
@@ -183,10 +180,10 @@ typedef struct
     //! @brief DMA channel mode
     bc_dma_mode_t mode;
     
-    //! @brief RAM memory address (TODO look at M2M)
+    //! @brief RAM memory address
     void *address_memory;
     
-    //! @brief Peripheral address (TODO look at M2M)
+    //! @brief Peripheral address
     void *address_peripheral;
     
     //! @brief DMA channel priority
