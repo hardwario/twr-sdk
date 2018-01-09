@@ -155,7 +155,14 @@ static void _bc_module_battery_task(void *param)
 {
     (void) param;
 
-    bc_scheduler_plan_current_relative(_bc_module_battery.update_interval);
+    if (_bc_module_battery.update_interval == BC_TICK_INFINITY)
+    {
+        bc_scheduler_plan_absolute(_bc_module_battery.task_id, BC_TICK_INFINITY);
+    }
+    else
+    {
+        bc_scheduler_plan_current_relative(_bc_module_battery.update_interval);
+    }
 
     bc_module_battery_measure();
 }

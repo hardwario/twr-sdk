@@ -298,6 +298,9 @@ void ADC1_COMP_IRQHandler(void)
         // Plan ADC task
         bc_scheduler_plan_now(_bc_adc.task_id);
 
+        // Clear all interrupts
+        ADC1->ISR = 0xffff;
+
         // Disable all ADC interrupts
         ADC1->IER = 0;
     }
