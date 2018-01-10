@@ -1,7 +1,7 @@
 #include <bc_spi.h>
-#include <bc_module_core.h>
 #include <bc_scheduler.h>
 #include <bc_dma.h>
+#include <bc_system.h>
 #include <stm32l0xx.h>
 
 #define _BC_SPI_EVENT_CLEAR 0
@@ -175,7 +175,7 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
     _bc_spi.in_progress = true;
 
     // Enable PLL and disable sleep
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Set CS to active level
     GPIOB->BSRR = GPIO_BSRR_BR_12;
@@ -209,7 +209,7 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
     GPIOB->BSRR = GPIO_BSRR_BS_12;
 
     // Disable PLL and enable sleep
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     // Update status
     _bc_spi.in_progress = false;
@@ -231,7 +231,7 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
     _bc_spi.event_param = event_param;
 
     // Enable PLL and disable sleep
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // If transmit only is requested ...
     if ((source != NULL) && (destination == NULL))
@@ -266,7 +266,7 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
         // TODO Ready to implement another direction
 
         // Disable PLL and disable sleep
-        bc_module_core_pll_disable();
+        bc_system_pll_disable();
     }
     // If transmit and receive is requested ...
     else
@@ -274,7 +274,7 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
         // TODO Ready to implement another direction
 
         // Disable PLL and disable sleep
-        bc_module_core_pll_disable();
+        bc_system_pll_disable();
     }
 
     return false;
@@ -321,7 +321,7 @@ static void _bc_spi_dma_event_handler(bc_dma_channel_t channel, bc_dma_event_t e
 	}
 	else if (event == BC_DMA_EVENT_ERROR)
 	{
-	    bc_module_core_reset();
+	    bc_system_reset();
 	}
 }
 
@@ -334,7 +334,7 @@ static void _bc_spi_task()
         _bc_spi.event_handler(BC_SPI_EVENT_DONE, _bc_spi.event_param);
 
         // Disable PLL and enable sleep
-        bc_module_core_pll_disable();
+        bc_system_pll_disable();
     }
 
     _bc_spi.pending_event_done = false;

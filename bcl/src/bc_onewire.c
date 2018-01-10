@@ -1,7 +1,7 @@
 #include <stm32l0xx.h>
-#include <bc_module_core.h>
 #include <bc_irq.h>
 #include <bc_onewire.h>
+#include <bc_system.h>
 
 static struct
 {
@@ -332,7 +332,7 @@ static void _bc_onewire_start(void)
 		return;
 	}
 
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Enable clock for TIM6
     RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
@@ -367,7 +367,7 @@ static void _bc_onewire_stop(void)
 
     RCC->APB1ENR &= ~RCC_APB1ENR_TIM6EN;
 
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 }
 
 static void _bc_onewire_delay(uint16_t micro_second)

@@ -4,8 +4,7 @@
 #include <bc_gpio.h>
 #include <bc_exti.h>
 #include <bc_scheduler.h>
-#include <bc_module_core.h>
-
+#include <bc_system.h>
 #include "bc_ir_rx.h"
 
 //#define _BC_IR_RX_DEBUG
@@ -138,7 +137,7 @@ void bc_ir_rx_set_event_handler(void (*event_handler)(bc_ir_rx_event_t, void *),
 void bc_ir_rx_init()
 {
     // TODO: Needs fix to allow low power
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // IR input
     bc_gpio_init(BC_GPIO_P10);

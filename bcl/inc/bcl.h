@@ -43,7 +43,6 @@
 
 #include <bc_module_battery.h>
 #include <bc_module_climate.h>
-#include <bc_module_core.h>
 #include <bc_module_encoder.h>
 #include <bc_module_pir.h>
 #include <bc_module_power.h>
@@ -61,6 +60,8 @@
 #include <bc_pulse_counter.h>
 #include <bc_font_common.h>
 #include <bc_image.h>
+#include <bc_system.h>
+#include <bc_error.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
