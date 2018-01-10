@@ -227,19 +227,34 @@ bool bc_data_stream_get_last(bc_data_stream_t *self, void *result)
 
 bool bc_data_stream_get_nth(bc_data_stream_t *self, int n, void *result)
 {
-    if (self->_counter < n)
-    {
-        return false;
-    }
-
     int position;
 
     if (n < 0)
     {
-        position = self->_feed_head + 1 + self->_buffer->number_of_samples;
+        if (self->_counter + n < 0)
+        {
+            return false;
+        }
+
+        if (self->_buffer->number_of_samples + n < 0)
+        {
+            return false;
+        }
+
+        position = self->_counter < self->_buffer->number_of_samples ? self->_counter : self->_feed_head + 1 + self->_buffer->number_of_samples;
     }
     else
     {
+        if (self->_counter < n)
+        {
+            return false;
+        }
+
+        if (self->_buffer->number_of_samples > n)
+        {
+            return false;
+        }
+
         position = self->_counter < self->_buffer->number_of_samples ? 0 : self->_feed_head + 1;
     }
 
