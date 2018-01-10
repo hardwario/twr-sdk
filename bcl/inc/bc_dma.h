@@ -1,6 +1,8 @@
 #ifndef _BC_DMA_H
 #define _BC_DMA_H
 
+#include <bc_common.h>
+
 //! @addtogroup bc_dma bc_dma
 //! @brief Driver for DMA
 //! @{
@@ -91,10 +93,10 @@ typedef enum
 typedef enum
 {
     //! @brief DMA channel direction from RAM to peripheral
-    BC_DMA_DIRECTION_TO_PERIPHERAL,
+    BC_DMA_DIRECTION_TO_PERIPHERAL = 0,
     
     //! @brief DMA channel direction from peripheral to RAM
-    BC_DMA_DIRECTION_TO_RAM
+    BC_DMA_DIRECTION_TO_RAM = 1
 
 } bc_dma_direction_t;
 
@@ -103,13 +105,13 @@ typedef enum
 typedef enum
 {
     //! @brief DMA channel data size 1B
-    BC_DMA_SIZE_1,
+    BC_DMA_SIZE_1 = 0,
     
     //! @brief DMA channel data size 2B
-    BC_DMA_SIZE_2,
+    BC_DMA_SIZE_2 = 1,
     
     //! @brief DMA channel data size 4B
-    BC_DMA_SIZE_4
+    BC_DMA_SIZE_4 = 2
 
 } bc_dma_size_t;
 
@@ -118,10 +120,10 @@ typedef enum
 typedef enum
 {
     //! @brief DMA channel mode standard
-    BC_DMA_MODE_STANDARD,
+    BC_DMA_MODE_STANDARD = 0,
     
     //! @brief DMA channel mode circular
-    BC_DMA_MODE_CIRCULAR
+    BC_DMA_MODE_CIRCULAR = 1
 
 } bc_dma_mode_t;
 
@@ -175,7 +177,7 @@ typedef struct
     bc_dma_size_t data_size_peripheral;
     
     //! @brief DMA channel data length
-    uint32_t length;
+    size_t length;
     
     //! @brief DMA channel mode
     bc_dma_mode_t mode;
@@ -190,8 +192,6 @@ typedef struct
     bc_dma_priority_t priority;
 
 } bc_dma_channel_config_t;
-
-typedef void bc_dma_event_handler_t(bc_dma_channel_t, bc_dma_event_t, void *);
 
 //! @brief Initialize DMA
 
@@ -208,7 +208,7 @@ void bc_dma_channel_config(bc_dma_channel_t channel, bc_dma_channel_config_t *co
 //! @param[in] event_handler Function address
 //! @param[in] event_param Optional event parameter (can be NULL)
 
-void bc_dma_set_event_handler(bc_dma_channel_t channel, bc_dma_event_handler_t *event_handler, void *event_param);
+void bc_dma_set_event_handler(bc_dma_channel_t channel, void (*event_handler)(bc_dma_channel_t, bc_dma_event_t, void *), void *event_param);
 
 //! @}
 
