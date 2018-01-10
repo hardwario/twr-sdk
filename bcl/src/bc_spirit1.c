@@ -1,7 +1,7 @@
 #include <bc_spirit1.h>
 #include <bc_scheduler.h>
 #include <bc_exti.h>
-#include <bc_module_core.h>
+#include <bc_system.h>
 #include <stm32l0xx.h>
 #include "SPIRIT_Config.h"
 #include "SDK_Configuration_Common.h"
@@ -400,7 +400,7 @@ static void _bc_spirit1_enter_state_sleep(void)
 bc_spirit_status_t bc_spirit1_command(uint8_t command)
 {
     // Enable PLL
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Set chip select low
     bc_spirit1_hal_chip_select_low();
@@ -415,7 +415,7 @@ bc_spirit_status_t bc_spirit1_command(uint8_t command)
     bc_spirit1_hal_chip_select_high();
 
     // Disable PLL
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);
@@ -424,7 +424,7 @@ bc_spirit_status_t bc_spirit1_command(uint8_t command)
 bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t length)
 {
     // Enable PLL
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Set chip select low
     bc_spirit1_hal_chip_select_low();
@@ -446,7 +446,7 @@ bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t 
     bc_spirit1_hal_chip_select_high();
 
     // Disable PLL
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);
@@ -455,7 +455,7 @@ bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t 
 bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
 {
     // Enable PLL
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Set chip select low
     bc_spirit1_hal_chip_select_low();
@@ -477,7 +477,7 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
     bc_spirit1_hal_chip_select_high();
 
     // Disable PLL
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);
@@ -530,7 +530,7 @@ void bc_spirit1_hal_shutdown_low(void)
 void bc_spirit1_hal_shutdown_high(void)
 {
     // Enable PLL
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Output log. 0 on CS pin
     GPIOA->BSRR = GPIO_BSRR_BR_15;
@@ -557,7 +557,7 @@ void bc_spirit1_hal_shutdown_high(void)
     }
 
     // Disable PLL
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 }
 
 void bc_spirit1_hal_chip_select_low(void)

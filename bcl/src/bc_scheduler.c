@@ -1,5 +1,6 @@
 #include <bc_scheduler.h>
-#include <bc_module_core.h>
+#include <bc_system.h>
+#include <bc_error.h>
 
 static struct
 {
@@ -17,6 +18,8 @@ static struct
     int sleep_bypass_semaphore;
 
 } _bc_scheduler;
+
+void application_error(bc_error_t code);
 
 void bc_scheduler_init(void)
 {
@@ -45,7 +48,7 @@ void bc_scheduler_run(void)
         }
         if (_bc_scheduler.sleep_bypass_semaphore == 0)
         {
-            bc_module_core_sleep();
+            bc_system_sleep();
         }
     }
 }
@@ -69,8 +72,9 @@ bc_scheduler_task_id_t bc_scheduler_register(void (*task)(void *), void *param, 
         }
     }
 
-    // TODO Indicate no more tasks available
-    for (;;);
+    application_error(BC_ERROR_NOT_ENOUGH_TASKS);
+
+    return 0;
 }
 
 void bc_scheduler_unregister(bc_scheduler_task_id_t task_id)
@@ -150,16 +154,4 @@ void bc_scheduler_plan_current_relative(bc_tick_t tick)
 void bc_scheduler_plan_current_from_now(bc_tick_t tick)
 {
     _bc_scheduler.pool[_bc_scheduler.current_task_id].tick_execution = bc_tick_get() + tick;
-}
-
-bool bc_scheduler_is_task_planned(bc_scheduler_task_id_t task_id)
-{
-    if (_bc_scheduler.pool[task_id].tick_execution != BC_TICK_INFINITY)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
 }

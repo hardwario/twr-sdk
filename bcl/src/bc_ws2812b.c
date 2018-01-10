@@ -1,8 +1,8 @@
 #include "stm32l0xx.h"
 #include <bc_ws2812b.h>
-#include <bc_module_core.h>
 #include <bc_scheduler.h>
 #include <bc_dma.h>
+#include <bc_system.h>
 
 #define _BC_WS2812_TIMER_PERIOD 40               // 32000000 / 800000 = 20; 0,125us period (10 times lower the 1,25us period to have fixed math below)
 #define _BC_WS2812_TIMER_RESET_PULSE_PERIOD 1666 // 60us just to be sure = (32000000 / (320 * 60))
@@ -180,7 +180,7 @@ bool bc_ws2812b_write(void)
     // transmission complete flag
     _bc_ws2812b.transfer = true;
 
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     HAL_TIM_Base_Stop(&_bc_ws2812b_timer2_handle);
     (&_bc_ws2812b_timer2_handle)->Instance->CR1 &= ~((0x1U << (0U)));
@@ -282,7 +282,7 @@ static void _bc_ws2812b_task(void *param)
 {
     (void) param;
 
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     // set transfer_complete flag
     _bc_ws2812b.transfer = false;

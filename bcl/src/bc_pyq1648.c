@@ -1,7 +1,7 @@
 #include <bc_pyq1648.h>
 #include <bc_irq.h>
 #include <bc_gpio.h>
-#include <bc_module_core.h>
+#include <bc_system.h>
 #include <stm32l0xx.h>
 
 #define BC_PYQ1648_BPF 0x00
@@ -125,7 +125,7 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     bc_irq_disable();
 
     // Enable PLL
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Load desired event unit configuration
     uint32_t regval = self->_config;
@@ -224,7 +224,7 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     bc_gpio_set_output(self->_gpio_channel_serin, 0);
 
     // Disable PLL
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     // Enable interrupts
     bc_irq_enable();

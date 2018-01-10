@@ -1,6 +1,6 @@
 #include <bc_hc_sr04.h>
 #include <bc_scheduler.h>
-#include <bc_module_core.h>
+#include <bc_system.h>
 #include <stm32l0xx.h>
 
 // Timer resolution in microseconds
@@ -111,7 +111,7 @@ bool bc_hc_sr04_measure(void)
     }
 
     // Enable PLL
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     _bc_hc_sr04.measurement_active = true;
 
@@ -172,7 +172,7 @@ static void _bc_hc_sr04_task_notify(void *param)
     (void) param;
 
     // Disable PLL
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     _bc_hc_sr04.measurement_active = false;
 
