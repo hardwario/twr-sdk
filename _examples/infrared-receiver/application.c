@@ -20,7 +20,7 @@ static void ir_event_handler(bc_ir_rx_event_t event, void *param)
 void application_init(void)
 {
     // Enable PLL for USB and infrared driver
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Init infrared driver
     bc_ir_rx_init();
