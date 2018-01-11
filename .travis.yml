@@ -24,7 +24,7 @@ script:
 deploy:
   provider: pages
   skip_cleanup: true
-  local_dir: $HTML_DIR
+  local_dir: /doc/html
   github_token: $GH_REPO_TOKEN
   target_branch: gh-pages
   fqdn: sdk.bigclown.com
