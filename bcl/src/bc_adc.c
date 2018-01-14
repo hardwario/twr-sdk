@@ -87,11 +87,11 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_format_t format)
         NVIC_EnableIRQ(ADC1_COMP_IRQn);
 
         _bc_adc.initialized = true;
+
+        _bc_adc.task_id = bc_scheduler_register(_bc_adc_task, NULL, BC_TICK_INFINITY);
     }
 
     bc_adc_set_format(channel, format);
-
-    _bc_adc.task_id = bc_scheduler_register(_bc_adc_task, NULL, BC_TICK_INFINITY);
 }
 
 void bc_adc_set_format(bc_adc_channel_t channel, bc_adc_format_t format)
