@@ -366,7 +366,10 @@ static void _bc_adc_task(void *param)
     bc_irq_enable();
 
     // Perform event call-back
-    adc->event_handler(pending_result_channel, BC_ADC_EVENT_DONE, adc->event_param);
+    if (adc->event_handler != NULL)
+    {
+        adc->event_handler(pending_result_channel, BC_ADC_EVENT_DONE, adc->event_param);
+    }
 }
 
 static inline bool _bc_adc_get_pending(bc_adc_channel_t *next ,bc_adc_channel_t start)
