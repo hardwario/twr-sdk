@@ -14,6 +14,7 @@ __attribute__((weak)) void bc_radio_pub_on_bool(uint64_t *id, char *subtopic, bo
 __attribute__((weak)) void bc_radio_pub_on_int(uint64_t *id, char *subtopic, int *value) { (void) id; (void) subtopic; (void) value; }
 __attribute__((weak)) void bc_radio_pub_on_uint32(uint64_t *id, char *subtopic, uint32_t *value) { (void) id; (void) subtopic; (void) value; }
 __attribute__((weak)) void bc_radio_pub_on_float(uint64_t *id, char *subtopic, float *value) { (void) id; (void) subtopic; (void) value; }
+__attribute__((weak)) void bc_radio_pub_on_string(uint64_t *id, char *subtopic, char *value) { (void) id; (void) subtopic; (void) value; }
 
 bool bc_radio_pub_event_count(uint8_t event_id, uint16_t *event_count)
 {
@@ -133,7 +134,7 @@ bool bc_radio_pub_state(uint8_t state_id, bool *state)
 
 bool bc_radio_pub_bool(const char *subtopic, bool *value)
 {
-    uint8_t len = strlen(subtopic);
+    size_t len = strlen(subtopic);
 
     if (len > BC_RADIO_MAX_TOPIC_LEN)
     {
@@ -153,7 +154,7 @@ bool bc_radio_pub_bool(const char *subtopic, bool *value)
 
 bool bc_radio_pub_int(const char *subtopic, int *value)
 {
-    uint8_t len = strlen(subtopic);
+    size_t len = strlen(subtopic);
 
     if (len > BC_RADIO_MAX_TOPIC_LEN)
     {
@@ -173,7 +174,7 @@ bool bc_radio_pub_int(const char *subtopic, int *value)
 
 bool bc_radio_pub_uint32(const char *subtopic, uint32_t *value)
 {
-    uint8_t len = strlen(subtopic);
+    size_t len = strlen(subtopic);
 
     if (len > BC_RADIO_MAX_TOPIC_LEN)
     {
@@ -193,7 +194,7 @@ bool bc_radio_pub_uint32(const char *subtopic, uint32_t *value)
 
 bool bc_radio_pub_float(const char *subtopic, float *value)
 {
-    uint8_t len = strlen(subtopic);
+    size_t len = strlen(subtopic);
 
     if (len > BC_RADIO_MAX_TOPIC_LEN)
     {
@@ -209,6 +210,26 @@ bool bc_radio_pub_float(const char *subtopic, float *value)
     strcpy((char *)buffer + 5, subtopic);
 
     return bc_radio_pub_queue_put(buffer, len + 6);
+}
+
+bool bc_radio_pub_string(const char *subtopic, const char *value)
+{
+    size_t len = strlen(subtopic);
+    size_t len_value = strlen(value);
+
+    if (len + len_value > (BC_RADIO_MAX_BUFFER_SIZE - 3))
+    {
+        return false;
+    }
+
+    uint8_t buffer[BC_RADIO_MAX_BUFFER_SIZE];
+
+    buffer[0] = BC_RADIO_HEADER_PUB_TOPIC_STRING;
+
+    strcpy((char *)buffer + 1, subtopic);
+    strcpy((char *)buffer + 1 + len + 1, value);
+
+    return bc_radio_pub_queue_put(buffer, len + len_value + 3);
 }
 
 void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
@@ -343,5 +364,13 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
         buffer[length - 1] = 0;
 
         bc_radio_pub_on_float(id, (char *) buffer, pvalue);
+    }
+    else if (buffer[0] == BC_RADIO_HEADER_PUB_TOPIC_STRING)
+    {
+        buffer[length - 1] = 0;
+
+        size_t len = strlen((char *) buffer + 1);
+
+        bc_radio_pub_on_string(id, (char *) buffer + 1, (char *) buffer + 2 + len);
     }
 }

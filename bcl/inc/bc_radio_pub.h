@@ -76,6 +76,8 @@ bool bc_radio_pub_uint32(const char *subtopic, uint32_t *value);
 
 bool bc_radio_pub_float(const char *subtopic, float *value);
 
+bool bc_radio_pub_string(const char *subtopic, const char *value);
+
 //! @brief Internal decode function for bc_radio.c
 //! @param[in] id Pointer on sender id
 //! @param[in] buffer Pointer to RX buffer
