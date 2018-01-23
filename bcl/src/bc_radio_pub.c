@@ -1,5 +1,7 @@
 #include <bc_radio_pub.h>
 
+#define _BC_RADIO_PUB_BUFFER_SIZE_ACCELERATION (1 + sizeof(float) + sizeof(float) + sizeof(float))
+
 __attribute__((weak)) void bc_radio_pub_on_event_count(uint64_t *id, uint8_t event_id, uint16_t *event_count) { (void) id; (void) event_id; (void) event_count; }
 __attribute__((weak)) void bc_radio_pub_on_push_button(uint64_t *id, uint16_t *event_count) { (void) id; (void) event_count; }
 __attribute__((weak)) void bc_radio_pub_on_temperature(uint64_t *id, uint8_t channel, float *celsius) { (void) id; (void) channel; (void) celsius; }
@@ -8,6 +10,7 @@ __attribute__((weak)) void bc_radio_pub_on_lux_meter(uint64_t *id, uint8_t chann
 __attribute__((weak)) void bc_radio_pub_on_barometer(uint64_t *id, uint8_t channel, float *pressure, float *altitude) { (void) id; (void) channel; (void) pressure; (void) altitude; }
 __attribute__((weak)) void bc_radio_pub_on_co2(uint64_t *id, float *concentration) { (void) id; (void) concentration; }
 __attribute__((weak)) void bc_radio_pub_on_battery(uint64_t *id, float *voltage) { (void) id; (void) voltage; }
+__attribute__((weak)) void bc_radio_pub_on_acceleration(uint64_t *id, float *x_axis, float *y_axis, float *z_axis) { (void) id; (void) x_axis; (void) y_axis; (void) z_axis; }
 __attribute__((weak)) void bc_radio_pub_on_buffer(uint64_t *id, void *buffer, size_t length) { (void) id; (void) buffer; (void) length; }
 __attribute__((weak)) void bc_radio_pub_on_state(uint64_t *id, uint8_t state_id, bool *state) { (void) id; (void) state_id; (void) state; }
 __attribute__((weak)) void bc_radio_pub_on_bool(uint64_t *id, char *subtopic, bool *value) { (void) id; (void) subtopic; (void) value; }
@@ -100,6 +103,21 @@ bool bc_radio_pub_battery(float *voltage)
     buffer[0] = BC_RADIO_HEADER_PUB_BATTERY;
 
     memcpy(&buffer[1], voltage, sizeof(*voltage));
+
+    return bc_radio_pub_queue_put(buffer, sizeof(buffer));
+}
+
+bool bc_radio_pub_acceleration(float *x_axis, float *y_axis, float *z_axis)
+{
+    uint8_t buffer[_BC_RADIO_PUB_BUFFER_SIZE_ACCELERATION];
+
+    buffer[0] = BC_RADIO_HEADER_PUB_ACCELERATION;
+
+    uint8_t *pointer = bc_radio_float_to_buffer(x_axis, buffer + 1);
+
+    pointer = bc_radio_float_to_buffer(y_axis, pointer);
+
+    pointer = bc_radio_float_to_buffer(z_axis, pointer);
 
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
@@ -307,6 +325,28 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
         memcpy(&voltage, buffer + (length == 5 ? 1 : 2), sizeof(voltage));
 
         bc_radio_pub_on_battery(id, &voltage);
+    }
+    else if (buffer[0] == BC_RADIO_HEADER_PUB_ACCELERATION)
+    {
+        if (length != _BC_RADIO_PUB_BUFFER_SIZE_ACCELERATION)
+        {
+            return;
+        }
+
+        float x_axis;
+        float *px_axis;
+        float y_axis;
+        float *py_axis;
+        float z_axis;
+        float *pz_axis;
+
+        buffer = bc_radio_float_from_buffer(buffer + 1, &x_axis, &px_axis);
+
+        buffer = bc_radio_float_from_buffer(buffer, &y_axis, &py_axis);
+
+        bc_radio_float_from_buffer(buffer, &z_axis, &pz_axis);
+
+        bc_radio_pub_on_acceleration(id, px_axis, py_axis, pz_axis);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_BUFFER)
     {

@@ -64,6 +64,8 @@ bool bc_radio_pub_co2(float *concentration);
 
 bool bc_radio_pub_battery(float *voltage);
 
+bool bc_radio_pub_acceleration(float *x_axis, float *y_axis, float *z_axis);
+
 bool bc_radio_pub_buffer(void *buffer, size_t length);
 
 bool bc_radio_pub_state(uint8_t state_id, bool *state);
