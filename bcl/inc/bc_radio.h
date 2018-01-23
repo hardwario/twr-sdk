@@ -20,6 +20,7 @@
 #define BC_RADIO_NULL_BOOL         0xff
 #define BC_RADIO_NULL_INT          INT32_MIN
 #define BC_RADIO_NULL_FLOAT        NAN
+#define BC_RADIO_NULL_UINT32       UINT32_MAX
 
 //! @brief Radio mode
 
@@ -64,6 +65,9 @@ typedef enum
     BC_RADIO_HEADER_PUB_BATTERY     = 0x0a,
     BC_RADIO_HEADER_PUB_INFO        = 0x0b, // deprecated
 
+    BC_RADIO_HEADER_PUB_ACCELERATION = 0x0d,
+    BC_RADIO_HEADER_PUB_TOPIC_STRING = 0x0e,
+    BC_RADIO_HEADER_PUB_TOPIC_UINT32 = 0x0f,
     BC_RADIO_HEADER_PUB_TOPIC_BOOL  = 0x10,
     BC_RADIO_HEADER_PUB_TOPIC_INT   = 0x11,
     BC_RADIO_HEADER_PUB_TOPIC_FLOAT = 0x12,
@@ -126,11 +130,13 @@ bool bc_radio_pub_queue_put(const void *buffer, size_t length);
 uint8_t *bc_radio_id_to_buffer(uint64_t *id, uint8_t *buffer);
 uint8_t *bc_radio_bool_to_buffer(bool *value, uint8_t *buffer);
 uint8_t *bc_radio_int_to_buffer(int *value, uint8_t *buffer);
+uint8_t *bc_radio_uint32_to_buffer(uint32_t *value, uint8_t *buffer);
 uint8_t *bc_radio_float_to_buffer(float *value, uint8_t *buffer);
 uint8_t *bc_radio_data_to_buffer(void *data, size_t length, uint8_t *buffer);
 uint8_t *bc_radio_id_from_buffer(uint8_t *buffer, uint64_t *id);
 uint8_t *bc_radio_bool_from_buffer(uint8_t *buffer, bool *value, bool **pointer);
 uint8_t *bc_radio_int_from_buffer(uint8_t *buffer, int *value, int **pointer);
+uint8_t *bc_radio_uint32_from_buffer(uint8_t *buffer, uint32_t *value, uint32_t **pointer);
 uint8_t *bc_radio_float_from_buffer(uint8_t *buffer, float *value, float **pointer);
 uint8_t *bc_radio_data_from_buffer(uint8_t *buffer, void *data, size_t length);
 
