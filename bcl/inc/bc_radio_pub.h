@@ -72,6 +72,8 @@ bool bc_radio_pub_bool(const char *subtopic, bool *value);
 
 bool bc_radio_pub_int(const char *subtopic, int *value);
 
+bool bc_radio_pub_uint32(const char *subtopic, uint32_t *value);
+
 bool bc_radio_pub_float(const char *subtopic, float *value);
 
 //! @brief Internal decode function for bc_radio.c

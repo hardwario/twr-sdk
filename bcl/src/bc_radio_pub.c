@@ -12,6 +12,7 @@ __attribute__((weak)) void bc_radio_pub_on_buffer(uint64_t *id, void *buffer, si
 __attribute__((weak)) void bc_radio_pub_on_state(uint64_t *id, uint8_t state_id, bool *state) { (void) id; (void) state_id; (void) state; }
 __attribute__((weak)) void bc_radio_pub_on_bool(uint64_t *id, char *subtopic, bool *value) { (void) id; (void) subtopic; (void) value; }
 __attribute__((weak)) void bc_radio_pub_on_int(uint64_t *id, char *subtopic, int *value) { (void) id; (void) subtopic; (void) value; }
+__attribute__((weak)) void bc_radio_pub_on_uint32(uint64_t *id, char *subtopic, uint32_t *value) { (void) id; (void) subtopic; (void) value; }
 __attribute__((weak)) void bc_radio_pub_on_float(uint64_t *id, char *subtopic, float *value) { (void) id; (void) subtopic; (void) value; }
 
 bool bc_radio_pub_event_count(uint8_t event_id, uint16_t *event_count)
@@ -170,6 +171,26 @@ bool bc_radio_pub_int(const char *subtopic, int *value)
     return bc_radio_pub_queue_put(buffer, len + 6);
 }
 
+bool bc_radio_pub_uint32(const char *subtopic, uint32_t *value)
+{
+    uint8_t len = strlen(subtopic);
+
+    if (len > BC_RADIO_MAX_TOPIC_LEN)
+    {
+        return false;
+    }
+
+    uint8_t buffer[BC_RADIO_MAX_BUFFER_SIZE];
+
+    buffer[0] = BC_RADIO_HEADER_PUB_TOPIC_UINT32;
+
+    bc_radio_uint32_to_buffer(value, buffer + 1);
+
+    strcpy((char *)buffer + 5, subtopic);
+
+    return bc_radio_pub_queue_put(buffer, len + 6);
+}
+
 bool bc_radio_pub_float(const char *subtopic, float *value)
 {
     uint8_t len = strlen(subtopic);
@@ -300,6 +321,17 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
         buffer[length - 1] = 0;
 
         bc_radio_pub_on_int(id, (char *) buffer, pvalue);
+    }
+    else if (buffer[0] == BC_RADIO_HEADER_PUB_TOPIC_UINT32)
+    {
+        uint32_t value;
+        uint32_t *pvalue;
+
+        buffer = bc_radio_uint32_from_buffer(buffer + 1, &value, &pvalue);
+
+        buffer[length - 1] = 0;
+
+        bc_radio_pub_on_uint32(id, (char *) buffer, pvalue);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_TOPIC_FLOAT)
     {
