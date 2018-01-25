@@ -388,9 +388,6 @@ void bc_system_pll_disable(void)
     {
         _bc_system_switch_clock(BC_SYSTEM_CLOCK_HSI);
 
-        // Switch SYSCLK to MSI (turn PLL off)
-        RCC->CFGR &= ~RCC_CFGR_SW_PLL;
-
         // Turn PLL off
         RCC->CR &= ~RCC_CR_PLLON;
 
