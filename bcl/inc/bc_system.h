@@ -3,9 +3,23 @@
 
 #include <bc_common.h>
 
+typedef enum
+{
+    BC_SYSTEM_CLOCK_MSI = 0,
+    BC_SYSTEM_CLOCK_HSI = 1,
+    BC_SYSTEM_CLOCK_PLL = 2
+
+} bc_system_clock_t;
+
 void bc_system_init(void);
 
 void bc_system_sleep(void);
+
+bc_system_clock_t bc_system_clock_get(void);
+
+void bc_system_hsi16_enable(void);
+
+void bc_system_hsi16_disable(void);
 
 void bc_system_pll_enable(void);
 
