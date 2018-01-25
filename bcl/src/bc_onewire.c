@@ -2,6 +2,7 @@
 #include <bc_irq.h>
 #include <bc_onewire.h>
 #include <bc_system.h>
+#include <bc_timer.h>
 
 static struct
 {
@@ -21,7 +22,6 @@ static void _bc_onewire_write_bit(bc_gpio_channel_t channel, uint8_t bit);
 static uint8_t _bc_onewire_read_bit(bc_gpio_channel_t channel);
 static void _bc_onewire_start(void);
 static void _bc_onewire_stop(void);
-static void _bc_onewire_delay(uint16_t micro_second);
 static void _bc_onewire_search_reset(void);
 static void _bc_onewire_search_target_setup(uint8_t family_code);
 static bool _bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number);
@@ -229,21 +229,21 @@ static bool _bc_onewire_reset(bc_gpio_channel_t channel)
         {
             return false;
         }
-        _bc_onewire_delay(2);
+        bc_timer_delay(2);
     }
     while (bc_gpio_get_input(channel) == 0);
 
     bc_gpio_set_output(channel, 0);
     bc_gpio_set_mode(channel, BC_GPIO_MODE_OUTPUT);
 
-    _bc_onewire_delay(480);
+    bc_timer_delay(480);
 
     bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
-    _bc_onewire_delay(70);
+    bc_timer_delay(70);
 
     i = bc_gpio_get_input(channel);
 
-    _bc_onewire_delay(410);
+    bc_timer_delay(410);
 
     return i == 0;
 }
@@ -276,23 +276,22 @@ static void _bc_onewire_write_bit(bc_gpio_channel_t channel, uint8_t bit)
     {
         bc_irq_disable();
 
-        _bc_onewire_delay(3);
+        bc_timer_delay(3);
 
         bc_irq_enable();
 
         bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
 
-        _bc_onewire_delay(60);
+        bc_timer_delay(60);
 
     }
     else
     {
-
-        _bc_onewire_delay(55);
+        bc_timer_delay(55);
 
         bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
 
-        _bc_onewire_delay(8);
+        bc_timer_delay(8);
     }
 }
 
@@ -306,7 +305,7 @@ static uint8_t _bc_onewire_read_bit(bc_gpio_channel_t channel)
 
     bc_irq_disable();
 
-    _bc_onewire_delay(3);
+    bc_timer_delay(3);
 
     bc_irq_enable();
 
@@ -314,13 +313,13 @@ static uint8_t _bc_onewire_read_bit(bc_gpio_channel_t channel)
 
     bc_irq_disable();
 
-    _bc_onewire_delay(8);
+    bc_timer_delay(8);
 
     bc_irq_enable();
 
     bit = bc_gpio_get_input(channel);
 
-    _bc_onewire_delay(50);
+    bc_timer_delay(50);
 
     return bit;
 }
@@ -334,26 +333,9 @@ static void _bc_onewire_start(void)
 
     bc_system_pll_enable();
 
-    // Enable clock for TIM6
-    RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
+    bc_timer_init();
 
-    // Enable one-pulse mode
-    TIM6->CR1 &= ~TIM_CR1_OPM;
-
-    // Disable counter
-    TIM6->CR1 &= ~TIM_CR1_CEN;
-
-    // Set prescaler
-    TIM6->PSC = 32;
-
-    // Set auto-reload register
-    TIM6->ARR = 0xffffffff;
-
-    // Generate update of registers
-    TIM6->EGR = TIM_EGR_UG;
-
-    // Enable counter
-    TIM6->CR1 |= TIM_CR1_CEN;
+    bc_timer_start();
 }
 
 static void _bc_onewire_stop(void)
@@ -363,21 +345,9 @@ static void _bc_onewire_stop(void)
 		return;
 	}
 
-    TIM6->CR1 &= ~TIM_CR1_CEN;
-
-    RCC->APB1ENR &= ~RCC_APB1ENR_TIM6EN;
+    bc_timer_stop();
 
     bc_system_pll_disable();
-}
-
-static void _bc_onewire_delay(uint16_t micro_second)
-{
-    uint16_t stop = TIM6->CNT + micro_second - 1;
-
-    while (TIM6->CNT < stop)
-    {
-        continue;
-    }
 }
 
 static void _bc_onewire_search_reset(void)
