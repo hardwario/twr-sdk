@@ -149,21 +149,21 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
 
         *GPIOx_BSRR = bsrr_mask[0];
 
-        while (bc_timer_get_tick() < 1)
+        while (bc_timer_get_microseconds() < 1)
         {
             continue;
         }
 
         *GPIOx_BSRR = bsrr_mask[1];
 
-        while (bc_timer_get_tick() < 2)
+        while (bc_timer_get_microseconds() < 2)
         {
             continue;
         }
 
         *GPIOx_BSRR = bsrr_mask[next_bit];
 
-        while (bc_timer_get_tick() < 83)
+        while (bc_timer_get_microseconds() < 83)
         {
             continue;
         }

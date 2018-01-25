@@ -507,14 +507,9 @@ void bc_spirit1_hal_shutdown_low(void)
 
     // TODO This delay might not exist (maybe poll GPIO?)...
 
-    bc_timer_set_mode(BC_TIMER_MODE_MS);
-
     bc_timer_start();
 
-    while(bc_timer_get_tick() < 10)
-    {
-        continue;
-    }
+    bc_timer_delay(10000);
 
     bc_timer_stop();
 }
@@ -530,14 +525,13 @@ void bc_spirit1_hal_shutdown_high(void)
     // Output log. 1 on SDN pin
     GPIOB->BSRR = GPIO_BSRR_BS_7;
 
-    bc_timer_set_mode(BC_TIMER_MODE_MS);
-
     bc_timer_start();
 
-    while(bc_timer_get_tick() < 100)
-    {
-        continue;
-    }
+    bc_timer_delay(50000);
+
+    bc_timer_clear();
+
+    bc_timer_delay(50000);
 
     bc_timer_stop();
 
@@ -550,11 +544,9 @@ void bc_spirit1_hal_chip_select_low(void)
     // Set CS pin to log. 0
     GPIOA->BSRR = GPIO_BSRR_BR_15;
 
-    bc_timer_set_mode(BC_TIMER_MODE_US);
-
     bc_timer_start();
 
-    while(bc_timer_get_tick() < 4)
+    while(bc_timer_get_microseconds() < 4)
     {
         continue;
     }
@@ -564,11 +556,9 @@ void bc_spirit1_hal_chip_select_low(void)
 
 void bc_spirit1_hal_chip_select_high(void)
 {
-    bc_timer_set_mode(BC_TIMER_MODE_US);
-
     bc_timer_start();
 
-    while(bc_timer_get_tick() < 4)
+    while(bc_timer_get_microseconds() < 4)
     {
         continue;
     }
@@ -576,7 +566,7 @@ void bc_spirit1_hal_chip_select_high(void)
     // Set CS pin to log. 1
     GPIOA->BSRR = GPIO_BSRR_BS_15;
 
-    while(bc_timer_get_tick() < 8)
+    while(bc_timer_get_microseconds() < 8)
     {
         continue;
     }

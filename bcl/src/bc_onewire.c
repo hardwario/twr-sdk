@@ -335,8 +335,6 @@ static void _bc_onewire_start(void)
 
     bc_timer_init();
 
-    bc_timer_set_mode(BC_TIMER_MODE_US);
-
     bc_timer_start();
 }
 

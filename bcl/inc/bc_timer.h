@@ -9,6 +9,8 @@
 //! @brief Driver for timer
 //! @{
 
+extern const uint16_t _bc_timer_prescaler_lut[3];
+
 //! @brief Initialize timer
 
 static inline void bc_timer_init(void)
@@ -21,11 +23,9 @@ static inline void bc_timer_init(void)
 
 static inline void bc_timer_start(void)
 {
-    bc_system_pll_enable();
+    TIM21->PSC = _bc_timer_prescaler_lut[bc_system_clock_get()];
 
     TIM21->CNT = 0;
-
-    TIM21->PSC = 31;
 
     TIM21->EGR = TIM_EGR_UG;
 
@@ -33,9 +33,9 @@ static inline void bc_timer_start(void)
 }
 
 //! @brief Get actual tick of timer
-//! @return Actual state of timer counter (us from start)
+//! @return Actual state of timer counter (microseconds from start)
 
-static inline uint16_t bc_timer_tick_get(void)
+static inline uint16_t bc_timer_get_microseconds(void)
 {
     return TIM21->CNT;
 }
@@ -44,11 +44,11 @@ static inline uint16_t bc_timer_tick_get(void)
 //! @param[in] tick tick to delay in us
 
 
-static inline void bc_timer_delay(uint16_t tick)
+static inline void bc_timer_delay(uint16_t microseconds)
 {
-    uint16_t t = bc_timer_get_tick() + tick;
+    uint16_t t = bc_timer_get_microseconds() + microseconds;
 
-    while (bc_timer_get_tick() < t)
+    while (bc_timer_get_microseconds() < t)
     {
         continue;
     }
@@ -67,7 +67,7 @@ static inline void bc_timer_stop(void)
 {
     TIM21->CR1 &= ~TIM_CR1_CEN;
 
-    bc_system_pll_disable();
+    bc_system_hsi16_disable();
 }
 
 #endif // _BC_TIMER_H
