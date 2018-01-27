@@ -20,6 +20,7 @@ static inline void bc_timer_init(void)
 }
 
 //! @brief Start timer
+//! @details Clock source must be enabled with bc_system _..._ enable() if exact delay required
 
 static inline void bc_timer_start(void)
 {
