@@ -199,7 +199,7 @@ void _bc_dma_task(void *param)
 
 void _bc_dma_irq_handler(bc_dma_channel_t channel, bc_dma_event_t event)
 {
-    if (event == BC_DMA_EVENT_DONE)
+    if (event == BC_DMA_EVENT_DONE && !(_bc_dma.channel[channel].instance->CCR & DMA_CCR_CIRC))
     {
         _bc_dma_channel_disable(channel);
     }
