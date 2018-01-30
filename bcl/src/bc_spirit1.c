@@ -113,6 +113,8 @@ void bc_spirit1_init(void)
     SpiritPktBasicAddressesInit(&xAddressInit);
 
     _bc_spirit1.task_id = bc_scheduler_register(_bc_spirit1_task, NULL, BC_TICK_INFINITY);
+
+    _bc_spirit1_enter_state_sleep();
 }
 
 void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t, void *), void *event_param)
@@ -238,6 +240,8 @@ static void _bc_spirit1_task(void *param)
 
 static void _bc_spirit1_enter_state_tx(void)
 {
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPD7_1;
+
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_TX;
 
     SpiritCmdStrobeSabort();
@@ -294,6 +298,8 @@ static void _bc_spirit1_check_state_tx(void)
 
 static void _bc_spirit1_enter_state_rx(void)
 {
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPD7_1;
+
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_RX;
 
     if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
@@ -394,6 +400,8 @@ static void _bc_spirit1_enter_state_sleep(void)
     SpiritIrqDeInit(NULL);
     SpiritIrqClearStatus();
     SpiritCmdStrobeStandby();
+
+    GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD7_1;
 }
 
 bc_spirit_status_t bc_spirit1_command(uint8_t command)
