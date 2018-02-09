@@ -14,8 +14,8 @@
 
 typedef enum
 {
-	BC_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_A,
-	BC_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_B
+    BC_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_A,
+    BC_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_B
 
 } bc_flood_detector_type_t;
 
@@ -23,8 +23,8 @@ typedef enum
 
 typedef enum
 {
-	BC_FLOOD_DETECTOR_EVENT_ERROR,
-	BC_FLOOD_DETECTOR_EVENT_UPDATE,
+    BC_FLOOD_DETECTOR_EVENT_ERROR,
+    BC_FLOOD_DETECTOR_EVENT_UPDATE,
 
 } bc_flood_detector_event_t;
 
@@ -36,16 +36,16 @@ typedef struct bc_flood_detector_t bc_flood_detector_t;
 
 typedef enum
 {
-	BC_FLOOD_DETECTOR_STATE_ERROR = -1,
-	BC_FLOOD_DETECTOR_STATE_INITIALIZE = 0,
-	BC_FLOOD_DETECTOR_STATE_READY = 1,
-	BC_FLOOD_DETECTOR_STATE_MEASURE = 2,
+    BC_FLOOD_DETECTOR_STATE_ERROR = -1,
+    BC_FLOOD_DETECTOR_STATE_INITIALIZE = 0,
+    BC_FLOOD_DETECTOR_STATE_READY = 1,
+    BC_FLOOD_DETECTOR_STATE_MEASURE = 2,
 
 } bc_flood_detector_state_t;
 
 struct bc_flood_detector_t
 {
-	bc_flood_detector_type_t _type;
+    bc_flood_detector_type_t _type;
     void (*_event_handler)(bc_flood_detector_t *, bc_flood_detector_event_t, void *);
     void *_event_param;
     bc_tick_t _update_interval;

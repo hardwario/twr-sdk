@@ -64,6 +64,8 @@ bool bc_radio_pub_co2(float *concentration);
 
 bool bc_radio_pub_battery(float *voltage);
 
+bool bc_radio_pub_acceleration(float *x_axis, float *y_axis, float *z_axis);
+
 bool bc_radio_pub_buffer(void *buffer, size_t length);
 
 bool bc_radio_pub_state(uint8_t state_id, bool *state);
@@ -72,7 +74,11 @@ bool bc_radio_pub_bool(const char *subtopic, bool *value);
 
 bool bc_radio_pub_int(const char *subtopic, int *value);
 
+bool bc_radio_pub_uint32(const char *subtopic, uint32_t *value);
+
 bool bc_radio_pub_float(const char *subtopic, float *value);
+
+bool bc_radio_pub_string(const char *subtopic, const char *value);
 
 //! @brief Internal decode function for bc_radio.c
 //! @param[in] id Pointer on sender id

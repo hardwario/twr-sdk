@@ -961,6 +961,22 @@ uint8_t *bc_radio_int_to_buffer(int *value, uint8_t *buffer)
     return buffer + sizeof(int);
 }
 
+uint8_t *bc_radio_uint32_to_buffer(uint32_t *value, uint8_t *buffer)
+{
+    if (value == NULL)
+    {
+        const int null = BC_RADIO_NULL_UINT32;
+
+        memcpy(buffer, &null, sizeof(uint32_t));
+    }
+    else
+    {
+        memcpy(buffer, value, sizeof(uint32_t));
+    }
+
+    return buffer + sizeof(uint32_t);
+}
+
 uint8_t *bc_radio_float_to_buffer(float *value, uint8_t *buffer)
 {
     if (value == NULL)
@@ -1018,7 +1034,7 @@ uint8_t *bc_radio_bool_from_buffer(uint8_t *buffer, bool *value, bool **pointer)
 
 uint8_t *bc_radio_int_from_buffer(uint8_t *buffer, int *value, int **pointer)
 {
-    memcpy(value, buffer, sizeof(float));
+    memcpy(value, buffer, sizeof(int));
 
     if (*value == BC_RADIO_NULL_INT)
     {
@@ -1030,6 +1046,22 @@ uint8_t *bc_radio_int_from_buffer(uint8_t *buffer, int *value, int **pointer)
     }
 
     return buffer + sizeof(int);
+}
+
+uint8_t *bc_radio_uint32_from_buffer(uint8_t *buffer, uint32_t *value, uint32_t **pointer)
+{
+    memcpy(value, buffer, sizeof(uint32_t));
+
+    if (*value == BC_RADIO_NULL_UINT32)
+    {
+        *pointer = NULL;
+    }
+    else
+    {
+        *pointer = value;
+    }
+
+    return buffer + sizeof(uint32_t);
 }
 
 uint8_t *bc_radio_float_from_buffer(uint8_t *buffer, float *value, float **pointer)

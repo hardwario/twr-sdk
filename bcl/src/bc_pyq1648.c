@@ -1,8 +1,8 @@
 #include <bc_pyq1648.h>
 #include <bc_irq.h>
 #include <bc_gpio.h>
-#include <bc_module_core.h>
-#include <stm32l0xx.h>
+#include <bc_system.h>
+#include <bc_timer.h>
 
 #define BC_PYQ1648_BPF 0x00
 #define BC_PYQ1648_LPF 0x01
@@ -15,7 +15,6 @@
 static inline void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl);
 static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self);
 static inline void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self);
-static inline void _bc_pyq1648_delay_100us();
 static void _bc_pyq1648_task(void *param);
 
 static const uint8_t _bc_pyq1648_sensitivity_table[4] =
@@ -52,11 +51,7 @@ void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, b
     // Register task
     self->_task_id = bc_scheduler_register(_bc_pyq1648_task, self, BC_PYQ1648_DELAY_RUN);
 
-    // Enable clock for TIM6
-    RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
-
-    // Enable one-pulse mode
-    TIM6->CR1 |= TIM_CR1_OPM;
+    bc_timer_init();
 }
 
 void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t, void *), void *event_param)
@@ -125,7 +120,7 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     bc_irq_disable();
 
     // Enable PLL
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Load desired event unit configuration
     uint32_t regval = self->_config;
@@ -150,105 +145,39 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
         next_bit = (regval & regmask) != 0 ? true : false;
         regmask >>= 1;
 
+        bc_timer_start();
+
         *GPIOx_BSRR = bsrr_mask[0];
 
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
+        while (bc_timer_get_microseconds() < 1)
+        {
+            continue;
+        }
 
         *GPIOx_BSRR = bsrr_mask[1];
 
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
-        __asm("nop");
+        while (bc_timer_get_microseconds() < 2)
+        {
+            continue;
+        }
 
         *GPIOx_BSRR = bsrr_mask[next_bit];
 
-        _bc_pyq1648_delay_100us(1);
+        while (bc_timer_get_microseconds() < 83)
+        {
+            continue;
+        }
+
+        bc_timer_stop();
     }
 
     bc_gpio_set_output(self->_gpio_channel_serin, 0);
 
     // Disable PLL
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     // Enable interrupts
     bc_irq_enable();
-}
-
-static inline void _bc_pyq1648_delay_100us()
-{
-    // Set prescaler
-    TIM6->PSC = 0;
-
-    // Set auto-reload register - period 100 us
-    TIM6->ARR = 3000;
-
-    // Generate update of registers
-    TIM6->EGR = TIM_EGR_UG;
-
-    // Enable counter
-    TIM6->CR1 |= TIM_CR1_CEN;
-
-    // Wait until update event occurs
-    while ((TIM6->CR1 & TIM_CR1_CEN) != 0)
-    {
-        continue;
-    }
 }
 
 static void _bc_pyq1648_task(void *param)
@@ -324,7 +253,11 @@ start:
             {
                 if (tick_now >= self->_aware_time)
                 {
-                    self->_event_handler(self, BC_PYQ1648_EVENT_MOTION, self->_event_param);
+                    if (self->_event_handler != NULL)
+                    {
+                        self->_event_handler(self, BC_PYQ1648_EVENT_MOTION, self->_event_param);
+                    }
+
                     self->_aware_time = tick_now + self->_blank_period;
                 }
                 _bc_pyq1648_clear_event(self);

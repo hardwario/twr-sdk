@@ -1,10 +1,10 @@
 #include <bc_i2c.h>
-#include <bc_module_core.h>
 #include <bc_tick.h>
 #include <stm32l0xx.h>
 #include <bc_scheduler.h>
 #include <bc_ds28e17.h>
 #include <bc_module_sensor.h>
+#include <bc_system.h>
 
 #define _BC_I2C_TX_TIMEOUT_ADJUST_FACTOR 1.5
 #define _BC_I2C_RX_TIMEOUT_ADJUST_FACTOR 1.5
@@ -188,7 +188,7 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
 
     I2C_TypeDef *i2c = _bc_i2c[channel].i2c;
 
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Get maximum allowed timeout in ms
     uint32_t timeout_ms = _BC_I2C_TX_TIMEOUT_ADJUST_FACTOR * bc_i2c_get_timeout_ms(channel, transfer->length);
@@ -214,7 +214,7 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
         __BC_I2C_RESET_PERIPHERAL(i2c);
     }
 
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     return status;
 
@@ -234,7 +234,7 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
 
     I2C_TypeDef *i2c = _bc_i2c[channel].i2c;
 
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Get maximum allowed timeout in ms
     uint32_t timeout_ms = _BC_I2C_RX_TIMEOUT_ADJUST_FACTOR * bc_i2c_get_timeout_ms(channel, transfer->length);
@@ -259,7 +259,7 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
         _bc_i2c_restore_bus(i2c);
     }
 
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     return status;
 }
@@ -279,7 +279,7 @@ bool bc_i2c_memory_write(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_
     I2C_TypeDef *i2c = _bc_i2c[channel].i2c;
 
     // Enable PLL and disable sleep
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     uint16_t transfer_memory_address_length =
             (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT : _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT;
@@ -291,13 +291,13 @@ bool bc_i2c_memory_write(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_
         __BC_I2C_RESET_PERIPHERAL(i2c);
 
         // Disable PLL and enable sleep
-        bc_module_core_pll_disable();
+        bc_system_pll_disable();
 
         return false;
     }
 
     // Disable PLL and enable sleep
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     return true;
 }
@@ -317,7 +317,7 @@ bool bc_i2c_memory_read(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t
     I2C_TypeDef *i2c = _bc_i2c[channel].i2c;
 
     // Enable PLL and disable sleep
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     uint16_t transfer_memory_address_length =
             (transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0 ? _BC_I2C_MEMORY_ADDRESS_SIZE_16BIT : _BC_I2C_MEMORY_ADDRESS_SIZE_8BIT;
@@ -328,13 +328,13 @@ bool bc_i2c_memory_read(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t
         _bc_i2c_restore_bus(i2c);
 
         // Disable PLL and enable sleep
-        bc_module_core_pll_disable();
+        bc_system_pll_disable();
 
         return false;
     }
 
     // Disable PLL and enable sleep
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     return true;
 }

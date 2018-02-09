@@ -87,11 +87,11 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_format_t format)
         NVIC_EnableIRQ(ADC1_COMP_IRQn);
 
         _bc_adc.initialized = true;
+
+        _bc_adc.task_id = bc_scheduler_register(_bc_adc_task, NULL, BC_TICK_INFINITY);
     }
 
     bc_adc_set_format(channel, format);
-
-    _bc_adc.task_id = bc_scheduler_register(_bc_adc_task, NULL, BC_TICK_INFINITY);
 }
 
 void bc_adc_set_format(bc_adc_channel_t channel, bc_adc_format_t format)
@@ -298,6 +298,9 @@ void ADC1_COMP_IRQHandler(void)
         // Plan ADC task
         bc_scheduler_plan_now(_bc_adc.task_id);
 
+        // Clear all interrupts
+        ADC1->ISR = 0xffff;
+
         // Disable all ADC interrupts
         ADC1->IER = 0;
     }
@@ -363,7 +366,10 @@ static void _bc_adc_task(void *param)
     bc_irq_enable();
 
     // Perform event call-back
-    adc->event_handler(pending_result_channel, BC_ADC_EVENT_DONE, adc->event_param);
+    if (adc->event_handler != NULL)
+    {
+        adc->event_handler(pending_result_channel, BC_ADC_EVENT_DONE, adc->event_param);
+    }
 }
 
 static inline bool _bc_adc_get_pending(bc_adc_channel_t *next ,bc_adc_channel_t start)

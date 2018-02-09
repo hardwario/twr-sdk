@@ -47,22 +47,25 @@ void bc_module_battery_init(bc_module_battery_format_t format)
     _bc_module_battery.task_id = bc_scheduler_register(_bc_module_battery_task, NULL, BC_TICK_INFINITY);
     _bc_module_battery.format = format;
 
-    if (format == BC_MODULE_BATTERY_FORMAT_STANDARD)
-    {
-        _bc_module_battery.level_low_threshold = _BC_MODULE_BATTERY_STANDATD_DEFAULT_LEVEL_LOW;
-        _bc_module_battery.level_critical_threshold = _BC_MODULE_BATTERY_DEFAULT_DEFAULT_LEVEL_CRITICAL;
-    }
-    else
+    bc_gpio_init(BC_GPIO_P1);
+
+    _bc_module_battery_measurement(DISABLE);
+
+    if (format == BC_MODULE_BATTERY_FORMAT_MINI)
     {
         _bc_module_battery.level_low_threshold = _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_LOW;
         _bc_module_battery.level_critical_threshold = _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_CRITICAL;
+
+        bc_gpio_set_output(BC_GPIO_P1, 0);
+    }
+    else
+    {
+        _bc_module_battery.level_low_threshold = _BC_MODULE_BATTERY_STANDATD_DEFAULT_LEVEL_LOW;
+        _bc_module_battery.level_critical_threshold = _BC_MODULE_BATTERY_DEFAULT_DEFAULT_LEVEL_CRITICAL;
+
+        bc_gpio_set_mode(BC_GPIO_P1, BC_GPIO_MODE_OUTPUT);
     }
 
-    bc_gpio_init(BC_GPIO_P1);
-    _bc_module_battery_measurement(DISABLE);
-    bc_gpio_set_mode(BC_GPIO_P1, BC_GPIO_MODE_OUTPUT);
-
-    // Initialize ADC channel
     bc_adc_init(BC_ADC_CHANNEL_A0, BC_ADC_FORMAT_FLOAT);
 }
 
@@ -155,7 +158,14 @@ static void _bc_module_battery_task(void *param)
 {
     (void) param;
 
-    bc_scheduler_plan_current_relative(_bc_module_battery.update_interval);
+    if (_bc_module_battery.update_interval == BC_TICK_INFINITY)
+    {
+        bc_scheduler_plan_absolute(_bc_module_battery.task_id, BC_TICK_INFINITY);
+    }
+    else
+    {
+        bc_scheduler_plan_current_relative(_bc_module_battery.update_interval);
+    }
 
     bc_module_battery_measure();
 }
@@ -213,7 +223,7 @@ static void _bc_module_battery_measurement(int state)
 {
     if (_bc_module_battery.format == BC_MODULE_BATTERY_FORMAT_MINI)
     {
-        bc_gpio_set_output(BC_GPIO_P1, !state);
+        bc_gpio_set_mode(BC_GPIO_P1, state == ENABLE ? BC_GPIO_MODE_OUTPUT : BC_GPIO_MODE_ANALOG);
     }
     else
     {

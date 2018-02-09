@@ -85,7 +85,7 @@
 #define USBD_CDC_INTERVAL     1000
 /****************************************/
 /* #define for FS and HS identification */
-#define DEVICE_FS 		0
+#define DEVICE_FS     0
 
 /** @defgroup USBD_Exported_Macros
   * @{

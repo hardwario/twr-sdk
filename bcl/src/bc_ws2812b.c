@@ -1,7 +1,8 @@
 #include "stm32l0xx.h"
 #include <bc_ws2812b.h>
-#include <bc_module_core.h>
 #include <bc_scheduler.h>
+#include <bc_dma.h>
+#include <bc_system.h>
 
 #define _BC_WS2812_TIMER_PERIOD 40               // 32000000 / 800000 = 20; 0,125us period (10 times lower the 1,25us period to have fixed math below)
 #define _BC_WS2812_TIMER_RESET_PULSE_PERIOD 1666 // 60us just to be sure = (32000000 / (320 * 60))
@@ -24,7 +25,17 @@ static struct ws2812b_t
 
 } _bc_ws2812b;
 
-DMA_HandleTypeDef _bc_ws2812b_dma_update;
+static bc_dma_channel_config_t _bc_ws2812b_dma_config =
+{
+    .request = BC_DMA_REQUEST_8,
+    .direction = BC_DMA_DIRECTION_TO_PERIPHERAL,
+    .data_size_memory = BC_DMA_SIZE_1,
+    .data_size_peripheral = BC_DMA_SIZE_2,
+    .mode = BC_DMA_MODE_STANDARD,
+    .address_peripheral = (void *)&(TIM2->CCR2),
+    .priority = BC_DMA_PRIORITY_VERY_HIGH
+};
+
 TIM_HandleTypeDef _bc_ws2812b_timer2_handle;
 TIM_OC_InitTypeDef _bc_ws2812b_timer2_oc1;
 
@@ -48,7 +59,8 @@ const uint32_t _bc_ws2812b_pulse_tab[] =
     _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 24 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 16 | _BC_WS2812_COMPARE_PULSE_LOGIC_1 << 8 | _BC_WS2812_COMPARE_PULSE_LOGIC_1,
 };
 
-static void _bc_ws2812b_dma_transfer_complete_handler(DMA_HandleTypeDef *dma_handle);
+static void _bc_ws2812b_dma_event_handler(bc_dma_channel_t channel, bc_dma_event_t event, void *event_param);
+
 static void _bc_ws2812b_task(void *param);
 
 bool bc_ws2812b_init(const bc_led_strip_buffer_t *led_strip)
@@ -74,29 +86,8 @@ bool bc_ws2812b_init(const bc_led_strip_buffer_t *led_strip)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
     HAL_GPIO_Init(_BC_WS2812_BC_WS2812B_PORT, &GPIO_InitStruct);
 
-    //Init dma
-    __HAL_RCC_DMA1_CLK_ENABLE();
-
-    _bc_ws2812b_dma_update.Init.Direction = DMA_MEMORY_TO_PERIPH;
-    _bc_ws2812b_dma_update.Init.PeriphInc = DMA_PINC_DISABLE;
-    _bc_ws2812b_dma_update.Init.MemInc = DMA_MINC_ENABLE;
-    _bc_ws2812b_dma_update.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    _bc_ws2812b_dma_update.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    _bc_ws2812b_dma_update.Init.Mode = DMA_CIRCULAR;
-    _bc_ws2812b_dma_update.Init.Priority = DMA_PRIORITY_VERY_HIGH;
-    _bc_ws2812b_dma_update.Instance = DMA1_Channel2;
-    _bc_ws2812b_dma_update.Init.Request = DMA_REQUEST_8;
-
-    _bc_ws2812b_dma_update.XferCpltCallback = _bc_ws2812b_dma_transfer_complete_handler;
-
-    __HAL_LINKDMA(&_bc_ws2812b_timer2_handle, hdma[TIM_DMA_ID_UPDATE], _bc_ws2812b_dma_update);
-
-    HAL_DMA_Init(&_bc_ws2812b_dma_update);
-
-    HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
-
-    HAL_DMA_Start_IT(&_bc_ws2812b_dma_update, (uint32_t) _bc_ws2812b.dma_bit_buffer, (uint32_t) &(TIM2->CCR2), dma_bit_buffer_size);
+    bc_dma_init();
+    bc_dma_set_event_handler(BC_DMA_CHANNEL_2, _bc_ws2812b_dma_event_handler, NULL);
 
      // TIM2 Periph clock enable
     __HAL_RCC_TIM2_CLK_ENABLE();
@@ -189,7 +180,7 @@ bool bc_ws2812b_write(void)
     // transmission complete flag
     _bc_ws2812b.transfer = true;
 
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     HAL_TIM_Base_Stop(&_bc_ws2812b_timer2_handle);
     (&_bc_ws2812b_timer2_handle)->Instance->CR1 &= ~((0x1U << (0U)));
@@ -202,8 +193,9 @@ bool bc_ws2812b_write(void)
 
     size_t dma_bit_buffer_size = _bc_ws2812b.buffer->count * _bc_ws2812b.buffer->type * 8;
 
-    // configure the number of bytes to be transferred by the DMA controller
-    _bc_ws2812b_dma_update.Instance->CNDTR = dma_bit_buffer_size;
+    _bc_ws2812b_dma_config.address_memory = (void *)_bc_ws2812b.dma_bit_buffer;
+    _bc_ws2812b_dma_config.length = dma_bit_buffer_size;
+    bc_dma_channel_config(BC_DMA_CHANNEL_2, &_bc_ws2812b_dma_config);
 
     TIM2->CNT = _BC_WS2812_TIMER_PERIOD - 1;
 
@@ -212,9 +204,6 @@ bool bc_ws2812b_write(void)
 
     // Enable PWM Compare 2
     (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC2M_1;
-
-    // enable DMA channels
-    __HAL_DMA_ENABLE(&_bc_ws2812b_dma_update);
 
     // IMPORTANT: enable the TIM2 DMA requests AFTER enabling the DMA channels!
     __HAL_TIM_ENABLE_DMA(&_bc_ws2812b_timer2_handle, TIM_DMA_UPDATE);
@@ -230,35 +219,38 @@ bool bc_ws2812b_is_ready(void)
     return !_bc_ws2812b.transfer;
 }
 
-void _bc_ws2812b_dma_transfer_complete_handler(DMA_HandleTypeDef *dma_handle)
+static void _bc_ws2812b_dma_event_handler(bc_dma_channel_t channel, bc_dma_event_t event, void *event_param)
 {
-    (void)dma_handle;
+    (void) channel;
+    (void) event;
+    (void) event_param;
 
-    // Stop timer
-    TIM2->CR1 &= ~TIM_CR1_CEN;
+    if (event == BC_DMA_EVENT_DONE)
+    {
+        // Stop timer
+        TIM2->CR1 &= ~TIM_CR1_CEN;
 
-    // Disable DMA
-    __HAL_DMA_DISABLE(&_bc_ws2812b_dma_update);
-    // Disable the DMA requests
-    __HAL_TIM_DISABLE_DMA(&_bc_ws2812b_timer2_handle, TIM_DMA_UPDATE);
+        // Disable the DMA requests
+        __HAL_TIM_DISABLE_DMA(&_bc_ws2812b_timer2_handle, TIM_DMA_UPDATE);
 
-    // Disable PWM output Compare 2
-    (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 &= ~(TIM_CCMR1_OC2M_Msk);
-    (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC2M_2;
+        // Disable PWM output Compare 2
+        (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 &= ~(TIM_CCMR1_OC2M_Msk);
+        (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC2M_2;
 
-    // Set 50us period for Treset pulse
-    TIM2->ARR = _BC_WS2812_TIMER_RESET_PULSE_PERIOD;
-    // Reset the timer
-    TIM2->CNT = 0;
+        // Set 50us period for Treset pulse
+        TIM2->ARR = _BC_WS2812_TIMER_RESET_PULSE_PERIOD;
+        // Reset the timer
+        TIM2->CNT = 0;
 
-    // Generate an update event to reload the prescaler value immediately
-    TIM2->EGR = TIM_EGR_UG;
-    __HAL_TIM_CLEAR_FLAG(&_bc_ws2812b_timer2_handle, TIM_FLAG_UPDATE);
+        // Generate an update event to reload the prescaler value immediately
+        TIM2->EGR = TIM_EGR_UG;
+        __HAL_TIM_CLEAR_FLAG(&_bc_ws2812b_timer2_handle, TIM_FLAG_UPDATE);
 
-    // Enable TIM2 Update interrupt for Treset signal
-    __HAL_TIM_ENABLE_IT(&_bc_ws2812b_timer2_handle, TIM_IT_UPDATE);
-    // Enable timer
-    TIM2->CR1 |= TIM_CR1_CEN;
+        // Enable TIM2 Update interrupt for Treset signal
+        __HAL_TIM_ENABLE_IT(&_bc_ws2812b_timer2_handle, TIM_IT_UPDATE);
+        // Enable timer
+        TIM2->CR1 |= TIM_CR1_CEN;
+    }
 }
 
 void TIM2_IRQHandler(void)
@@ -286,16 +278,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     bc_scheduler_plan_now(_bc_ws2812b.task_id);
 }
 
-void DMA1_Channel2_3_IRQHandler(void)
-{
-    HAL_DMA_IRQHandler(&_bc_ws2812b_dma_update);
-}
-
 static void _bc_ws2812b_task(void *param)
 {
     (void) param;
 
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     // set transfer_complete flag
     _bc_ws2812b.transfer = false;
