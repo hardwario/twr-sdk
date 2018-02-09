@@ -2,9 +2,9 @@
 
 # BigClown Firmware SDK
 
-[![Travis](https://img.shields.io/travis/bigclownlabs/bcf-sdk-core-module/master.svg)](https://travis-ci.org/bigclownlabs/bcf-sdk-core-module)
-[![Release](https://img.shields.io/github/release/bigclownlabs/bcf-sdk-core-module.svg)](https://github.com/bigclownlabs/bcf-sdk-core-module/releases)
-[![License](https://img.shields.io/github/license/bigclownlabs/bcf-sdk-core-module.svg)](https://github.com/bigclownlabs/bcf-sdk-core-module/blob/master/LICENSE)
+[![Travis](https://img.shields.io/travis/bigclownlabs/bcf-sdk/master.svg)](https://travis-ci.org/bigclownlabs/bcf-sdk)
+[![Release](https://img.shields.io/github/release/bigclownlabs/bcf-sdk.svg)](https://github.com/bigclownlabs/bcf-sdk/releases)
+[![License](https://img.shields.io/github/license/bigclownlabs/bcf-sdk.svg)](https://github.com/bigclownlabs/bcf-sdk/blob/master/LICENSE)
 [![Twitter](https://img.shields.io/twitter/follow/BigClownLabs.svg?style=social&label=Follow)](https://twitter.com/BigClownLabs)
 
 This repository contains firmware SDK for:

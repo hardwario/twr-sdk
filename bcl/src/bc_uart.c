@@ -1,7 +1,7 @@
 #include <bc_uart.h>
 #include <bc_scheduler.h>
 #include <bc_irq.h>
-#include <bc_module_core.h>
+#include <bc_system.h>
 #include <stm32l0xx.h>
 
 typedef struct
@@ -248,7 +248,7 @@ size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t lengt
 
     if (_bc_uart[channel].usart != LPUART1)
     {
-        bc_module_core_pll_enable();
+        bc_system_pll_enable();
     }
 
     while (bytes_written != length)
@@ -271,7 +271,7 @@ size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t lengt
 
     if (_bc_uart[channel].usart != LPUART1)
     {
-        bc_module_core_pll_disable();
+        bc_system_pll_disable();
     }
 
     return bytes_written;
@@ -290,7 +290,7 @@ size_t bc_uart_read(bc_uart_channel_t channel, void *buffer, size_t length, bc_t
 
     if (_bc_uart[channel].usart != LPUART1)
     {
-        bc_module_core_pll_enable();
+        bc_system_pll_enable();
     }
 
     bc_tick_t tick_timeout = timeout == BC_TICK_INFINITY ? BC_TICK_INFINITY : bc_tick_get() + timeout;
@@ -315,7 +315,7 @@ size_t bc_uart_read(bc_uart_channel_t channel, void *buffer, size_t length, bc_t
 
     if (_bc_uart[channel].usart != LPUART1)
     {
-        bc_module_core_pll_disable();
+        bc_system_pll_disable();
     }
 
     return bytes_read;
@@ -355,11 +355,11 @@ size_t bc_uart_async_write(bc_uart_channel_t channel, const void *buffer, size_t
 
             if (_bc_uart[channel].usart == LPUART1)
             {
-                bc_module_core_deep_sleep_disable();
+                bc_system_deep_sleep_disable();
             }
             else
             {
-                bc_module_core_pll_enable();
+                bc_system_pll_enable();
             }
         }
         else
@@ -400,7 +400,7 @@ bool bc_uart_async_read_start(bc_uart_channel_t channel, bc_tick_t timeout)
 
     if (_bc_uart[channel].usart != LPUART1)
     {
-        bc_module_core_pll_enable();
+        bc_system_pll_enable();
     }
 
     _bc_uart[channel].async_read_in_progress = true;
@@ -426,7 +426,7 @@ bool bc_uart_async_read_cancel(bc_uart_channel_t channel)
 
     if (_bc_uart[channel].usart != LPUART1)
     {
-        bc_module_core_pll_disable();
+        bc_system_pll_disable();
     }
 
     bc_scheduler_unregister(_bc_uart[channel].async_read_task_id);
@@ -457,11 +457,11 @@ static void _bc_uart_async_write_task(void *param)
 
     if (uart->usart == LPUART1)
     {
-        bc_module_core_deep_sleep_enable();
+        bc_system_deep_sleep_enable();
     }
     else
     {
-        bc_module_core_pll_disable();
+        bc_system_pll_disable();
     }
 
     if (uart->event_handler != NULL)

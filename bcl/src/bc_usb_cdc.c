@@ -1,7 +1,7 @@
 #include <bc_usb_cdc.h>
 #include <bc_scheduler.h>
-#include <bc_module_core.h>
 #include <bc_fifo.h>
+#include <bc_system.h>
 
 #include <usbd_core.h>
 #include <usbd_cdc.h>
@@ -125,7 +125,7 @@ static void _bc_usb_cdc_task(void *param)
 
 static void _bc_usb_cdc_init_hsi48()
 {
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     RCC->CRRCR |= RCC_CRRCR_HSI48ON;
     RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;

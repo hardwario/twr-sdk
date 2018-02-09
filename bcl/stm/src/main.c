@@ -1,13 +1,16 @@
 #include <bc_scheduler.h>
-#include <bc_module_core.h>
-#include <stm32l0xx.h>
+#include <bc_system.h>
+#include <bc_error.h>
 
 void application_init(void);
+
 void application_task(void *param);
+
+void application_error(bc_error_t code);
 
 int main(void)
 {
-    bc_module_core_init();
+    bc_system_init();
 
     while (bc_tick_get() < 500)
     {
@@ -25,10 +28,27 @@ int main(void)
 
 __attribute__((weak)) void application_init(void)
 {
-
 }
 
 __attribute__((weak)) void application_task(void *param)
 {
     (void) param;
+}
+
+__attribute__((weak)) void application_error(bc_error_t code)
+{
+    (void) code;
+
+#ifdef RELEASE
+
+    bc_system_reset();
+
+#else
+
+    while (true)
+    {
+        continue;
+    }
+
+#endif
 }

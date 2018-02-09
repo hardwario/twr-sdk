@@ -1,7 +1,8 @@
 #include <bc_spirit1.h>
 #include <bc_scheduler.h>
 #include <bc_exti.h>
-#include <bc_module_core.h>
+#include <bc_system.h>
+#include <bc_timer.h>
 #include <stm32l0xx.h>
 #include "SPIRIT_Config.h"
 #include "SDK_Configuration_Common.h"
@@ -74,7 +75,6 @@ SGpioInit xGpioIRQ={
   SPIRIT_GPIO_DIG_OUT_IRQ
 };
 
-
 static void _bc_spirit1_enter_state_tx(void);
 static void _bc_spirit1_check_state_tx(void);
 static void _bc_spirit1_enter_state_rx(void);
@@ -86,7 +86,6 @@ void bc_spirit1_hal_chip_select_high(void);
 uint8_t bc_spirit1_hal_transfer_byte(uint8_t value);
 static void bc_spirit1_hal_init_gpio(void);
 static void bc_spirit1_hal_init_spi(void);
-static void bc_spirit1_hal_init_timer(void);
 
 static void _bc_spirit1_task(void *param);
 static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param);
@@ -114,6 +113,8 @@ void bc_spirit1_init(void)
     SpiritPktBasicAddressesInit(&xAddressInit);
 
     _bc_spirit1.task_id = bc_scheduler_register(_bc_spirit1_task, NULL, BC_TICK_INFINITY);
+
+    _bc_spirit1_enter_state_sleep();
 }
 
 void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t, void *), void *event_param)
@@ -239,6 +240,8 @@ static void _bc_spirit1_task(void *param)
 
 static void _bc_spirit1_enter_state_tx(void)
 {
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPD7_1;
+
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_TX;
 
     SpiritCmdStrobeSabort();
@@ -295,6 +298,8 @@ static void _bc_spirit1_check_state_tx(void)
 
 static void _bc_spirit1_enter_state_rx(void)
 {
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPD7_1;
+
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_RX;
 
     if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
@@ -395,12 +400,14 @@ static void _bc_spirit1_enter_state_sleep(void)
     SpiritIrqDeInit(NULL);
     SpiritIrqClearStatus();
     SpiritCmdStrobeStandby();
+
+    GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD7_1;
 }
 
 bc_spirit_status_t bc_spirit1_command(uint8_t command)
 {
     // Enable PLL
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Set chip select low
     bc_spirit1_hal_chip_select_low();
@@ -415,7 +422,7 @@ bc_spirit_status_t bc_spirit1_command(uint8_t command)
     bc_spirit1_hal_chip_select_high();
 
     // Disable PLL
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);
@@ -424,7 +431,7 @@ bc_spirit_status_t bc_spirit1_command(uint8_t command)
 bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t length)
 {
     // Enable PLL
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Set chip select low
     bc_spirit1_hal_chip_select_low();
@@ -446,7 +453,7 @@ bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t 
     bc_spirit1_hal_chip_select_high();
 
     // Disable PLL
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);
@@ -455,7 +462,7 @@ bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t 
 bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
 {
     // Enable PLL
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Set chip select low
     bc_spirit1_hal_chip_select_low();
@@ -477,7 +484,7 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
     bc_spirit1_hal_chip_select_high();
 
     // Disable PLL
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 
     // TODO Why this cast?
     return *((bc_spirit_status_t *) &status);
@@ -486,7 +493,7 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
 void bc_spirit1_hal_init(void)
 {
     // Initialize timer
-    bc_spirit1_hal_init_timer();
+    bc_timer_init();
 
     // Initialize GPIO
     bc_spirit1_hal_init_gpio();
@@ -508,29 +515,17 @@ void bc_spirit1_hal_shutdown_low(void)
 
     // TODO This delay might not exist (maybe poll GPIO?)...
 
-    // Set prescaler
-    TIM7->PSC = 32 - 1;
+    bc_timer_start();
 
-    // Set auto-reload register - period 10 ms
-    TIM7->ARR = 10000 - 1;
+    bc_timer_delay(10000);
 
-    // Generate update of registers
-    TIM7->EGR = TIM_EGR_UG;
-
-    // Enable counter
-    TIM7->CR1 |= TIM_CR1_CEN;
-
-    // Wait until update event occurs
-    while ((TIM7->CR1 & TIM_CR1_CEN) != 0)
-    {
-        continue;
-    }
+    bc_timer_stop();
 }
 
 void bc_spirit1_hal_shutdown_high(void)
 {
     // Enable PLL
-    bc_module_core_pll_enable();
+    bc_system_pll_enable();
 
     // Output log. 0 on CS pin
     GPIOA->BSRR = GPIO_BSRR_BR_15;
@@ -538,26 +533,18 @@ void bc_spirit1_hal_shutdown_high(void)
     // Output log. 1 on SDN pin
     GPIOB->BSRR = GPIO_BSRR_BS_7;
 
-    // Set prescaler
-    TIM7->PSC = 64 - 1;
+    bc_timer_start();
 
-    // Set auto-reload register - period 100 ms
-    TIM7->ARR = 50000 - 1;
+    bc_timer_delay(50000);
 
-    // Generate update of registers
-    TIM7->EGR = TIM_EGR_UG;
+    bc_timer_clear();
 
-    // Enable counter
-    TIM7->CR1 |= TIM_CR1_CEN;
+    bc_timer_delay(50000);
 
-    // Wait until update event occurs
-    while ((TIM7->CR1 & TIM_CR1_CEN) != 0)
-    {
-        continue;
-    }
+    bc_timer_stop();
 
     // Disable PLL
-    bc_module_core_pll_disable();
+    bc_system_pll_disable();
 }
 
 void bc_spirit1_hal_chip_select_low(void)
@@ -565,41 +552,21 @@ void bc_spirit1_hal_chip_select_low(void)
     // Set CS pin to log. 0
     GPIOA->BSRR = GPIO_BSRR_BR_15;
 
-    // Set prescaler
-    TIM7->PSC = 0;
+    bc_timer_start();
 
-    // Set auto-reload register - period 4 us
-    TIM7->ARR = 64 - 1;
-
-    // Generate update of registers
-    TIM7->EGR = TIM_EGR_UG;
-
-    // Enable counter
-    TIM7->CR1 |= TIM_CR1_CEN;
-
-    // Wait until update event occurs
-    while ((TIM7->CR1 & TIM_CR1_CEN) != 0)
+    while(bc_timer_get_microseconds() < 4)
     {
         continue;
     }
+
+    bc_timer_stop();
 }
 
 void bc_spirit1_hal_chip_select_high(void)
 {
-    // Set prescaler
-    TIM7->PSC = 0;
+    bc_timer_start();
 
-    // Set auto-reload register - period 4 us
-    TIM7->ARR = 64 - 1;
-
-    // Generate update of registers
-    TIM7->EGR = TIM_EGR_UG;
-
-    // Enable counter
-    TIM7->CR1 |= TIM_CR1_CEN;
-
-    // Wait until update event occurs
-    while ((TIM7->CR1 & TIM_CR1_CEN) != 0)
+    while(bc_timer_get_microseconds() < 4)
     {
         continue;
     }
@@ -607,23 +574,12 @@ void bc_spirit1_hal_chip_select_high(void)
     // Set CS pin to log. 1
     GPIOA->BSRR = GPIO_BSRR_BS_15;
 
-    // Set prescaler
-    TIM7->PSC = 0;
-
-    // Set auto-reload register - period 4 us
-    TIM7->ARR = 64 - 1;
-
-    // Generate update of registers
-    TIM7->EGR = TIM_EGR_UG;
-
-    // Enable counter
-    TIM7->CR1 |= TIM_CR1_CEN;
-
-    // Wait until update event occurs
-    while ((TIM7->CR1 & TIM_CR1_CEN) != 0)
+    while(bc_timer_get_microseconds() < 8)
     {
         continue;
     }
+
+    bc_timer_stop();
 }
 
 uint8_t bc_spirit1_hal_transfer_byte(uint8_t value)
@@ -695,15 +651,6 @@ static void bc_spirit1_hal_init_spi(void)
 
     // Enable SPI
     SPI1->CR1 |= SPI_CR1_SPE;
-}
-
-static void bc_spirit1_hal_init_timer(void)
-{
-    // Enable clock for TIM7
-    RCC->APB1ENR |= RCC_APB1ENR_TIM7EN;
-
-    // Enable one-pulse mode
-    TIM7->CR1 |= TIM_CR1_OPM;
 }
 
 static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param)

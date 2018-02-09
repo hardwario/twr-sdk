@@ -1,42 +1,53 @@
-#include <bc_module_core.h>
-#include <bc_tick.h>
+#include <bc_system.h>
 #include <bc_scheduler.h>
+#include <bc_irq.h>
 #include <stm32l0xx.h>
 
-#define DEBUG_ENABLE 0
+#define _BC_SYSTEM_DEBUG_ENABLE 0
 
-static void _bc_module_core_init_flash(void);
-
-static void _bc_module_core_init_debug(void);
-
-static void _bc_module_core_init_clock(void);
-
-static void _bc_module_core_init_power(void);
-
-static void _bc_module_core_init_gpio(void);
-
-static void _bc_module_core_init_rtc(void);
-
-static int _bc_module_core_pll_enable_semaphore;
-
-static int _bc_module_core_deep_sleep_disable_semaphore;
-
-void bc_module_core_init(void)
+static const uint32_t bc_system_clock_table[3] =
 {
-    _bc_module_core_init_flash();
+    RCC_CFGR_SW_MSI,
+    RCC_CFGR_SW_HSI,
+    RCC_CFGR_SW_PLL
+};
 
-    _bc_module_core_init_debug();
+static int _bc_system_hsi16_enable_semaphore;
 
-    _bc_module_core_init_clock();
+static int _bc_system_pll_enable_semaphore;
 
-    _bc_module_core_init_power();
+static int _bc_system_deep_sleep_disable_semaphore;
 
-    _bc_module_core_init_gpio();
+static void _bc_system_init_flash(void);
 
-    _bc_module_core_init_rtc();
+static void _bc_system_init_debug(void);
+
+static void _bc_system_init_clock(void);
+
+static void _bc_system_init_power(void);
+
+static void _bc_system_init_gpio(void);
+
+static void _bc_system_init_rtc(void);
+
+static void _bc_system_switch_clock(bc_system_clock_t clock);
+
+void bc_system_init(void)
+{
+    _bc_system_init_flash();
+
+    _bc_system_init_debug();
+
+    _bc_system_init_clock();
+
+    _bc_system_init_power();
+
+    _bc_system_init_gpio();
+
+    _bc_system_init_rtc();
 }
 
-static void _bc_module_core_init_flash(void)
+static void _bc_system_init_flash(void)
 {
     // Enable prefetch
     FLASH->ACR |= FLASH_ACR_PRFTEN;
@@ -45,9 +56,9 @@ static void _bc_module_core_init_flash(void)
     FLASH->ACR |= FLASH_ACR_LATENCY;
 }
 
-static void _bc_module_core_init_debug(void)
+static void _bc_system_init_debug(void)
 {
-#if DEBUG_ENABLE == 1
+#if _BC_SYSTEM_DEBUG_ENABLE == 1
 
     // Enable clock for DBG
     RCC->APB2ENR |= RCC_APB2ENR_DBGMCUEN;
@@ -103,7 +114,7 @@ static void _bc_module_core_init_debug(void)
 #endif
 }
 
-static void _bc_module_core_init_clock(void)
+static void _bc_system_init_clock(void)
 {
 
     // Update SystemCoreClock variable
@@ -133,7 +144,7 @@ static void _bc_module_core_init_clock(void)
     SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
 }
 
-static void _bc_module_core_init_power(void)
+static void _bc_system_init_power(void)
 {
     // Enable clock for PWR
     RCC->APB1ENR |= RCC_APB1ENR_PWREN;
@@ -157,7 +168,7 @@ static void _bc_module_core_init_power(void)
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 }
 
-static void _bc_module_core_init_gpio(void)
+static void _bc_system_init_gpio(void)
 {
     // Enable clock for GPIOA
     RCC->IOPENR = RCC_IOPENR_GPIOAEN;
@@ -169,7 +180,7 @@ static void _bc_module_core_init_gpio(void)
     GPIOA->MODER |= GPIO_MODER_MODE4_1 | GPIO_MODER_MODE4_0;
 }
 
-static void _bc_module_core_init_rtc(void)
+static void _bc_system_init_rtc(void)
 {
     // Set LSE oscillator drive capability to medium low drive
     RCC->CSR |= RCC_CSR_LSEDRV_1;
@@ -245,32 +256,50 @@ static void _bc_module_core_init_rtc(void)
     RTC->WPR = 0xff;
 }
 
-void bc_module_core_sleep(void)
+void bc_system_sleep(void)
 {
     __WFI();
 }
 
-void bc_module_core_deep_sleep_enable(void)
+void bc_system_deep_sleep_enable(void)
 {
-    _bc_module_core_deep_sleep_disable_semaphore--;
-    if (_bc_module_core_deep_sleep_disable_semaphore == 0)
+    _bc_system_deep_sleep_disable_semaphore--;
+
+    if (_bc_system_deep_sleep_disable_semaphore == 0)
     {
         SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
     }
 }
 
-void bc_module_core_deep_sleep_disable(void)
+void bc_system_deep_sleep_disable(void)
 {
-    if (_bc_module_core_deep_sleep_disable_semaphore == 0)
+    if (_bc_system_deep_sleep_disable_semaphore == 0)
     {
         SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
     }
-    _bc_module_core_deep_sleep_disable_semaphore++;
+
+    _bc_system_deep_sleep_disable_semaphore++;
 }
 
-void bc_module_core_pll_enable(void)
+bc_system_clock_t bc_system_clock_get(void)
 {
-    if (_bc_module_core_pll_enable_semaphore == 0)
+    if (_bc_system_pll_enable_semaphore != 0)
+    {
+        return BC_SYSTEM_CLOCK_PLL;
+    }
+    else if (_bc_system_hsi16_enable_semaphore != 0)
+    {
+        return BC_SYSTEM_CLOCK_HSI;
+    }
+    else
+    {
+        return BC_SYSTEM_CLOCK_MSI;
+    }
+}
+
+void bc_system_hsi16_enable(void)
+{
+    if (++_bc_system_hsi16_enable_semaphore == 1)
     {
         // Set regulator range to 1.8V
         PWR->CR |= PWR_CR_VOS_0;
@@ -281,51 +310,33 @@ void bc_module_core_pll_enable(void)
 
         // Turn HSI16 on
         RCC->CR |= RCC_CR_HSION;
-        while (!(RCC->CR & RCC_CR_HSIRDY))
+
+        while ((RCC->CR & RCC_CR_HSIRDY) == 0)
         {
             continue;
         }
 
-        // Turn PLL on
-        RCC->CR |= RCC_CR_PLLON;
-        while (!(RCC->CR & RCC_CR_PLLRDY))
-        {
-            continue;
-        }
-
-        // Switch to SYSCLK PLL
-        RCC->CFGR |= RCC_CFGR_SW_PLL;
+        _bc_system_switch_clock(BC_SYSTEM_CLOCK_HSI);
 
         // Set SysTick reload value
-        SysTick->LOAD = 32000 - 1;
+        SysTick->LOAD = 16000 - 1;
 
         // Update SystemCoreClock variable
-        SystemCoreClock = 32000000;
+        SystemCoreClock = 16000000;
     }
 
-    _bc_module_core_pll_enable_semaphore++;
     bc_scheduler_disable_sleep();
 }
 
-void bc_module_core_pll_disable(void)
+void bc_system_hsi16_disable(void)
 {
-    _bc_module_core_pll_enable_semaphore--;
-    bc_scheduler_enable_sleep();
-
-    if (_bc_module_core_pll_enable_semaphore == 0)
+    if (--_bc_system_hsi16_enable_semaphore == 0)
     {
-        // Switch SYSCLK to MSI (turn PLL off)
-        RCC->CFGR &= ~RCC_CFGR_SW_PLL;
-
-        // Turn PLL off
-        RCC->CR &= ~RCC_CR_PLLON;
-        while ((RCC->CR & RCC_CR_PLLRDY) != 0)
-        {
-            continue;
-        }
+        _bc_system_switch_clock(BC_SYSTEM_CLOCK_MSI);
 
         // Turn HSI16 off
         RCC->CR &= ~RCC_CR_HSION;
+
         while ((RCC->CR & RCC_CR_HSIRDY) != 0)
         {
             continue;
@@ -343,32 +354,74 @@ void bc_module_core_pll_disable(void)
         // Set regulator range to 1.2V
         PWR->CR |= PWR_CR_VOS;
     }
+
+    bc_scheduler_enable_sleep();
 }
 
-uint32_t bc_module_core_get_clk(void)
+void bc_system_pll_enable(void)
+{
+    if (++_bc_system_pll_enable_semaphore == 1)
+    {
+        bc_system_hsi16_enable();
+
+        // Turn PLL on
+        RCC->CR |= RCC_CR_PLLON;
+
+        while ((RCC->CR & RCC_CR_PLLRDY) == 0)
+        {
+            continue;
+        }
+
+        _bc_system_switch_clock(BC_SYSTEM_CLOCK_PLL);
+
+        // Set SysTick reload value
+        SysTick->LOAD = 32000 - 1;
+
+        // Update SystemCoreClock variable
+        SystemCoreClock = 32000000;
+    }
+}
+
+void bc_system_pll_disable(void)
+{
+    if (--_bc_system_pll_enable_semaphore == 0)
+    {
+        _bc_system_switch_clock(BC_SYSTEM_CLOCK_HSI);
+
+        // Turn PLL off
+        RCC->CR &= ~RCC_CR_PLLON;
+
+        while ((RCC->CR & RCC_CR_PLLRDY) != 0)
+        {
+            continue;
+        }
+
+        bc_system_hsi16_disable();
+    }
+}
+
+uint32_t bc_system_get_clock(void)
 {
     return SystemCoreClock;
 }
 
-void bc_module_core_reset(void)
+void bc_system_reset(void)
 {
     NVIC_SystemReset();
 }
 
-__attribute__((weak)) void bc_module_core_hardfault_handler(void)
+__attribute__((weak)) void bc_system_error(void)
 {
-
 #ifdef RELEASE
-    bc_module_core_reset();
+    bc_system_reset();
 #else
     for (;;);
 #endif
-
 }
 
 void HardFault_Handler(void)
 {
-    bc_module_core_hardfault_handler();
+    bc_system_error();
 }
 
 void RTC_IRQHandler(void)
@@ -384,4 +437,19 @@ void RTC_IRQHandler(void)
 
     // Clear EXTI interrupt flag
     EXTI->PR = EXTI_IMR_IM20;
+}
+
+
+static void _bc_system_switch_clock(bc_system_clock_t clock)
+{
+    uint32_t clock_mask = bc_system_clock_table[clock];
+
+    bc_irq_disable();
+
+    uint32_t rcc_cfgr = RCC->CFGR;
+    rcc_cfgr &= ~RCC_CFGR_SW_Msk;
+    rcc_cfgr |= clock_mask;
+    RCC->CFGR = rcc_cfgr;
+
+    bc_irq_enable();
 }

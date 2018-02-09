@@ -1,5 +1,5 @@
 #include <bc_pulse_counter.h>
-#include <bc_module_core.h>
+#include <bc_system.h>
 
 typedef struct
 {

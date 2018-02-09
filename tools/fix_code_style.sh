@@ -2,6 +2,9 @@
 set -eu
 
 fix_h() {
+    # convert tab to spaces
+    sed -r -i 's/\t/    /g' "$1"
+
     # endif comment
     sed -r -i 's/^#endif \/\*\s*(.*?)\s*\*\/\s*$/#endif \/\/ \1/g' "$1"
 
