@@ -83,7 +83,7 @@ bool bc_tmp112_measure(bc_tmp112_t *self);
 
 //! @brief Get measured temperature as raw value
 //! @param[in] self Instance
-//! @param[in] raw Pointer to variable where result will be stored
+//! @param[out] raw Pointer to variable where result will be stored
 //! @return true When value is valid
 //! @return false When value is invalid
 
@@ -91,7 +91,7 @@ bool bc_tmp112_get_temperature_raw(bc_tmp112_t *self, int16_t *raw);
 
 //! @brief Get measured temperature in degrees of Celsius
 //! @param[in] self Instance
-//! @param[in] celsius Pointer to variable where result will be stored
+//! @param[out] celsius Pointer to variable where result will be stored
 //! @return true When value is valid
 //! @return false When value is invalid
 
@@ -99,7 +99,7 @@ bool bc_tmp112_get_temperature_celsius(bc_tmp112_t *self, float *celsius);
 
 //! @brief Get measured temperature in degrees of Fahrenheit
 //! @param[in] self Instance
-//! @param[in] fahrenheit Pointer to variable where result will be stored
+//! @param[out] fahrenheit Pointer to variable where result will be stored
 //! @return true When value is valid
 //! @return false When value is invalid
 
@@ -107,7 +107,7 @@ bool bc_tmp112_get_temperature_fahrenheit(bc_tmp112_t *self, float *fahrenheit);
 
 //! @brief Get measured temperature in kelvin
 //! @param[in] self Instance
-//! @param[in] kelvin Pointer to variable where result will be stored
+//! @param[out] kelvin Pointer to variable where result will be stored
 //! @return true When value is valid
 //! @return false When value is invalid
 
