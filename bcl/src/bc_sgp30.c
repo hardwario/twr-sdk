@@ -153,12 +153,12 @@ start:
         {
             self->_state = BC_SGP30_STATE_ERROR;
 
-            uint8_t buffer[] = { 0x20, 0x2f };
+            static const uint8_t buffer[] = { 0x20, 0x2f };
 
             bc_i2c_transfer_t transfer;
 
             transfer.device_address = self->_i2c_address;
-            transfer.buffer = buffer;
+            transfer.buffer = (uint8_t *) buffer;
             transfer.length = sizeof(buffer);
 
             if (!bc_i2c_write(self->_i2c_channel, &transfer))
@@ -209,12 +209,12 @@ start:
         {
             self->_state = BC_SGP30_STATE_ERROR;
 
-            uint8_t buffer[] = { 0x20, 0x03 };
+            static const uint8_t buffer[] = { 0x20, 0x03 };
 
             bc_i2c_transfer_t transfer;
 
             transfer.device_address = self->_i2c_address;
-            transfer.buffer = buffer;
+            transfer.buffer = (uint8_t *) buffer;
             transfer.length = sizeof(buffer);
 
             if (!bc_i2c_write(self->_i2c_channel, &transfer))
@@ -263,12 +263,12 @@ start:
         {
             self->_state = BC_SGP30_STATE_ERROR;
 
-            uint8_t buffer[] = { 0x20, 0x08 };
+            static const uint8_t buffer[] = { 0x20, 0x08 };
 
             bc_i2c_transfer_t transfer;
 
             transfer.device_address = self->_i2c_address;
-            transfer.buffer = buffer;
+            transfer.buffer = (uint8_t *) buffer;
             transfer.length = sizeof(buffer);
 
             if (!bc_i2c_write(self->_i2c_channel, &transfer))
