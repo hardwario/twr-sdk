@@ -3,6 +3,7 @@
 #include <bc_gpio.h>
 #include <bc_adc.h>
 #include <bc_scheduler.h>
+#include <bc_timer.h>
 
 #define _BC_MODULE_BATTERY_CELL_VOLTAGE 1.6f
 
@@ -30,7 +31,6 @@ static struct
     bool measurement_active;
     bc_tick_t update_interval;
     bc_scheduler_task_id_t task_id;
-    bool first_measurement_done;
 
 } _bc_module_battery;
 
@@ -65,6 +65,8 @@ void bc_module_battery_init(bc_module_battery_format_t format)
 
         bc_gpio_set_mode(BC_GPIO_P1, BC_GPIO_MODE_OUTPUT);
     }
+
+    bc_timer_init();
 
     bc_adc_init(BC_ADC_CHANNEL_A0, BC_ADC_FORMAT_FLOAT);
 }
@@ -184,15 +186,6 @@ static void _bc_module_battery_adc_event_handler(bc_adc_channel_t channel, bc_ad
         // Unlock measurement
         _bc_module_battery.measurement_active = false;
 
-        if (!_bc_module_battery.first_measurement_done)
-        {
-            _bc_module_battery.first_measurement_done = true;
-
-            bc_scheduler_plan_relative(_bc_module_battery.task_id, 20);
-
-            return;
-        }
-
         if ((_bc_module_battery.voltage < 0) || (_bc_module_battery.voltage > 10))
         {
             _bc_module_battery.valid = false;
@@ -228,6 +221,15 @@ static void _bc_module_battery_measurement(int state)
     else
     {
         bc_gpio_set_output(BC_GPIO_P1, state);
+    }
+
+    if (state == ENABLE)
+    {
+        bc_timer_start();
+
+        bc_timer_delay(100);
+
+        bc_timer_stop();
     }
 }
 
