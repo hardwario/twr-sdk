@@ -85,7 +85,7 @@ struct bc_led_t
     uint32_t _pattern;
     uint32_t _selector;
     bool _pulse_active;
-    bc_scheduler_task_id_t _pulse_task_id;
+    bc_scheduler_task_id_t _task_id;
 };
 
 //! @endcond
