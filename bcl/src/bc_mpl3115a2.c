@@ -66,9 +66,9 @@ bool bc_mpl3115a2_get_altitude_meter(bc_mpl3115a2_t *self, float *meter)
         return false;
     }
 
-    uint32_t out_p = (uint32_t) self->_reg_out_p_msb_altitude << 16 | (uint32_t) self->_reg_out_p_csb_altitude << 8 | (uint32_t) self->_reg_out_p_lsb_altitude;
+    int32_t out_pa = (uint32_t) self->_reg_out_p_msb_altitude << 24 | (uint32_t) self->_reg_out_p_csb_altitude << 16 | (uint32_t) (self->_reg_out_p_lsb_altitude & 0xf0) << 8;
 
-    *meter = ((float) out_p) / 256.f;
+    *meter = ((float) out_pa) / 65536.f;
 
     return true;
 }
