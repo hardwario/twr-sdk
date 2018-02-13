@@ -4,8 +4,6 @@
 
 static void _bc_led_task(void *param);
 
-static void _bc_led_task_pulse(void *param);
-
 static void _bc_led_gpio_init(bc_led_t *self);
 
 static void _bc_led_gpio_on(bc_led_t *self);
@@ -46,7 +44,7 @@ void bc_led_init(bc_led_t *self, bc_gpio_channel_t gpio_channel, bool open_drain
 
     self->_slot_interval = BC_LED_DEFAULT_SLOT_INTERVAL;
 
-    bc_scheduler_register(_bc_led_task, self, self->_slot_interval);
+    self->_task_id = bc_scheduler_register(_bc_led_task, self, BC_TICK_INFINITY);
 }
 
 void bc_led_init_virtual(bc_led_t *self, int channel, const bc_led_driver_t *driver, int idle_state)
@@ -65,7 +63,7 @@ void bc_led_init_virtual(bc_led_t *self, int channel, const bc_led_driver_t *dri
 
     self->_slot_interval = BC_LED_DEFAULT_SLOT_INTERVAL;
 
-    bc_scheduler_register(_bc_led_task, self, self->_slot_interval);
+    self->_task_id = bc_scheduler_register(_bc_led_task, self, BC_TICK_INFINITY);
 }
 
 void bc_led_set_slot_interval(bc_led_t *self, bc_tick_t interval)
@@ -83,13 +81,13 @@ void bc_led_set_mode(bc_led_t *self, bc_led_mode_t mode)
         {
             if (pattern == 0x00000000)
             {
-                pattern = 0xffffffff;
+                self->_pattern = 0xffffffff;
 
                 self->_driver->on(self);
             }
             else if (pattern == 0xffffffff)
             {
-                pattern = 0x00000000;
+                self->_pattern = 0x00000000;
 
                 if (!self->_pulse_active)
                 {
@@ -97,48 +95,52 @@ void bc_led_set_mode(bc_led_t *self, bc_led_mode_t mode)
                 }
             }
 
-            break;
+            return;
         }
         case BC_LED_MODE_OFF:
         {
-            pattern = 0x00000000;
+            self->_pattern = 0x00000000;
 
             if (!self->_pulse_active)
             {
                 self->_driver->off(self);
             }
 
-            break;
+            return;
         }
         case BC_LED_MODE_ON:
         {
-            pattern = 0xffffffff;
+            self->_pattern = 0xffffffff;
 
             if (!self->_pulse_active)
             {
                 self->_driver->on(self);
             }
 
-            break;
+            return;
         }
         case BC_LED_MODE_BLINK:
         {
             pattern = 0xf0f0f0f0;
+
             break;
         }
         case BC_LED_MODE_BLINK_SLOW:
         {
             pattern = 0xffff0000;
+
             break;
         }
         case BC_LED_MODE_BLINK_FAST:
         {
             pattern = 0xaaaaaaaa;
+
             break;
         }
         case BC_LED_MODE_FLASH:
         {
             pattern = 0x80000000;
+
             break;
         }
         default:
@@ -153,6 +155,8 @@ void bc_led_set_mode(bc_led_t *self, bc_led_mode_t mode)
 
         self->_selector = 0;
     }
+
+    bc_scheduler_plan_now(self->_task_id);
 }
 
 void bc_led_set_pattern(bc_led_t *self, uint32_t pattern)
@@ -167,32 +171,14 @@ void bc_led_set_pattern(bc_led_t *self, uint32_t pattern)
 
 void bc_led_pulse(bc_led_t *self, bc_tick_t duration)
 {
-    if (duration == 0)
+    if (!self->_pulse_active)
     {
-        if (self->_pulse_active)
-        {
-            self->_driver->off(self);
+        self->_driver->on(self);
 
-            self->_pulse_active = false;
-
-            bc_scheduler_unregister(self->_pulse_task_id);
-        }
-
-        return;
+        self->_pulse_active = true;
     }
 
-    if (self->_pulse_active)
-    {
-        bc_scheduler_plan_from_now(self->_pulse_task_id, duration);
-
-        return;
-    }
-
-    self->_driver->on(self);
-
-    self->_pulse_active = true;
-
-    self->_pulse_task_id = bc_scheduler_register(_bc_led_task_pulse, self, bc_tick_get() + duration);
+    bc_scheduler_plan_from_now(self->_task_id, duration);
 }
 
 bool bc_led_is_pulse(bc_led_t *self)
@@ -206,8 +192,19 @@ static void _bc_led_task(void *param)
 
     if (self->_pulse_active)
     {
+        self->_driver->off(self);
+
+        self->_pulse_active = false;
+
+        self->_selector = 0;
+
         bc_scheduler_plan_current_relative(self->_slot_interval);
 
+        return;
+    }
+
+    if ((self->_pattern == 0x00000000) || self->_pattern == 0xffffffff)
+    {
         return;
     }
 
@@ -228,17 +225,6 @@ static void _bc_led_task(void *param)
     self->_selector >>= 1;
 
     bc_scheduler_plan_current_relative(self->_slot_interval);
-}
-
-static void _bc_led_task_pulse(void *param)
-{
-    bc_led_t *self = param;
-
-    self->_driver->off(self);
-
-    self->_pulse_active = false;
-
-    bc_scheduler_unregister(self->_pulse_task_id);
 }
 
 static void _bc_led_gpio_init(bc_led_t *self)
