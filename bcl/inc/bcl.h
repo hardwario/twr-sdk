@@ -77,6 +77,6 @@
 //!
 //! Go to the <a href="modules.html"><b>Modules</b></a> page for complete listing.
 //!
-//! For more information visit the <a href="https://bigclown.netlify.com/en/doc/firmware/basic-overview/" target="_blank"><b>Basic Overview</b></a> document in BigClown Documentation.
+//! For more information visit the <a href="https://www.bigclown.com/doc/firmware/basic-overview/" target="_blank"><b>Basic Overview</b></a> document in BigClown Documentation.
 
 #endif // _BCL_H
