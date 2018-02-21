@@ -28,6 +28,7 @@ int main(void)
 
 __attribute__((weak)) void application_init(void)
 {
+
 }
 
 __attribute__((weak)) void application_task(void *param)

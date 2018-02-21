@@ -3,20 +3,40 @@
 #include <bc_irq.h>
 #include <stm32l0xx.h>
 
+#define _BC_SYSTEM_USE_MARKS 1
+
+#if _BC_SYSTEM_USE_MARKS
+#include <bc_gpio.h>
+#endif
+
 #define _BC_SYSTEM_DEBUG_ENABLE 0
 
-static const uint32_t bc_system_clock_table[3] =
+// #define _BC_SYSTEM_TICK_COUNTER_TO_SYSTEM(__COUNTER_TICK__)  ((__COUNTER_TICK__ * 30518) / 1000000)
+#define _BC_SYSTEM_TICK_COUNTER_TO_SYSTEM(__COUNTER_TICK__)  ((__COUNTER_TICK__) / 33)
+
+// #define _BC_SYSTEM_TICK_SYSTEM_TO_COUNTER(__SYSTEM_TICK__)  ((__SYSTEM_TICK__ * 32768) / 1000)
+#define _BC_SYSTEM_TICK_SYSTEM_TO_COUNTER(__SYSTEM_TICK__)  ((__SYSTEM_TICK__) * 33)
+
+static const uint32_t bc_system_source_clock_table[3] =
 {
     RCC_CFGR_SW_MSI,
+
     RCC_CFGR_SW_HSI,
+
     RCC_CFGR_SW_PLL
 };
 
-static int _bc_system_hsi16_enable_semaphore;
+static struct
+{
+    bc_tick_t tick_counter;
 
-static int _bc_system_pll_enable_semaphore;
+    int hsi16_enable_semaphore;
 
-static int _bc_system_deep_sleep_disable_semaphore;
+    int pll_enable_semaphore;
+
+    int deep_sleep_disable_semaphore;
+
+} _bc_system;
 
 static void _bc_system_init_flash(void);
 
@@ -28,12 +48,22 @@ static void _bc_system_init_power(void);
 
 static void _bc_system_init_gpio(void);
 
-static void _bc_system_init_rtc(void);
+static void _bc_system_init_lptim(void);
 
 static void _bc_system_switch_clock(bc_system_clock_t clock);
 
+void _bc_scheduler_hook_set_interrupt_tick(bc_tick_t tick);
+
 void bc_system_init(void)
 {
+#if _BC_SYSTEM_USE_MARKS
+    bc_gpio_init(BC_GPIO_P6);
+    bc_gpio_set_mode(BC_GPIO_P6, BC_GPIO_MODE_OUTPUT);
+
+    bc_gpio_init(BC_GPIO_P5);
+    bc_gpio_set_mode(BC_GPIO_P5, BC_GPIO_MODE_OUTPUT);
+#endif
+
     _bc_system_init_flash();
 
     _bc_system_init_debug();
@@ -44,11 +74,13 @@ void bc_system_init(void)
 
     _bc_system_init_gpio();
 
-    _bc_system_init_rtc();
+    _bc_system_init_lptim();
 }
 
 static void _bc_system_init_flash(void)
 {
+    memset(&_bc_system, 0, sizeof(_bc_system));
+
     // Enable prefetch
     FLASH->ACR |= FLASH_ACR_PRFTEN;
 
@@ -180,7 +212,7 @@ static void _bc_system_init_gpio(void)
     GPIOA->MODER |= GPIO_MODER_MODE4_1 | GPIO_MODER_MODE4_0;
 }
 
-static void _bc_system_init_rtc(void)
+static void _bc_system_init_lptim(void)
 {
     // Set LSE oscillator drive capability to medium low drive
     RCC->CSR |= RCC_CSR_LSEDRV_1;
@@ -194,66 +226,31 @@ static void _bc_system_init_rtc(void)
         continue;
     }
 
-    // LSE oscillator clock used as RTC clock
-    RCC->CSR |= RCC_CSR_RTCSEL_LSE;
-
-    // Enable RTC clock
-    RCC->CSR |= RCC_CSR_RTCEN;
+    RCC->APB1ENR |= RCC_APB1ENR_LPTIM1EN;
 
     // Errata workaround
-    RCC->CSR;
+    RCC->APB1ENR;
 
-    // Disable write protection
-    RTC->WPR = 0xca;
-    RTC->WPR = 0x53;
+    RCC->APB1SMENR |= RCC_APB1SMENR_LPTIM1SMEN;
 
-    // Enable initialization mode
-    RTC->ISR |= RTC_ISR_INIT;
+    // Use LSE as a clock source for LPTIM
+    RCC->CCIPR |= RCC_CCIPR_LPTIM1SEL;
 
-    // Wait for RTC to be in initialization mode...
-    while ((RTC->ISR & RTC_ISR_INITF) == 0)
-    {
-        continue;
-    }
+    EXTI->IMR |= EXTI_IMR_IM29;
 
-    // Set RTC prescaler
-    RTC->PRER = (127 << 16) | 255;
+    EXTI->RTSR |= EXTI_IMR_IM29;
 
-    // Exit from initialization mode
-    RTC->ISR &= ~RTC_ISR_INIT;
+    LPTIM1->ICR = LPTIM_ICR_ARRMCF | LPTIM_ICR_CMPMCF;
 
-    // Enable RTC interrupt requests
-    NVIC_EnableIRQ(RTC_IRQn);
+    LPTIM1->IER = LPTIM_IER_ARRMIE;
 
-    // Enable timer
-    RTC->CR &= ~RTC_CR_WUTE;
+    LPTIM1->CR = LPTIM_CR_ENABLE;
 
-    // Wait until timer configuration update is allowed...
-    while ((RTC->ISR & RTC_ISR_WUTWF) == 0)
-    {
-        continue;
-    }
+    LPTIM1->ARR = 0xffff;
 
-    // Set wake-up auto-reload value
-    RTC->WUTR = 20;
+    LPTIM1->CR |= LPTIM_CR_CNTSTRT;
 
-    // Clear timer flag
-    RTC->ISR &= ~RTC_ISR_WUTF;
-
-    // RTC IRQ needs to be configured through EXTI
-    EXTI->IMR |= EXTI_IMR_IM20;
-
-    // Enable rising edge trigger
-    EXTI->RTSR |= EXTI_IMR_IM20;
-
-    // Enable timer interrupts
-    RTC->CR |= RTC_CR_WUTIE;
-
-    // Enable timer
-    RTC->CR |= RTC_CR_WUTE;
-
-    // Enable write protection
-    RTC->WPR = 0xff;
+    NVIC_EnableIRQ(LPTIM1_IRQn);
 }
 
 void bc_system_sleep(void)
@@ -263,9 +260,9 @@ void bc_system_sleep(void)
 
 void bc_system_deep_sleep_enable(void)
 {
-    _bc_system_deep_sleep_disable_semaphore--;
+    _bc_system.deep_sleep_disable_semaphore--;
 
-    if (_bc_system_deep_sleep_disable_semaphore == 0)
+    if (_bc_system.deep_sleep_disable_semaphore == 0)
     {
         SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
     }
@@ -273,21 +270,21 @@ void bc_system_deep_sleep_enable(void)
 
 void bc_system_deep_sleep_disable(void)
 {
-    if (_bc_system_deep_sleep_disable_semaphore == 0)
+    if (_bc_system.deep_sleep_disable_semaphore == 0)
     {
         SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
     }
 
-    _bc_system_deep_sleep_disable_semaphore++;
+    _bc_system.deep_sleep_disable_semaphore++;
 }
 
-bc_system_clock_t bc_system_clock_get(void)
+bc_system_clock_t bc_system_clock_source_get(void)
 {
-    if (_bc_system_pll_enable_semaphore != 0)
+    if (_bc_system.pll_enable_semaphore != 0)
     {
         return BC_SYSTEM_CLOCK_PLL;
     }
-    else if (_bc_system_hsi16_enable_semaphore != 0)
+    else if (_bc_system.hsi16_enable_semaphore != 0)
     {
         return BC_SYSTEM_CLOCK_HSI;
     }
@@ -299,7 +296,7 @@ bc_system_clock_t bc_system_clock_get(void)
 
 void bc_system_hsi16_enable(void)
 {
-    if (++_bc_system_hsi16_enable_semaphore == 1)
+    if (++_bc_system.hsi16_enable_semaphore == 1)
     {
         // Set regulator range to 1.8V
         PWR->CR |= PWR_CR_VOS_0;
@@ -330,7 +327,7 @@ void bc_system_hsi16_enable(void)
 
 void bc_system_hsi16_disable(void)
 {
-    if (--_bc_system_hsi16_enable_semaphore == 0)
+    if (--_bc_system.hsi16_enable_semaphore == 0)
     {
         _bc_system_switch_clock(BC_SYSTEM_CLOCK_MSI);
 
@@ -360,7 +357,7 @@ void bc_system_hsi16_disable(void)
 
 void bc_system_pll_enable(void)
 {
-    if (++_bc_system_pll_enable_semaphore == 1)
+    if (++_bc_system.pll_enable_semaphore == 1)
     {
         bc_system_hsi16_enable();
 
@@ -384,7 +381,7 @@ void bc_system_pll_enable(void)
 
 void bc_system_pll_disable(void)
 {
-    if (--_bc_system_pll_enable_semaphore == 0)
+    if (--_bc_system.pll_enable_semaphore == 0)
     {
         _bc_system_switch_clock(BC_SYSTEM_CLOCK_HSI);
 
@@ -400,9 +397,24 @@ void bc_system_pll_disable(void)
     }
 }
 
-uint32_t bc_system_get_clock(void)
+uint32_t bc_system_clock_get(void)
 {
     return SystemCoreClock;
+}
+
+bc_tick_t bc_system_tick_get(void)
+{
+    uint64_t tick_counter;
+    bc_tick_t tick_system;
+
+    // Get current counter tick
+    tick_counter = _bc_system.tick_counter + LPTIM1->CNT;
+
+    // tick_system = _BC_SYSTEM_TICK_COUNTER_TO_SYSTEM(tick_counter);
+
+    tick_system = tick_counter >> 5;
+
+    return tick_system;
 }
 
 void bc_system_reset(void)
@@ -415,7 +427,8 @@ __attribute__((weak)) void bc_system_error(void)
 #ifdef RELEASE
     bc_system_reset();
 #else
-    for (;;);
+    for (;;)
+        ;
 #endif
 }
 
@@ -424,25 +437,40 @@ void HardFault_Handler(void)
     bc_system_error();
 }
 
-void RTC_IRQHandler(void)
+void LPTIM1_IRQHandler(void)
 {
-    // If wake-up timer flag is set...
-    if (RTC->ISR & RTC_ISR_WUTF)
+    if ((LPTIM1->ISR & LPTIM_ISR_ARRM) != 0)
     {
-        // Clear wake-up timer flag
-        RTC->ISR &= ~RTC_ISR_WUTF;
+        // Clear interrupt flag
+        LPTIM1->ICR = LPTIM_ICR_ARRMCF;
 
-        bc_tick_inrement_irq(10);
+        // Counter overflow period is 2 seconds
+        _bc_system.tick_counter += 65536;
+    }
+    // This interrupt is used as a wakeup for scheduler
+    else if ((LPTIM1->ISR & LPTIM_ISR_CMPM) != 0)
+    {
+#if _BC_SYSTEM_USE_MARKS
+        bc_gpio_set_output(BC_GPIO_P6, 1);
+#endif
+        // Disable compare IRQ
+        LPTIM1->IER &= ~LPTIM_IER_CMPMIE;
+
+        // Clear interrupt flag
+        LPTIM1->ICR = LPTIM_ICR_CMPMCF;
+
+#if _BC_SYSTEM_USE_MARKS
+        bc_gpio_set_output(BC_GPIO_P6, 0);
+#endif
     }
 
     // Clear EXTI interrupt flag
-    EXTI->PR = EXTI_IMR_IM20;
+    EXTI->PR = EXTI_IMR_IM29;
 }
-
 
 static void _bc_system_switch_clock(bc_system_clock_t clock)
 {
-    uint32_t clock_mask = bc_system_clock_table[clock];
+    uint32_t clock_mask = bc_system_source_clock_table[clock];
 
     bc_irq_disable();
 
@@ -452,4 +480,35 @@ static void _bc_system_switch_clock(bc_system_clock_t clock)
     RCC->CFGR = rcc_cfgr;
 
     bc_irq_enable();
+}
+
+void _bc_scheduler_hook_set_interrupt_tick(bc_tick_t tick)
+{
+    // uint64_t tick_counter = _BC_SYSTEM_TICK_SYSTEM_TO_COUNTER(tick);
+    static uint64_t tick_counter;
+
+    static bc_tick_t tick_system_now;
+    // uint64_t tick_counter_now = _BC_SYSTEM_TICK_SYSTEM_TO_COUNTER(tick_system_now);
+    static uint64_t tick_counter_now;
+
+    tick_counter = tick  << 5;
+    tick_system_now = bc_system_tick_get();
+    tick_counter_now = tick_system_now << 5;
+
+    if ((tick_counter_now & 0xffffffffffff0000) == (tick_counter & 0xffffffffffff0000))
+    {
+#if _BC_SYSTEM_USE_MARKS
+        bc_gpio_set_output(BC_GPIO_P5, 1);
+#endif
+        LPTIM1->CMP = tick_counter & 0x000000000000ffff;
+
+        LPTIM1->IER |= LPTIM_IER_CMPMIE;
+#if _BC_SYSTEM_USE_MARKS
+        bc_gpio_set_output(BC_GPIO_P5, 0);
+#endif
+    }
+    else
+    {
+        LPTIM1->IER &= ~LPTIM_IER_CMPMIE;
+    }
 }

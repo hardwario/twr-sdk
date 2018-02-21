@@ -24,7 +24,7 @@ static inline void bc_timer_init(void)
 
 static inline void bc_timer_start(void)
 {
-    TIM21->PSC = _bc_timer_prescaler_lut[bc_system_clock_get()]; // 7 instructions
+    TIM21->PSC = _bc_timer_prescaler_lut[bc_system_clock_source_get()]; // 7 instructions
 
     TIM21->CNT = 0;
 

@@ -15,7 +15,7 @@
 
 //! @brief Task ID assigned by scheduler
 
-typedef size_t bc_scheduler_task_id_t;
+typedef uint8_t bc_scheduler_task_id_t;
 
 //! @brief Initialize task scheduler
 

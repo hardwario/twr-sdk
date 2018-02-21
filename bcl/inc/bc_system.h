@@ -2,6 +2,7 @@
 #define _BC_SYSTEM_H
 
 #include <bc_common.h>
+#include <bc_tick.h>
 
 typedef enum
 {
@@ -15,7 +16,7 @@ void bc_system_init(void);
 
 void bc_system_sleep(void);
 
-bc_system_clock_t bc_system_clock_get(void);
+bc_system_clock_t bc_system_clock_source_get(void);
 
 void bc_system_hsi16_enable(void);
 
@@ -29,7 +30,9 @@ void bc_system_deep_sleep_disable(void);
 
 void bc_system_deep_sleep_enable(void);
 
-uint32_t bc_system_get_clock(void);
+uint32_t bc_system_clock_get(void);
+
+bc_tick_t bc_system_tick_get(void);
 
 void bc_system_reset(void);
 

@@ -47,7 +47,7 @@ static bool _bc_i2c_read(I2C_TypeDef *i2c, const void *buffer, size_t length);
 static bool _bc_i2c_write(I2C_TypeDef *i2c, const void *buffer, size_t length);
 static uint32_t bc_i2c_get_timeout_ms(bc_i2c_channel_t channel, size_t length);
 static uint32_t bc_i2c_get_timeout_us(bc_i2c_channel_t channel, size_t length);
-static void _bc_i2c_timeout_begin(uint32_t timeout_ms);
+static void _bc_i2c_timeout_begin(bc_tick_t timeout_ms);
 static bool _bc_i2c_timeout_is_expired(void);
 static void _bc_i2c_restore_bus(I2C_TypeDef *i2c);
 
@@ -692,7 +692,7 @@ static bool _bc_i2c_write(I2C_TypeDef *i2c, const void *buffer, size_t length)
     return true;
 }
 
-void _bc_i2c_timeout_begin(uint32_t timeout_ms)
+void _bc_i2c_timeout_begin(bc_tick_t timeout_ms)
 {
     tick_timeout = bc_tick_get() + timeout_ms;
 }
