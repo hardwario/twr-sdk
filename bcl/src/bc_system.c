@@ -3,7 +3,7 @@
 #include <bc_irq.h>
 #include <stm32l0xx.h>
 
-#define _BC_SYSTEM_USE_MARKS 1
+#define _BC_SYSTEM_USE_MARKS 0
 
 #if _BC_SYSTEM_USE_MARKS
 #include <bc_gpio.h>
@@ -491,7 +491,9 @@ void _bc_scheduler_hook_set_interrupt_tick(bc_tick_t tick)
     // uint64_t tick_counter_now = _BC_SYSTEM_TICK_SYSTEM_TO_COUNTER(tick_system_now);
     static uint64_t tick_counter_now;
 
-    tick_counter = tick  << 5;
+    // TODO counter overflow
+
+    tick_counter = tick << 5;
     tick_system_now = bc_system_tick_get();
     tick_counter_now = tick_system_now << 5;
 

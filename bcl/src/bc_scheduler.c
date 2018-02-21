@@ -5,7 +5,7 @@
 // TODO
 #include <bc_gpio.h>
 
-#define _BC_SCHEDULER_USE_MARKS 1
+#define _BC_SCHEDULER_USE_MARKS 0
 
 #define _BC_SCHEDULER_TASK_COUNT 64
 
@@ -127,7 +127,7 @@ void bc_scheduler_run(void)
                 }
             }
             
-            if (tick_first == 0)
+            if (tick_first < bc_system_tick_get())
             {
                 continue;
             }
@@ -290,7 +290,7 @@ static inline bc_scheduler_task_id_t _bc_scheduler_task_get_first()
 
 static void _bc_scheduler_plan_task(bc_scheduler_task_id_t task_id, bc_tick_t tick)
 {
-    if (_bc_scheduler.first_task_tick > tick)
+    if (_bc_scheduler.first_task_tick >= tick)
     {
         if (tick <= bc_system_tick_get())
         {
