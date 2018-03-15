@@ -7,7 +7,7 @@ void bc_gfx_init(bc_gfx_t *self, void *display, const bc_gfx_driver_t *driver)
     self->_driver = driver;
     self->_font = &bc_font_ubuntu_15;
 
-    self->_size = driver->get_size(display);
+    self->_caps = driver->caps_get(display);
 }
 
 bool bc_gfx_display_is_ready(bc_gfx_t *self)
@@ -37,7 +37,7 @@ bc_gfx_rotation_t bc_gfx_rotation_get(bc_gfx_t *self)
 
 void bc_gfx_draw_pixel(bc_gfx_t *self, int x, int y, uint32_t color)
 {
-    if (x >= self->_size.width || y >= self->_size.height || x < 0 || y < 0)
+    if (x >= self->_caps.width || y >= self->_caps.height || x < 0 || y < 0)
     {
         return;
     }
@@ -108,11 +108,7 @@ int bc_gfx_draw_char(bc_gfx_t *self, int left, int top, uint8_t ch, uint32_t col
 
                     uint8_t bitMask = 1 << (7 - (x % 8));
 
-                    if (font->chars[i].image->image[byteIndex] & bitMask)
-                    {
-                        bc_gfx_draw_pixel(self, left + x, top + y, 0);
-                    }
-                    else
+                    if ((font->chars[i].image->image[byteIndex] & bitMask) == 0)
                     {
                         bc_gfx_draw_pixel(self, left + x, top + y, color);
                     }
@@ -124,7 +120,7 @@ int bc_gfx_draw_char(bc_gfx_t *self, int left, int top, uint8_t ch, uint32_t col
     return w;
 }
 
-int bc_gfx_calc_char(bc_gfx_t *self, uint8_t ch)
+int bc_gfx_calc_char_width(bc_gfx_t *self, uint8_t ch)
 {
     const bc_font_t *font = self->_font;
 
@@ -149,12 +145,12 @@ int bc_gfx_draw_string(bc_gfx_t *self, int left, int top, char *str, uint32_t co
     return left;
 }
 
-int bc_gfx_calc_string(bc_gfx_t *self,  char *str)
+int bc_gfx_calc_string_width(bc_gfx_t *self,  char *str)
 {
     int width = 0;
     while(*str)
     {
-        width += bc_gfx_calc_char(self, *str);
+        width += bc_gfx_calc_char_width(self, *str);
         str++;
     }
     return width;

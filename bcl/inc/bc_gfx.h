@@ -15,7 +15,7 @@ typedef struct
     int width;
     int height;
 
-} bc_gfx_size_t;
+} bc_gfx_caps_t;
 
 //! @brief Display driver interface
 
@@ -31,13 +31,13 @@ typedef struct
     void (*draw_pixel)(void *self, int left, int top, uint32_t color);
 
     //! @brief Callback for draw pifex
-    uint32_t (*get_pixel)(void *self, int left, int top);
+    uint32_t (*pixel_get)(void *self, int left, int top);
 
     //! @brief Callback for update
     bool (*update)(void *self);
 
-    //! @brief Callback for get size
-    bc_gfx_size_t (*get_size)(void *self);
+    //! @brief Callback for get capabilities
+    bc_gfx_caps_t (*caps_get)(void *self);
 
 } bc_gfx_driver_t;
 
@@ -67,7 +67,7 @@ typedef struct
     const bc_gfx_driver_t *_driver;
     bc_gfx_rotation_t _rotation;
     const bc_font_t *_font;
-    bc_gfx_size_t _size;
+    bc_gfx_caps_t _caps;
 
 } bc_gfx_t;
 
@@ -127,7 +127,7 @@ int bc_gfx_draw_char(bc_gfx_t *self, int left, int top, uint8_t ch, uint32_t col
 //! @param[in] self Instance
 //! @return Width of printed character
 
-int bc_gfx_calc_char(bc_gfx_t *self, uint8_t ch);
+int bc_gfx_calc_char_width(bc_gfx_t *self, uint8_t ch);
 
 //! @brief Display draw string
 //! @param[in] self Instance
@@ -144,7 +144,7 @@ int bc_gfx_draw_string(bc_gfx_t *self, int left, int top, char *str, uint32_t co
 //! @param[in] *str String to be printed
 //! @return Width of printed string
 
-int bc_gfx_calc_string(bc_gfx_t *self,  char *str);
+int bc_gfx_calc_string_width(bc_gfx_t *self,  char *str);
 
 //! @brief Display draw line
 //! @param[in] self Instance

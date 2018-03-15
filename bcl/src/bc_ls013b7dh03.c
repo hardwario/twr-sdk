@@ -29,13 +29,13 @@ void bc_ls013b7dh03_init(bc_ls013b7dh03_t *self, bool (*pin_cs_set)(bool state))
     self->_task_id = bc_scheduler_register(_bc_ls013b7dh03_task, NULL, _BC_LS013B7DH03_VCOM_PERIOD);
 }
 
-bc_gfx_size_t bc_ls013b7dh03_get_size(bc_ls013b7dh03_t *self)
+bc_gfx_caps_t bc_ls013b7dh03_caps_get(bc_ls013b7dh03_t *self)
 {
     (void) self;
 
-    static const bc_gfx_size_t size = { .width = BC_LS013B7DH03_WIDTH, .height = BC_LS013B7DH03_HEIGHT };
+    static const bc_gfx_caps_t caps = { .width = BC_LS013B7DH03_WIDTH, .height = BC_LS013B7DH03_HEIGHT };
 
-    return size;
+    return caps;
 }
 
 bool bc_ls013b7dh03_is_ready(bc_ls013b7dh03_t *self)
@@ -80,7 +80,7 @@ void bc_ls013b7dh03_draw_pixel(bc_ls013b7dh03_t *self, int x, int y, uint32_t co
     }
 }
 
-uint32_t bc_ls013b7dh03_get_pixel(bc_ls013b7dh03_t *self, int x, int y)
+uint32_t bc_ls013b7dh03_pixel_get(bc_ls013b7dh03_t *self, int x, int y)
 {
     // Skip mode byte + addr byte
     uint32_t byteIndex = 2;
@@ -133,9 +133,9 @@ const bc_gfx_driver_t *bc_ls013b7dh03_get_driver(void)
         .is_ready = (bool (*)(void *)) bc_ls013b7dh03_is_ready,
         .clear = (void (*)(void *)) bc_ls013b7dh03_clear,
         .draw_pixel = (void (*)(void *, int, int, uint32_t)) bc_ls013b7dh03_draw_pixel,
-        .get_pixel = (uint32_t (*)(void *, int, int)) bc_ls013b7dh03_get_pixel,
+        .pixel_get = (uint32_t (*)(void *, int, int)) bc_ls013b7dh03_pixel_get,
         .update = (bool (*)(void *)) bc_ls013b7dh03_update,
-        .get_size = (bc_gfx_size_t (*)(void *)) bc_ls013b7dh03_get_size,
+        .caps_get = (bc_gfx_caps_t (*)(void *)) bc_ls013b7dh03_caps_get,
     };
 
     return &driver;
