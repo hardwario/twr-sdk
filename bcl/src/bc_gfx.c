@@ -7,7 +7,7 @@ void bc_gfx_init(bc_gfx_t *self, void *display, const bc_gfx_driver_t *driver)
     self->_driver = driver;
     self->_font = &bc_font_ubuntu_15;
 
-    self->_caps = driver->caps_get(display);
+    self->_caps = driver->get_caps(display);
 }
 
 bool bc_gfx_display_is_ready(bc_gfx_t *self)
@@ -20,17 +20,17 @@ void bc_gfx_clear(bc_gfx_t *self)
     self->_driver->clear(self->_display);
 }
 
-void bc_gfx_font_set(bc_gfx_t *self, const bc_font_t *font)
+void bc_gfx_set_font(bc_gfx_t *self, const bc_font_t *font)
 {
     self->_font = font;
 }
 
-void bc_gfx_rotation_set(bc_gfx_t *self, bc_gfx_rotation_t rotation)
+void bc_gfx_set_rotation(bc_gfx_t *self, bc_gfx_rotation_t rotation)
 {
     self->_rotation = rotation;
 }
 
-bc_gfx_rotation_t bc_gfx_rotation_get(bc_gfx_t *self)
+bc_gfx_rotation_t bc_gfx_get_rotation(bc_gfx_t *self)
 {
     return self->_rotation;
 }

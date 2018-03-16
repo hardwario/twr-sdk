@@ -166,17 +166,17 @@ bool bc_module_lcd_update(void)
 
 void bc_module_lcd_set_font(const bc_font_t *font)
 {
-    bc_gfx_font_set(&_bc_module_lcd.gfx, font);
+    bc_gfx_set_font(&_bc_module_lcd.gfx, font);
 }
 
 void bc_module_lcd_set_rotation(bc_module_lcd_rotation_t rotation)
 {
-    bc_gfx_rotation_set(&_bc_module_lcd.gfx, rotation);
+    bc_gfx_set_rotation(&_bc_module_lcd.gfx, rotation);
 }
 
 bc_module_lcd_rotation_t bc_module_lcd_get_rotation(void)
 {
-    return bc_gfx_rotation_get(&_bc_module_lcd.gfx);
+    return bc_gfx_get_rotation(&_bc_module_lcd.gfx);
 }
 
 const bc_led_driver_t *bc_module_lcd_get_led_driver(void)

@@ -31,13 +31,13 @@ typedef struct
     void (*draw_pixel)(void *self, int left, int top, uint32_t color);
 
     //! @brief Callback for draw pifex
-    uint32_t (*pixel_get)(void *self, int left, int top);
+    uint32_t (*get_pixel)(void *self, int left, int top);
 
     //! @brief Callback for update
     bool (*update)(void *self);
 
     //! @brief Callback for get capabilities
-    bc_gfx_caps_t (*caps_get)(void *self);
+    bc_gfx_caps_t (*get_caps)(void *self);
 
 } bc_gfx_driver_t;
 
@@ -91,19 +91,19 @@ void bc_gfx_clear(bc_gfx_t *self);
 //! @param[in] self Instance
 //! @param[in] *font Font
 
-void bc_gfx_font_set(bc_gfx_t *self, const bc_font_t *font);
+void bc_gfx_set_font(bc_gfx_t *self, const bc_font_t *font);
 
 //! @brief Set rotation
 //! @param[in] self Instance
 //! @param[in] rotation Rotation of diplay
 
-void bc_gfx_rotation_set(bc_gfx_t *self, bc_gfx_rotation_t rotation);
+void bc_gfx_set_rotation(bc_gfx_t *self, bc_gfx_rotation_t rotation);
 
 //! @brief Get rotation
 //! @param[in] self Instance
 //! @return Rotation of display
 
-bc_gfx_rotation_t bc_gfx_rotation_get(bc_gfx_t *self);
+bc_gfx_rotation_t bc_gfx_get_rotation(bc_gfx_t *self);
 
 //! @brief Draw pixel
 //! @param[in] self Instance

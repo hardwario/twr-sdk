@@ -36,7 +36,7 @@ void bc_ls013b7dh03_init(bc_ls013b7dh03_t *self, bool (*pin_cs_set)(bool state))
 //! @brief Get capabilities
 //! @param[in] self Instance
 
-bc_gfx_caps_t bc_ls013b7dh03_caps_get(bc_ls013b7dh03_t *self);
+bc_gfx_caps_t bc_ls013b7dh03_get_caps(bc_ls013b7dh03_t *self);
 
 //! @brief Check if lcd is ready for commands
 //! @param[in] self Instance
@@ -64,7 +64,7 @@ void bc_ls013b7dh03_draw_pixel(bc_ls013b7dh03_t *self, int x, int y, uint32_t co
 //! @param[in] top Pixels from top edge
 //! @param[in] color Pixels state
 
-uint32_t bc_ls013b7dh03_pixel_get(bc_ls013b7dh03_t *self, int x, int y);
+uint32_t bc_ls013b7dh03_get_pixel(bc_ls013b7dh03_t *self, int x, int y);
 
 //! @brief Lcd update, send data
 //! @param[in] self Instance
