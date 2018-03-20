@@ -70,6 +70,11 @@ void bc_module_lcd_init()
 	bc_gfx_clear(&_bc_module_lcd.gfx);
 }
 
+bc_gfx_t *bc_module_lcd_get_gfx()
+{
+    return &_bc_module_lcd.gfx;
+}
+
 bool bc_module_lcd_on(void)
 {
     return bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _BC_MODULE_LCD_DISP_ON_PIN, 1);

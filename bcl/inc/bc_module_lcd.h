@@ -72,6 +72,10 @@ typedef enum
 
 void bc_module_lcd_init();
 
+//! @brief Get gfx instance
+
+bc_gfx_t *bc_module_lcd_get_gfx();
+
 //! @brief Lcd on
 //! @return true On success
 //! @return false On failure
