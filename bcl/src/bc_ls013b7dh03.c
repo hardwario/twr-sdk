@@ -135,7 +135,7 @@ const bc_gfx_driver_t *bc_ls013b7dh03_get_driver(void)
         .draw_pixel = (void (*)(void *, int, int, uint32_t)) bc_ls013b7dh03_draw_pixel,
         .get_pixel = (uint32_t (*)(void *, int, int)) bc_ls013b7dh03_get_pixel,
         .update = (bool (*)(void *)) bc_ls013b7dh03_update,
-        .get_caps = (bc_gfx_caps_t (*)(void *)) bc_ls013b7dh03_get_caps,
+        .get_caps = (bc_gfx_caps_t (*)(void *)) bc_ls013b7dh03_get_caps
     };
 
     return &driver;

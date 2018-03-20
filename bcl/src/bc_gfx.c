@@ -7,12 +7,17 @@ void bc_gfx_init(bc_gfx_t *self, void *display, const bc_gfx_driver_t *driver)
     self->_driver = driver;
     self->_font = &bc_font_ubuntu_15;
 
-    self->_caps = driver->get_caps(display);
+    self->_caps = driver->get_caps(self->_display);
 }
 
 bool bc_gfx_display_is_ready(bc_gfx_t *self)
 {
     return self->_driver->is_ready(self->_display);
+}
+
+bc_gfx_caps_t bc_gfx_get_caps(bc_gfx_t *self)
+{
+    return self->_caps;
 }
 
 void bc_gfx_clear(bc_gfx_t *self)
@@ -37,7 +42,7 @@ bc_gfx_rotation_t bc_gfx_get_rotation(bc_gfx_t *self)
 
 void bc_gfx_draw_pixel(bc_gfx_t *self, int x, int y, uint32_t color)
 {
-    if (x >= self->_caps.width || y >= self->_caps.height || x < 0 || y < 0)
+    if (x > self->_caps.width || y > self->_caps.height || x < 0 || y < 0)
     {
         return;
     }
@@ -156,10 +161,59 @@ int bc_gfx_calc_string_width(bc_gfx_t *self,  char *str)
     return width;
 }
 
+int bc_gfx_printf(bc_gfx_t *self, int left, int top, uint32_t color, char *format, ...)
+{
+    va_list ap;
+
+    char buffer[32];
+
+    va_start(ap, format);
+
+    vsnprintf(buffer, sizeof(buffer), format, ap);
+
+    va_end(ap);
+
+    return bc_gfx_draw_string(self, left, top, buffer, color);
+}
+
 void bc_gfx_draw_line(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color)
 {
+    int tmp;
+
+    if (y0 == y1)
+    {
+        if (x0 > x1)
+        {
+            tmp = x0;
+            x0 = x1;
+            x1 = tmp;
+        }
+
+        for (; x0 <= x1; x0++)
+        {
+            bc_gfx_draw_pixel(self, x0, y0, color);
+        }
+
+        return;
+    }
+    else if (x0 == x1)
+    {
+        if (y0 > y1)
+        {
+            tmp = y0;
+            y0 = y1;
+            y1 = tmp;
+        }
+
+        for (; y0 <= y1; y0++)
+        {
+            bc_gfx_draw_pixel(self, x0, y0, color);
+        }
+
+        return;
+    }
+
     int16_t step = abs(y1 - y0) > abs(x1 - x0);
-    int16_t tmp;
 
     if (step)
     {
@@ -220,7 +274,18 @@ void bc_gfx_draw_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint3
     bc_gfx_draw_line(self, x1, y0, x0, y0, color);
 }
 
-// Using Midpoint circle algorithm
+void bc_gfx_draw_fill_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color)
+{
+    int y;
+    for (; x0 <= x1; x0++)
+    {
+        for (y = y0; y <= y1; y++)
+        {
+            bc_gfx_draw_pixel(self, x0, y, color);
+        }
+    }
+}
+
 void bc_gfx_draw_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t color)
 {
     int x = radius-1;
@@ -231,14 +296,143 @@ void bc_gfx_draw_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t col
 
     while (x >= y)
     {
-        bc_gfx_draw_pixel(self, x0 + x, y0 + y, color);
-        bc_gfx_draw_pixel(self, x0 + y, y0 + x, color);
+
         bc_gfx_draw_pixel(self, x0 - y, y0 + x, color);
         bc_gfx_draw_pixel(self, x0 - x, y0 + y, color);
         bc_gfx_draw_pixel(self, x0 - x, y0 - y, color);
         bc_gfx_draw_pixel(self, x0 - y, y0 - x, color);
         bc_gfx_draw_pixel(self, x0 + y, y0 - x, color);
         bc_gfx_draw_pixel(self, x0 + x, y0 - y, color);
+        bc_gfx_draw_pixel(self, x0 + x, y0 + y, color);
+        bc_gfx_draw_pixel(self, x0 + y, y0 + x, color);
+
+        if (err <= 0)
+        {
+            y++;
+            err += dy;
+            dy += 2;
+        }
+        if (err > 0)
+        {
+            x--;
+            dx += 2;
+            err += (-radius << 1) + dx;
+        }
+    }
+}
+
+void bc_gfx_draw_fill_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t color)
+{
+    int x = radius-1;
+    int y = 0;
+    int dx = 1;
+    int dy = 1;
+    int err = dx - (radius << 1);
+
+    while (x >= y)
+    {
+        bc_gfx_draw_line(self, x0 - y, y0 - x, x0 + y, y0 - x, color);
+        bc_gfx_draw_line(self, x0 - x, y0 - y, x0 + x, y0 - y, color);
+        bc_gfx_draw_line(self, x0 - x, y0 + y, x0 + x, y0 + y, color);
+        bc_gfx_draw_line(self, x0 - y, y0 + x, x0 + y, y0 + x, color);
+
+        if (err <= 0)
+        {
+            y++;
+            err += dy;
+            dy += 2;
+        }
+        if (err > 0)
+        {
+            x--;
+            dx += 2;
+            err += (-radius << 1) + dx;
+        }
+    }
+}
+
+void bc_gfx_draw_round_corner(bc_gfx_t *self, int x0, int y0, int radius, bc_gfx_round_corner_t corner, uint32_t color)
+{
+    int x = radius-1;
+    int y = 0;
+    int dx = 1;
+    int dy = 1;
+    int err = dx - (radius << 1);
+
+    while (x >= y)
+    {
+        if (corner & BC_GFX_ROUND_CORNER_RIGHT_TOP)
+        {
+            bc_gfx_draw_pixel(self, x0 + y, y0 - x, color);
+            bc_gfx_draw_pixel(self, x0 + x, y0 - y, color);
+        }
+
+        if (corner & BC_GFX_ROUND_CORNER_RIGHT_BOTTOM)
+        {
+            bc_gfx_draw_pixel(self, x0 + x, y0 + y, color);
+            bc_gfx_draw_pixel(self, x0 + y, y0 + x, color);
+        }
+
+        if (corner & BC_GFX_ROUND_CORNER_LEFT_BOTTOM)
+        {
+            bc_gfx_draw_pixel(self, x0 - y, y0 + x, color);
+            bc_gfx_draw_pixel(self, x0 - x, y0 + y, color);
+        }
+
+        if (corner & BC_GFX_ROUND_CORNER_LEFT_TOP)
+        {
+            bc_gfx_draw_pixel(self, x0 - x, y0 - y, color);
+            bc_gfx_draw_pixel(self, x0 - y, y0 - x, color);
+        }
+
+        if (err <= 0)
+        {
+            y++;
+            err += dy;
+            dy += 2;
+        }
+        if (err > 0)
+        {
+            x--;
+            dx += 2;
+            err += (-radius << 1) + dx;
+        }
+    }
+}
+
+void bc_gfx_draw_fill_round_corner(bc_gfx_t *self, int x0, int y0, int radius, bc_gfx_round_corner_t corner, uint32_t color)
+{
+    int x = radius-1;
+    int y = 0;
+    int dx = 1;
+    int dy = 1;
+    int err = dx - (radius << 1);
+
+    while (x >= y)
+    {
+        if (corner & BC_GFX_ROUND_CORNER_RIGHT_TOP)
+        {
+            bc_gfx_draw_line(self, x0, y0 - x, x0 + y, y0 - x, color);
+            bc_gfx_draw_line(self, x0, y0 - y, x0 + x, y0 - y, color);
+        }
+
+        if (corner & BC_GFX_ROUND_CORNER_RIGHT_BOTTOM)
+        {
+            bc_gfx_draw_line(self, x0, y0 + y, x0 + x, y0 + y, color);
+            bc_gfx_draw_line(self, x0, y0 + x, x0 + y, y0 + x, color);
+        }
+
+        if (corner & BC_GFX_ROUND_CORNER_LEFT_BOTTOM)
+        {
+            bc_gfx_draw_line(self, x0 - y, y0 + x, x0, y0 + x, color);
+            bc_gfx_draw_line(self, x0 - x, y0 + y, x0, y0 + y, color);
+        }
+
+        if (corner & BC_GFX_ROUND_CORNER_LEFT_TOP)
+        {
+            bc_gfx_draw_line(self, x0 - x, y0 - y, x0, y0 - y, color);
+            bc_gfx_draw_line(self, x0 - y, y0 - x, x0, y0 - x, color);
+        }
 
         if (err <= 0)
         {

@@ -142,7 +142,7 @@ const bc_gfx_driver_t *bc_ssd1306_get_driver(void)
         .draw_pixel = (void (*)(void *, int, int, uint32_t)) bc_ssd1306_draw_pixel,
         .get_pixel = (uint32_t (*)(void *, int, int)) bc_ssd1306_get_pixel,
         .update = (bool (*)(void *)) bc_ssd1306_update,
-        .get_caps = (bc_gfx_caps_t (*)(void *)) bc_ssd1306_get_caps,
+        .get_caps = (bc_gfx_caps_t (*)(void *)) bc_ssd1306_get_caps
     };
 
     return &driver;

@@ -59,6 +59,22 @@ typedef enum
 
 } bc_gfx_rotation_t;
 
+typedef enum
+{
+    //! @brief Round corner right top
+    BC_GFX_ROUND_CORNER_RIGHT_TOP =    0x01,
+
+    //! @brief Round corner right bottom
+    BC_GFX_ROUND_CORNER_RIGHT_BOTTOM = 0x02,
+
+    //! @brief Round corner left bottom
+    BC_GFX_ROUND_CORNER_LEFT_BOTTOM = 0x04,
+
+    //! @brief Round corner left top
+    BC_GFX_ROUND_CORNER_LEFT_TOP = 0x08
+
+} bc_gfx_round_corner_t;
+
 //! @brief Instance
 
 typedef struct
@@ -77,10 +93,16 @@ typedef struct
 void bc_gfx_init(bc_gfx_t *self, void *display, const bc_gfx_driver_t *driver);
 
 //! @brief Check if display driver is ready for commands
+//! @param[in] self Instance
 //! @return true If ready
 //! @return false If not ready
 
 bool bc_gfx_display_is_ready(bc_gfx_t *self);
+
+//! @brief Get Display capabilities
+//! @param[in] self Instance
+
+bc_gfx_caps_t bc_gfx_get_caps(bc_gfx_t *self);
 
 //! @brief Clear
 //! @param[in] self Instance
@@ -146,6 +168,17 @@ int bc_gfx_draw_string(bc_gfx_t *self, int left, int top, char *str, uint32_t co
 
 int bc_gfx_calc_string_width(bc_gfx_t *self,  char *str);
 
+//! @brief Display string
+//! @param[in] self Instance
+//! @param[in] left Pixels from left edge
+//! @param[in] top Pixels from top edge
+//! @param[in] color
+//! @param[in] format Format string (printf style)
+//! @param[in] ... Optional format arguments
+//! @return Width of printed string
+
+int bc_gfx_printf(bc_gfx_t *self, int left, int top, uint32_t color, char *format, ...);
+
 //! @brief Display draw line
 //! @param[in] self Instance
 //! @param[in] x0 Pixels from left edge
@@ -166,7 +199,17 @@ void bc_gfx_draw_line(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t c
 
 void bc_gfx_draw_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
 
-//! @brief Lcd draw circle
+//! @brief Display draw fill rectangle
+//! @param[in] self Instance
+//! @param[in] x0 Pixels from left edge
+//! @param[in] y0 Pixels from top edge
+//! @param[in] x1 Pixels from left edge
+//! @param[in] y1 Pixels from top edge
+//! @param[in] color
+
+void bc_gfx_draw_fill_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
+
+//! @brief Lcd draw circle, using Midpoint circle algorithm
 //! @param[in] self Instance
 //! @param[in] x0 Center - pixels from left edge
 //! @param[in] y0 Center - pixels from top edge
@@ -174,6 +217,35 @@ void bc_gfx_draw_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint3
 //! @param[in] color
 
 void bc_gfx_draw_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t color);
+
+//! @brief Lcd draw fill circle, using Midpoint circle algorithm
+//! @param[in] self Instance
+//! @param[in] x0 Center - pixels from left edge
+//! @param[in] y0 Center - pixels from top edge
+//! @param[in] radius In pixels
+//! @param[in] color
+
+void bc_gfx_draw_fill_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t color);
+
+//! @brief Lcd draw round corner, using Midpoint circle algorithm
+//! @param[in] self Instance
+//! @param[in] x0 Center - pixels from left edge
+//! @param[in] y0 Center - pixels from top edge
+//! @param[in] corner position
+//! @param[in] radius In pixels
+//! @param[in] color
+
+void bc_gfx_draw_round_corner(bc_gfx_t *self, int x0, int y0, int radius, bc_gfx_round_corner_t corner, uint32_t color);
+
+//! @brief Lcd draw fill round corner, using Midpoint circle algorithm
+//! @param[in] self Instance
+//! @param[in] x0 Center - pixels from left edge
+//! @param[in] y0 Center - pixels from top edge
+//! @param[in] corner position
+//! @param[in] radius In pixels
+//! @param[in] color
+
+void bc_gfx_draw_fill_round_corner(bc_gfx_t *self, int x0, int y0, int radius, bc_gfx_round_corner_t corner, uint32_t color);
 
 //! @brief Display update, send data
 //! @param[in] self Instance
