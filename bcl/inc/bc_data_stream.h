@@ -87,6 +87,22 @@ void bc_data_stream_feed(bc_data_stream_t *self, void *data);
 
 void bc_data_stream_reset(bc_data_stream_t *self);
 
+//! @brief Get counter
+
+int bc_data_stream_get_counter(bc_data_stream_t *self);
+
+//! @brief Get length
+
+int bc_data_stream_get_length(bc_data_stream_t *self);
+
+//! @brief Get type
+
+bc_data_stream_type_t bc_data_stream_get_type(bc_data_stream_t *self);
+
+//! @brief Get buffer number_of_samples
+
+int bc_data_stream_get_number_of_samples(bc_data_stream_t *self);
+
 //! @brief Get average value of data stream
 //! @param[in] self Instance
 //! @param[out] self Pointer to buffer where result will be stored
@@ -127,6 +143,22 @@ bool bc_data_stream_get_last(bc_data_stream_t *self, void *result);
 //! @return false On failure (desired value is not available)
 
 bool bc_data_stream_get_nth(bc_data_stream_t *self, int n, void *result);
+
+//! @brief Get max value
+//! @param[in] self Instance
+//! @param[out] self Pointer to buffer where result will be stored
+//! @return true On success (desired value is available)
+//! @return false On failure (desired value is not available)
+
+bool bc_data_stream_get_max(bc_data_stream_t *self, void *result);
+
+//! @brief Get min value
+//! @param[in] self Instance
+//! @param[out] self Pointer to buffer where result will be stored
+//! @return true On success (desired value is available)
+//! @return false On failure (desired value is not available)
+
+bool bc_data_stream_get_min(bc_data_stream_t *self, void *result);
 
 //! @}
 
