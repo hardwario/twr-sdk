@@ -61,6 +61,26 @@ void bc_data_stream_reset(bc_data_stream_t *self)
     self->_feed_head = self->_buffer->number_of_samples - 1;
 }
 
+int bc_data_stream_get_counter(bc_data_stream_t *self)
+{
+    return self->_counter;
+}
+
+int bc_data_stream_get_length(bc_data_stream_t *self)
+{
+    return self->_counter > self->_buffer->number_of_samples ? self->_buffer->number_of_samples : self->_counter;
+}
+
+bc_data_stream_type_t bc_data_stream_get_type(bc_data_stream_t *self)
+{
+    return self->_buffer->type;
+}
+
+int bc_data_stream_get_number_of_samples(bc_data_stream_t *self)
+{
+    return self->_buffer->number_of_samples;
+}
+
 bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
 {
     if (self->_counter < self->_min_number_of_samples)
@@ -270,6 +290,118 @@ bool bc_data_stream_get_nth(bc_data_stream_t *self, int n, void *result)
         case BC_DATA_STREAM_TYPE_INT:
         {
             *(int *) result = *((int *) self->_buffer->feed + position);
+            break;
+        }
+        default:
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool bc_data_stream_get_max(bc_data_stream_t *self, void *result)
+{
+    if (self->_counter < self->_min_number_of_samples)
+    {
+        return false;
+    }
+
+    int length = bc_data_stream_get_length(self);
+
+    switch (self->_buffer->type)
+    {
+        case BC_DATA_STREAM_TYPE_FLOAT:
+        {
+            float *buffer = (float *) self->_buffer->feed;
+
+            float max = buffer[0];
+
+            for (int i = 1; i < length; i ++)
+            {
+                if (buffer[i] > max)
+                {
+                    max = buffer[i];
+                }
+            }
+
+            *(float *) result = max;
+
+            break;
+        }
+        case BC_DATA_STREAM_TYPE_INT:
+        {
+            int *buffer = (int *) self->_buffer->feed;
+
+            int max = buffer[0];
+
+            for (int i = 1; i < length; i ++)
+            {
+                if (buffer[i] > max)
+                {
+                    max = buffer[i];
+                }
+            }
+
+            *(int *) result = max;
+
+            break;
+        }
+        default:
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool bc_data_stream_get_min(bc_data_stream_t *self, void *result)
+{
+    if (self->_counter < self->_min_number_of_samples)
+    {
+        return false;
+    }
+
+    int length = bc_data_stream_get_length(self);
+
+    switch (self->_buffer->type)
+    {
+        case BC_DATA_STREAM_TYPE_FLOAT:
+        {
+            float *buffer = (float *) self->_buffer->feed;
+
+            float min = buffer[0];
+
+            for (int i = 1; i < length; i ++)
+            {
+                if (buffer[i] < min)
+                {
+                    min = buffer[i];
+                }
+            }
+
+            *(float *) result = min;
+
+            break;
+        }
+        case BC_DATA_STREAM_TYPE_INT:
+        {
+            int *buffer = (int *) self->_buffer->feed;
+
+            int min = buffer[0];
+
+            for (int i = 1; i < length; i ++)
+            {
+                if (buffer[i] < min)
+                {
+                    min = buffer[i];
+                }
+            }
+
+            *(int *) result = min;
+
             break;
         }
         default:
