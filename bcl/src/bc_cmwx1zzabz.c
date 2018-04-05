@@ -2,10 +2,10 @@
 
 #define BC_CMWX1ZZABZ_DELAY_RUN 100
 #define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_RESET_H 100
-#define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND 100
+#define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND 50 // ! when using longer AT responses
 #define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_RESPONSE 100
 #define BC_CMWX1ZZABZ_DELAY_SET_POWER_RESPONSE 100
-#define BC_CMWX1ZZABZ_DELAY_SEND_RF_FRAME_RESPONSE 12000
+#define BC_CMWX1ZZABZ_DELAY_SEND_RF_FRAME_RESPONSE 3000
 #define BC_CMWX1ZZABZ_DELAY_READ_ID_RESPONSE 100
 #define BC_CMWX1ZZABZ_DELAY_READ_PAC_RESPONSE 100
 #define BC_CMWX1ZZABZ_DELAY_CONTINUOUS_WAVE_RESPONSE 2000
@@ -15,6 +15,14 @@
 const char *_init_commands[] = {  
                             "AT\r",
                             "AT+DUTYCYCLE=0\r",
+                            "AT+DEVADDR?\r",
+                            "AT+DEVEUI?\r",
+                            "AT+APPEUI?\r",
+                            "AT+NWKSKEY?\r",
+                            "AT+APPSKEY?\r",
+                            "AT+APPKEY?\r",
+                            "AT+BAND?\r",
+                            "AT+MODE?\r",
                              NULL
                         };
 
@@ -155,6 +163,7 @@ static void _bc_cmwx1zzabz_task(void *param)
             case BC_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_RESPONSE:
             {
                 self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
+                uint8_t response_ok = 0;
 
                 if (!_bc_cmwx1zzabz_read_response(self))
                 {
@@ -163,10 +172,78 @@ static void _bc_cmwx1zzabz_task(void *param)
                     continue;
                 }
 
-                if (strcmp(self->_response, "+OK\r") != 0)
+                char response_string_ok[] = "+OK=";
+                
+                if (strcmp(_init_commands[self->init_command_index], "AT+DEVADDR?\r") == 0 &&
+                    memcmp(self->_response, response_string_ok, 4) == 0)
                 {
-                    volatile int b = 7;
-                    b++;
+                    memcpy(self->config.devaddr, &self->_response[4], 8);
+                    self->config.devaddr[8] = '\0';
+                    response_ok = 1;
+                }
+                else if (strcmp(_init_commands[self->init_command_index], "AT+DEVEUI?\r") == 0 &&
+                    memcmp(self->_response, response_string_ok, 4) == 0)
+                {
+                    memcpy(self->config.deveui, &self->_response[4], 16);
+                    self->config.deveui[16] = '\0';
+                    response_ok = 1;
+                } 
+                else if (strcmp(_init_commands[self->init_command_index], "AT+APPEUI?\r") == 0 &&
+                    memcmp(self->_response, response_string_ok, 4) == 0)
+                {
+                    memcpy(self->config.appeui, &self->_response[4], 16);
+                    self->config.appeui[16] = '\0';
+                    response_ok = 1;
+                } 
+                else if (strcmp(_init_commands[self->init_command_index], "AT+NWKSKEY?\r") == 0 &&
+                    memcmp(self->_response, response_string_ok, 4) == 0)
+                {
+                    memcpy(self->config.nwkskey, &self->_response[4], 32);
+                    self->config.nwkskey[32] = '\0';
+                    response_ok = 1;
+                } 
+                else if (strcmp(_init_commands[self->init_command_index], "AT+APPSKEY?\r") == 0 &&
+                    memcmp(self->_response, response_string_ok, 4) == 0)
+                {
+                    memcpy(self->config.appskey, &self->_response[4], 32);
+                    self->config.appskey[32] = '\0';
+                    response_ok = 1;
+                } 
+                else if (strcmp(_init_commands[self->init_command_index], "AT+APPKEY?\r") == 0 &&
+                    memcmp(self->_response, response_string_ok, 4) == 0)
+                {
+                    memcpy(self->config.appkey, &self->_response[4], 32);
+                    self->config.appkey[32] = '\0';
+                    response_ok = 1;
+                } 
+                else if (strcmp(_init_commands[self->init_command_index], "AT+BAND?\r") == 0 &&
+                    memcmp(self->_response, response_string_ok, 4) == 0)
+                {
+                    self->config.band = self->_response[4] - '0';
+                    response_ok = 1;
+                } 
+                else if (strcmp(_init_commands[self->init_command_index], "AT+MODE?\r") == 0 &&
+                    memcmp(self->_response, response_string_ok, 4) == 0)
+                {
+                    self->config.mode = self->_response[4] - '0';
+                    response_ok = 1;
+                } 
+                else if (   strcmp(_init_commands[self->init_command_index], "AT\r") == 0 &&
+                            strcmp(self->_response, "+OK\r") == 0
+                        )
+                {
+                    response_ok = 1;
+                }
+                // Generic OK response to other commands
+                else if (strcmp(self->_response, "+OK\r") == 0)
+                {
+                    response_ok = 1;
+                }
+
+                if(!response_ok)
+                {
+                    volatile a= 5;
+                    a++;
                     continue;
                 }
 

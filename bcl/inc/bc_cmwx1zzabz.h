@@ -51,6 +51,18 @@ typedef enum
     BC_CMWX1ZZABZ_STATE_SEND_RF_FRAME_RESPONSE = 10,
 } bc_cmwx1zzabz_state_t;
 
+typedef struct
+{
+    uint8_t band;
+    uint8_t mode;
+    char devaddr[8+1];
+    char deveui[16+1];
+    char appeui[16+1];
+    char nwkskey[32+1];
+    char appskey[32+1];
+    char appkey[32+1];
+} bc_cmwx1zzabz_config;
+
 struct bc_cmwx1zzabz_t
 {
     bc_scheduler_task_id_t _task_id;
@@ -70,6 +82,7 @@ struct bc_cmwx1zzabz_t
     size_t _message_length;
 
     uint8_t init_command_index;
+    bc_cmwx1zzabz_config config;
 };
 
 //! @endcond
