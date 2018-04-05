@@ -2,7 +2,7 @@
 
 #define BC_CMWX1ZZABZ_DELAY_RUN 100
 #define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_RESET_H 100
-#define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND 50 // ! when using longer AT responses
+#define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND 100 // ! when using longer AT responses
 #define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_RESPONSE 100
 #define BC_CMWX1ZZABZ_DELAY_SET_POWER_RESPONSE 100
 #define BC_CMWX1ZZABZ_DELAY_SEND_RF_FRAME_RESPONSE 3000
@@ -13,6 +13,8 @@
 
 // Apply changes to the factory configuration
 const char *_init_commands[] = {  
+                           /* "AT+UART=9600\r"*/
+                            "AT+SLEEP?\r",
                             "AT\r",
                             "AT+DUTYCYCLE=0\r",
                             "AT+DEVADDR?\r",
@@ -23,6 +25,7 @@ const char *_init_commands[] = {
                             "AT+APPKEY?\r",
                             "AT+BAND?\r",
                             "AT+MODE?\r",
+                            
                              NULL
                         };
 
@@ -41,7 +44,7 @@ void bc_cmwx1zzabz_init(bc_cmwx1zzabz_t *self,  bc_uart_channel_t uart_channel)
     bc_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
     bc_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
 
-    bc_uart_init(self->_uart_channel, BC_UART_BAUDRATE_19200, BC_UART_SETTING_8N1);
+    bc_uart_init(self->_uart_channel, BC_UART_BAUDRATE_9600, BC_UART_SETTING_8N1);
     bc_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
     bc_uart_async_read_start(self->_uart_channel, BC_TICK_INFINITY);
 
@@ -163,7 +166,7 @@ static void _bc_cmwx1zzabz_task(void *param)
             case BC_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_RESPONSE:
             {
                 self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
-                uint8_t response_ok = 0;
+                uint8_t response_handled = 0;
 
                 if (!_bc_cmwx1zzabz_read_response(self))
                 {
@@ -172,77 +175,74 @@ static void _bc_cmwx1zzabz_task(void *param)
                     continue;
                 }
 
-                char response_string_ok[] = "+OK=";
+                // Compare first 4 cahracters from response
+                uint32_t response_valid = (memcmp(self->_response, "+OK=", 4) == 0);
+                // Pointer to the last send command to know the context of the answer
+                const char *last_command = _init_commands[self->init_command_index];
+                // Pointer to the first character of response value after +OK=
+                char *response_string_value = &self->_response[4];
                 
-                if (strcmp(_init_commands[self->init_command_index], "AT+DEVADDR?\r") == 0 &&
-                    memcmp(self->_response, response_string_ok, 4) == 0)
+                if (strcmp(last_command, "AT+DEVADDR?\r") == 0 && response_valid)
                 {
-                    memcpy(self->config.devaddr, &self->_response[4], 8);
+                    memcpy(self->config.devaddr, response_string_value, 8);
                     self->config.devaddr[8] = '\0';
-                    response_ok = 1;
+                    response_handled = 1;
                 }
-                else if (strcmp(_init_commands[self->init_command_index], "AT+DEVEUI?\r") == 0 &&
-                    memcmp(self->_response, response_string_ok, 4) == 0)
+                else if (strcmp(last_command, "AT+DEVEUI?\r") == 0 && response_valid)
                 {
-                    memcpy(self->config.deveui, &self->_response[4], 16);
+                    memcpy(self->config.deveui, response_string_value, 16);
                     self->config.deveui[16] = '\0';
-                    response_ok = 1;
+                    response_handled = 1;
                 } 
-                else if (strcmp(_init_commands[self->init_command_index], "AT+APPEUI?\r") == 0 &&
-                    memcmp(self->_response, response_string_ok, 4) == 0)
+                else if (strcmp(last_command, "AT+APPEUI?\r") == 0 && response_valid)
                 {
-                    memcpy(self->config.appeui, &self->_response[4], 16);
+                    memcpy(self->config.appeui, response_string_value, 16);
                     self->config.appeui[16] = '\0';
-                    response_ok = 1;
+                    response_handled = 1;
                 } 
-                else if (strcmp(_init_commands[self->init_command_index], "AT+NWKSKEY?\r") == 0 &&
-                    memcmp(self->_response, response_string_ok, 4) == 0)
+                else if (strcmp(last_command, "AT+NWKSKEY?\r") == 0 && response_valid)
                 {
-                    memcpy(self->config.nwkskey, &self->_response[4], 32);
+                    memcpy(self->config.nwkskey, response_string_value, 32);
                     self->config.nwkskey[32] = '\0';
-                    response_ok = 1;
+                    response_handled = 1;
                 } 
-                else if (strcmp(_init_commands[self->init_command_index], "AT+APPSKEY?\r") == 0 &&
-                    memcmp(self->_response, response_string_ok, 4) == 0)
+                else if (strcmp(last_command, "AT+APPSKEY?\r") == 0 && response_valid)
                 {
-                    memcpy(self->config.appskey, &self->_response[4], 32);
+                    memcpy(self->config.appskey, response_string_value, 32);
                     self->config.appskey[32] = '\0';
-                    response_ok = 1;
+                    response_handled = 1;
                 } 
-                else if (strcmp(_init_commands[self->init_command_index], "AT+APPKEY?\r") == 0 &&
-                    memcmp(self->_response, response_string_ok, 4) == 0)
+                else if (strcmp(last_command, "AT+APPKEY?\r") == 0 && response_valid)
                 {
-                    memcpy(self->config.appkey, &self->_response[4], 32);
+                    memcpy(self->config.appkey, response_string_value, 32);
                     self->config.appkey[32] = '\0';
-                    response_ok = 1;
+                    response_handled = 1;
                 } 
-                else if (strcmp(_init_commands[self->init_command_index], "AT+BAND?\r") == 0 &&
-                    memcmp(self->_response, response_string_ok, 4) == 0)
+                else if (strcmp(last_command, "AT+BAND?\r") == 0 && response_valid)
                 {
-                    self->config.band = self->_response[4] - '0';
-                    response_ok = 1;
+                    self->config.band = response_string_value[0] - '0';
+                    response_handled = 1;
                 } 
-                else if (strcmp(_init_commands[self->init_command_index], "AT+MODE?\r") == 0 &&
-                    memcmp(self->_response, response_string_ok, 4) == 0)
+                else if (strcmp(last_command, "AT+MODE?\r") == 0 && response_valid)
                 {
-                    self->config.mode = self->_response[4] - '0';
-                    response_ok = 1;
-                } 
-                else if (   strcmp(_init_commands[self->init_command_index], "AT\r") == 0 &&
+                    self->config.mode = response_string_value[0] - '0';
+                    response_handled = 1;
+                }
+                else if (   strcmp(last_command, "AT\r") == 0 &&
                             strcmp(self->_response, "+OK\r") == 0
                         )
                 {
-                    response_ok = 1;
+                    response_handled = 1;
                 }
                 // Generic OK response to other commands
-                else if (strcmp(self->_response, "+OK\r") == 0)
+                else if (memcmp(self->_response, "+OK", 3) == 0)
                 {
-                    response_ok = 1;
+                    response_handled = 1;
                 }
 
-                if(!response_ok)
+                if(!response_handled)
                 {
-                    volatile a= 5;
+                    volatile int a = 5;
                     a++;
                     continue;
                 }
