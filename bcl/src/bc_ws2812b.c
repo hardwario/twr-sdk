@@ -196,6 +196,7 @@ bool bc_ws2812b_write(void)
     _bc_ws2812b_dma_config.address_memory = (void *)_bc_ws2812b.dma_bit_buffer;
     _bc_ws2812b_dma_config.length = dma_bit_buffer_size;
     bc_dma_channel_config(BC_DMA_CHANNEL_2, &_bc_ws2812b_dma_config);
+    bc_dma_channel_run(BC_DMA_CHANNEL_2);
 
     TIM2->CNT = _BC_WS2812_TIMER_PERIOD - 1;
 

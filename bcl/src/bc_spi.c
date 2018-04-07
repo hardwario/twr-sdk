@@ -257,6 +257,7 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
         _bc_spi_dma_config.address_memory = (void *)source;
         _bc_spi_dma_config.length = length;
         bc_dma_channel_config(BC_DMA_CHANNEL_5, &_bc_spi_dma_config);
+        bc_dma_channel_run(BC_DMA_CHANNEL_5);
 
         return true;
     }

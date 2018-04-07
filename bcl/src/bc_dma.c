@@ -53,10 +53,6 @@ static void _bc_dma_task(void *param);
 
 static void _bc_dma_irq_handler(bc_dma_channel_t channel, bc_dma_event_t event);
 
-static inline void _bc_dma_channel_enable(bc_dma_channel_t channel);
-
-static inline void _bc_dma_channel_disable(bc_dma_channel_t channel);
-
 void bc_dma_init(void)
 {
     if (_bc_dma.is_initialized)
@@ -171,8 +167,6 @@ void bc_dma_channel_config(bc_dma_channel_t channel, bc_dma_channel_config_t *co
     // Enable the transfer complete, half-complete and error interrupts
     dma_channel->CCR |= DMA_CCR_TCIE | DMA_CCR_HTIE | DMA_CCR_TEIE;
 
-    _bc_dma_channel_enable(channel);
-
     bc_irq_enable();
 }
 
@@ -180,6 +174,16 @@ void bc_dma_set_event_handler(bc_dma_channel_t channel, void (*event_handler)(bc
 {
     _bc_dma.channel[channel].event_handler = event_handler;
     _bc_dma.channel[channel].event_param = event_param;
+}
+
+void bc_dma_channel_run(bc_dma_channel_t channel)
+{
+    _bc_dma.channel[channel].instance->CCR |= DMA_CCR_EN;
+}
+
+void bc_dma_channel_stop(bc_dma_channel_t channel)
+{
+    _bc_dma.channel[channel].instance->CCR &= ~DMA_CCR_EN;
 }
 
 void _bc_dma_task(void *param)
@@ -201,7 +205,7 @@ void _bc_dma_irq_handler(bc_dma_channel_t channel, bc_dma_event_t event)
 {
     if (event == BC_DMA_EVENT_DONE && !(_bc_dma.channel[channel].instance->CCR & DMA_CCR_CIRC))
     {
-        _bc_dma_channel_disable(channel);
+        bc_dma_channel_stop(channel);
     }
 
     bc_dma_pending_event_t pending_event = { channel, event };
@@ -209,16 +213,6 @@ void _bc_dma_irq_handler(bc_dma_channel_t channel, bc_dma_event_t event)
     bc_fifo_irq_write(&_bc_dma.fifo_pending, &pending_event, sizeof(bc_dma_pending_event_t));
 
     bc_scheduler_plan_now(_bc_dma.task_id);
-}
-
-static inline void _bc_dma_channel_enable(bc_dma_channel_t channel)
-{
-    _bc_dma.channel[channel].instance->CCR |= DMA_CCR_EN;
-}
-
-static inline void _bc_dma_channel_disable(bc_dma_channel_t channel)
-{
-    _bc_dma.channel[channel].instance->CCR &= ~DMA_CCR_EN;
 }
 
 void DMA1_Channel1_IRQHandler(void)
