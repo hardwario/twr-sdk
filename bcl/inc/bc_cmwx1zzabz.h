@@ -97,8 +97,8 @@ typedef enum
     BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_SEND = 7,
     BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_RESPONSE = 8,
 
-    BC_CMWX1ZZABZ_STATE_SEND_RF_FRAME_COMMAND = 9,
-    BC_CMWX1ZZABZ_STATE_SEND_RF_FRAME_RESPONSE = 10,
+    BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_COMMAND = 9,
+    BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_RESPONSE = 10,
 
     BC_CMWX1ZZABZ_STATE_JOIN_SEND = 11,
     BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE = 12,    
@@ -122,7 +122,6 @@ struct bc_cmwx1zzabz_t
     bc_uart_channel_t _uart_channel;
     bc_cmwx1zzabz_state_t _state;
     bc_cmwx1zzabz_state_t _state_after_sleep;
-    bool _deep_sleep;
     bc_fifo_t _tx_fifo;
     bc_fifo_t _rx_fifo;
     uint8_t _tx_fifo_buffer[BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE];

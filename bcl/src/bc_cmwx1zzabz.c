@@ -4,12 +4,7 @@
 #define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_RESET_H 100
 #define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND 100 // ! when using longer AT responses
 #define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_RESPONSE 100
-#define BC_CMWX1ZZABZ_DELAY_SET_POWER_RESPONSE 100
 #define BC_CMWX1ZZABZ_DELAY_SEND_RF_FRAME_RESPONSE 3000
-#define BC_CMWX1ZZABZ_DELAY_READ_ID_RESPONSE 100
-#define BC_CMWX1ZZABZ_DELAY_READ_PAC_RESPONSE 100
-#define BC_CMWX1ZZABZ_DELAY_CONTINUOUS_WAVE_RESPONSE 2000
-#define BC_CMWX1ZZABZ_DELAY_DEEP_SLEEP_RESPONSE 100
 #define BC_CMWX1ZZABZ_DELAY_JOIN_RESPONSE 8000
 
 // Apply changes to the factory configuration
@@ -26,7 +21,6 @@ const char *_init_commands[] = {
                             "AT+APPKEY?\r",
                             "AT+BAND?\r",
                             "AT+MODE?\r",
-                            
                              NULL
                         };
 
@@ -81,7 +75,7 @@ bool bc_cmwx1zzabz_send_message(bc_cmwx1zzabz_t *self, const void *buffer, size_
 
     memcpy(self->_message_buffer, buffer, self->_message_length);
 
-    self->_state = BC_CMWX1ZZABZ_STATE_SEND_RF_FRAME_COMMAND;
+    self->_state = BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_COMMAND;
 
     bc_scheduler_plan_now(self->_task_id);
 
@@ -99,14 +93,6 @@ static void _bc_cmwx1zzabz_task(void *param)
         {
             case BC_CMWX1ZZABZ_STATE_READY:
             {
-                if (self->_deep_sleep)
-                {
-                    self->_deep_sleep = false;
-
-                    self->_state = self->_state_after_sleep;
-
-                    continue;
-                }
 
                 if (self->_event_handler != NULL)
                 {
@@ -120,7 +106,6 @@ static void _bc_cmwx1zzabz_task(void *param)
             case BC_CMWX1ZZABZ_STATE_IDLE:
             { 
                 // idle
-
                 if(self->_join_command)
                 {
                     self->_state = BC_CMWX1ZZABZ_STATE_JOIN_SEND;
@@ -131,8 +116,6 @@ static void _bc_cmwx1zzabz_task(void *param)
             }
             case BC_CMWX1ZZABZ_STATE_ERROR:
             {
-                self->_deep_sleep = false;
-
                 if (self->_event_handler != NULL)
                 {
                     self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_ERROR, self->_event_param);
@@ -180,8 +163,6 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 if (!_bc_cmwx1zzabz_read_response(self))
                 {
-                    volatile int a = 5;
-                    a++;
                     continue;
                 }
 
@@ -194,6 +175,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 
                 if (strcmp(last_command, "AT+DEVADDR?\r") == 0 && response_valid)
                 {
+                    // Check if user did not filled this structure to save configuration, oterwise it would be overwritten
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR) == 0)
                     {
                         memcpy(self->config.devaddr, response_string_value, 8);
@@ -276,8 +258,6 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 if (!response_handled)
                 {
-                    volatile int a = 5;
-                    a++;
                     continue;
                 }
 
@@ -303,7 +283,7 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 continue;
             }
-            case BC_CMWX1ZZABZ_STATE_SEND_RF_FRAME_COMMAND:
+            case BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_COMMAND:
             {
                 self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
 
@@ -313,8 +293,7 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 for (size_t i = 0; i < self->_message_length; i++)
                 {
-                    //strcat(self->_command, hex_lookup_table[*((uint8_t *) self->_message_buffer + i)]);
-                    // we put directly binary data to the buffer
+                    // put binary data directly to the "string" buffer
                     self->_command[command_length + i] = self->_message_buffer[i];
                 }
 
@@ -327,7 +306,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_CMWX1ZZABZ_STATE_SEND_RF_FRAME_RESPONSE;
+                self->_state = BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_RESPONSE;
 
                 if (self->_event_handler != NULL)
                 {
@@ -338,7 +317,7 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 return;
             }
-            case BC_CMWX1ZZABZ_STATE_SEND_RF_FRAME_RESPONSE:
+            case BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_RESPONSE:
             {
                 self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
 
@@ -461,8 +440,6 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 if (!_bc_cmwx1zzabz_read_response(self))
                 {
-                    volatile int a = 5;
-                    a++;
                     continue;
                 }
 
@@ -514,8 +491,6 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     if (!_bc_cmwx1zzabz_read_response(self))
                     {
-                        volatile int a = 5;
-                        a++;
                         break;
                     }
 
@@ -528,7 +503,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
 
                 
-                if(join_successful)
+                if (join_successful)
                 {
                     if (self->_event_handler != NULL)
                     {
@@ -560,6 +535,7 @@ static void _bc_cmwx1zzabz_task(void *param)
 void bc_cmwx1zzabz_join(bc_cmwx1zzabz_t *self)
 {
     self->_join_command = true;
+    bc_scheduler_plan_now(self->_task_id);
 }
 
 
