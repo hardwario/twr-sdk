@@ -35,11 +35,12 @@ typedef enum
     //! @brief Configuration save done
     BC_CMWX1ZZABZ_EVENT_CONFIG_SAVE_DONE = 4,
 
-    //! @brief Configuration save done
+    //! @brief OTAA join success
     BC_CMWX1ZZABZ_EVENT_JOIN_SUCCESS = 5,
 
-    //! @brief Configuration save done
-    BC_CMWX1ZZABZ_EVENT_JOIN_ERROR = 6,    
+    //! @brief OTAA join error
+    BC_CMWX1ZZABZ_EVENT_JOIN_ERROR = 6   
+
 } bc_cmwx1zzabz_event_t;
 
 //! @brief Save parameter index
@@ -55,6 +56,7 @@ typedef enum
     BC_CMWX1ZZABZ_CONFIG_INDEX_BAND = 6,
     BC_CMWX1ZZABZ_CONFIG_INDEX_MODE = 7,
     BC_CMWX1ZZABZ_CONFIG_INDEX_LAST_ITEM
+
 } bc_cmwx1zzabz_config_index_t;
 
 //! @brief CMWX1ZZABZ instance
@@ -70,7 +72,6 @@ typedef enum
 
 } bc_cmwx1zzabz_config_mode_t;
 
-
 //! @brief Frequency modes and standards
 
 typedef enum
@@ -80,10 +81,9 @@ typedef enum
     BC_CMWX1ZZABZ_CONFIG_BAND_EU868 = 5,
     BC_CMWX1ZZABZ_CONFIG_BAND_KR920 = 6,
     BC_CMWX1ZZABZ_CONFIG_BAND_IN865 = 7,
-    BC_CMWX1ZZABZ_CONFIG_BAND_US915 = 8,
+    BC_CMWX1ZZABZ_CONFIG_BAND_US915 = 8
+
 } bc_cmwx1zzabz_config_band_t;
-
-
 
 typedef enum
 {
@@ -101,7 +101,8 @@ typedef enum
     BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_RESPONSE = 10,
 
     BC_CMWX1ZZABZ_STATE_JOIN_SEND = 11,
-    BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE = 12,    
+    BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE = 12
+
 } bc_cmwx1zzabz_state_t;
 
 typedef struct
@@ -132,13 +133,11 @@ struct bc_cmwx1zzabz_t
     char _response[BC_CMWX1ZZABZ_RX_FIFO_BUFFER_SIZE];
     uint8_t _message_buffer[12];
     size_t _message_length;
-
     uint8_t init_command_index;
     uint8_t _save_command_index;
     bool _save_flag;
     uint32_t _save_config_mask;
-    bc_cmwx1zzabz_config config;
-
+    bc_cmwx1zzabz_config _config;
     bool _join_command;
 };
 

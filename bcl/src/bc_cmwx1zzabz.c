@@ -82,7 +82,6 @@ bool bc_cmwx1zzabz_send_message(bc_cmwx1zzabz_t *self, const void *buffer, size_
     return true;
 }
 
-
 static void _bc_cmwx1zzabz_task(void *param)
 {
     bc_cmwx1zzabz_t *self = param;
@@ -178,8 +177,8 @@ static void _bc_cmwx1zzabz_task(void *param)
                     // Check if user did not filled this structure to save configuration, oterwise it would be overwritten
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR) == 0)
                     {
-                        memcpy(self->config.devaddr, response_string_value, 8);
-                        self->config.devaddr[8] = '\0';
+                        memcpy(self->_config.devaddr, response_string_value, 8);
+                        self->_config.devaddr[8] = '\0';
                     }
                     response_handled = 1;
                 }
@@ -187,8 +186,8 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI) == 0)
                     {
-                        memcpy(self->config.deveui, response_string_value, 16);
-                        self->config.deveui[16] = '\0';
+                        memcpy(self->_config.deveui, response_string_value, 16);
+                        self->_config.deveui[16] = '\0';
                     }
                     response_handled = 1;
                 } 
@@ -196,8 +195,8 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPEUI) == 0)
                     {
-                        memcpy(self->config.appeui, response_string_value, 16);
-                        self->config.appeui[16] = '\0';
+                        memcpy(self->_config.appeui, response_string_value, 16);
+                        self->_config.appeui[16] = '\0';
                     }
                     response_handled = 1;
                 } 
@@ -205,8 +204,8 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY) == 0)
                     {
-                        memcpy(self->config.nwkskey, response_string_value, 32);
-                        self->config.nwkskey[32] = '\0';
+                        memcpy(self->_config.nwkskey, response_string_value, 32);
+                        self->_config.nwkskey[32] = '\0';
                     }
                     response_handled = 1;
                 } 
@@ -214,8 +213,8 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY) == 0)
                     {
-                        memcpy(self->config.appskey, response_string_value, 32);
-                        self->config.appskey[32] = '\0';
+                        memcpy(self->_config.appskey, response_string_value, 32);
+                        self->_config.appskey[32] = '\0';
                     }
                     response_handled = 1;
                 } 
@@ -223,8 +222,8 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPKEY) == 0)
                     {
-                        memcpy(self->config.appkey, response_string_value, 32);
-                        self->config.appkey[32] = '\0';
+                        memcpy(self->_config.appkey, response_string_value, 32);
+                        self->_config.appkey[32] = '\0';
                     }
                     response_handled = 1;
                 } 
@@ -232,7 +231,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_BAND) == 0)
                     {
-                        self->config.band = response_string_value[0] - '0';
+                        self->_config.band = response_string_value[0] - '0';
                     }
                     response_handled = 1;
                 } 
@@ -240,7 +239,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_MODE) == 0)
                     {
-                        self->config.mode = response_string_value[0] - '0';
+                        self->_config.mode = response_string_value[0] - '0';
                     }
                     response_handled = 1;
                 }
@@ -378,42 +377,42 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     case BC_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DEVADDR=%s\r", self->config.devaddr);
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DEVADDR=%s\r", self->_config.devaddr);
                         break;
                     }
                     case BC_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DEVEUI=%s\r", self->config.deveui);
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DEVEUI=%s\r", self->_config.deveui);
                         break;
                     }
                     case BC_CMWX1ZZABZ_CONFIG_INDEX_APPEUI:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPEUI=%s\r", self->config.appeui);
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPEUI=%s\r", self->_config.appeui);
                         break;
                     }
                     case BC_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+NWKSKEY=%s\r", self->config.nwkskey);
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+NWKSKEY=%s\r", self->_config.nwkskey);
                         break;
                     }
                     case BC_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPSKEY=%s\r", self->config.appskey);
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPSKEY=%s\r", self->_config.appskey);
                         break;
                     }
                     case BC_CMWX1ZZABZ_CONFIG_INDEX_APPKEY:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPKEY=%s\r", self->config.appkey);
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPKEY=%s\r", self->_config.appkey);
                         break;
                     }
                     case BC_CMWX1ZZABZ_CONFIG_INDEX_BAND:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+BAND=%d\r", self->config.band);
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+BAND=%d\r", self->_config.band);
                         break;
                     }
                     case BC_CMWX1ZZABZ_CONFIG_INDEX_MODE:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+MODE=%d\r", self->config.mode);
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+MODE=%d\r", self->_config.mode);
                         break;
                     }
                     default:
@@ -501,7 +500,6 @@ static void _bc_cmwx1zzabz_task(void *param)
                         break;
                     }
                 }
-
                 
                 if (join_successful)
                 {
@@ -518,7 +516,6 @@ static void _bc_cmwx1zzabz_task(void *param)
                     }
                 }               
                 
-
                 self->_state = BC_CMWX1ZZABZ_STATE_IDLE;
                 continue;
             }
@@ -531,114 +528,99 @@ static void _bc_cmwx1zzabz_task(void *param)
     }
 }
 
-
 void bc_cmwx1zzabz_join(bc_cmwx1zzabz_t *self)
 {
     self->_join_command = true;
     bc_scheduler_plan_now(self->_task_id);
 }
 
-
 void bc_cmwx1zzabz_set_devaddr(bc_cmwx1zzabz_t *self, char *devaddr)
 {
-    strncpy(self->config.devaddr, devaddr, 8+1);
+    strncpy(self->_config.devaddr, devaddr, 8+1);
     self->_save_config_mask |= (1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR);
 }
 
 void bc_cmwx1zzabz_get_devaddr(bc_cmwx1zzabz_t *self, char *devaddr)
 {
-    strncpy(devaddr, self->config.devaddr, 8+1);
+    strncpy(devaddr, self->_config.devaddr, 8+1);
 }
-
 
 void bc_cmwx1zzabz_set_deveui(bc_cmwx1zzabz_t *self, char *deveui)
 {
-    strncpy(self->config.deveui, deveui, 16+1);
+    strncpy(self->_config.deveui, deveui, 16+1);
     self->_save_config_mask |= (1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI);
 }
 
 void bc_cmwx1zzabz_get_deveui(bc_cmwx1zzabz_t *self, char *deveui)
 {
-    strncpy(deveui, self->config.deveui, 16+1);
+    strncpy(deveui, self->_config.deveui, 16+1);
 }
-
-
 
 void bc_cmwx1zzabz_set_appeui(bc_cmwx1zzabz_t *self, char *appeui)
 {
-    strncpy(self->config.appeui, appeui, 16+1);
+    strncpy(self->_config.appeui, appeui, 16+1);
     self->_save_config_mask |= (1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPEUI);
 }
 
 void bc_cmwx1zzabz_get_appeui(bc_cmwx1zzabz_t *self, char *appeui)
 {
-    strncpy(appeui, self->config.appeui, 16+1);
+    strncpy(appeui, self->_config.appeui, 16+1);
 }
-
 
 void bc_cmwx1zzabz_set_nwkskey(bc_cmwx1zzabz_t *self, char *nwkskey)
 {
-    strncpy(self->config.nwkskey, nwkskey, 32);
+    strncpy(self->_config.nwkskey, nwkskey, 32);
     self->_save_config_mask |= (1 << BC_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY);
 }
 
 void bc_cmwx1zzabz_get_nwkskey(bc_cmwx1zzabz_t *self, char *nwkskey)
 {
-    strncpy(nwkskey, self->config.nwkskey, 32+1);
+    strncpy(nwkskey, self->_config.nwkskey, 32+1);
 }
-
-
 
 void bc_cmwx1zzabz_set_appskey(bc_cmwx1zzabz_t *self, char *appskey)
 {
-    strncpy(self->config.appskey, appskey, 32);
+    strncpy(self->_config.appskey, appskey, 32);
     self->_save_config_mask |= (1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY);
 }
 
 void bc_cmwx1zzabz_get_appskey(bc_cmwx1zzabz_t *self, char *appskey)
 {
-    strncpy(appskey, self->config.appskey, 32+1);
+    strncpy(appskey, self->_config.appskey, 32+1);
 }
-
-
 
 void bc_cmwx1zzabz_set_appkey(bc_cmwx1zzabz_t *self, char *appkey)
 {
-    strncpy(self->config.appkey, appkey, 32+1);
+    strncpy(self->_config.appkey, appkey, 32+1);
     self->_save_config_mask |= (1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPKEY);
 }
 
 void bc_cmwx1zzabz_get_appkey(bc_cmwx1zzabz_t *self, char *appkey)
 {
-    strncpy(appkey, self->config.appkey, 32+1);
+    strncpy(appkey, self->_config.appkey, 32+1);
 }
-
-
 
 void bc_cmwx1zzabz_set_band(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_band_t band)
 {
-    self->config.band = band;
+    self->_config.band = band;
     self->_save_config_mask |= (1 << BC_CMWX1ZZABZ_CONFIG_INDEX_BAND);
 }
 
 bc_cmwx1zzabz_config_band_t bc_cmwx1zzabz_get_band(bc_cmwx1zzabz_t *self)
 {
-    return self->config.band;
+    return self->_config.band;
 }
-
 
 void bc_cmwx1zzabz_set_mode(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_mode_t mode)
 {
-    self->config.mode = mode;
+    self->_config.mode = mode;
     self->_save_config_mask |= (1 << BC_CMWX1ZZABZ_CONFIG_INDEX_MODE);
 }
 
 bc_cmwx1zzabz_config_mode_t bc_cmwx1zzabz_get_mode(bc_cmwx1zzabz_t *self)
 {
-    return self->config.mode;
+    return self->_config.mode;
 }
-
-
 
 static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)
 {
