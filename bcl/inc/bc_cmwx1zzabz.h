@@ -31,13 +31,59 @@ typedef enum
 
     //! @brief RF frame transmission finished event
     BC_CMWX1ZZABZ_EVENT_SEND_RF_FRAME_DONE = 3,
+
+    //! @brief Configuration save done
+    BC_CMWX1ZZABZ_EVENT_CONFIG_SAVE_DONE = 4,
+
+    //! @brief Configuration save done
+    BC_CMWX1ZZABZ_EVENT_JOIN_SUCCESS = 5,
+
+    //! @brief Configuration save done
+    BC_CMWX1ZZABZ_EVENT_JOIN_ERROR = 6,    
 } bc_cmwx1zzabz_event_t;
+
+//! @brief Save parameter index
+
+typedef enum
+{
+    BC_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR = 0,
+    BC_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI = 1,
+    BC_CMWX1ZZABZ_CONFIG_INDEX_APPEUI = 2,
+    BC_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY = 3,
+    BC_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY = 4,
+    BC_CMWX1ZZABZ_CONFIG_INDEX_APPKEY = 5,
+    BC_CMWX1ZZABZ_CONFIG_INDEX_BAND = 6,
+    BC_CMWX1ZZABZ_CONFIG_INDEX_MODE = 7,
+    BC_CMWX1ZZABZ_CONFIG_INDEX_LAST_ITEM
+} bc_cmwx1zzabz_config_index_t;
 
 //! @brief CMWX1ZZABZ instance
 
 typedef struct bc_cmwx1zzabz_t bc_cmwx1zzabz_t;
 
-//! @cond
+//! @brief LoRa mode ABP/OTAA
+
+typedef enum
+{
+    BC_CMWX1ZZABZ_CONFIG_MODE_ABP = 0,
+    BC_CMWX1ZZABZ_CONFIG_MODE_OTAA = 1,
+
+} bc_cmwx1zzabz_config_mode_t;
+
+
+//! @brief Frequency modes and standards
+
+typedef enum
+{
+    BC_CMWX1ZZABZ_CONFIG_BAND_AS923 = 0,
+    BC_CMWX1ZZABZ_CONFIG_BAND_AU915 = 1,
+    BC_CMWX1ZZABZ_CONFIG_BAND_EU868 = 5,
+    BC_CMWX1ZZABZ_CONFIG_BAND_KR920 = 6,
+    BC_CMWX1ZZABZ_CONFIG_BAND_IN865 = 7,
+    BC_CMWX1ZZABZ_CONFIG_BAND_US915 = 8,
+} bc_cmwx1zzabz_config_band_t;
+
+
 
 typedef enum
 {
@@ -53,12 +99,15 @@ typedef enum
 
     BC_CMWX1ZZABZ_STATE_SEND_RF_FRAME_COMMAND = 9,
     BC_CMWX1ZZABZ_STATE_SEND_RF_FRAME_RESPONSE = 10,
+
+    BC_CMWX1ZZABZ_STATE_JOIN_SEND = 11,
+    BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE = 12,    
 } bc_cmwx1zzabz_state_t;
 
 typedef struct
 {
-    uint8_t band;
-    uint8_t mode;
+    bc_cmwx1zzabz_config_band_t band;
+    bc_cmwx1zzabz_config_mode_t mode;
     char devaddr[8+1];
     char deveui[16+1];
     char appeui[16+1];
@@ -86,7 +135,12 @@ struct bc_cmwx1zzabz_t
     size_t _message_length;
 
     uint8_t init_command_index;
+    uint8_t _save_command_index;
+    bool _save_flag;
+    uint32_t _save_config_mask;
     bc_cmwx1zzabz_config config;
+
+    bool _join_command;
 };
 
 //! @endcond
@@ -119,13 +173,32 @@ bool bc_cmwx1zzabz_is_ready(bc_cmwx1zzabz_t *self);
 //! @return true If command was accepted for processing
 //! @return false If command was denied for processing
 
-bool bc_cmwx1zzabz_send_rf_frame(bc_cmwx1zzabz_t *self, const void *buffer, size_t length);
+bool bc_cmwx1zzabz_send_message(bc_cmwx1zzabz_t *self, const void *buffer, size_t length);
 
-//! @brief Read device ID command
-//! @param[in] self Instance
-//! @return true If command was accepted for processing
-//! @return false If command was denied for processing
+void bc_cmwx1zzabz_set_devaddr(bc_cmwx1zzabz_t *self, char *devaddr);
+void bc_cmwx1zzabz_get_devaddr(bc_cmwx1zzabz_t *self, char *devaddr);
 
-//! @}
+void bc_cmwx1zzabz_set_deveui(bc_cmwx1zzabz_t *self, char *deveui);
+void bc_cmwx1zzabz_get_deveui(bc_cmwx1zzabz_t *self, char *deveui);
+
+void bc_cmwx1zzabz_set_appeui(bc_cmwx1zzabz_t *self, char *appeui);
+void bc_cmwx1zzabz_get_appeui(bc_cmwx1zzabz_t *self, char *appeui);
+
+void bc_cmwx1zzabz_set_nwkskey(bc_cmwx1zzabz_t *self, char *nwkskey);
+void bc_cmwx1zzabz_get_nwkskey(bc_cmwx1zzabz_t *self, char *nwkskey);
+
+void bc_cmwx1zzabz_set_appskey(bc_cmwx1zzabz_t *self, char *appskey);
+void bc_cmwx1zzabz_get_appskey(bc_cmwx1zzabz_t *self, char *appskey);
+
+void bc_cmwx1zzabz_set_appkey(bc_cmwx1zzabz_t *self, char *appkey);
+void bc_cmwx1zzabz_get_appkey(bc_cmwx1zzabz_t *self, char *appkey);
+
+void bc_cmwx1zzabz_set_band(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_band_t band);
+bc_cmwx1zzabz_config_band_t bc_cmwx1zzabz_get_band(bc_cmwx1zzabz_t *self);
+
+void bc_cmwx1zzabz_set_mode(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_mode_t mode);
+bc_cmwx1zzabz_config_mode_t bc_cmwx1zzabz_get_mode(bc_cmwx1zzabz_t *self);
+
+void bc_cmwx1zzabz_join(bc_cmwx1zzabz_t *self);
 
 #endif // _BC_CMWX1ZZABZ_H
