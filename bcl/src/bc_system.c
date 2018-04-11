@@ -1,6 +1,7 @@
 #include <bc_system.h>
 #include <bc_scheduler.h>
 #include <bc_irq.h>
+#include <bc_i2c.h>
 #include <stm32l0xx.h>
 
 #define _BC_SYSTEM_DEBUG_ENABLE 0
@@ -30,6 +31,8 @@ static void _bc_system_init_gpio(void);
 
 static void _bc_system_init_rtc(void);
 
+static void _bc_system_init_shutdown_tmp112(void);
+
 static void _bc_system_switch_clock(bc_system_clock_t clock);
 
 void bc_system_init(void)
@@ -45,6 +48,8 @@ void bc_system_init(void)
     _bc_system_init_gpio();
 
     _bc_system_init_rtc();
+
+    _bc_system_init_shutdown_tmp112();
 }
 
 static void _bc_system_init_flash(void)
@@ -254,6 +259,15 @@ static void _bc_system_init_rtc(void)
 
     // Enable write protection
     RTC->WPR = 0xff;
+}
+
+static void _bc_system_init_shutdown_tmp112(void)
+{
+    bc_i2c_init(BC_I2C_I2C0, BC_I2C_SPEED_100_KHZ);
+
+    bc_i2c_memory_write_16b(BC_I2C_I2C0, 0x49, 0x01, 0x0180);
+
+    bc_i2c_deinit(BC_I2C_I2C0);
 }
 
 void bc_system_sleep(void)
