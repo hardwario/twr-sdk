@@ -210,6 +210,17 @@ void bc_dma_channel_config(bc_dma_channel_t channel, bc_dma_channel_config_t *co
 
 void bc_dma_set_event_handler(bc_dma_channel_t channel, void (*event_handler)(bc_dma_channel_t, bc_dma_event_t, void *), void *event_param);
 
+//! @brief Start DMA channel
+//! @param[in] channel DMA channel
+
+void bc_dma_channel_run(bc_dma_channel_t channel);
+
+//! @brief Stop DMA channel
+//! @param[in] channel DMA channel
+
+void bc_dma_channel_stop(bc_dma_channel_t channel);
+
+
 //! @}
 
 #endif // _BC_DMA_H
