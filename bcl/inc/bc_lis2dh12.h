@@ -24,6 +24,37 @@ typedef enum
 
 } bc_lis2dh12_event_t;
 
+//! @brief Resolution and mode
+
+typedef enum
+{
+    //! @brief 10-bit data output (Normal mode) (Default)
+    BC_LIS2DH12_RESOLUTION_10BIT = 0,
+
+    //! @brief 12-bit data output (High-resolution mode)
+    BC_LIS2DH12_RESOLUTION_12BIT = 1,
+
+    //! @brief 8-bit data output (Low-power mode)
+    BC_LIS2DH12_RESOLUTION_8BIT = 2
+
+} bc_lis2dh12_resolution_t;
+
+typedef enum
+{
+    //! @brief ±2 g (Default)
+    BC_LIS2DH12_SCALE_2G = 0,
+
+    //! @brief ±4 g
+    BC_LIS2DH12_SCALE_4G = 1,
+
+    //! @brief ±8 g
+    BC_LIS2DH12_SCALE_8G = 2,
+
+    //! @brief ±16 g
+    BC_LIS2DH12_SCALE_16G = 3,
+
+} bc_lis2dh12_scale_t;
+
 //! @brief LIS2DH12 result in raw values
 
 typedef struct
@@ -95,17 +126,14 @@ struct bc_lis2dh12_t
     bc_tick_t _update_interval;
     bc_lis2dh12_state_t _state;
     bool _accelerometer_valid;
-    uint8_t _out_x_l;
-    uint8_t _out_x_h;
-    uint8_t _out_y_l;
-    uint8_t _out_y_h;
-    uint8_t _out_z_l;
-    uint8_t _out_z_h;
+    bc_lis2dh12_result_raw_t _raw;
     bool _alarm_active;
     bool _irq_flag;
     bc_scheduler_task_id_t _task_id_interval;
     bc_scheduler_task_id_t _task_id_measure;
     bool _measurement_active;
+    bc_lis2dh12_resolution_t _resolution;
+    bc_lis2dh12_scale_t _scale;
 };
 
 //! @endcond
@@ -160,6 +188,22 @@ bool bc_lis2dh12_get_result_g(bc_lis2dh12_t *self, bc_lis2dh12_result_g_t *resul
 //! @return false When configuration was not successful
 
 bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm);
+
+//! @brief Set resolution
+//! @param[in] self Instance
+//! @param[in] resolution
+//! @return true When configuration was successful
+//! @return false When configuration was not successful
+
+bool bc_lis2dh12_set_resolution(bc_lis2dh12_t *self, bc_lis2dh12_resolution_t resolution);
+
+//! @brief Set scale
+//! @param[in] self Instance
+//! @param[in] scale
+//! @return true When configuration was successful
+//! @return false When configuration was not successful
+
+bool bc_lis2dh12_set_scale(bc_lis2dh12_t *self, bc_lis2dh12_scale_t scale);
 
 //! @}
 
