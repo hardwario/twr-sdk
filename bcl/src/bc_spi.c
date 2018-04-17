@@ -84,6 +84,9 @@ void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
     // Enable clock for SPI2
     RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
 
+    // Errata workaround
+    RCC->AHBENR;
+
     // Software slave management, master configuration
     SPI2->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_MSTR;
 
