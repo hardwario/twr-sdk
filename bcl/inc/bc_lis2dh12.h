@@ -39,6 +39,8 @@ typedef enum
 
 } bc_lis2dh12_resolution_t;
 
+//! @brief Scale
+
 typedef enum
 {
     //! @brief ±2 g (Default)
@@ -54,6 +56,55 @@ typedef enum
     BC_LIS2DH12_SCALE_16G = 3,
 
 } bc_lis2dh12_scale_t;
+
+//! @brief Data rate
+
+typedef enum
+{
+    //! @brief Power-down mode
+    BC_LIS2DH12_DATARATE_POWER_DOWN = 0,
+
+    //! @brief 1 Hz
+    BC_LIS2DH12_DATARATE_1HZ = 1,
+
+    //! @brief 10 Hz
+    BC_LIS2DH12_DATARATE_10HZ = 2,
+
+    //! @brief 25 Hz (Default)
+    BC_LIS2DH12_DATARATE_25HZ = 3,
+
+    //! @brief 50 Hz
+    BC_LIS2DH12_DATARATE_50HZ = 4,
+
+    //! @brief 100 Hz
+    BC_LIS2DH12_DATARATE_100HZ = 5,
+
+    //! @brief 200 Hz
+    BC_LIS2DH12_DATARATE_200HZ = 6,
+
+    //! @brief 400 Hz
+    BC_LIS2DH12_DATARATE_400HZ = 7,
+
+} bc_lis2dh12_datarate_t;
+
+//! @brief Alarm Interrupt mode
+
+typedef enum
+{
+    //! @brief OR combination of interrupt events
+    BC_LIS2DH12_ALARM_MODE_OR = 0,
+
+    //! @brief 6-direction movement recognition
+    BC_LIS2DH12_ALARM_MODE_6D_MOVEMENT = 1,
+
+    //! @brief AND combination of interrupt events
+    BC_LIS2DH12_ALARM_MODE_AND = 2,
+
+    //! @brief 6-direction position recognition
+    BC_LIS2DH12_ALARM_MODE_6D_POSITION = 3,
+
+} bc_lis2dh12_alarm_mode_t;
+
 
 //! @brief LIS2DH12 result in raw values
 
@@ -89,6 +140,7 @@ typedef struct
 
 typedef struct
 {
+    bc_lis2dh12_alarm_mode_t mode;
     //! @brief Alarm threshold in g
     float threshold;
     uint8_t duration;
@@ -113,7 +165,8 @@ typedef enum
     BC_LIS2DH12_STATE_INITIALIZE = 0,
     BC_LIS2DH12_STATE_MEASURE = 1,
     BC_LIS2DH12_STATE_READ = 2,
-    BC_LIS2DH12_STATE_UPDATE = 3
+    BC_LIS2DH12_STATE_UPDATE = 3,
+    BC_LIS2DH12_STATE_ALARM_CONFIG = 4
 
 } bc_lis2dh12_state_t;
 
@@ -127,13 +180,15 @@ struct bc_lis2dh12_t
     bc_lis2dh12_state_t _state;
     bool _accelerometer_valid;
     bc_lis2dh12_result_raw_t _raw;
-    bool _alarm_active;
-    bool _irq_flag;
     bc_scheduler_task_id_t _task_id_interval;
     bc_scheduler_task_id_t _task_id_measure;
     bool _measurement_active;
     bc_lis2dh12_resolution_t _resolution;
     bc_lis2dh12_scale_t _scale;
+    bc_lis2dh12_datarate_t _datarate;
+    bc_lis2dh12_alarm_t _alarm;
+    bool _alarm_active;
+    bool _irq_flag;
 };
 
 //! @endcond
@@ -204,6 +259,15 @@ bool bc_lis2dh12_set_resolution(bc_lis2dh12_t *self, bc_lis2dh12_resolution_t re
 //! @return false When configuration was not successful
 
 bool bc_lis2dh12_set_scale(bc_lis2dh12_t *self, bc_lis2dh12_scale_t scale);
+
+//! @brief Set datarate
+//! @param[in] self Instance
+//! @param[in] datarate
+//! @return true When configuration was successful
+//! @return false When configuration was not successful
+
+bool bc_lis2dh12_set_datarate(bc_lis2dh12_t *self, bc_lis2dh12_datarate_t datarate);
+
 
 //! @}
 

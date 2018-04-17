@@ -29,6 +29,8 @@ bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
+    self->_datarate = BC_LIS2DH12_DATARATE_25HZ;
+
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 
     // Enable GPIOB clock
@@ -155,12 +157,19 @@ static void _bc_lis2dh12_task_measure(void *param)
                     continue;
                 }
 
+
+                // Disable IA1 interrupts on INT1 pin
+                bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x22, 0x00);
+
                 uint8_t cfg_reg4 = 0x80 | ((uint8_t) self->_scale << 4) | (((uint8_t) self->_resolution & 0x01) << 3);
 
                 if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x23, cfg_reg4))
                 {
                     continue;
                 }
+
+                bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x24, 0x20); // latch interrupt request
+
 
                 if (!_bc_lis2dh12_power_down(self))
                 {
@@ -251,6 +260,27 @@ static void _bc_lis2dh12_task_measure(void *param)
 
                 return;
             }
+            case BC_LIS2DH12_STATE_ALARM_CONFIG:
+            {
+
+                bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x30, 0xff); // 6-direction movement recognition
+
+                bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x32, 0x21); // treshold
+
+                bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x33, 0x01); // duration
+
+                bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x24, 0x20); // latch interrupt request
+
+                bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x22, 0x40); // IA1 interrupt on INT1 pin
+
+                self->_alarm_active = true;
+
+
+                bc_exti_register(BC_EXTI_LINE_PB6, BC_EXTI_EDGE_RISING, _bc_lis2dh12_interrupt, self);
+
+
+                return;
+            }
             default:
             {
                 self->_state = BC_LIS2DH12_STATE_ERROR;
@@ -276,7 +306,6 @@ static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self)
 
     uint8_t cfg_reg1 = 0x57 | ((self->_resolution & 0x02) << 2);
 
-    // ODR = 0x5 => 100Hz
     if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x20, cfg_reg1))
     {
         return false;
@@ -299,6 +328,27 @@ static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self)
 
 bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
 {
+    if (alarm != NULL)
+    {
+        self->_alarm = *alarm;
+
+        self->_alarm_active = true;
+    }
+    else
+    {
+        self->_alarm_active = false;
+    }
+
+    if ((self->_state != BC_LIS2DH12_STATE_ERROR) || (self->_state != BC_LIS2DH12_STATE_INITIALIZE))
+    {
+        self->_state = BC_LIS2DH12_STATE_ALARM_CONFIG;
+
+        bc_scheduler_plan_now(self->_task_id_measure);
+    }
+
+    return true;
+
+
     if (alarm != NULL)
     {
         // Enable alarm
@@ -404,6 +454,17 @@ bool bc_lis2dh12_set_resolution(bc_lis2dh12_t *self, bc_lis2dh12_resolution_t re
 bool bc_lis2dh12_set_scale(bc_lis2dh12_t *self, bc_lis2dh12_scale_t scale)
 {
     self->_scale = scale;
+
+    self->_state = BC_LIS2DH12_STATE_INITIALIZE;
+
+    bc_scheduler_plan_now(self->_task_id_measure);
+
+    return true;
+}
+
+bool bc_lis2dh12_set_datarate(bc_lis2dh12_t *self, bc_lis2dh12_datarate_t datarate)
+{
+    self->_datarate = datarate;
 
     self->_state = BC_LIS2DH12_STATE_INITIALIZE;
 
