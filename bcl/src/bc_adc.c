@@ -53,8 +53,6 @@ _bc_adc =
     }
 };
 
-static inline void _bc_adc_calibration(void);
-
 static void _bc_adc_task(void *param);
 
 static inline bool _bc_adc_get_pending(bc_adc_channel_t *next ,bc_adc_channel_t start);
@@ -104,6 +102,13 @@ bc_adc_format_t bc_adc_get_format(bc_adc_channel_t channel)
     return _bc_adc.channel_table[channel].format;
 }
 
+bool bc_adc_is_ready(bc_adc_channel_t channel)
+{
+    (void) channel;
+
+    return _bc_adc.channel_in_progress == BC_ADC_CHANNEL_NONE;
+}
+
 bool bc_adc_read(bc_adc_channel_t channel, void *result)
 {
     // If ongoing conversion...
@@ -111,8 +116,6 @@ bool bc_adc_read(bc_adc_channel_t channel, void *result)
     {
         return false;
     }
-
-    //_bc_adc_calibration();
 
     // Set ADC channel
     ADC1->CHSELR = _bc_adc.channel_table[channel].chselr;
@@ -306,8 +309,13 @@ void ADC1_COMP_IRQHandler(void)
     }
 }
 
-static inline void _bc_adc_calibration(void)
+bool bc_adc_calibration(void)
 {
+    if (_bc_adc.channel_in_progress != BC_ADC_CHANNEL_NONE)
+    {
+        return false;
+    }
+
     // Perform ADC calibration
     ADC1->CR |= ADC_CR_ADCAL;
     while ((ADC1->ISR & ADC_ISR_EOCAL) == 0)
@@ -337,6 +345,8 @@ static inline void _bc_adc_calibration(void)
 
     // Disable internal reference
     ADC->CCR &= ~ADC_CCR_VREFEN;
+
+    return true;
 }
 
 static void _bc_adc_task(void *param)
