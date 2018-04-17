@@ -16,7 +16,7 @@ enum
     _BC_MODULE_LCD_LED_DISP_CS_PIN = BC_TCA9534A_PIN_P7
 };
 
-#define _BC_MODULE_LCD_INITIALIZED ((1 << _BC_MODULE_LCD_LED_DISP_CS_PIN) | (1 << _BC_MODULE_LCD_DISP_ON_PIN) | (1 << _BC_MODULE_LCD_LED_GREEN_PIN) | (1 << _BC_MODULE_LCD_LED_RED_PIN) | (1 << _BC_MODULE_LCD_LED_BLUE_PIN))
+#define _BC_MODULE_LCD_INITIALIZED ((1 << _BC_MODULE_LCD_BACKLIGHT_PIN) | (1 << _BC_MODULE_LCD_LED_DISP_CS_PIN) | (1 << _BC_MODULE_LCD_DISP_ON_PIN) | (1 << _BC_MODULE_LCD_LED_GREEN_PIN) | (1 << _BC_MODULE_LCD_LED_RED_PIN) | (1 << _BC_MODULE_LCD_LED_BLUE_PIN))
 
 typedef struct bc_module_lcd_t
 {
@@ -221,7 +221,7 @@ static bool _bc_module_lcd_tca9534a_init(void)
 			return false;
 		}
 
-		if (!bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, 0x0a))
+		if (!bc_tca9534a_set_port_direction(&_bc_module_lcd.tca9534a, (1 << _BC_MODULE_LCD_BUTTON1_PIN) | (1 << _BC_MODULE_LCD_BUTTON2_PIN)))
 		{
 			return false;
 		}

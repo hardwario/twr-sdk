@@ -26,7 +26,9 @@ void bc_ls013b7dh03_init(bc_ls013b7dh03_t *self, bool (*pin_cs_set)(bool state))
         self->_framebuffer[offs] = _bc_ls013b7dh03_reverse(line);
     }
 
-    self->_task_id = bc_scheduler_register(_bc_ls013b7dh03_task, NULL, _BC_LS013B7DH03_VCOM_PERIOD);
+    self->_pin_cs_set(1);
+
+    self->_task_id = bc_scheduler_register(_bc_ls013b7dh03_task, self, _BC_LS013B7DH03_VCOM_PERIOD);
 }
 
 bc_gfx_caps_t bc_ls013b7dh03_get_caps(bc_ls013b7dh03_t *self)
@@ -105,7 +107,10 @@ bool bc_ls013b7dh03_update(bc_ls013b7dh03_t *self)
 {
     if (bc_spi_is_ready())
     {
-        self->_pin_cs_set(0);
+        if (!self->_pin_cs_set(0))
+        {
+            return false;
+        }
 
         self->_framebuffer[0] = 0x80 | self->_vcom;
 
@@ -164,7 +169,15 @@ static void _bc_ls013b7dh03_task(void *param)
 
 static bool _bc_ls013b7dh03_spi_transfer(bc_ls013b7dh03_t *self, uint8_t *buffer, size_t length)
 {
-    self->_pin_cs_set(0);
+    if (!bc_spi_is_ready())
+    {
+        return false;
+    }
+
+    if (!self->_pin_cs_set(0))
+    {
+        return false;
+    }
 
     bool spi_state = bc_spi_transfer(buffer, NULL, length);
 
