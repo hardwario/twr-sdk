@@ -10,8 +10,7 @@
 // Apply changes to the factory configuration
 const char *_init_commands[] = {  
                            /* "AT+UART=9600\r"*/
-                            "AT+SLEEP?\r",
-                            "AT\r",
+                            "\rAT\r",
                             "AT+DUTYCYCLE=0\r",
                             "AT+DEVADDR?\r",
                             "AT+DEVEUI?\r",
@@ -21,12 +20,14 @@ const char *_init_commands[] = {
                             "AT+APPKEY?\r",
                             "AT+BAND?\r",
                             "AT+MODE?\r",
+                            "AT+CLASS?\r",
                              NULL
                         };
 
 static void _bc_cmwx1zzabz_task(void *param);
 
 static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self);
+static void _uart_event_handler(bc_uart_channel_t ch, bc_uart_event_t event, void *param);
 
 void bc_cmwx1zzabz_init(bc_cmwx1zzabz_t *self,  bc_uart_channel_t uart_channel)
 {
@@ -40,12 +41,26 @@ void bc_cmwx1zzabz_init(bc_cmwx1zzabz_t *self,  bc_uart_channel_t uart_channel)
     bc_uart_init(self->_uart_channel, BC_UART_BAUDRATE_9600, BC_UART_SETTING_8N1);
     bc_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
     bc_uart_async_read_start(self->_uart_channel, BC_TICK_INFINITY);
+    bc_uart_set_event_handler(self->_uart_channel, _uart_event_handler, self);
 
     self->_task_id = bc_scheduler_register(_bc_cmwx1zzabz_task, self, BC_CMWX1ZZABZ_DELAY_RUN);
     self->_save_flag = false;
     self->_join_command = false;
     self->_save_config_mask = 0x00;
     self->_state = BC_CMWX1ZZABZ_STATE_INITIALIZE;
+}
+
+static void _uart_event_handler(bc_uart_channel_t ch, bc_uart_event_t event, void *param)
+{
+    (void)ch;
+    bc_cmwx1zzabz_t *self = (bc_cmwx1zzabz_t*)param;
+
+    if (event == BC_UART_EVENT_ASYNC_READ_DATA && self->_state == BC_CMWX1ZZABZ_STATE_IDLE)
+    {
+        bc_scheduler_plan_relative(self->_task_id, 100);
+        self->_state = BC_CMWX1ZZABZ_STATE_RECEIVE;
+    }
+
 }
 
 void bc_cmwx1zzabz_set_event_handler(bc_cmwx1zzabz_t *self, void (*event_handler)(bc_cmwx1zzabz_t *, bc_cmwx1zzabz_event_t, void *), void *event_param)
@@ -109,6 +124,56 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     self->_state = BC_CMWX1ZZABZ_STATE_JOIN_SEND;
                     continue;
+                }
+
+                return;
+            }
+            case BC_CMWX1ZZABZ_STATE_RECEIVE:
+            {
+                self->_state = BC_CMWX1ZZABZ_STATE_IDLE;
+
+                while (_bc_cmwx1zzabz_read_response(self))
+                {
+                    bool recv_data = (memcmp(self->_response, "+RECV=", 5) == 0);
+
+                    if (!recv_data)
+                    {
+                        continue;
+                    }
+
+                    self->_message_port = atoi(&self->_response[6]);
+
+                    char *comma_search = strchr(self->_response, ',');
+                    if (!comma_search)
+                    {
+                        continue;
+                    }
+
+                    // Parse from the next character
+                    self->_message_length = atoi(++comma_search);
+
+                    // Dummy read three /r/n/r characters
+                    char dummy[3];
+                    uint32_t bytes = bc_uart_async_read(self->_uart_channel, &dummy, 3);
+                    if (bytes != 3)
+                    {
+                        continue;
+                    }
+
+                    // Received data is bigger than library message buffer
+                    if (self->_message_length > sizeof(self->_message_buffer))
+                    {
+                        continue;
+                    }
+
+                    // Read the received message
+                    bytes = bc_uart_async_read(self->_uart_channel, self->_message_buffer, self->_message_length);
+                    if (bytes != self->_message_length)
+                    {
+                        continue;
+                    }
+
+                    self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED, self->_event_param);
                 }
 
                 return;
@@ -240,6 +305,14 @@ static void _bc_cmwx1zzabz_task(void *param)
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_MODE) == 0)
                     {
                         self->_config.mode = response_string_value[0] - '0';
+                    }
+                    response_handled = 1;
+                }
+                else if (strcmp(last_command, "AT+CLASS?\r") == 0 && response_valid)
+                {
+                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS) == 0)
+                    {
+                        self->_config.class = response_string_value[0] - '0';
                     }
                     response_handled = 1;
                 }
@@ -415,6 +488,11 @@ static void _bc_cmwx1zzabz_task(void *param)
                         snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+MODE=%d\r", self->_config.mode);
                         break;
                     }
+                    case BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS:
+                    {
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+CLASS=%d\r", self->_config.class);
+                        break;
+                    }
                     default:
                     {
                         break;
@@ -483,7 +561,7 @@ static void _bc_cmwx1zzabz_task(void *param)
             case BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE:
             {
                 bool join_successful = false;
-                // Clean join command flag
+                // Clear join command flag
                 self->_join_command = false;
 
                 while (true)
@@ -620,6 +698,39 @@ void bc_cmwx1zzabz_set_mode(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_mode_t m
 bc_cmwx1zzabz_config_mode_t bc_cmwx1zzabz_get_mode(bc_cmwx1zzabz_t *self)
 {
     return self->_config.mode;
+}
+
+void bc_cmwx1zzabz_set_class(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_class_t class)
+{
+    self->_config.class = class;
+    self->_save_config_mask |= (1 << BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS);
+}
+
+bc_cmwx1zzabz_config_class_t bc_cmwx1zzabz_get_class(bc_cmwx1zzabz_t *self)
+{
+    return self->_config.class;
+}
+
+uint8_t bc_cmwx1zzabz_get_received_message_port(bc_cmwx1zzabz_t *self)
+{
+    return self->_message_port;
+}
+
+uint32_t bc_cmwx1zzabz_get_received_message_length(bc_cmwx1zzabz_t *self)
+{
+    return self->_message_length;
+}
+
+uint32_t bc_cmwx1zzabz_get_received_message_data(bc_cmwx1zzabz_t *self, uint8_t *buffer, uint32_t buffer_size)
+{
+    if (self->_message_length > buffer_size)
+    {
+        return 0;
+    }
+
+    memcpy(buffer, self->_message_buffer, self->_message_length);
+
+    return self->_message_length;
 }
 
 static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)

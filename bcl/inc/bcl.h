@@ -64,6 +64,7 @@
 #include <bc_system.h>
 #include <bc_error.h>
 #include <bc_dice.h>
+#include <bc_cmwx1zzabz.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
