@@ -19,6 +19,13 @@ void bc_dice_init(bc_dice_t *self, bc_dice_face_t start)
     memset(self, 0, sizeof(*self));
 
     self->_face = start;
+
+    self->_threshold = _BC_DICE_THRESHOLD;
+}
+
+void bc_dice_set_threshold(bc_dice_t *self, float threshold)
+{
+    self->_threshold = threshold;
 }
 
 void bc_dice_feed_vectors(bc_dice_t *self, float x_axis, float y_axis, float z_axis)
@@ -29,23 +36,23 @@ void bc_dice_feed_vectors(bc_dice_t *self, float x_axis, float y_axis, float z_a
 
     bool update = false;
 
-    if ((vector_x == 0 && (x_axis < -_BC_DICE_THRESHOLD || x_axis > _BC_DICE_THRESHOLD)) ||
-        (vector_x == 1 && (x_axis < 1.f - _BC_DICE_THRESHOLD)) ||
-        (vector_x == -1 && (x_axis > -1.f + _BC_DICE_THRESHOLD)))
+    if ((vector_x == 0 && (x_axis < -self->_threshold || x_axis > self->_threshold)) ||
+        (vector_x == 1 && (x_axis < 1.f - self->_threshold)) ||
+        (vector_x == -1 && (x_axis > -1.f + self->_threshold)))
     {
         update = true;
     }
 
-    if ((vector_y == 0 && (y_axis < -_BC_DICE_THRESHOLD || y_axis > _BC_DICE_THRESHOLD)) ||
-        (vector_y == 1 && (y_axis < 1.f - _BC_DICE_THRESHOLD)) ||
-        (vector_y == -1 && (y_axis > -1.f + _BC_DICE_THRESHOLD)))
+    if ((vector_y == 0 && (y_axis < -self->_threshold || y_axis > self->_threshold)) ||
+        (vector_y == 1 && (y_axis < 1.f - self->_threshold)) ||
+        (vector_y == -1 && (y_axis > -1.f + self->_threshold)))
     {
         update = true;
     }
 
-    if ((vector_z == 0 && (z_axis < -_BC_DICE_THRESHOLD || z_axis > _BC_DICE_THRESHOLD)) ||
-        (vector_z == 1 && (z_axis < 1.f - _BC_DICE_THRESHOLD)) ||
-        (vector_z == -1 && (z_axis > -1.f + _BC_DICE_THRESHOLD)))
+    if ((vector_z == 0 && (z_axis < -self->_threshold || z_axis > self->_threshold)) ||
+        (vector_z == 1 && (z_axis < 1.f - self->_threshold)) ||
+        (vector_z == -1 && (z_axis > -1.f + self->_threshold)))
     {
         update = true;
     }
@@ -62,9 +69,9 @@ void bc_dice_feed_vectors(bc_dice_t *self, float x_axis, float y_axis, float z_a
             if (delta_y < 0.f) { delta_y = -delta_y; }
             if (delta_z < 0.f) { delta_z = -delta_z; }
 
-            if (delta_x < 1.f - _BC_DICE_THRESHOLD &&
-                delta_y < 1.f - _BC_DICE_THRESHOLD &&
-                delta_z < 1.f - _BC_DICE_THRESHOLD)
+            if (delta_x < 1.f - self->_threshold &&
+                delta_y < 1.f - self->_threshold &&
+                delta_z < 1.f - self->_threshold)
             {
                 self->_face = i;
             }
