@@ -325,4 +325,6 @@ uint32_t bc_cmwx1zzabz_get_received_message_length(bc_cmwx1zzabz_t *self);
 
 uint32_t bc_cmwx1zzabz_get_received_message_data(bc_cmwx1zzabz_t *self, uint8_t *buffer, uint32_t buffer_size);
 
+//! @}
+
 #endif // _BC_CMWX1ZZABZ_H

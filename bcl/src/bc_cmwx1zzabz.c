@@ -28,7 +28,7 @@ static void _bc_cmwx1zzabz_task(void *param);
 
 static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self);
 
-static void _uart_event_handler(bc_uart_channel_t ch, bc_uart_event_t event, void *param);
+static void _uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void *param);
 
 void bc_cmwx1zzabz_init(bc_cmwx1zzabz_t *self,  bc_uart_channel_t uart_channel)
 {
@@ -58,7 +58,6 @@ static void _uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event
         bc_scheduler_plan_relative(self->_task_id, 100);
         self->_state = BC_CMWX1ZZABZ_STATE_RECEIVE;
     }
-
 }
 
 void bc_cmwx1zzabz_set_event_handler(bc_cmwx1zzabz_t *self, void (*event_handler)(bc_cmwx1zzabz_t *, bc_cmwx1zzabz_event_t, void *), void *event_param)
