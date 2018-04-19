@@ -27,10 +27,10 @@ typedef enum
     BC_CMWX1ZZABZ_EVENT_ERROR = 1,
 
     //! @brief RF frame transmission started event
-    BC_CMWX1ZZABZ_EVENT_SEND_RF_FRAME_START = 2,
+    BC_CMWX1ZZABZ_EVENT_SEND_MESSAGE_START = 2,
 
     //! @brief RF frame transmission finished event
-    BC_CMWX1ZZABZ_EVENT_SEND_RF_FRAME_DONE = 3,
+    BC_CMWX1ZZABZ_EVENT_SEND_MESSAGE_DONE = 3,
 
     //! @brief Configuration save done
     BC_CMWX1ZZABZ_EVENT_CONFIG_SAVE_DONE = 4,
@@ -55,7 +55,7 @@ typedef struct bc_cmwx1zzabz_t bc_cmwx1zzabz_t;
 typedef enum
 {
     BC_CMWX1ZZABZ_CONFIG_MODE_ABP = 0,
-    BC_CMWX1ZZABZ_CONFIG_MODE_OTAA = 1,
+    BC_CMWX1ZZABZ_CONFIG_MODE_OTAA = 1
 
 } bc_cmwx1zzabz_config_mode_t;
 
@@ -72,12 +72,12 @@ typedef enum
 
 } bc_cmwx1zzabz_config_band_t;
 
-//! @brief LoRa mode ABP/OTAA
+//! @brief LoRa device class A or C
 
 typedef enum
 {
     BC_CMWX1ZZABZ_CONFIG_CLASS_A = 0,
-    BC_CMWX1ZZABZ_CONFIG_CLASS_C = 2,
+    BC_CMWX1ZZABZ_CONFIG_CLASS_C = 2
 
 } bc_cmwx1zzabz_config_class_t;
 
@@ -116,7 +116,7 @@ typedef enum
     BC_CMWX1ZZABZ_STATE_JOIN_SEND = 11,
     BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE = 12,
 
-    BC_CMWX1ZZABZ_STATE_RECEIVE = 13,
+    BC_CMWX1ZZABZ_STATE_RECEIVE = 13
 
 } bc_cmwx1zzabz_state_t;
 
@@ -131,6 +131,7 @@ typedef struct
     char nwkskey[32+1];
     char appskey[32+1];
     char appkey[32+1];
+
 } bc_cmwx1zzabz_config;
 
 struct bc_cmwx1zzabz_t
@@ -147,10 +148,10 @@ struct bc_cmwx1zzabz_t
     void *_event_param;
     char _command[BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE];
     char _response[BC_CMWX1ZZABZ_RX_FIFO_BUFFER_SIZE];
-    uint8_t _message_buffer[52];
+    uint8_t _message_buffer[51];
     size_t _message_length;
     uint8_t _message_port;
-    uint8_t init_command_index;
+    uint8_t _init_command_index;
     uint8_t _save_command_index;
     bool _save_flag;
     uint32_t _save_config_mask;

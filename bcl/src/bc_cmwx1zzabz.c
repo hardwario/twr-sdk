@@ -4,29 +4,30 @@
 #define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_RESET_H 100
 #define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND 100 // ! when using longer AT responses
 #define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_RESPONSE 100
-#define BC_CMWX1ZZABZ_DELAY_SEND_RF_FRAME_RESPONSE 3000
+#define BC_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE 3000
 #define BC_CMWX1ZZABZ_DELAY_JOIN_RESPONSE 8000
 
 // Apply changes to the factory configuration
-const char *_init_commands[] = {  
-                           /* "AT+UART=9600\r"*/
-                            "\rAT\r",
-                            "AT+DUTYCYCLE=0\r",
-                            "AT+DEVADDR?\r",
-                            "AT+DEVEUI?\r",
-                            "AT+APPEUI?\r",
-                            "AT+NWKSKEY?\r",
-                            "AT+APPSKEY?\r",
-                            "AT+APPKEY?\r",
-                            "AT+BAND?\r",
-                            "AT+MODE?\r",
-                            "AT+CLASS?\r",
-                             NULL
-                        };
+const char *_init_commands[] =
+{  
+    "\rAT\r",
+    "AT+DUTYCYCLE=0\r",
+    "AT+DEVADDR?\r",
+    "AT+DEVEUI?\r",
+    "AT+APPEUI?\r",
+    "AT+NWKSKEY?\r",
+    "AT+APPSKEY?\r",
+    "AT+APPKEY?\r",
+    "AT+BAND?\r",
+    "AT+MODE?\r",
+    "AT+CLASS?\r",
+    NULL
+};
 
 static void _bc_cmwx1zzabz_task(void *param);
 
 static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self);
+
 static void _uart_event_handler(bc_uart_channel_t ch, bc_uart_event_t event, void *param);
 
 void bc_cmwx1zzabz_init(bc_cmwx1zzabz_t *self,  bc_uart_channel_t uart_channel)
@@ -44,15 +45,12 @@ void bc_cmwx1zzabz_init(bc_cmwx1zzabz_t *self,  bc_uart_channel_t uart_channel)
     bc_uart_set_event_handler(self->_uart_channel, _uart_event_handler, self);
 
     self->_task_id = bc_scheduler_register(_bc_cmwx1zzabz_task, self, BC_CMWX1ZZABZ_DELAY_RUN);
-    self->_save_flag = false;
-    self->_join_command = false;
-    self->_save_config_mask = 0x00;
     self->_state = BC_CMWX1ZZABZ_STATE_INITIALIZE;
 }
 
-static void _uart_event_handler(bc_uart_channel_t ch, bc_uart_event_t event, void *param)
+static void _uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void *param)
 {
-    (void)ch;
+    (void) channel;
     bc_cmwx1zzabz_t *self = (bc_cmwx1zzabz_t*)param;
 
     if (event == BC_UART_EVENT_ASYNC_READ_DATA && self->_state == BC_CMWX1ZZABZ_STATE_IDLE)
@@ -107,7 +105,6 @@ static void _bc_cmwx1zzabz_task(void *param)
         {
             case BC_CMWX1ZZABZ_STATE_READY:
             {
-
                 if (self->_event_handler != NULL)
                 {
                     self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_READY, self->_event_param);
@@ -119,7 +116,6 @@ static void _bc_cmwx1zzabz_task(void *param)
             }
             case BC_CMWX1ZZABZ_STATE_IDLE:
             { 
-                // idle
                 if(self->_join_command)
                 {
                     self->_state = BC_CMWX1ZZABZ_STATE_JOIN_SEND;
@@ -191,7 +187,7 @@ static void _bc_cmwx1zzabz_task(void *param)
             }
             case BC_CMWX1ZZABZ_STATE_INITIALIZE:
             {
-                self->init_command_index = 0;
+                self->_init_command_index = 0;
                 self->_state = BC_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_SEND;
 
                 continue;
@@ -207,7 +203,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                 }
 
-                strcpy(self->_command, _init_commands[self->init_command_index]);
+                strcpy(self->_command, _init_commands[self->_init_command_index]);
                 size_t length = strlen(self->_command);
 
                 if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
@@ -233,7 +229,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 // Compare first 4 cahracters from response
                 uint32_t response_valid = (memcmp(self->_response, "+OK=", 4) == 0);
                 // Pointer to the last send command to know the context of the answer
-                const char *last_command = _init_commands[self->init_command_index];
+                const char *last_command = _init_commands[self->_init_command_index];
                 // Pointer to the first character of response value after +OK=
                 char *response_string_value = &self->_response[4];
                 
@@ -333,9 +329,9 @@ static void _bc_cmwx1zzabz_task(void *param)
                     continue;
                 }
 
-                self->init_command_index++;
+                self->_init_command_index++;
 
-                if (_init_commands[self->init_command_index] == NULL)
+                if (_init_commands[self->_init_command_index] == NULL)
                 {
                     // If configuration was changed and flag set, save them
                     if (self->_save_config_mask)
@@ -382,10 +378,10 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_SEND_RF_FRAME_START, self->_event_param);
+                    self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_SEND_MESSAGE_START, self->_event_param);
                 }
 
-                bc_scheduler_plan_current_from_now(BC_CMWX1ZZABZ_DELAY_SEND_RF_FRAME_RESPONSE);
+                bc_scheduler_plan_current_from_now(BC_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE);
 
                 return;
             }
@@ -407,12 +403,11 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_SEND_RF_FRAME_DONE, self->_event_param);
+                    self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_SEND_MESSAGE_DONE, self->_event_param);
                 }
 
                 continue;
             }
-
             case BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_SEND:
             {
                 self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
