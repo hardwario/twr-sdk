@@ -66,6 +66,7 @@ struct bc_analog_sensor_t
     bool _measurement_active;
     bc_tick_t _update_interval;
     bc_analog_sensor_state_t _state;
+    uint32_t _value;
 };
 
 //! @endcond

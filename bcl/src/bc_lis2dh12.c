@@ -5,6 +5,7 @@
 
 #define _BC_LIS2DH12_DELAY_RUN 10
 #define _BC_LIS2DH12_DELAY_READ 10
+#define _BC_LIS2DH12_AUTOINCREMENT_ADR 0x80
 
 static void _bc_lis2dh12_task_interval(void *param);
 static void _bc_lis2dh12_task_measure(void *param);
@@ -12,6 +13,14 @@ static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self);
 static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self);
 static void _bc_lis2dh12_interrupt(bc_exti_line_t line, void *param);
+
+static const float _bc_lis2dh12_fs_lut[] =
+{
+        [BC_LIS2DH12_SCALE_2G] = (1/1000.f),
+        [BC_LIS2DH12_SCALE_4G] = (2/1000.f),
+        [BC_LIS2DH12_SCALE_8G] = (4/1000.f),
+        [BC_LIS2DH12_SCALE_16G] = (12/1000.f)
+};
 
 bool bc_lis2dh12_init(bc_lis2dh12_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
@@ -75,22 +84,9 @@ bool bc_lis2dh12_measure(bc_lis2dh12_t *self)
 
 bool bc_lis2dh12_get_result_raw(bc_lis2dh12_t *self, bc_lis2dh12_result_raw_t *result_raw)
 {
-    result_raw->x_axis = (int16_t) self->_out_x_h;
-    result_raw->x_axis <<= 8;
-    result_raw->x_axis >>= 4;
-    result_raw->x_axis |= (int16_t) self->_out_x_l >> 4; // TODO  Clarify this
+    *result_raw = self->_raw;
 
-    result_raw->y_axis = (int16_t) self->_out_y_h;
-    result_raw->y_axis <<= 8;
-    result_raw->y_axis >>= 4;
-    result_raw->y_axis |= (int16_t) self->_out_y_l >> 4; // TODO Clarify this
-
-    result_raw->z_axis = (int16_t) self->_out_z_h;
-    result_raw->z_axis <<= 8;
-    result_raw->z_axis >>= 4;
-    result_raw->z_axis |= (int16_t) self->_out_z_l >> 4; // TODO Clarify this
-
-    return true;
+    return self->_accelerometer_valid;
 }
 
 bool bc_lis2dh12_get_result_g(bc_lis2dh12_t *self, bc_lis2dh12_result_g_t *result_g)
@@ -102,9 +98,11 @@ bool bc_lis2dh12_get_result_g(bc_lis2dh12_t *self, bc_lis2dh12_result_g_t *resul
         return false;
     }
 
-    result_g->x_axis = ((float) result_raw.x_axis) / 512.f;
-    result_g->y_axis = ((float) result_raw.y_axis) / 512.f;
-    result_g->z_axis = ((float) result_raw.z_axis) / 512.f;
+    float sensitivity = _bc_lis2dh12_fs_lut[self->_scale];
+
+    result_g->x_axis = (result_raw.x_axis >> 4) * sensitivity;
+    result_g->y_axis = (result_raw.y_axis >> 4) * sensitivity;
+    result_g->z_axis = (result_raw.z_axis >> 4) * sensitivity;
 
     return true;
 }
@@ -153,6 +151,13 @@ static void _bc_lis2dh12_task_measure(void *param)
                 }
 
                 if (who_am_i != 0x33)
+                {
+                    continue;
+                }
+
+                uint8_t cfg_reg4 = 0x80 | ((uint8_t) self->_scale << 4) | (((uint8_t) self->_resolution & 0x01) << 3);
+
+                if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x23, cfg_reg4))
                 {
                     continue;
                 }
@@ -268,13 +273,11 @@ static bool _bc_lis2dh12_power_down(bc_lis2dh12_t *self)
 
 static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self)
 {
-    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x23, 0x98))
-    {
-        return false;
-    }
+
+    uint8_t cfg_reg1 = 0x57 | ((self->_resolution & 0x02) << 2);
 
     // ODR = 0x5 => 100Hz
-    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x20, 0x57))
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x20, cfg_reg1))
     {
         return false;
     }
@@ -284,26 +287,14 @@ static bool _bc_lis2dh12_continuous_conversion(bc_lis2dh12_t *self)
 
 static bool _bc_lis2dh12_read_result(bc_lis2dh12_t *self)
 {
-     uint8_t buffer[6];
-
      bc_i2c_memory_transfer_t transfer;
 
      transfer.device_address = self->_i2c_address;
-     transfer.memory_address = 0xA8;
-     transfer.buffer = buffer;
+     transfer.memory_address = _BC_LIS2DH12_AUTOINCREMENT_ADR | 0x28;
+     transfer.buffer = &self->_raw;
      transfer.length = 6;
 
-     bool return_value = bc_i2c_memory_read(self->_i2c_channel, &transfer);
-
-     // Copy bytes to their destination
-     self->_out_x_l = buffer[0];
-     self->_out_x_h = buffer[1];
-     self->_out_y_l = buffer[2];
-     self->_out_y_h = buffer[3];
-     self->_out_z_l = buffer[4];
-     self->_out_z_h = buffer[5];
-
-     return return_value;
+     return bc_i2c_memory_read(self->_i2c_channel, &transfer);
 }
 
 bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
@@ -395,6 +386,28 @@ bool bc_lis2dh12_set_alarm(bc_lis2dh12_t *self, bc_lis2dh12_alarm_t *alarm)
     }
 
     bc_lis2dh12_measure(self);
+
+    return true;
+}
+
+bool bc_lis2dh12_set_resolution(bc_lis2dh12_t *self, bc_lis2dh12_resolution_t resolution)
+{
+    self->_resolution = resolution;
+
+    self->_state = BC_LIS2DH12_STATE_INITIALIZE;
+
+    bc_scheduler_plan_now(self->_task_id_measure);
+
+    return true;
+}
+
+bool bc_lis2dh12_set_scale(bc_lis2dh12_t *self, bc_lis2dh12_scale_t scale)
+{
+    self->_scale = scale;
+
+    self->_state = BC_LIS2DH12_STATE_INITIALIZE;
+
+    bc_scheduler_plan_now(self->_task_id_measure);
 
     return true;
 }

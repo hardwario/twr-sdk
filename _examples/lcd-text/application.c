@@ -6,7 +6,7 @@ void application_init(void)
 {
     // Initialize LCD
     // The parameter is internal buffer in SDK, no need to define it
-    bc_module_lcd_init(&_bc_module_lcd_framebuffer);
+    bc_module_lcd_init();
 
     // Init default font, this is necessary
     // See other fonts in sdk/bcl/inc/bc_font_common.h

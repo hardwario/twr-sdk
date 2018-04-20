@@ -6,6 +6,7 @@
 #include <bc_image.h>
 #include <bc_led.h>
 #include <bc_button.h>
+#include <bc_gfx.h>
 
 //! @addtogroup bc_module_lcd bc_module_lcd
 //! @brief Driver for lcd
@@ -21,37 +22,21 @@ typedef enum
 } bc_module_lcd_event_t;
 
 
-
-// See app note https://www.silabs.com/documents/public/application-notes/AN0048.pdf
-// Figure 3.1
-// 1B mode | 1B addr + 16B data + 1B dummy | 1B dummy END
-#define BC_LCD_FRAMEBUFFER_SIZE (1 + ((1+16+1) * 128) + 1)
-
-//! @cond
-
-typedef struct bc_module_lcd_framebuffer_t
-{
-    uint8_t framebuffer[BC_LCD_FRAMEBUFFER_SIZE];
-
-} bc_module_lcd_framebuffer_t;
-
-//! @endcond
-
-//! @brief Callback events
+//! @brief Rotation
 
 typedef enum
 {
     //! @brief LCD rotation 0 degrees
-    BC_MODULE_LCD_ROTATION_0   = 0,
+    BC_MODULE_LCD_ROTATION_0   = BC_GFX_ROTATION_0,
 
     //! @brief LCD rotation 90 degrees
-    BC_MODULE_LCD_ROTATION_90  = 1,
+    BC_MODULE_LCD_ROTATION_90  = BC_GFX_ROTATION_90,
 
     //! @brief LCD rotation 180 degrees
-    BC_MODULE_LCD_ROTATION_180 = 2,
+    BC_MODULE_LCD_ROTATION_180 = BC_GFX_ROTATION_180,
 
     //! @brief LCD rotation 270 degrees
-    BC_MODULE_LCD_ROTATION_270 = 3
+    BC_MODULE_LCD_ROTATION_270 = BC_GFX_ROTATION_270
 
 } bc_module_lcd_rotation_t;
 
@@ -82,14 +67,14 @@ typedef enum
 
 } bc_module_lcd_button_t;
 
-//! @brief LCD frame buffer instance
-
-bc_module_lcd_framebuffer_t _bc_module_lcd_framebuffer;
 
 //! @brief Initialize lcd
-//! @param[in] framebuffer
 
-void bc_module_lcd_init(bc_module_lcd_framebuffer_t *framebuffer);
+void bc_module_lcd_init();
+
+//! @brief Get gfx instance
+
+bc_gfx_t *bc_module_lcd_get_gfx();
 
 //! @brief Lcd on
 //! @return true On success
@@ -179,12 +164,6 @@ void bc_module_lcd_draw_image(int left, int top, const bc_image_t *img);
 //! @return false On failure
 
 bool bc_module_lcd_update(void);
-
-//! @brief Send Lcd clear memory command
-//! @return true On success
-//! @return false On failure
-
-bool bc_module_lcd_clear_memory_command(void);
 
 //! @brief Lcd set font
 //! @param[in] *font Font

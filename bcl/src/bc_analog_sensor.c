@@ -1,5 +1,14 @@
 #include <bc_analog_sensor.h>
 
+static const uint8_t _bc_analog_sensor_format_lut[] =
+{
+    [BC_ADC_FORMAT_8_BIT] = 1,
+    [BC_ADC_FORMAT_16_BIT] = 2,
+    [BC_ADC_FORMAT_24_BIT] = 3,
+    [BC_ADC_FORMAT_32_BIT] = 4,
+    [BC_ADC_FORMAT_FLOAT] = 4
+};
+
 static void _bc_analog_sensor_task_interval(void *param);
 
 static void _bc_analog_sensor_task_measure(void *param);
@@ -18,6 +27,7 @@ void bc_analog_sensor_init(bc_analog_sensor_t *self, bc_adc_channel_t adc_channe
     self->_task_id_measure = bc_scheduler_register(_bc_analog_sensor_task_measure, self, BC_TICK_INFINITY);
 
     bc_adc_init(self->_adc_channel, self->_adc_format);
+
     bc_adc_set_event_handler(self->_adc_channel, _bc_analog_sensor_adc_event_handler, self);
 
     if (self->_driver != NULL && self->_driver->init != NULL)
@@ -69,7 +79,9 @@ bool bc_analog_sensor_get_result(bc_analog_sensor_t *self, void *result)
         return false;
     }
 
-    return bc_adc_get_result(self->_adc_channel, result);
+    memcpy(result, &self->_value, _bc_analog_sensor_format_lut[self->_adc_format]);
+
+    return true;
 }
 
 static void _bc_analog_sensor_task_interval(void *param)
@@ -122,7 +134,9 @@ start:
         }
         case BC_ANALOG_SENSOR_STATE_MEASURE:
         {
-            if (!bc_adc_read(self->_adc_channel, NULL))
+            bc_adc_set_format(self->_adc_channel, self->_adc_format);
+
+            if (!bc_adc_read(self->_adc_channel, &self->_value))
             {
                 self->_state = BC_ANALOG_SENSOR_STATE_ERROR;
 

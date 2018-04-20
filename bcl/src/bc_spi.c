@@ -84,6 +84,9 @@ void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
     // Enable clock for SPI2
     RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
 
+    // Errata workaround
+    RCC->AHBENR;
+
     // Software slave management, master configuration
     SPI2->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_MSTR;
 
@@ -257,6 +260,7 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
         _bc_spi_dma_config.address_memory = (void *)source;
         _bc_spi_dma_config.length = length;
         bc_dma_channel_config(BC_DMA_CHANNEL_5, &_bc_spi_dma_config);
+        bc_dma_channel_run(BC_DMA_CHANNEL_5);
 
         return true;
     }

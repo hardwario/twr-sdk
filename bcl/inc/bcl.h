@@ -32,6 +32,8 @@
 #include <bc_lis2dh12.h>
 #include <bc_lp8.h>
 #include <bc_spirit1.h>
+#include <bc_ls013b7dh03.h>
+#include <bc_cmwx1zzabz.h>
 
 // BigClown tags
 
@@ -64,7 +66,7 @@
 #include <bc_system.h>
 #include <bc_error.h>
 #include <bc_dice.h>
-#include <bc_cmwx1zzabz.h>
+#include <bc_gfx.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
