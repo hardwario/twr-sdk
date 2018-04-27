@@ -27,10 +27,10 @@ typedef enum
     BC_CMWX1ZZABZ_EVENT_ERROR = 1,
 
     //! @brief RF frame transmission started event
-    BC_CMWX1ZZABZ_EVENT_SEND_RF_FRAME_START = 2,
+    BC_CMWX1ZZABZ_EVENT_SEND_MESSAGE_START = 2,
 
     //! @brief RF frame transmission finished event
-    BC_CMWX1ZZABZ_EVENT_SEND_RF_FRAME_DONE = 3,
+    BC_CMWX1ZZABZ_EVENT_SEND_MESSAGE_DONE = 3,
 
     //! @brief Configuration save done
     BC_CMWX1ZZABZ_EVENT_CONFIG_SAVE_DONE = 4,
@@ -39,7 +39,10 @@ typedef enum
     BC_CMWX1ZZABZ_EVENT_JOIN_SUCCESS = 5,
 
     //! @brief OTAA join error
-    BC_CMWX1ZZABZ_EVENT_JOIN_ERROR = 6   
+    BC_CMWX1ZZABZ_EVENT_JOIN_ERROR = 6,
+
+    //! @brief Received message
+    BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED = 7     
 
 } bc_cmwx1zzabz_event_t;
 
@@ -52,7 +55,7 @@ typedef struct bc_cmwx1zzabz_t bc_cmwx1zzabz_t;
 typedef enum
 {
     BC_CMWX1ZZABZ_CONFIG_MODE_ABP = 0,
-    BC_CMWX1ZZABZ_CONFIG_MODE_OTAA = 1,
+    BC_CMWX1ZZABZ_CONFIG_MODE_OTAA = 1
 
 } bc_cmwx1zzabz_config_mode_t;
 
@@ -69,6 +72,15 @@ typedef enum
 
 } bc_cmwx1zzabz_config_band_t;
 
+//! @brief LoRa device class A or C
+
+typedef enum
+{
+    BC_CMWX1ZZABZ_CONFIG_CLASS_A = 0,
+    BC_CMWX1ZZABZ_CONFIG_CLASS_C = 2
+
+} bc_cmwx1zzabz_config_class_t;
+
 //! @cond
 
 typedef enum
@@ -81,6 +93,7 @@ typedef enum
     BC_CMWX1ZZABZ_CONFIG_INDEX_APPKEY = 5,
     BC_CMWX1ZZABZ_CONFIG_INDEX_BAND = 6,
     BC_CMWX1ZZABZ_CONFIG_INDEX_MODE = 7,
+    BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS = 8,
     BC_CMWX1ZZABZ_CONFIG_INDEX_LAST_ITEM
 
 } bc_cmwx1zzabz_config_index_t;
@@ -101,7 +114,9 @@ typedef enum
     BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_RESPONSE = 10,
 
     BC_CMWX1ZZABZ_STATE_JOIN_SEND = 11,
-    BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE = 12
+    BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE = 12,
+
+    BC_CMWX1ZZABZ_STATE_RECEIVE = 13
 
 } bc_cmwx1zzabz_state_t;
 
@@ -109,12 +124,14 @@ typedef struct
 {
     bc_cmwx1zzabz_config_band_t band;
     bc_cmwx1zzabz_config_mode_t mode;
+    bc_cmwx1zzabz_config_class_t class;
     char devaddr[8+1];
     char deveui[16+1];
     char appeui[16+1];
     char nwkskey[32+1];
     char appskey[32+1];
     char appkey[32+1];
+
 } bc_cmwx1zzabz_config;
 
 struct bc_cmwx1zzabz_t
@@ -131,9 +148,10 @@ struct bc_cmwx1zzabz_t
     void *_event_param;
     char _command[BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE];
     char _response[BC_CMWX1ZZABZ_RX_FIFO_BUFFER_SIZE];
-    uint8_t _message_buffer[12];
+    uint8_t _message_buffer[51];
     size_t _message_length;
-    uint8_t init_command_index;
+    uint8_t _message_port;
+    uint8_t _init_command_index;
     uint8_t _save_command_index;
     bool _save_flag;
     uint32_t _save_config_mask;
@@ -268,11 +286,45 @@ void bc_cmwx1zzabz_set_mode(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_mode_t m
 
 bc_cmwx1zzabz_config_mode_t bc_cmwx1zzabz_get_mode(bc_cmwx1zzabz_t *self);
 
+//! @brief Set device class
+//! @param[in] self Instance
+//! @param[in] class Supported are Class A and C
+
+void bc_cmwx1zzabz_set_class(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_class_t class);
+
+//! @brief Get device class
+//! @param[in] self Instance
+//! @return Class A or C
+
+bc_cmwx1zzabz_config_class_t bc_cmwx1zzabz_get_class(bc_cmwx1zzabz_t *self);
+
 //! @brief Start LoRa OTAA join procedure
 //! @param[in] self Instance
 //! @note The output of the join is handled by callback events
 //! @see bc_cmwx1zzabz_event_t
 
 void bc_cmwx1zzabz_join(bc_cmwx1zzabz_t *self);
+
+//! @brief Get port of the received message
+//! @param[in] self Instance
+//! @return port
+
+uint8_t bc_cmwx1zzabz_get_received_message_port(bc_cmwx1zzabz_t *self);
+
+//! @brief Get length of the received message
+//! @param[in] self Instance
+//! @return length
+
+uint32_t bc_cmwx1zzabz_get_received_message_length(bc_cmwx1zzabz_t *self);
+
+//! @brief Get port of the received message
+//! @param[in] self Instance
+//! @param[in] buffer Destination buffer for received data
+//! @param[in] buffer_size Size of the destination buffer
+//! @return Length of the received message. Zero if the destination buffer is not big enough.
+
+uint32_t bc_cmwx1zzabz_get_received_message_data(bc_cmwx1zzabz_t *self, uint8_t *buffer, uint32_t buffer_size);
+
+//! @}
 
 #endif // _BC_CMWX1ZZABZ_H
