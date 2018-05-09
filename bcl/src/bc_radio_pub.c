@@ -26,7 +26,7 @@ bool bc_radio_pub_event_count(uint8_t event_id, uint16_t *event_count)
     buffer[0] = BC_RADIO_HEADER_PUB_EVENT_COUNT;
     buffer[1] = event_id;
 
-    memcpy(buffer + 2, event_count, sizeof(*event_count));
+    bc_radio_uint16_to_buffer(event_count, buffer + 2);
 
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
@@ -43,7 +43,7 @@ bool bc_radio_pub_temperature(uint8_t channel, float *celsius)
     buffer[0] = BC_RADIO_HEADER_PUB_TEMPERATURE;
     buffer[1] = channel;
 
-    memcpy(&buffer[2], celsius, sizeof(*celsius));
+    bc_radio_float_to_buffer(celsius, buffer + 2);
 
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
@@ -55,7 +55,7 @@ bool bc_radio_pub_humidity(uint8_t channel, float *percentage)
     buffer[0] = BC_RADIO_HEADER_PUB_HUMIDITY;
     buffer[1] = channel;
 
-    memcpy(&buffer[2], percentage, sizeof(*percentage));
+    bc_radio_float_to_buffer(percentage, buffer + 2);
 
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
@@ -67,7 +67,7 @@ bool bc_radio_pub_luminosity(uint8_t channel, float *lux)
     buffer[0] = BC_RADIO_HEADER_PUB_LUX_METER;
     buffer[1] = channel;
 
-    memcpy(&buffer[2], lux, sizeof(*lux));
+    bc_radio_float_to_buffer(lux, buffer + 2);
 
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
@@ -79,8 +79,8 @@ bool bc_radio_pub_barometer(uint8_t channel, float *pascal, float *meter)
     buffer[0] = BC_RADIO_HEADER_PUB_BAROMETER;
     buffer[1] = channel;
 
-    memcpy(&buffer[2], pascal, sizeof(*pascal));
-    memcpy(&buffer[2 + sizeof(*pascal)], meter, sizeof(*meter));
+    uint8_t *pointer = bc_radio_float_to_buffer(pascal, buffer + 2);
+    bc_radio_float_to_buffer(meter, pointer);
 
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
@@ -91,7 +91,7 @@ bool bc_radio_pub_co2(float *concentration)
 
     buffer[0] = BC_RADIO_HEADER_PUB_CO2;
 
-    memcpy(&buffer[1], concentration, sizeof(*concentration));
+    bc_radio_float_to_buffer(concentration, buffer + 1);
 
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
@@ -102,7 +102,7 @@ bool bc_radio_pub_battery(float *voltage)
 
     buffer[0] = BC_RADIO_HEADER_PUB_BATTERY;
 
-    memcpy(&buffer[1], voltage, sizeof(*voltage));
+    bc_radio_float_to_buffer(voltage, buffer + 1);
 
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
@@ -256,75 +256,85 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
     if (buffer[0] == BC_RADIO_HEADER_PUB_PUSH_BUTTON)
     {
         uint16_t event_count;
+        uint16_t *pevent_count;
 
-        memcpy(&event_count, buffer + 1, sizeof(event_count));
+        bc_radio_uint16_from_buffer(buffer + 1, &event_count, &pevent_count);
 
         bc_radio_pub_on_push_button(id, &event_count);
 
-        bc_radio_pub_on_event_count(id, BC_RADIO_PUB_EVENT_PUSH_BUTTON, &event_count);
+        bc_radio_pub_on_event_count(id, BC_RADIO_PUB_EVENT_PUSH_BUTTON, pevent_count);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_EVENT_COUNT)
     {
         uint16_t event_count;
+        uint16_t *pevent_count;
 
-        memcpy(&event_count, buffer + 2, sizeof(event_count));
+        bc_radio_uint16_from_buffer(buffer + 2, &event_count, &pevent_count);
 
         if (buffer[1] == BC_RADIO_PUB_EVENT_PUSH_BUTTON)
         {
-            bc_radio_pub_on_push_button(id, &event_count);
+            bc_radio_pub_on_push_button(id, pevent_count);
         }
 
-        bc_radio_pub_on_event_count(id, buffer[1], &event_count);
+        bc_radio_pub_on_event_count(id, buffer[1], pevent_count);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_TEMPERATURE)
     {
         float celsius;
+        float *pcelsius;
 
-        memcpy(&celsius, buffer + 2, sizeof(celsius));
+        bc_radio_float_from_buffer(buffer + 2, &celsius, &pcelsius);
 
-        bc_radio_pub_on_temperature(id, buffer[1], &celsius);
+        bc_radio_pub_on_temperature(id, buffer[1], pcelsius);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_HUMIDITY)
     {
         float percentage;
+        float *ppercentage;
 
-        memcpy(&percentage, buffer + 2, sizeof(percentage));
+        bc_radio_float_from_buffer(buffer + 2, &percentage, &ppercentage);
 
-        bc_radio_pub_on_humidity(id, buffer[1], &percentage);
+        bc_radio_pub_on_humidity(id, buffer[1], ppercentage);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_LUX_METER)
     {
         float lux;
+        float *plux;
 
-        memcpy(&lux, buffer + 2, sizeof(lux));
+        bc_radio_float_from_buffer(buffer + 2, &lux, &plux);
 
-        bc_radio_pub_on_lux_meter(id, buffer[1], &lux);
+        bc_radio_pub_on_lux_meter(id, buffer[1], plux);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_BAROMETER)
     {
         float pascal;
+        float *ppascal;
         float meter;
+        float *pmeter;
 
-        memcpy(&pascal, buffer + 2, sizeof(pascal));
-        memcpy(&meter, buffer + 2 + sizeof(pascal), sizeof(meter));
+        uint8_t *pointer = bc_radio_float_from_buffer(buffer + 2, &pascal, &ppascal);
 
-        bc_radio_pub_on_barometer(id, buffer[1], &pascal, &meter);
+        bc_radio_float_from_buffer(pointer, &meter, &pmeter);
+
+        bc_radio_pub_on_barometer(id, buffer[1], ppascal, pmeter);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_CO2)
     {
         float concentration;
+        float *pconcentration;
 
-        memcpy(&concentration, buffer + 1, sizeof(concentration));
+        bc_radio_float_from_buffer(buffer + 1, &concentration, &pconcentration);
 
-        bc_radio_pub_on_co2(id, &concentration);
+        bc_radio_pub_on_co2(id, pconcentration);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_BATTERY)
     {
         float voltage;
+        float *pvoltage;
 
-        memcpy(&voltage, buffer + (length == 5 ? 1 : 2), sizeof(voltage));
+        bc_radio_float_from_buffer(buffer + (length == 5 ? 1 : 2), &voltage, &pvoltage);
 
-        bc_radio_pub_on_battery(id, &voltage);
+        bc_radio_pub_on_battery(id, pvoltage);
     }
     else if (buffer[0] == BC_RADIO_HEADER_PUB_ACCELERATION)
     {

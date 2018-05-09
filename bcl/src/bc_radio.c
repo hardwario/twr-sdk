@@ -82,6 +82,7 @@ static void _bc_radio_save_peer_devices(void);
 static void _bc_radio_atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t event, void *event_param);
 static bool _bc_radio_peer_device_add(uint64_t id);
 static bool _bc_radio_peer_device_remove(uint64_t id);
+static bc_radio_peer_t *_bc_radio_get_peer_device(uint64_t id);
 
 __attribute__((weak)) void bc_radio_on_info(uint64_t *id, char *firmware, char *version) { (void) id; (void) firmware; (void) version; }
 
@@ -586,6 +587,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
         if (length >= 9)
         {
             uint8_t *buffer = bc_spirit1_get_rx_buffer();
+            bc_radio_peer_t *peer;
 
             bc_radio_id_from_buffer(buffer, &_bc_radio.peer_id);
 
@@ -633,7 +635,9 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                     }
                 }
 
-                if (bc_radio_is_peer_device(_bc_radio.peer_id))
+                peer = _bc_radio_get_peer_device(_bc_radio.peer_id);
+
+                if (peer != NULL)
                 {
                     _bc_radio_send_ack();
 
@@ -643,7 +647,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
                     bc_spirit1_set_tx_length(15);
 
-                    if (length > 10)
+                    if ((length > 10) && (peer->message_id != message_id))
                     {
                         if (10 + (size_t) buffer[9] + 1 < length)
                         {
@@ -653,6 +657,10 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                             bc_radio_on_info(&_bc_radio.peer_id, (char *)buffer + 10, (char *)buffer + 10 + buffer[9] + 1);
                         }
                     }
+
+                    peer->message_id = message_id;
+
+                    peer->message_id_synced = true;
                 }
 
                 return;
@@ -688,40 +696,38 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                 return;
             }
 
-            int i;
-            for (i = 0; i < _bc_radio.peer_devices_lenght; i++)
+            peer = _bc_radio_get_peer_device(_bc_radio.peer_id);
+
+            if (peer != NULL)
             {
-                if (_bc_radio.peer_id == _bc_radio.peer_devices[i].id)
+                if (peer->message_id != message_id)
                 {
-                    if (_bc_radio.peer_devices[i].message_id != message_id)
+                    peer->message_id = message_id;
+
+                    peer->message_id_synced = false;
+
+                    if (length > 9)
                     {
-                        _bc_radio.peer_devices[i].message_id = message_id;
-
-                        _bc_radio.peer_devices[i].message_id_synced = false;
-
-                        if (length > 9)
+                        if ((buffer[8] >= 0x15) && (buffer[8] <= 0x1c) && (length > 14))
                         {
-                            if ((buffer[8] >= 0x15) && (buffer[8] <= 0x1c) && (length > 14))
+                            uint64_t for_id;
+
+                            bc_radio_id_from_buffer(buffer + 9, &for_id);
+
+                            if (for_id != _bc_radio.my_id)
                             {
-                                uint64_t for_id;
-
-                                bc_radio_id_from_buffer(buffer + 9, &for_id);
-
-                                if (for_id != _bc_radio.my_id)
-                                {
-                                    return;
-                                }
+                                return;
                             }
-
-                            bc_queue_put(&_bc_radio.rx_queue, buffer, length);
-
-                            bc_scheduler_plan_now(_bc_radio.task_id);
-
-                            _bc_radio.peer_devices[i].message_id_synced = true;
                         }
+
+                        bc_queue_put(&_bc_radio.rx_queue, buffer, length);
+
+                        bc_scheduler_plan_now(_bc_radio.task_id);
+
+                        peer->message_id_synced = true;
                     }
 
-                    if (_bc_radio.peer_devices[i].message_id_synced)
+                    if (peer->message_id_synced)
                     {
                         _bc_radio_send_ack();
                     }
@@ -729,8 +735,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                     return;
                 }
             }
-
-            if (i == _bc_radio.peer_devices_lenght)
+            else
             {
                 if (_bc_radio.scan && (_bc_radio.event_handler != NULL) && _bc_radio_scan_cache_push())
                 {
@@ -926,6 +931,19 @@ static bool _bc_radio_peer_device_remove(uint64_t id)
     return false;
 }
 
+static bc_radio_peer_t *_bc_radio_get_peer_device(uint64_t id)
+{
+    for (int i = 0; i < _bc_radio.peer_devices_lenght; i++)
+    {
+        if (id == _bc_radio.peer_devices[i].id)
+        {
+            return &_bc_radio.peer_devices[i];
+        }
+    }
+
+    return NULL;
+}
+
 uint8_t *bc_radio_id_to_buffer(uint64_t *id, uint8_t *buffer)
 {
     buffer[0] = *id;
@@ -959,6 +977,22 @@ uint8_t *bc_radio_int_to_buffer(int *value, uint8_t *buffer)
     }
 
     return buffer + sizeof(int);
+}
+
+uint8_t *bc_radio_uint16_to_buffer(uint16_t *value, uint8_t *buffer)
+{
+    if (value == NULL)
+    {
+        const int null = BC_RADIO_NULL_UINT16;
+
+        memcpy(buffer, &null, sizeof(uint16_t));
+    }
+    else
+    {
+        memcpy(buffer, value, sizeof(uint16_t));
+    }
+
+    return buffer + sizeof(uint32_t);
 }
 
 uint8_t *bc_radio_uint32_to_buffer(uint32_t *value, uint8_t *buffer)
@@ -1046,6 +1080,22 @@ uint8_t *bc_radio_int_from_buffer(uint8_t *buffer, int *value, int **pointer)
     }
 
     return buffer + sizeof(int);
+}
+
+uint8_t *bc_radio_uint16_from_buffer(uint8_t *buffer, uint16_t *value, uint16_t **pointer)
+{
+    memcpy(value, buffer, sizeof(uint16_t));
+
+    if (*value == BC_RADIO_NULL_UINT16)
+    {
+        *pointer = NULL;
+    }
+    else
+    {
+        *pointer = value;
+    }
+
+    return buffer + sizeof(uint16_t);
 }
 
 uint8_t *bc_radio_uint32_from_buffer(uint8_t *buffer, uint32_t *value, uint32_t **pointer)

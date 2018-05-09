@@ -10,9 +10,10 @@
 
 typedef enum
 {
-    BC_SPIRIT1_STATE_SLEEP = 0,
-    BC_SPIRIT1_STATE_TX = 1,
-    BC_SPIRIT1_STATE_RX = 2
+    BC_SPIRIT1_STATE_INIT = 0,
+    BC_SPIRIT1_STATE_SLEEP = 1,
+    BC_SPIRIT1_STATE_TX = 2,
+    BC_SPIRIT1_STATE_RX = 3
 
 } bc_spirit1_state_t;
 
@@ -112,9 +113,9 @@ void bc_spirit1_init(void)
     SpiritPktBasicInit(&xBasicInit);
     SpiritPktBasicAddressesInit(&xAddressInit);
 
-    _bc_spirit1.task_id = bc_scheduler_register(_bc_spirit1_task, NULL, BC_TICK_INFINITY);
+    _bc_spirit1.desired_state = BC_SPIRIT1_STATE_SLEEP;
 
-    _bc_spirit1_enter_state_sleep();
+    _bc_spirit1.task_id = bc_scheduler_register(_bc_spirit1_task, NULL, 0);
 }
 
 void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t, void *), void *event_param)
