@@ -186,6 +186,11 @@ void bc_dma_channel_stop(bc_dma_channel_t channel)
     _bc_dma.channel[channel].instance->CCR &= ~DMA_CCR_EN;
 }
 
+size_t bc_dma_channel_get_length(bc_dma_channel_t channel)
+{
+    return (size_t) _bc_dma.channel[channel].instance->CNDTR;
+}
+
 void _bc_dma_task(void *param)
 {
     (void) param;
