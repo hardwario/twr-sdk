@@ -3,6 +3,7 @@
 #include <bc_irq.h>
 #include <bc_system.h>
 #include <stm32l0xx.h>
+#include <bc_dma.h>
 
 typedef struct
 {
@@ -27,6 +28,13 @@ static bc_uart_t _bc_uart[3] =
     [BC_UART_UART2] = { .initialized = false }
 };
 
+static struct
+{
+    bc_scheduler_task_id_t read_task_id;
+    size_t length;
+
+} _bc_uart_2_dma;
+
 static uint32_t _bc_uart_brr_t[] =
 {
     [BC_UART_BAUDRATE_9600] = 0xd05,
@@ -39,6 +47,7 @@ static uint32_t _bc_uart_brr_t[] =
 
 static void _bc_uart_async_write_task(void *param);
 static void _bc_uart_async_read_task(void *param);
+static void _bc_uart_2_dma_read_task(void *param);
 static void _bc_uart_irq_handler(bc_uart_channel_t channel);
 
 void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uart_setting_t setting)
@@ -391,12 +400,40 @@ bool bc_uart_async_read_start(bc_uart_channel_t channel, bc_tick_t timeout)
 
     _bc_uart[channel].async_read_task_id = bc_scheduler_register(_bc_uart_async_read_task, (void *) channel, _bc_uart[channel].async_timeout);
 
-    bc_irq_disable();
+    if (channel == BC_UART_UART2)
+    {
+        bc_dma_channel_config_t config = {
+                .request = BC_DMA_REQUEST_3,
+                .direction = BC_DMA_DIRECTION_TO_RAM,
+                .data_size_memory = BC_DMA_SIZE_1,
+                .data_size_peripheral = BC_DMA_SIZE_1,
+                .length = _bc_uart[channel].read_fifo->size,
+                .mode = BC_DMA_MODE_CIRCULAR,
+                .address_memory = _bc_uart[channel].read_fifo->buffer,
+                .address_peripheral = (void *) &_bc_uart[channel].usart->RDR,
+                .priority = BC_DMA_PRIORITY_HIGH
+        };
 
-    // Enable receive interrupt
-    _bc_uart[channel].usart->CR1 |= USART_CR1_RXNEIE;
+        bc_dma_init();
 
-    bc_irq_enable();
+        bc_dma_channel_config(BC_DMA_CHANNEL_3, &config);
+
+        _bc_uart_2_dma.read_task_id = bc_scheduler_register(_bc_uart_2_dma_read_task, (void *) channel, 0);
+
+        bc_irq_disable();
+        // Enable receive DMA interrupt
+        _bc_uart[channel].usart->CR3 |=  USART_CR3_DMAR;
+        bc_irq_enable();
+
+        bc_dma_channel_run(BC_DMA_CHANNEL_3);
+    }
+    else
+    {
+        bc_irq_disable();
+        // Enable receive interrupt
+        _bc_uart[channel].usart->CR1 |= USART_CR1_RXNEIE;
+        bc_irq_enable();
+    }
 
     if (_bc_uart[channel].usart != LPUART1)
     {
@@ -488,6 +525,26 @@ static void _bc_uart_async_read_task(void *param)
             uart->event_handler(channel, BC_UART_EVENT_ASYNC_READ_DATA, uart->event_param);
         }
     }
+}
+
+static void _bc_uart_2_dma_read_task(void *param)
+{
+    (void) param;
+
+    size_t length = bc_dma_channel_get_length(BC_DMA_CHANNEL_3);
+
+    bc_uart_t *uart = &_bc_uart[BC_UART_UART2];
+
+    if (_bc_uart_2_dma.length != length)
+    {
+        uart->read_fifo->head = uart->read_fifo->size - length;
+
+        _bc_uart_2_dma.length = length;
+
+        bc_scheduler_plan_now(uart->async_read_task_id);
+    }
+
+    bc_scheduler_plan_current_now();
 }
 
 static void _bc_uart_irq_handler(bc_uart_channel_t channel)
