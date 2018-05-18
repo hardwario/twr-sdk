@@ -5,7 +5,7 @@
 #include <bc_scheduler.h>
 #include <bc_timer.h>
 
-#define _BC_MODULE_BATTERY_CELL_VOLTAGE 1.6f
+#define _BC_MODULE_BATTERY_CELL_VOLTAGE 1.5f
 
 #define _BC_MODULE_BATTERY_STANDATD_DEFAULT_LEVEL_LOW        (1.2 * 4)
 #define _BC_MODULE_BATTERY_DEFAULT_DEFAULT_LEVEL_CRITICAL   (1.0 * 4)
@@ -13,62 +13,59 @@
 #define _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_LOW        (1.2 * 2)
 #define _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_CRITICAL   (1.0 * 2)
 
-#define _BC_MODULE_BATTERY_MINI_VOLTAGE_ON_BATTERY_TO_PERCENTAGE(__VOLTAGE__)      ((100. * __VOLTAGE__) / (_BC_MODULE_BATTERY_CELL_VOLTAGE * 2))
-#define _BC_MODULE_BATTERY_STANDARD_VOLTAGE_ON_BATTERY_TO_PERCENTAGE(__VOLTAGE__)  ((100. * __VOLTAGE__) / (_BC_MODULE_BATTERY_CELL_VOLTAGE * 4))
+#define _BC_MODULE_BATTERY_MINI_VOLTAGE_ON_BATTERY_TO_PERCENTAGE(__VOLTAGE__)      ((100. * ((__VOLTAGE__) - _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_CRITICAL)) / ((_BC_MODULE_BATTERY_CELL_VOLTAGE * 2) - _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_CRITICAL))
+#define _BC_MODULE_BATTERY_STANDARD_VOLTAGE_ON_BATTERY_TO_PERCENTAGE(__VOLTAGE__)  ((100. * ((__VOLTAGE__) - _BC_MODULE_BATTERY_DEFAULT_DEFAULT_LEVEL_CRITICAL)) / ((_BC_MODULE_BATTERY_CELL_VOLTAGE * 4) - _BC_MODULE_BATTERY_DEFAULT_DEFAULT_LEVEL_CRITICAL))
 
-#define _BC_MODULE_BATTERY_MINI_RESULT_TO_VOLTAGE(__RESULT__)       ((__RESULT__) * (1 / 0.33))
+#define _BC_MODULE_BATTERY_MINI_RESULT_TO_VOLTAGE(__RESULT__)       ((__RESULT__) * (1 / (5.0 / (5.0 + 10.0))))
 #define _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(__RESULT__)   ((__RESULT__) * (1 / 0.13))
+
+typedef enum
+{
+        BC_MODULE_STATE_DETECT_PRESENT = 0,
+        BC_MODULE_STATE_DETECT_FORMAT = 1,
+        BC_MODULE_STATE_MEASURE = 2,
+        BC_MODULE_STATE_READ = 3,
+        BC_MODULE_STATE_UPDATE = 4
+
+} _bc_module_battery_state_t;
 
 static struct
 {
     float voltage;
+    float valid_min;
+    float valid_max;
     bc_module_battery_format_t format;
-    float level_low_threshold;
-    float level_critical_threshold;
     void (*event_handler)(bc_module_battery_event_t, void *);
     void *event_param;
-    bool valid;
     bool measurement_active;
+    float level_low_threshold;
+    float level_critical_threshold;
     bc_tick_t update_interval;
+    bc_tick_t next_update_start;
     bc_scheduler_task_id_t task_id;
+    float adc_value;
+    _bc_module_battery_state_t state;
 
 } _bc_module_battery;
 
-static void _bc_module_battery_task();
+static bool _bc_module_battery_present_test(void);
+static void _bc_module_battery_task(void *param);
 static void _bc_module_battery_adc_event_handler(bc_adc_channel_t channel, bc_adc_event_t event, void *param);
 static void _bc_module_battery_measurement(int state);
-static void _bc_module_battery_update_voltage_on_battery(void);
 
-void bc_module_battery_init(bc_module_battery_format_t format)
+void bc_module_battery_init(void)
 {
     memset(&_bc_module_battery, 0, sizeof(_bc_module_battery));
 
+    _bc_module_battery.voltage = NAN;
+    _bc_module_battery.adc_value = NAN;
     _bc_module_battery.update_interval = BC_TICK_INFINITY;
     _bc_module_battery.task_id = bc_scheduler_register(_bc_module_battery_task, NULL, BC_TICK_INFINITY);
-    _bc_module_battery.format = format;
 
+    bc_gpio_init(BC_GPIO_P0);
     bc_gpio_init(BC_GPIO_P1);
 
-    _bc_module_battery_measurement(DISABLE);
-
-    if (format == BC_MODULE_BATTERY_FORMAT_MINI)
-    {
-        _bc_module_battery.level_low_threshold = _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_LOW;
-        _bc_module_battery.level_critical_threshold = _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_CRITICAL;
-
-        bc_gpio_set_output(BC_GPIO_P1, 0);
-    }
-    else
-    {
-        _bc_module_battery.level_low_threshold = _BC_MODULE_BATTERY_STANDATD_DEFAULT_LEVEL_LOW;
-        _bc_module_battery.level_critical_threshold = _BC_MODULE_BATTERY_DEFAULT_DEFAULT_LEVEL_CRITICAL;
-
-        bc_gpio_set_mode(BC_GPIO_P1, BC_GPIO_MODE_OUTPUT);
-    }
-
     bc_timer_init();
-
-    bc_adc_init(BC_ADC_CHANNEL_A0, BC_ADC_FORMAT_FLOAT);
 }
 
 void bc_module_battery_set_event_handler(void (*event_handler)(bc_module_battery_event_t, void *), void *event_param)
@@ -83,12 +80,13 @@ void bc_module_battery_set_update_interval(bc_tick_t interval)
 
     if (_bc_module_battery.update_interval == BC_TICK_INFINITY)
     {
-        bc_scheduler_plan_absolute(_bc_module_battery.task_id, BC_TICK_INFINITY);
+        if (!_bc_module_battery.measurement_active)
+        {
+            bc_scheduler_plan_absolute(_bc_module_battery.task_id, BC_TICK_INFINITY);
+        }
     }
     else
     {
-        bc_scheduler_plan_relative(_bc_module_battery.task_id, _bc_module_battery.update_interval);
-
         bc_module_battery_measure();
     }
 }
@@ -97,6 +95,11 @@ void bc_module_battery_set_threshold_levels(float level_low_threshold, float lev
 {
     _bc_module_battery.level_low_threshold = level_low_threshold;
     _bc_module_battery.level_critical_threshold = level_critical_threshold;
+}
+
+bc_module_battery_format_t bc_module_battery_get_format()
+{
+    return _bc_module_battery.format;
 }
 
 bool bc_module_battery_measure(void)
@@ -108,25 +111,16 @@ bool bc_module_battery_measure(void)
 
     _bc_module_battery.measurement_active = true;
 
-    _bc_module_battery_measurement(ENABLE);
-
-    bc_adc_set_event_handler(BC_ADC_CHANNEL_A0, _bc_module_battery_adc_event_handler, NULL);
-
-    bc_adc_async_read(BC_ADC_CHANNEL_A0);
+    bc_scheduler_plan_now(_bc_module_battery.task_id);
 
     return true;
 }
 
 bool bc_module_battery_get_voltage(float *voltage)
 {
-    if(_bc_module_battery.valid == true)
-    {
-        *voltage = _bc_module_battery.voltage;
+    *voltage = _bc_module_battery.voltage;
 
-        return true;
-    }
-
-    return false;
+    return !isnan(_bc_module_battery.voltage);
 }
 
 bool bc_module_battery_get_charge_level(int *percentage)
@@ -145,9 +139,13 @@ bool bc_module_battery_get_charge_level(int *percentage)
             *percentage = _BC_MODULE_BATTERY_STANDARD_VOLTAGE_ON_BATTERY_TO_PERCENTAGE(voltage);
         }
 
-        if (*percentage >= 100)
+        if (*percentage > 100)
         {
             *percentage = 100;
+        }
+        else if (*percentage < 0)
+        {
+            *percentage = 0;
         }
 
         return true;
@@ -156,20 +154,194 @@ bool bc_module_battery_get_charge_level(int *percentage)
     return false;
 }
 
+bool bc_module_battery_is_present(void)
+{
+    if (_bc_module_battery.state != BC_MODULE_STATE_DETECT_PRESENT)
+    {
+        return true;
+    }
+
+    return _bc_module_battery_present_test();
+}
+
+static bool _bc_module_battery_present_test(void)
+{
+    bc_system_pll_enable();
+
+    bc_gpio_set_mode(BC_GPIO_P1, BC_GPIO_MODE_OUTPUT);
+
+    bc_gpio_set_output(BC_GPIO_P1, 0);
+
+    bc_gpio_set_mode(BC_GPIO_P0, BC_GPIO_MODE_OUTPUT);
+
+    bc_gpio_set_output(BC_GPIO_P0, 1);
+
+    bc_gpio_set_pull(BC_GPIO_P0, BC_GPIO_PULL_DOWN);
+
+    bc_gpio_set_mode(BC_GPIO_P0, BC_GPIO_MODE_INPUT);
+
+    __NOP();
+
+    int value = bc_gpio_get_input(BC_GPIO_P0);
+
+    bc_system_pll_disable();
+
+    return value != 0;
+}
+
 static void _bc_module_battery_task(void *param)
 {
     (void) param;
 
-    if (_bc_module_battery.update_interval == BC_TICK_INFINITY)
-    {
-        bc_scheduler_plan_absolute(_bc_module_battery.task_id, BC_TICK_INFINITY);
-    }
-    else
-    {
-        bc_scheduler_plan_current_relative(_bc_module_battery.update_interval);
-    }
+start:
 
-    bc_module_battery_measure();
+    switch (_bc_module_battery.state)
+    {
+
+        case BC_MODULE_STATE_DETECT_PRESENT:
+        {
+            _bc_module_battery.next_update_start = bc_tick_get() + _bc_module_battery.update_interval;
+
+            _bc_module_battery.format = BC_MODULE_BATTERY_FORMAT_UNKNOWN;
+
+            if (!_bc_module_battery_present_test())
+            {
+                bc_scheduler_plan_current_absolute(_bc_module_battery.next_update_start);
+
+                if (_bc_module_battery.next_update_start == BC_TICK_INFINITY)
+                {
+                    _bc_module_battery.measurement_active = false;
+                }
+
+                if (_bc_module_battery.event_handler != NULL)
+                {
+                    _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_ERROR, _bc_module_battery.event_param);
+                }
+
+                return;
+            }
+
+            _bc_module_battery_measurement(ENABLE);
+
+            bc_adc_init(BC_ADC_CHANNEL_A0, BC_ADC_FORMAT_FLOAT);
+
+            bc_adc_set_event_handler(BC_ADC_CHANNEL_A0, _bc_module_battery_adc_event_handler, NULL);
+
+            bc_adc_async_read(BC_ADC_CHANNEL_A0);
+
+            _bc_module_battery.state = BC_MODULE_STATE_DETECT_FORMAT;
+
+            break;
+        }
+        case BC_MODULE_STATE_DETECT_FORMAT:
+        {
+            float voltage = _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value);
+
+            if ((voltage > 3.8) && (voltage < 7.0))
+            {
+                _bc_module_battery.format = BC_MODULE_BATTERY_FORMAT_STANDARD;
+                _bc_module_battery.level_low_threshold = _BC_MODULE_BATTERY_STANDATD_DEFAULT_LEVEL_LOW;
+                _bc_module_battery.level_critical_threshold = _BC_MODULE_BATTERY_DEFAULT_DEFAULT_LEVEL_CRITICAL;
+                _bc_module_battery.valid_min = 3.8;
+                _bc_module_battery.valid_max = 7.0;
+            }
+            else
+            {
+                _bc_module_battery.format = BC_MODULE_BATTERY_FORMAT_MINI;
+                _bc_module_battery.level_low_threshold = _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_LOW;
+                _bc_module_battery.level_critical_threshold = _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_CRITICAL;
+                _bc_module_battery.valid_min = 1.8;
+                _bc_module_battery.valid_max = 3.8;
+            }
+
+            _bc_module_battery.state = BC_MODULE_STATE_MEASURE;
+
+            if (_bc_module_battery.measurement_active)
+            {
+                bc_scheduler_plan_current_now();
+            }
+            else
+            {
+                bc_scheduler_plan_current_absolute(_bc_module_battery.next_update_start);
+            }
+
+            break;
+        }
+        case BC_MODULE_STATE_MEASURE:
+        {
+            _bc_module_battery.next_update_start = bc_tick_get() + _bc_module_battery.update_interval;
+
+            _bc_module_battery_measurement(ENABLE);
+
+            bc_adc_set_event_handler(BC_ADC_CHANNEL_A0, _bc_module_battery_adc_event_handler, NULL);
+
+            bc_adc_async_read(BC_ADC_CHANNEL_A0);
+
+            _bc_module_battery.state = BC_MODULE_STATE_READ;
+
+            break;
+        }
+        case BC_MODULE_STATE_READ:
+        {
+            if (_bc_module_battery.format == BC_MODULE_BATTERY_FORMAT_MINI)
+            {
+                _bc_module_battery.voltage = _BC_MODULE_BATTERY_MINI_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value);
+            }
+            else
+            {
+                _bc_module_battery.voltage = _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value);
+            }
+
+            _bc_module_battery.measurement_active = false;
+
+            if ((_bc_module_battery.voltage < _bc_module_battery.valid_min) || (_bc_module_battery.voltage > _bc_module_battery.valid_max))
+            {
+                _bc_module_battery.voltage = NAN;
+
+                _bc_module_battery.state = BC_MODULE_STATE_DETECT_PRESENT;
+
+                bc_scheduler_plan_current_absolute(_bc_module_battery.next_update_start);
+
+                if (_bc_module_battery.event_handler != NULL)
+                {
+                    _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_ERROR, _bc_module_battery.event_param);
+                }
+
+                return;
+            }
+
+            _bc_module_battery.state = BC_MODULE_STATE_UPDATE;
+
+            goto start;
+        }
+        case BC_MODULE_STATE_UPDATE:
+        {
+            if (_bc_module_battery.event_handler != NULL)
+            {
+                // Notify event based on calculated percentage
+                if (_bc_module_battery.voltage <= _bc_module_battery.level_critical_threshold)
+                {
+                    _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_LEVEL_CRITICAL, _bc_module_battery.event_param);
+                }
+                else if (_bc_module_battery.voltage <= _bc_module_battery.level_low_threshold)
+                {
+                    _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_LEVEL_LOW, _bc_module_battery.event_param);
+                }
+
+                _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_UPDATE, _bc_module_battery.event_param);
+            }
+
+            _bc_module_battery.state = BC_MODULE_STATE_MEASURE;
+
+            bc_scheduler_plan_current_absolute(_bc_module_battery.next_update_start);
+
+            break;
+        }
+        default:
+        {
+            return;
+        }
+    }
 }
 
 static void _bc_module_battery_adc_event_handler(bc_adc_channel_t channel, bc_adc_event_t event, void *param)
@@ -179,36 +351,15 @@ static void _bc_module_battery_adc_event_handler(bc_adc_channel_t channel, bc_ad
 
     if (event == BC_ADC_EVENT_DONE)
     {
-        _bc_module_battery_update_voltage_on_battery();
+
+        if (!bc_adc_get_result(BC_ADC_CHANNEL_A0, &_bc_module_battery.adc_value))
+        {
+            _bc_module_battery.adc_value = NAN;
+        }
 
         _bc_module_battery_measurement(DISABLE);
 
-        // Unlock measurement
-        _bc_module_battery.measurement_active = false;
-
-        if ((_bc_module_battery.voltage < 0) || (_bc_module_battery.voltage > 10))
-        {
-            _bc_module_battery.valid = false;
-
-            bc_scheduler_plan_relative(_bc_module_battery.task_id, 1000);
-
-            return;
-        }
-
-        if (_bc_module_battery.valid && _bc_module_battery.event_handler != NULL)
-        {
-            // Notify event based on calculated percentage
-            if (_bc_module_battery.voltage <= _bc_module_battery.level_critical_threshold)
-            {
-                _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_LEVEL_CRITICAL, _bc_module_battery.event_param);
-            }
-            else if (_bc_module_battery.voltage <= _bc_module_battery.level_low_threshold)
-            {
-                _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_LEVEL_LOW, _bc_module_battery.event_param);
-            }
-
-            _bc_module_battery.event_handler(BC_MODULE_BATTERY_EVENT_UPDATE, _bc_module_battery.event_param);
-        }
+        bc_scheduler_plan_now(_bc_module_battery.task_id);
     }
 }
 
@@ -233,23 +384,3 @@ static void _bc_module_battery_measurement(int state)
     }
 }
 
-static void _bc_module_battery_update_voltage_on_battery(void)
-{
-    float v;
-
-    _bc_module_battery.valid = bc_adc_get_result(BC_ADC_CHANNEL_A0, &v);
-
-    if (!_bc_module_battery.valid)
-    {
-        return;
-    }
-
-    if (_bc_module_battery.format == BC_MODULE_BATTERY_FORMAT_MINI)
-    {
-        _bc_module_battery.voltage = _BC_MODULE_BATTERY_MINI_RESULT_TO_VOLTAGE(v);
-    }
-    else
-    {
-        _bc_module_battery.voltage = _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(v);
-    }
-}
