@@ -342,17 +342,6 @@ static void _bc_spirit1_enter_state_rx(void)
 
 static void _bc_spirit1_check_state_rx(void)
 {
-    if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
-    {
-        _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
-    }
-    else
-    {
-        _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
-    }
-
-    bc_scheduler_plan_current_absolute(_bc_spirit1.rx_tick_timeout);
-
     SpiritIrqs xIrqStatus;
 
     /* Get the IRQ status */
@@ -371,18 +360,29 @@ static void _bc_spirit1_check_state_rx(void)
       /* Get the RX FIFO size */
       uint8_t cRxData = SpiritLinearFifoReadNumElementsRxFifo();
 
-      if (cRxData <= BC_SPIRIT1_MAX_PACKET_SIZE)
-      {
-          /* Read the RX FIFO */
-          SpiritSpiReadLinearFifo(cRxData, _bc_spirit1.rx_buffer);
+        if (cRxData <= BC_SPIRIT1_MAX_PACKET_SIZE)
+        {
+            /* Read the RX FIFO */
+            SpiritSpiReadLinearFifo(cRxData, _bc_spirit1.rx_buffer);
 
-          _bc_spirit1.rx_length = cRxData;
+            _bc_spirit1.rx_length = cRxData;
 
-          if (_bc_spirit1.event_handler != NULL)
-          {
-              _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE, _bc_spirit1.event_param);
-          }
-      }
+            if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
+            {
+                _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
+            }
+            else
+            {
+                _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
+            }
+
+            bc_scheduler_plan_current_absolute(_bc_spirit1.rx_tick_timeout);
+
+            if (_bc_spirit1.event_handler != NULL)
+            {
+                _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE, _bc_spirit1.event_param);
+            }
+        }
     }
 
     /* Flush the RX FIFO */

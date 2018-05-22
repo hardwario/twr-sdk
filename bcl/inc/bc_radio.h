@@ -27,14 +27,17 @@
 
 typedef enum
 {
+    //! @brief Unknown mode
+    BC_RADIO_MODE_UNKNOWN = 0,
+
     //! @brief Gateway mode
-    BC_RADIO_MODE_GATEWAY = 0,
+    BC_RADIO_MODE_GATEWAY = 1,
 
     //! @brief Node listening mode
-    BC_RADIO_MODE_NODE_LISTENING = 1,
+    BC_RADIO_MODE_NODE_LISTENING = 2,
 
     //! @brief Node sleeping mode, suitable for battery
-    BC_RADIO_MODE_NODE_SLEEPING = 2,
+    BC_RADIO_MODE_NODE_SLEEPING = 3,
 
 } bc_radio_mode_t;
 
@@ -82,10 +85,34 @@ typedef enum
     BC_RADIO_HEADER_NODE_LED_STRIP_COMPOUND_SET   = 0x1a,
     BC_RADIO_HEADER_NODE_LED_STRIP_EFFECT_SET     = 0x1b,
     BC_RADIO_HEADER_NODE_LED_STRIP_THERMOMETER_SET = 0x1c,
+    BC_RADIO_HEADER_SUB_DATA        = 0x1d,
+
+    BC_RADIO_HEADER_SUB_REG         = 0x20,
 
     BC_RADIO_HEADER_ACK             = 0xaa,
 
+
 } bc_radio_header_t;
+
+//! @brief Subscribe payload type
+
+typedef enum
+{
+    BC_RADIO_SUB_PT_BOOL = 0,
+    BC_RADIO_SUB_PT_INT = 1,
+    BC_RADIO_SUB_PT_FLOAT = 2,
+    BC_RADIO_SUB_PT_STRING = 3,
+
+} bc_radio_sub_pt_t;
+
+typedef struct bc_radio_sub_t bc_radio_sub_t;
+
+struct bc_radio_sub_t {
+    const char *topic;
+    bc_radio_sub_pt_t type;
+    void (*callback)(uint64_t *id, const char *, void *,  void *);
+    void *param;
+};
 
 //! @brief Initialize radio
 //! @param[in] mode
@@ -94,9 +121,7 @@ void bc_radio_init(bc_radio_mode_t mode);
 
 void bc_radio_set_event_handler(void (*event_handler)(bc_radio_event_t, void *), void *event_param);
 
-void bc_radio_listen(void);
-
-void bc_radio_sleep(void);
+void bc_radio_listen(bc_tick_t timeout);
 
 void bc_radio_pairing_request(const char *firmware, const char *version);
 
@@ -127,6 +152,12 @@ uint64_t bc_radio_get_event_id(void);
 bool bc_radio_is_peer_device(uint64_t id);
 
 bool bc_radio_pub_queue_put(const void *buffer, size_t length);
+
+void bc_radio_set_subs(bc_radio_sub_t *subs, int length);
+
+bool bc_radio_send_sub_data(uint64_t *id, uint8_t order, void *payload, size_t size);
+
+void bc_radio_set_rx_timeout_for_sleeping_node(bc_tick_t timeout);
 
 uint8_t *bc_radio_id_to_buffer(uint64_t *id, uint8_t *buffer);
 uint8_t *bc_radio_bool_to_buffer(bool *value, uint8_t *buffer);
