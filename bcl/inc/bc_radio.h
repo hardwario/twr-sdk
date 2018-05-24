@@ -102,6 +102,7 @@ typedef enum
     BC_RADIO_SUB_PT_INT = 1,
     BC_RADIO_SUB_PT_FLOAT = 2,
     BC_RADIO_SUB_PT_STRING = 3,
+    BC_RADIO_SUB_PT_NULL = 4,
 
 } bc_radio_sub_pt_t;
 

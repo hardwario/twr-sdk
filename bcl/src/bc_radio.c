@@ -308,7 +308,15 @@ bool bc_radio_send_sub_data(uint64_t *id, uint8_t order, void *payload, size_t s
 
     *pqbuffer++ = order;
 
-    memcpy(pqbuffer, payload, size);
+    if (payload == NULL)
+    {
+        size = 0;
+    }
+
+    if (size > 0)
+    {
+        memcpy(pqbuffer, payload, size);
+    }
 
     return bc_radio_pub_queue_put(qbuffer, 1 + BC_RADIO_ID_SIZE + 1 + size);
 }
@@ -443,7 +451,14 @@ static void _bc_radio_task(void *param)
 
             if (sub->callback != NULL)
             {
-                sub->callback(&id, sub->topic, queue_item_buffer + BC_RADIO_HEAD_SIZE + 1 + BC_RADIO_ID_SIZE + 1, sub->param);
+                uint8_t *payload = NULL;
+
+                if (queue_item_length > 1 + BC_RADIO_ID_SIZE + 1)
+                {
+                    payload = queue_item_buffer + BC_RADIO_HEAD_SIZE + 1 + BC_RADIO_ID_SIZE + 1;
+                }
+
+                sub->callback(&id, sub->topic, payload, sub->param);
             }
         }
         else if (queue_item_buffer[BC_RADIO_HEAD_SIZE] == BC_RADIO_HEADER_PUB_INFO)
@@ -945,6 +960,8 @@ static void _bc_radio_save_peer_devices(void)
     uint64_t buffer_write[3];
     uint32_t *pointer_write = (uint32_t *)buffer_write;
     uint64_t buffer_read[3];
+
+    _bc_radio.save_peer_devices = false;
 
     for (int i = 0; i < _bc_radio.peer_devices_lenght; i++)
     {
