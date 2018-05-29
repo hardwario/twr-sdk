@@ -79,6 +79,13 @@ void bc_adc_set_format(bc_adc_channel_t channel, bc_adc_format_t format);
 
 bc_adc_format_t bc_adc_get_format(bc_adc_channel_t channel);
 
+//! @brief Check if ADC  is ready for reading
+//! @param[in] self Instance
+//! @return true If ready
+//! @return false If not ready
+
+bool bc_adc_is_ready(bc_adc_channel_t channel);
+
 //! @brief Reads the ADC channel voltage
 //! @param[in] channel ADC channel
 //! @param[out] result Pointer to destination where ADC conversion will be stored
@@ -117,6 +124,12 @@ bool bc_adc_get_result(bc_adc_channel_t channel, void *result);
 //! @return false On valid VDDA
 
 bool bc_adc_get_vdda_voltage(float *vdda_voltage);
+
+//! @brief Calibration
+//! @return true On success
+//! @return false On failure
+
+bool bc_adc_calibration(void);
 
 //! @}
 

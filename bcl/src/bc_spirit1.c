@@ -10,9 +10,10 @@
 
 typedef enum
 {
-    BC_SPIRIT1_STATE_SLEEP = 0,
-    BC_SPIRIT1_STATE_TX = 1,
-    BC_SPIRIT1_STATE_RX = 2
+    BC_SPIRIT1_STATE_INIT = 0,
+    BC_SPIRIT1_STATE_SLEEP = 1,
+    BC_SPIRIT1_STATE_TX = 2,
+    BC_SPIRIT1_STATE_RX = 3
 
 } bc_spirit1_state_t;
 
@@ -112,9 +113,9 @@ void bc_spirit1_init(void)
     SpiritPktBasicInit(&xBasicInit);
     SpiritPktBasicAddressesInit(&xAddressInit);
 
-    _bc_spirit1.task_id = bc_scheduler_register(_bc_spirit1_task, NULL, BC_TICK_INFINITY);
+    _bc_spirit1.desired_state = BC_SPIRIT1_STATE_SLEEP;
 
-    _bc_spirit1_enter_state_sleep();
+    _bc_spirit1.task_id = bc_scheduler_register(_bc_spirit1_task, NULL, 0);
 }
 
 void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t, void *), void *event_param)
@@ -341,17 +342,6 @@ static void _bc_spirit1_enter_state_rx(void)
 
 static void _bc_spirit1_check_state_rx(void)
 {
-    if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
-    {
-        _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
-    }
-    else
-    {
-        _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
-    }
-
-    bc_scheduler_plan_current_absolute(_bc_spirit1.rx_tick_timeout);
-
     SpiritIrqs xIrqStatus;
 
     /* Get the IRQ status */
@@ -370,18 +360,29 @@ static void _bc_spirit1_check_state_rx(void)
       /* Get the RX FIFO size */
       uint8_t cRxData = SpiritLinearFifoReadNumElementsRxFifo();
 
-      if (cRxData <= BC_SPIRIT1_MAX_PACKET_SIZE)
-      {
-          /* Read the RX FIFO */
-          SpiritSpiReadLinearFifo(cRxData, _bc_spirit1.rx_buffer);
+        if (cRxData <= BC_SPIRIT1_MAX_PACKET_SIZE)
+        {
+            /* Read the RX FIFO */
+            SpiritSpiReadLinearFifo(cRxData, _bc_spirit1.rx_buffer);
 
-          _bc_spirit1.rx_length = cRxData;
+            _bc_spirit1.rx_length = cRxData;
 
-          if (_bc_spirit1.event_handler != NULL)
-          {
-              _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE, _bc_spirit1.event_param);
-          }
-      }
+            if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
+            {
+                _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
+            }
+            else
+            {
+                _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
+            }
+
+            bc_scheduler_plan_current_absolute(_bc_spirit1.rx_tick_timeout);
+
+            if (_bc_spirit1.event_handler != NULL)
+            {
+                _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE, _bc_spirit1.event_param);
+            }
+        }
     }
 
     /* Flush the RX FIFO */

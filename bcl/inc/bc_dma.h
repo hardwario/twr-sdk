@@ -23,7 +23,7 @@ typedef enum
     //! @brief DMA channel 4
     BC_DMA_CHANNEL_4 = 3,
 
-    //! @brief DMA channel 5
+    //! @brief DMA channel 5, used for SPI
     BC_DMA_CHANNEL_5 = 4,
 
     //! @brief DMA channel 6
@@ -209,6 +209,19 @@ void bc_dma_channel_config(bc_dma_channel_t channel, bc_dma_channel_config_t *co
 //! @param[in] event_param Optional event parameter (can be NULL)
 
 void bc_dma_set_event_handler(bc_dma_channel_t channel, void (*event_handler)(bc_dma_channel_t, bc_dma_event_t, void *), void *event_param);
+
+//! @brief Start DMA channel
+//! @param[in] channel DMA channel
+
+void bc_dma_channel_run(bc_dma_channel_t channel);
+
+//! @brief Stop DMA channel
+//! @param[in] channel DMA channel
+
+void bc_dma_channel_stop(bc_dma_channel_t channel);
+
+size_t bc_dma_channel_get_length(bc_dma_channel_t channel);
+
 
 //! @}
 

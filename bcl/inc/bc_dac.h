@@ -63,10 +63,10 @@ typedef enum
 
 typedef enum
 {
-    //! @brief Data size is 8b
+    //! @brief Mode single
     BC_DAC_MODE_SINGLE = 0,
 
-    //! @brief Data size is 16b
+    //! @brief Mode circular (repeate playing buffer)
     BC_DAC_MODE_CIRCULAR = 1
 
 } bc_dac_mode_t;
@@ -100,6 +100,11 @@ typedef struct
 
 void bc_dac_init(bc_dac_channel_t channel);
 
+//! @brief Deitialize DAC channel
+//! @param[in] channel DAC channel
+
+void bc_dac_deinit(bc_dac_channel_t channel);
+
 //! @brief Set DAC channel output as raw value
 //! @param[in] channel DAC channel
 //! @param[out] raw Pointer to desired raw value
@@ -126,14 +131,14 @@ void bc_dac_set_event_handler(bc_dac_channel_t channel, void (*event_handler)(bc
 bool bc_dac_async_config(bc_dac_channel_t channel, bc_dac_config_t *config);
 
 //! @brief Start asynchronous DAC channel operation
-//! @param[in] channel DMA channel
+//! @param[in] channel DAC channel
 //! @return true On success
 //! @return false On failure
 
 bool bc_dac_async_run(bc_dac_channel_t channel);
 
 //! @brief Stop asynchronous DAC channel operation
-//! @param[in] channel DMA channel
+//! @param[in] channel DAC channel
 
 void bc_dac_async_stop(bc_dac_channel_t channel);
 
