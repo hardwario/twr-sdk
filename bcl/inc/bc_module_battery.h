@@ -11,11 +11,14 @@
 
 typedef enum
 {
-    //! @brief Format is standard
-    BC_MODULE_BATTERY_FORMAT_STANDARD = 0,
+    //! @brief Format is unknown
+    BC_MODULE_BATTERY_FORMAT_UNKNOWN = 0,
 
-    //! @brief Format is mini
-    BC_MODULE_BATTERY_FORMAT_MINI = 1
+    //! @brief Format is standard 4xAAA
+    BC_MODULE_BATTERY_FORMAT_STANDARD = 1,
+
+    //! @brief Format is mini 2xAAA
+    BC_MODULE_BATTERY_FORMAT_MINI = 2
 
 } bc_module_battery_format_t;
 
@@ -30,14 +33,16 @@ typedef enum
     BC_MODULE_BATTERY_EVENT_LEVEL_CRITICAL = 1,
 
     //! @brief Event update
-    BC_MODULE_BATTERY_EVENT_UPDATE = 2
+    BC_MODULE_BATTERY_EVENT_UPDATE = 2,
+
+    //! @brief Event error
+    BC_MODULE_BATTERY_EVENT_ERROR = 3
 
 } bc_module_battery_event_t;
 
 //! @brief Initialize Battery Module
-//! @param[in] format Battery Module format
 
-void bc_module_battery_init(bc_module_battery_format_t format);
+void bc_module_battery_init(void);
 
 //! @brief Set callback function
 //! @param[in] event_handler Function address
@@ -55,6 +60,10 @@ void bc_module_battery_set_update_interval(bc_tick_t interval);
 //! @param[in] level_critical_threshold Voltage level considered as critical
 
 void bc_module_battery_set_threshold_levels(float level_low_threshold, float level_critical_threshold);
+
+//! @brief Get Battery Module format
+
+bc_module_battery_format_t bc_module_battery_get_format();
 
 //! @brief Start mesurement
 //! @return true On success
@@ -76,6 +85,9 @@ bool bc_module_battery_get_voltage(float *voltage);
 
 bool bc_module_battery_get_charge_level(int *percentage);
 
+//! @brief Get Battery Module is pressent, can use without bc_module_battery_init
+
+bool bc_module_battery_is_present(void);
 
 //! @}
 
