@@ -6,10 +6,22 @@
 typedef enum
 {
     BC_SYSTEM_CLOCK_MSI = 0,
+
     BC_SYSTEM_CLOCK_HSI = 1,
+
     BC_SYSTEM_CLOCK_PLL = 2
 
 } bc_system_clock_t;
+
+typedef enum
+{
+    BC_SYSTEM_CORE_VERSION_UNKNOWN = 0,
+
+    BC_SYSTEM_CORE_VERSION_R1 = 1,
+
+    BC_SYSTEM_CORE_VERSION_R2 = 2
+
+} bc_system_core_version_t;
 
 void bc_system_init(void);
 
@@ -30,6 +42,8 @@ void bc_system_deep_sleep_disable(void);
 void bc_system_deep_sleep_enable(void);
 
 uint32_t bc_system_get_clock(void);
+
+bc_system_core_version_t bc_system_get_core_version(void);
 
 void bc_system_reset(void);
 
