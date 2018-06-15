@@ -38,7 +38,7 @@ static bc_scheduler_t _bc_scheduler;
 
 extern void bc_system_error(void);
 
-extern void _bc_scheduler_hook_set_interrupt_tick(bc_tick_t tick);
+extern void _bc_system_hook_set_interrupt_tick(bc_tick_t tick);
 
 static inline bc_scheduler_task_id_t _bc_scheduler_task_get_first();
 
@@ -100,7 +100,7 @@ void bc_scheduler_run(void)
                 continue;
             }
 
-            _bc_scheduler_hook_set_interrupt_tick(tick_first);
+            _bc_system_hook_set_interrupt_tick(tick_first);
         }
 
         if (_bc_scheduler.sleep_bypass_semaphore == 0)

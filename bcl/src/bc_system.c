@@ -51,7 +51,7 @@ static void _bc_system_init_shutdown_tmp112(void);
 
 static void _bc_system_switch_clock(bc_system_clock_t clock);
 
-void _bc_scheduler_hook_set_interrupt_tick(bc_tick_t tick);
+void _bc_system_hook_set_interrupt_tick(bc_tick_t tick);
 
 void bc_system_init(void)
 {
@@ -479,7 +479,7 @@ static void _bc_system_switch_clock(bc_system_clock_t clock)
     bc_irq_enable();
 }
 
-void _bc_scheduler_hook_set_interrupt_tick(bc_tick_t tick)
+void _bc_system_hook_set_interrupt_tick(bc_tick_t tick)
 {
 	static uint64_t tick_counter;
 
