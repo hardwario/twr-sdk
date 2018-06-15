@@ -1,6 +1,7 @@
 #include <bc_system.h>
 #include <bc_scheduler.h>
 #include <bc_irq.h>
+#include <bc_i2c.h>
 #include <stm32l0xx.h>
 
 #define _BC_SYSTEM_USE_MARKS 0
@@ -52,6 +53,8 @@ static void _bc_system_init_gpio(void);
 
 static void _bc_system_init_lptim(void);
 
+static void _bc_system_init_shutdown_tmp112(void);
+
 static void _bc_system_switch_clock(bc_system_clock_t clock);
 
 void _bc_scheduler_hook_set_interrupt_tick(bc_tick_t tick);
@@ -77,6 +80,8 @@ void bc_system_init(void)
     _bc_system_init_gpio();
 
     _bc_system_init_lptim();
+
+    _bc_system_init_shutdown_tmp112();
 }
 
 static void _bc_system_init_flash(void)
@@ -253,6 +258,15 @@ static void _bc_system_init_lptim(void)
     LPTIM1->CR |= LPTIM_CR_CNTSTRT;
 
     NVIC_EnableIRQ(LPTIM1_IRQn);
+}
+
+static void _bc_system_init_shutdown_tmp112(void)
+{
+    bc_i2c_init(BC_I2C_I2C0, BC_I2C_SPEED_100_KHZ);
+
+    bc_i2c_memory_write_16b(BC_I2C_I2C0, 0x49, 0x01, 0x0180);
+
+    bc_i2c_deinit(BC_I2C_I2C0);
 }
 
 void bc_system_sleep(void)

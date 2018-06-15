@@ -23,14 +23,14 @@
 
 static struct
 {
-    bool initialized;
+    int initialized_semaphore;
     bc_i2c_speed_t speed;
     I2C_TypeDef *i2c;
 
 } _bc_i2c[] = {
-    [BC_I2C_I2C0] = { .initialized = false, .i2c = I2C2 },
-    [BC_I2C_I2C1] = { .initialized = false, .i2c = I2C1 },
-    [BC_I2C_I2C_1W]= { .initialized = false, .i2c = NULL }
+    [BC_I2C_I2C0] = { .initialized_semaphore = 0, .i2c = I2C2 },
+    [BC_I2C_I2C1] = { .initialized_semaphore = 0, .i2c = I2C1 },
+    [BC_I2C_I2C_1W]= { .initialized_semaphore = 0, .i2c = NULL }
 };
 
 static bc_tick_t tick_timeout;
@@ -53,7 +53,7 @@ static void _bc_i2c_restore_bus(I2C_TypeDef *i2c);
 
 void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 {
-    if (_bc_i2c[channel].initialized)
+    if (++_bc_i2c[channel].initialized_semaphore != 1)
     {
         return;
     }
@@ -82,9 +82,6 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         I2C2->CR1 |= I2C_CR1_PE;
 
         bc_i2c_set_speed(channel, speed);
-
-        // Update state
-        _bc_i2c[channel].initialized = true;
     }
     else if (channel == BC_I2C_I2C1)
     {
@@ -110,9 +107,6 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
         I2C1->CR1 |= I2C_CR1_PE;
 
         bc_i2c_set_speed(channel, speed);
-
-        // Update state
-        _bc_i2c[channel].initialized = true;
     }
     else if (channel == BC_I2C_I2C_1W)
     {
@@ -122,9 +116,55 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 
         bc_ds28e17_init(&ds28e17, BC_GPIO_P5, 0x00);
 
-        _bc_i2c[channel].initialized = true;
-
         bc_i2c_set_speed(channel, speed);
+    }
+}
+
+void bc_i2c_deinit(bc_i2c_channel_t channel)
+{
+    if (--_bc_i2c[channel].initialized_semaphore != 0)
+    {
+        return;
+    }
+
+    if (channel == BC_I2C_I2C0)
+    {
+        // Disable I2C2 peripheral
+        I2C2->CR1 |= I2C_CR1_PE;
+
+        // Disable I2C2 peripheral clock
+        RCC->APB1ENR &= ~RCC_APB1ENR_I2C2EN;
+
+        // Errata workaround
+        RCC->APB1ENR;
+
+        GPIOB->AFR[1] &= ~(GPIO_AFRH_AFRH3_Msk | GPIO_AFRH_AFRH2_Msk);
+        GPIOB->OSPEEDR &= ~(GPIO_OSPEEDER_OSPEED10_Msk | GPIO_OSPEEDER_OSPEED11_Msk);
+        GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_10 | GPIO_OTYPER_OT_11);
+        GPIOB->MODER |= GPIO_MODER_MODE10_Msk | GPIO_MODER_MODE11_Msk;
+
+    }
+    else if (channel == BC_I2C_I2C1)
+    {
+        // Disable I2C1 peripheral
+        I2C1->CR1 &= ~I2C_CR1_PE;
+
+        // Disable I2C1 peripheral clock
+        RCC->APB1ENR &= ~RCC_APB1ENR_I2C1EN;
+
+        // Errata workaround
+        RCC->APB1ENR;
+
+        GPIOB->AFR[1] &= ~(GPIO_AFRH_AFRH1_Msk | GPIO_AFRH_AFRH0_Msk);
+        GPIOB->OSPEEDR &= ~(GPIO_OSPEEDER_OSPEED8_Msk | GPIO_OSPEEDER_OSPEED9_Msk);
+        GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_8 | GPIO_OTYPER_OT_9);
+        GPIOB->MODER |= GPIO_MODER_MODE8_Msk | GPIO_MODER_MODE9_Msk;
+    }
+    else if (channel == BC_I2C_I2C_1W)
+    {
+        bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_NONE);
+        bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_PULL_NONE);
+        // TODO: deinit bc_module_sensor and bc_ds28e17
     }
 }
 
@@ -137,13 +177,13 @@ void bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 {
     uint32_t timingr;
 
+    if (_bc_i2c[channel].initialized_semaphore == 0)
+    {
+        return;
+    }
+
     if (channel == BC_I2C_I2C_1W)
     {
-        if (!_bc_i2c[channel].initialized)
-        {
-            return;
-        }
-
         bc_ds28e17_set_speed(&ds28e17, speed);
         _bc_i2c[channel].speed = speed;
         return;
@@ -176,7 +216,7 @@ void bc_i2c_set_speed(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
 
 bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
 {
-    if (!_bc_i2c[channel].initialized)
+    if (_bc_i2c[channel].initialized_semaphore == 0)
     {
         return false;
     }
@@ -222,7 +262,7 @@ bool bc_i2c_write(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
 
 bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
 {
-    if (!_bc_i2c[channel].initialized)
+    if (_bc_i2c[channel].initialized_semaphore == 0)
     {
         return false;
     }
@@ -266,7 +306,7 @@ bool bc_i2c_read(bc_i2c_channel_t channel, const bc_i2c_transfer_t *transfer)
 
 bool bc_i2c_memory_write(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t *transfer)
 {
-    if (!_bc_i2c[channel].initialized)
+    if (_bc_i2c[channel].initialized_semaphore == 0)
     {
         return false;
     }
@@ -304,7 +344,7 @@ bool bc_i2c_memory_write(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_
 
 bool bc_i2c_memory_read(bc_i2c_channel_t channel, const bc_i2c_memory_transfer_t *transfer)
 {
-    if (!_bc_i2c[channel].initialized)
+    if (_bc_i2c[channel].initialized_semaphore == 0)
     {
         return false;
     }

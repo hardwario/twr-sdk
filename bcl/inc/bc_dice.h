@@ -43,6 +43,7 @@ typedef struct bc_dice_t bc_dice_t;
 struct bc_dice_t
 {
     bc_dice_face_t _face;
+    float _threshold;
 };
 
 //! @endcond
@@ -52,6 +53,12 @@ struct bc_dice_t
 //! @param[in] start Dice initial face
 
 void bc_dice_init(bc_dice_t *self, bc_dice_face_t start);
+
+//! @brief Set threshold
+//! @param[in] self Instance
+//! @param[in] threshold
+
+void bc_dice_set_threshold(bc_dice_t *self, float threshold);
 
 //! @brief Feed dice with X/Y/Z axis vectors
 //! @param[in] self Instance

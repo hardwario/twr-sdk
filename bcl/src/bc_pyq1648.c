@@ -22,7 +22,8 @@ static const uint8_t _bc_pyq1648_sensitivity_table[4] =
     [BC_PYQ1648_SENSITIVITY_LOW] = 150,
     [BC_PYQ1648_SENSITIVITY_MEDIUM] = 70,
     [BC_PYQ1648_SENSITIVITY_HIGH] = 20,
-    [BC_PYQ1648_SENSITIVITY_VERY_HIGH] = 9 };
+    [BC_PYQ1648_SENSITIVITY_VERY_HIGH] = 9
+};
 
 extern GPIO_TypeDef * bc_gpio_port[];
 extern uint16_t bc_gpio_16_bit_mask[];
