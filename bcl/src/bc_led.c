@@ -21,7 +21,7 @@ void bc_led_init(bc_led_t *self, bc_gpio_channel_t gpio_channel, bool open_drain
 {
     memset(self, 0, sizeof(*self));
 
-    self->_channel.gpio_channel = gpio_channel;
+    self->_channel.gpio = gpio_channel;
 
     self->_open_drain_output = open_drain_output;
 
@@ -35,11 +35,11 @@ void bc_led_init(bc_led_t *self, bc_gpio_channel_t gpio_channel, bool open_drain
 
     if (self->_open_drain_output)
     {
-        bc_gpio_set_mode(self->_channel.gpio_channel, BC_GPIO_MODE_OUTPUT_OD);
+        bc_gpio_set_mode(self->_channel.gpio, BC_GPIO_MODE_OUTPUT_OD);
     }
     else
     {
-        bc_gpio_set_mode(self->_channel.gpio_channel, BC_GPIO_MODE_OUTPUT);
+        bc_gpio_set_mode(self->_channel.gpio, BC_GPIO_MODE_OUTPUT);
     }
 
     self->_slot_interval = BC_LED_DEFAULT_SLOT_INTERVAL;
@@ -51,7 +51,7 @@ void bc_led_init_virtual(bc_led_t *self, int channel, const bc_led_driver_t *dri
 {
     memset(self, 0, sizeof(*self));
 
-    self->_channel.virtual_channel = channel;
+    self->_channel.virtual = channel;
 
     self->_idle_state = idle_state;
 
@@ -229,15 +229,15 @@ static void _bc_led_task(void *param)
 
 static void _bc_led_gpio_init(bc_led_t *self)
 {
-    bc_gpio_init(self->_channel.gpio_channel);
+    bc_gpio_init(self->_channel.gpio);
 }
 
 static void _bc_led_gpio_on(bc_led_t *self)
 {
-    bc_gpio_set_output(self->_channel.gpio_channel, self->_idle_state ? 0 : 1);
+    bc_gpio_set_output(self->_channel.gpio, self->_idle_state ? 0 : 1);
 }
 
 static void _bc_led_gpio_off(bc_led_t *self)
 {
-    bc_gpio_set_output(self->_channel.gpio_channel, self->_idle_state ? 1 : 0);
+    bc_gpio_set_output(self->_channel.gpio, self->_idle_state ? 1 : 0);
 }
