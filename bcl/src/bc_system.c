@@ -28,6 +28,8 @@ static const uint32_t bc_system_source_clock_table[3] =
 
 static struct
 {
+	bool counter_overflow;
+
     bc_tick_t tick_counter;
 
     int hsi16_enable_semaphore;
@@ -439,6 +441,8 @@ void HardFault_Handler(void)
 
 void LPTIM1_IRQHandler(void)
 {
+	_bc_system.counter_overflow = true;
+
     if ((LPTIM1->ISR & LPTIM_ISR_ARRM) != 0)
     {
         // Clear interrupt flag
@@ -484,33 +488,36 @@ static void _bc_system_switch_clock(bc_system_clock_t clock)
 
 void _bc_scheduler_hook_set_interrupt_tick(bc_tick_t tick)
 {
-    // uint64_t tick_counter = _BC_SYSTEM_TICK_SYSTEM_TO_COUNTER(tick);
-    static uint64_t tick_counter;
+	static uint64_t tick_counter;
 
     static bc_tick_t tick_system_now;
-    // uint64_t tick_counter_now = _BC_SYSTEM_TICK_SYSTEM_TO_COUNTER(tick_system_now);
+
     static uint64_t tick_counter_now;
 
-    // TODO counter overflow
-
-    tick_counter = tick << 5;
-    tick_system_now = bc_system_tick_get();
-    tick_counter_now = tick_system_now << 5;
-
-    if ((tick_counter_now & 0xffffffffffff0000) == (tick_counter & 0xffffffffffff0000))
+    while (1)
     {
-#if _BC_SYSTEM_USE_MARKS
-        bc_gpio_set_output(BC_GPIO_P5, 1);
-#endif
-        LPTIM1->CMP = tick_counter & 0x000000000000ffff;
+    	_bc_system.counter_overflow = false;
 
-        LPTIM1->IER |= LPTIM_IER_CMPMIE;
-#if _BC_SYSTEM_USE_MARKS
-        bc_gpio_set_output(BC_GPIO_P5, 0);
-#endif
-    }
-    else
-    {
-        LPTIM1->IER &= ~LPTIM_IER_CMPMIE;
+		tick_counter = tick << 5;
+
+		tick_system_now = bc_system_tick_get();
+
+		tick_counter_now = tick_system_now << 5;
+
+		if ((tick_counter_now & 0xffffffffffff0000) == (tick_counter & 0xffffffffffff0000))
+		{
+			LPTIM1->CMP = tick_counter & 0x000000000000ffff;
+
+			LPTIM1->IER |= LPTIM_IER_CMPMIE;
+		}
+		else
+		{
+			LPTIM1->IER &= ~LPTIM_IER_CMPMIE;
+		}
+
+		if (_bc_system.counter_overflow == false)
+		{
+			break;
+		}
     }
 }
