@@ -2,11 +2,6 @@
 #include <bc_system.h>
 #include <bc_error.h>
 
-// TODO
-#include <bc_gpio.h>
-
-#define _BC_SCHEDULER_USE_MARKS 0
-
 #define _BC_SCHEDULER_TASK_COUNT 64
 
 #define _BC_SCHEDULER_INVALID_TASK_ID (_BC_SCHEDULER_TASK_COUNT)
@@ -60,23 +55,8 @@ void bc_scheduler_run(void)
 
     static bc_scheduler_task_id_t *task_id = &_bc_scheduler.current_task_id;
 
-#if _BC_SCHEDULER_USE_MARKS
-    bc_gpio_init(BC_GPIO_P0);
-    bc_gpio_set_mode(BC_GPIO_P0, BC_GPIO_MODE_OUTPUT);
-
-    bc_gpio_init(BC_GPIO_P3);
-    bc_gpio_set_mode(BC_GPIO_P3, BC_GPIO_MODE_OUTPUT);
-
-    bc_gpio_init(BC_GPIO_P2);
-    bc_gpio_set_mode(BC_GPIO_P2, BC_GPIO_MODE_OUTPUT);
-#endif
-
     while (1)
     {
-#if _BC_SCHEDULER_USE_MARKS
-        bc_gpio_set_output(BC_GPIO_P0, 1);
-#endif
-
         _bc_scheduler.tick_spin = bc_system_tick_get();
 
         if (_bc_scheduler.tick_spin > _bc_scheduler.first_task_tick)
@@ -89,17 +69,9 @@ void bc_scheduler_run(void)
 
                     if (task->tick_execution <= _bc_scheduler.tick_spin)
                     {
-#if _BC_SCHEDULER_USE_MARKS
-        bc_gpio_set_output(BC_GPIO_P3, 1);
-#endif
-
                         task->tick_execution = BC_TICK_INFINITY;
 
                         task->task(task->param);
-                        
-#if _BC_SCHEDULER_USE_MARKS
-        bc_gpio_set_output(BC_GPIO_P3, 0);
-#endif
                     }
                 }
             }
@@ -111,10 +83,6 @@ void bc_scheduler_run(void)
                 continue;
             }
 
-#if _BC_SCHEDULER_USE_MARKS
-        bc_gpio_set_output(BC_GPIO_P2, 1);
-#endif
-            
             bc_tick_t tick_first = BC_TICK_INFINITY;
 
             for (bc_scheduler_task_id_t i = 0; i < _bc_scheduler.max_task_id; i++)
@@ -133,15 +101,7 @@ void bc_scheduler_run(void)
             }
 
             _bc_scheduler_hook_set_interrupt_tick(tick_first);
-            
-#if _BC_SCHEDULER_USE_MARKS
-        bc_gpio_set_output(BC_GPIO_P2, 0);
-#endif
         }
-
-#if _BC_SCHEDULER_USE_MARKS
-        bc_gpio_set_output(BC_GPIO_P0, 0);
-#endif
 
         if (_bc_scheduler.sleep_bypass_semaphore == 0)
         {

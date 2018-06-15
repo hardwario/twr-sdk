@@ -4,12 +4,6 @@
 #include <bc_i2c.h>
 #include <stm32l0xx.h>
 
-#define _BC_SYSTEM_USE_MARKS 0
-
-#if _BC_SYSTEM_USE_MARKS
-#include <bc_gpio.h>
-#endif
-
 #define _BC_SYSTEM_DEBUG_ENABLE 0
 
 // #define _BC_SYSTEM_TICK_COUNTER_TO_SYSTEM(__COUNTER_TICK__)  ((__COUNTER_TICK__ * 30518) / 1000000)
@@ -61,14 +55,6 @@ void _bc_scheduler_hook_set_interrupt_tick(bc_tick_t tick);
 
 void bc_system_init(void)
 {
-#if _BC_SYSTEM_USE_MARKS
-    bc_gpio_init(BC_GPIO_P6);
-    bc_gpio_set_mode(BC_GPIO_P6, BC_GPIO_MODE_OUTPUT);
-
-    bc_gpio_init(BC_GPIO_P5);
-    bc_gpio_set_mode(BC_GPIO_P5, BC_GPIO_MODE_OUTPUT);
-#endif
-
     _bc_system_init_flash();
 
     _bc_system_init_debug();
@@ -468,18 +454,11 @@ void LPTIM1_IRQHandler(void)
     // This interrupt is used as a wakeup for scheduler
     else if ((LPTIM1->ISR & LPTIM_ISR_CMPM) != 0)
     {
-#if _BC_SYSTEM_USE_MARKS
-        bc_gpio_set_output(BC_GPIO_P6, 1);
-#endif
         // Disable compare IRQ
         LPTIM1->IER &= ~LPTIM_IER_CMPMIE;
 
         // Clear interrupt flag
         LPTIM1->ICR = LPTIM_ICR_CMPMCF;
-
-#if _BC_SYSTEM_USE_MARKS
-        bc_gpio_set_output(BC_GPIO_P6, 0);
-#endif
     }
 
     // Clear EXTI interrupt flag
