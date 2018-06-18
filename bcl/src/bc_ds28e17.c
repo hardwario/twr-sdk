@@ -112,12 +112,17 @@ bool bc_ds28e17_memory_read(bc_ds28e17_t *self, const bc_i2c_memory_transfer_t *
 
 static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_lenght, void *buffer, size_t length)
 {
+    bc_onewire_transaction_start();
+
     if (!bc_onewire_reset(self->_channel))
     {
+        bc_onewire_transaction_stop();
+
         return false;
     }
 
     uint16_t crc16 = bc_onewire_crc16(head, head_lenght, 0x00);
+
     crc16 = bc_onewire_crc16(buffer, length, crc16);
 
     bc_onewire_select(self->_channel, &self->_device_number);
@@ -136,13 +141,18 @@ static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_len
     {
         if (timeout < bc_tick_get())
         {
+            bc_onewire_transaction_stop();
+
             return false;
         }
         continue;
     }
 
     uint8_t status = bc_onewire_read_8b(self->_channel);
+
     uint8_t write_status = bc_onewire_read_8b(self->_channel);
+
+    bc_onewire_transaction_stop();
 
     return (status == 0x00) && (write_status == 0x00);
 }

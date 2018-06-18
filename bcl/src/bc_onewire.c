@@ -269,21 +269,19 @@ static uint8_t _bc_onewire_read_byte(bc_gpio_channel_t channel)
 
 static void _bc_onewire_write_bit(bc_gpio_channel_t channel, uint8_t bit)
 {
+    bc_irq_disable();
+
     bc_gpio_set_output(channel, 0);
+
     bc_gpio_set_mode(channel, BC_GPIO_MODE_OUTPUT);
 
     if (bit)
     {
-        bc_irq_disable();
-
         bc_timer_delay(3);
-
-        bc_irq_enable();
 
         bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
 
         bc_timer_delay(60);
-
     }
     else
     {
@@ -293,33 +291,31 @@ static void _bc_onewire_write_bit(bc_gpio_channel_t channel, uint8_t bit)
 
         bc_timer_delay(8);
     }
+
+    bc_irq_enable();
 }
 
 static uint8_t _bc_onewire_read_bit(bc_gpio_channel_t channel)
 {
     uint8_t bit = 0;
 
+    bc_irq_disable();
+
     bc_gpio_set_output(channel, 0);
 
     bc_gpio_set_mode(channel, BC_GPIO_MODE_OUTPUT);
 
-    bc_irq_disable();
-
     bc_timer_delay(3);
-
-    bc_irq_enable();
 
     bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
 
-    bc_irq_disable();
-
     bc_timer_delay(8);
-
-    bc_irq_enable();
 
     bit = bc_gpio_get_input(channel);
 
     bc_timer_delay(50);
+
+    bc_irq_enable();
 
     return bit;
 }
