@@ -5,20 +5,6 @@
 #define _BC_CY8CMBR3102_SCAN_INTERVAL 100
 //#define _BC_CY8CMBR3102_SCAN_INTERVAL_IS_TOUCH 1000
 
-static uint8_t _bc_cy8cmbr3102_default_setting[128] = {
-
-//    x0    x1    x2    x3    x4    x5    x6    x7    x8    x9    xa    xb    xc    xd    xe    xf
-
-    0x01,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, 0x32, 0x7F,    0,    0,  // 0x
-       0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, 0x03,    0,    0,    0,  // 1x
-       0,    0,    0,    0,    0,    0, 0x01, 0x80, 0x05,    0,    0, 0x02,    0, 0x02,    0,    0,  // 2x
-       0,    0,    0,    0,    0, 0x1E,    0,    0,    0, 0x1E,    0,    0,    0,    0,    0,    0,  // 3x
-       0, 0xFF,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, 0x03, 0x01, 0x54,  // 4x
-       0, 0x37, 0x01,    0,    0, 0x0A,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,  // 5x
-       0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,  // 6x
-       0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0   // 7x
-};
-
 static void _bc_cy8cmbr3102_task(void *param);
 
 static uint16_t _bc_cy8cmbr3102_calculate_crc16(const uint8_t *buffer, uint8_t length);
@@ -100,19 +86,54 @@ static void _bc_cy8cmbr3102_task(void *param)
         {
             bc_log_debug("CY8CMBR3102: BC_CY8CMBR3102_STATE_INITIALIZE");
 
+            // --------------------------
+
+            memset(self->_settings, 0, sizeof(self->_settings));
+
+            self->_settings[0x00] = 0x01;
+            self->_settings[0x0c] = 0x32;
+            self->_settings[0x0d] = 0x7f;
+            self->_settings[0x1c] = 0x03;
+            self->_settings[0x26] = 0x01;
+            self->_settings[0x27] = 0x80;
+            self->_settings[0x28] = 0x05;
+            self->_settings[0x2b] = 0x02;
+            self->_settings[0x2d] = 0x02;
+            self->_settings[0x35] = 0x1e;
+            self->_settings[0x39] = 0x1e;
+            self->_settings[0x41] = 0xff;
+            self->_settings[0x4d] = 0x03;
+            self->_settings[0x4e] = 0x01;
+            self->_settings[0x4f] = 0x54;
+            self->_settings[0x51] = 0x37;
+            self->_settings[0x52] = 0x01;
+            self->_settings[0x55] = 0x0a;
+
+            self->_settings[126] = 0x6c;
+            self->_settings[127] = 0x0e;
+
+            /*
+            uint16_t crc = _bc_cy8cmbr3102_calculate_crc16(self->_settings, 126);
+
+            self->_settings[126] = crc;
+            self->_settings[127] = crc >> 8;
+            */
+
+            /*
+            for (size_t i = 0; i < sizeof(self->_settings); i++)
+            {
+                bc_log_debug("Byte %d: %02X", i, self->_settings[i]);
+            }
+            */
+
+            // --------------------------
+
             bc_i2c_memory_transfer_t transfer;
 
             transfer.device_address = self->_i2c_address;
-            transfer.memory_address = 0;
-            transfer.buffer = (uint8_t *)_bc_cy8cmbr3102_default_setting;
-            transfer.length = sizeof(_bc_cy8cmbr3102_default_setting);
-
-            uint16_t crc = _bc_cy8cmbr3102_calculate_crc16(_bc_cy8cmbr3102_default_setting, 126);
-
-            _bc_cy8cmbr3102_default_setting[126] = crc;
-            _bc_cy8cmbr3102_default_setting[127] = crc >> 8;
-
-            //bc_log_warning("CY8CMBR3102: CRC = %04X", crc);
+            transfer.memory_address = 0x00;
+            transfer.buffer = self->_settings;
+            transfer.length = sizeof(self->_settings);
 
             if (!bc_i2c_memory_write(self->_i2c_channel, &transfer))
             {
@@ -165,7 +186,7 @@ static void _bc_cy8cmbr3102_task(void *param)
                 goto start;
             }
 
-            // <<<<<<<<<<<<<<<<<<<<<
+            // --------------------------
 
             if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x82, 0x00))
             {
@@ -173,7 +194,7 @@ static void _bc_cy8cmbr3102_task(void *param)
                 goto start;
             }
 
-            // <<<<<<<<<<<<<<<<<<<<<
+            // --------------------------
 
             self->_state = BC_CY8CMBR3102_STATE_READ;
 
@@ -183,7 +204,7 @@ static void _bc_cy8cmbr3102_task(void *param)
         }
         case BC_CY8CMBR3102_STATE_READ:
         {
-            bc_log_debug("CY8CMBR3102: BC_CY8CMBR3102_STATE_READ");
+            //bc_log_debug("CY8CMBR3102: BC_CY8CMBR3102_STATE_READ");
 
             uint16_t reg;
 
@@ -203,7 +224,10 @@ static void _bc_cy8cmbr3102_task(void *param)
                 goto start;
             }
 
-            bc_log_info("CY8CMBR3102: DEBUG_RAW_COUNT0 = %04x", reg);
+            uint16_t r = reg >> 8;
+            r|= reg << 8;
+
+            bc_log_info("CY8CMBR3102: DEBUG_RAW_COUNT0 = %04x", r);
 
 
             /*

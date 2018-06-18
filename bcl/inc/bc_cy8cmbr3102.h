@@ -46,6 +46,7 @@ struct bc_cy8cmbr3102_t
     bc_cy8cmbr3102_state_t _state;
     bc_tick_t _scan_interval;
     int _error_cnt;
+    uint8_t _settings[128];
 };
 
 //! @endcond
