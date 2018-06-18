@@ -5,6 +5,25 @@
 #define _BC_CY8CMBR3102_SCAN_INTERVAL 100
 //#define _BC_CY8CMBR3102_SCAN_INTERVAL_IS_TOUCH 1000
 
+static const uint8_t _bc_cy8cmbr3102_default_setting[] = {
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x32, 0x7F, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x80,
+    0x05, 0x00, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x1E, 0x00, 0x00,
+    0x00, 0x1E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x01, 0x54,
+    0x00, 0x37, 0x01, 0x00, 0x00, 0x0A, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x6C, 0x0E
+};
+
 static void _bc_cy8cmbr3102_task(void *param);
 
 static uint16_t _bc_cy8cmbr3102_calculate_crc16(const uint8_t *buffer, uint8_t length);
@@ -86,8 +105,6 @@ static void _bc_cy8cmbr3102_task(void *param)
         {
             bc_log_debug("CY8CMBR3102: BC_CY8CMBR3102_STATE_INITIALIZE");
 
-            // --------------------------
-
             memset(self->_settings, 0, sizeof(self->_settings));
 
             self->_settings[0x00] = 0x01;
@@ -109,24 +126,17 @@ static void _bc_cy8cmbr3102_task(void *param)
             self->_settings[0x52] = 0x01;
             self->_settings[0x55] = 0x0a;
 
-            self->_settings[126] = 0x6c;
-            self->_settings[127] = 0x0e;
-
-            /*
             uint16_t crc = _bc_cy8cmbr3102_calculate_crc16(self->_settings, 126);
 
             self->_settings[126] = crc;
             self->_settings[127] = crc >> 8;
-            */
 
-            /*
-            for (size_t i = 0; i < sizeof(self->_settings); i++)
+            if (memcmp(self->_settings, _bc_cy8cmbr3102_default_setting, 128) != 0)
             {
-                bc_log_debug("Byte %d: %02X", i, self->_settings[i]);
+                bc_log_warning("no match");
             }
-            */
 
-            // --------------------------
+            #if 1
 
             bc_i2c_memory_transfer_t transfer;
 
@@ -134,6 +144,17 @@ static void _bc_cy8cmbr3102_task(void *param)
             transfer.memory_address = 0x00;
             transfer.buffer = self->_settings;
             transfer.length = sizeof(self->_settings);
+
+            #else
+
+            bc_i2c_memory_transfer_t transfer;
+
+            transfer.device_address = self->_i2c_address;
+            transfer.memory_address = 0x00;
+            transfer.buffer = _bc_cy8cmbr3102_default_setting;
+            transfer.length = sizeof(_bc_cy8cmbr3102_default_setting);
+
+            #endif
 
             if (!bc_i2c_memory_write(self->_i2c_channel, &transfer))
             {
