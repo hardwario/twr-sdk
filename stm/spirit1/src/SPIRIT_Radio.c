@@ -183,7 +183,7 @@ static const float fPowerFactors[5][6]={
 *         parameters in the pxSRadioInitStruct.
 * @param  pxSRadioInitStruct pointer to a SRadioInit structure that
 *         contains the configuration information for the analog radio part of SPIRIT.
-* @retval Error code: 0=no error, 1=error during calibration of VCO.
+* @retval Error code: 0=no error, 1=error during calibration of VCO. 2= error
 */
 uint8_t SpiritRadioInit(SRadioInit* pxSRadioInitStruct)
 {
@@ -208,12 +208,21 @@ uint8_t SpiritRadioInit(SRadioInit* pxSRadioInitStruct)
 
   /* Disable the digital, ADC, SMPS reference clock divider if fXO>24MHz or fXO<26MHz */
   SpiritSpiCommandStrobes(COMMAND_STANDBY);
+
+  uint8_t count = 10;
+
   do{
     /* Delay for state transition */
     for(volatile uint8_t i=0; i!=0xFF; i++);
 
     /* Reads the MC_STATUS register */
     SpiritRefreshStatus();
+
+    if (count-- == 0)
+    {
+        return 2;
+    }
+
   }while(g_xStatus.MC_STATE!=MC_STATE_STANDBY);
 
   if(s_lXtalFrequency<DOUBLE_XTAL_THR)
