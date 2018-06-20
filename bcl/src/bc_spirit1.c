@@ -19,6 +19,7 @@ typedef enum
 
 typedef struct
 {
+    int initialized_semaphore;
     void (*event_handler)(bc_spirit1_event_t, void *);
     void *event_param;
     bc_scheduler_task_id_t task_id;
@@ -86,36 +87,83 @@ void bc_spirit1_hal_chip_select_low(void);
 void bc_spirit1_hal_chip_select_high(void);
 uint8_t bc_spirit1_hal_transfer_byte(uint8_t value);
 static void bc_spirit1_hal_init_gpio(void);
+static void bc_spirit1_hal_deinit_gpio(void);
 static void bc_spirit1_hal_init_spi(void);
+static void bc_spirit1_hal_deinit_spi(void);
 
 static void _bc_spirit1_task(void *param);
 static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param);
 
-void bc_spirit1_init(void)
+bool bc_spirit1_init(void)
 {
+    if (_bc_spirit1.initialized_semaphore > 0)
+    {
+        _bc_spirit1.initialized_semaphore++;
+
+        return true;
+    }
+
     memset(&_bc_spirit1, 0, sizeof(_bc_spirit1));
 
     SpiritRadioSetXtalFrequency(XTAL_FREQUENCY);
+
     SpiritSpiInit();
 
     /* Spirit ON */
     SpiritEnterShutdown();
+
     SpiritExitShutdown();
+
     SpiritManagementWaExtraCurrent();
 
     /* Spirit IRQ config */
     SpiritGpioInit(&xGpioIRQ);
 
     /* Spirit Radio config */
-    SpiritRadioInit(&xRadioInit);
+    if (SpiritRadioInit(&xRadioInit) != 0)
+    {
+
+        bc_spirit1_hal_shutdown_high();
+
+        bc_spirit1_hal_deinit_spi();
+
+        bc_spirit1_hal_deinit_gpio();
+
+        return false;
+    }
 
     /* Spirit Packet config */
     SpiritPktBasicInit(&xBasicInit);
+
     SpiritPktBasicAddressesInit(&xAddressInit);
 
     _bc_spirit1.desired_state = BC_SPIRIT1_STATE_SLEEP;
 
     _bc_spirit1.task_id = bc_scheduler_register(_bc_spirit1_task, NULL, 0);
+
+    _bc_spirit1.initialized_semaphore++;
+
+    return true;
+}
+
+bool bc_spirit1_deinit(void)
+{
+    if (--_bc_spirit1.initialized_semaphore != 0)
+    {
+        return false;
+    }
+
+    bc_spirit1_hal_shutdown_high();
+
+    bc_spirit1_hal_deinit_spi();
+
+    bc_spirit1_hal_deinit_gpio();
+
+    bc_scheduler_unregister(_bc_spirit1.task_id);
+
+    bc_exti_unregister(BC_EXTI_LINE_PA7);
+
+    return true;
 }
 
 void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t, void *), void *event_param)
@@ -164,7 +212,10 @@ void bc_spirit1_set_rx_timeout(bc_tick_t timeout)
             _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
         }
 
-        bc_scheduler_plan_absolute(_bc_spirit1.task_id, _bc_spirit1.rx_tick_timeout);
+        if (_bc_spirit1.initialized_semaphore > 0)
+        {
+            bc_scheduler_plan_absolute(_bc_spirit1.task_id, _bc_spirit1.rx_tick_timeout);
+        }
     }
 }
 
@@ -172,21 +223,30 @@ void bc_spirit1_tx(void)
 {
     _bc_spirit1.desired_state = BC_SPIRIT1_STATE_TX;
 
-    bc_scheduler_plan_now(_bc_spirit1.task_id);
+    if (_bc_spirit1.initialized_semaphore > 0)
+    {
+        bc_scheduler_plan_now(_bc_spirit1.task_id);
+    }
 }
 
 void bc_spirit1_rx(void)
 {
     _bc_spirit1.desired_state = BC_SPIRIT1_STATE_RX;
 
-    bc_scheduler_plan_now(_bc_spirit1.task_id);
+    if (_bc_spirit1.initialized_semaphore > 0)
+    {
+        bc_scheduler_plan_now(_bc_spirit1.task_id);
+    }
 }
 
 void bc_spirit1_sleep(void)
 {
     _bc_spirit1.desired_state = BC_SPIRIT1_STATE_SLEEP;
 
-    bc_scheduler_plan_now(_bc_spirit1.task_id);
+    if (_bc_spirit1.initialized_semaphore > 0)
+    {
+        bc_scheduler_plan_now(_bc_spirit1.task_id);
+    }
 }
 
 static void _bc_spirit1_task(void *param)
@@ -642,6 +702,36 @@ static void bc_spirit1_hal_init_gpio(void)
     GPIOH->MODER &= ~(GPIO_MODER_MODE0_1 | GPIO_MODER_MODE0_0);
 }
 
+static void bc_spirit1_hal_deinit_gpio(void)
+{
+    // Low speed on CS pin
+    GPIOA->OSPEEDR &= ~GPIO_OSPEEDER_OSPEED15_Msk;
+
+    // Low speed on CS pin, input on GPIO_0 pin
+    GPIOB->OSPEEDR &= ~(GPIO_OSPEEDER_OSPEED5_Msk | GPIO_OSPEEDER_OSPEED3_Msk);
+
+    // Analog on CS pin, input on GPIO_0 pin
+    GPIOA->MODER |= GPIO_MODER_MODE15_Msk | GPIO_MODER_MODE7_Msk;
+
+    // Analog on SDN pin, alternate function on MOSI, MISO and SCLK pins
+    GPIOB->MODER |= GPIO_MODER_MODE7_Msk | GPIO_MODER_MODE5_Msk | GPIO_MODER_MODE4_Msk | GPIO_MODER_MODE3_Msk;
+
+    // Analog on GPIO_1 pin
+    GPIOH->MODER |= GPIO_MODER_MODE0_Msk;
+
+    // Output log. 0 on SDN pin
+    GPIOB->BSRR = GPIO_BSRR_BR_7;
+
+    // No pull-down on GPIO_0 pin
+    GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD7_Msk;
+
+    // No pull-down on MISO pin
+    GPIOB->PUPDR &= ~GPIO_PUPDR_PUPD4_Msk;
+
+    // No pull-down on GPIO_1 pin
+    GPIOH->PUPDR &= ~GPIO_PUPDR_PUPD0_Msk;
+}
+
 static void bc_spirit1_hal_init_spi(void)
 {
     // Enable clock for SPI1
@@ -652,6 +742,15 @@ static void bc_spirit1_hal_init_spi(void)
 
     // Enable SPI
     SPI1->CR1 |= SPI_CR1_SPE;
+}
+
+static void bc_spirit1_hal_deinit_spi(void)
+{
+    // Disable SPI
+    SPI1->CR1 = 0;
+
+    // Disable clock for SPI1
+    RCC->APB2ENR &= ~RCC_APB2ENR_SPI1EN;
 }
 
 static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param)

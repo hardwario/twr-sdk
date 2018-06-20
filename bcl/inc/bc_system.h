@@ -29,6 +29,8 @@ void bc_system_deep_sleep_disable(void);
 
 void bc_system_deep_sleep_enable(void);
 
+void bc_system_enter_standby_mode(void);
+
 uint32_t bc_system_get_clock(void);
 
 void bc_system_reset(void);

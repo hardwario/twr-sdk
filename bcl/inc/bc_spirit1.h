@@ -29,8 +29,16 @@ typedef enum
 } bc_spirit1_event_t;
 
 //! @brief Initialize
+//! @return true On success
+//! @return false On failure
 
-void bc_spirit1_init(void);
+bool bc_spirit1_init(void);
+
+//! @brief Deitialize
+//! @return true On success
+//! @return false On failure
+
+bool bc_spirit1_deinit(void);
 
 //! @brief Set callback function
 //! @param[in] event_handler Function address
