@@ -116,6 +116,9 @@ CFLAGS_DEBUG += -D'DEBUG'
 CFLAGS_RELEASE += -Os
 CFLAGS_RELEASE += -D'RELEASE'
 
+BAND ?= 868
+CFLAGS += -D'BAND=$(BAND)'
+
 ################################################################################
 # Compiler flags for "s" files                                                 #
 ################################################################################
