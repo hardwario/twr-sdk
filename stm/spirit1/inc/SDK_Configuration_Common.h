@@ -81,7 +81,11 @@
 #endif
 
 #ifdef USE_HIGH_BAND
-#define BASE_FREQUENCY              868.0e6
+  #if BAND == 915
+    #define BASE_FREQUENCY              915.0e6
+  #else
+    #define BASE_FREQUENCY              868.0e6
+  #endif
 #endif
 
 #define CHANNEL_SPACE               20e3
