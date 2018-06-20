@@ -89,6 +89,7 @@ static void _bc_cy8cmbr3102_task(void *param)
             memset(self->_settings, 0, sizeof(self->_settings));
 
             self->_settings[0x00] = 0x01;
+            self->_settings[0x08] = 0x00; // sensitivity 50 cnt / 0.4pF
             self->_settings[0x0c] = 0x32;
             self->_settings[0x0d] = 0x7f;
             self->_settings[0x1c] = 0x03;
@@ -99,10 +100,11 @@ static void _bc_cy8cmbr3102_task(void *param)
             self->_settings[0x2d] = 0x02;
             self->_settings[0x35] = 0x1e;
             self->_settings[0x39] = 0x1e;
+            //self->_settings[0x40] = 0x05;
             self->_settings[0x41] = 0xff;
-            self->_settings[0x4d] = 0x03;
+            self->_settings[0x4d] = 0x00; // disable filters
             self->_settings[0x4e] = 0x01;
-            self->_settings[0x4f] = 0x54;
+            self->_settings[0x4f] = 0x04;
             self->_settings[0x51] = 0x37;
             self->_settings[0x52] = 0x01;
             self->_settings[0x55] = 0x0a;
@@ -172,6 +174,14 @@ static void _bc_cy8cmbr3102_task(void *param)
 
             // --------------------------
 
+            /*
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x80, 0x02))
+            {
+                self->_state = BC_CY8CMBR3102_STATE_ERROR;
+                goto start;
+            }
+            */
+
             if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x82, 0x00))
             {
                 self->_state = BC_CY8CMBR3102_STATE_ERROR;
@@ -190,26 +200,71 @@ static void _bc_cy8cmbr3102_task(void *param)
         {
             //bc_log_debug("CY8CMBR3102: BC_CY8CMBR3102_STATE_READ");
 
-            uint16_t reg;
-
-            if (!bc_i2c_memory_read_16b(self->_i2c_channel, self->_i2c_address, 0xe2, &reg))
             {
-                bc_log_debug("CY8CMBR3102: BC_CY8CMBR3102_STATE_READ: failed");
+                uint16_t reg;
 
-                if (++self->_error_cnt < 3)
+                if (!bc_i2c_memory_read_16b(self->_i2c_channel, self->_i2c_address, 0xe2, &reg))
                 {
-                    bc_scheduler_plan_current_from_now(5);
+                    bc_log_debug("CY8CMBR3102: BC_CY8CMBR3102_STATE_READ: failed");
 
-                    return;
+                    if (++self->_error_cnt < 3)
+                    {
+                        bc_scheduler_plan_current_from_now(5);
+
+                        return;
+                    }
+
+                    self->_state = BC_CY8CMBR3102_STATE_ERROR;
+
+                    goto start;
                 }
 
-                self->_state = BC_CY8CMBR3102_STATE_ERROR;
-
-                goto start;
+                bc_log_info("CY8CMBR3102: DEBUG_RAW_COUNT0 = %04x", reg >> 8 | (reg & 255) << 8);
             }
 
-            bc_log_info("CY8CMBR3102: DEBUG_RAW_COUNT0 = %04x", reg >> 8 | (reg & 255) << 8);
+            {
+                uint16_t reg;
 
+                if (!bc_i2c_memory_read_16b(self->_i2c_channel, self->_i2c_address, 0xe0, &reg))
+                {
+                    bc_log_debug("CY8CMBR3102: BC_CY8CMBR3102_STATE_READ: failed");
+
+                    if (++self->_error_cnt < 3)
+                    {
+                        bc_scheduler_plan_current_from_now(5);
+
+                        return;
+                    }
+
+                    self->_state = BC_CY8CMBR3102_STATE_ERROR;
+
+                    goto start;
+                }
+
+                bc_log_info("CY8CMBR3102: DEBUG_BASELINE0 = %04x", reg >> 8 | (reg & 255) << 8);
+            }
+
+            {
+                uint8_t reg;
+
+                if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0xdd, &reg))
+                {
+                    bc_log_debug("CY8CMBR3102: BC_CY8CMBR3102_STATE_READ: failed");
+
+                    if (++self->_error_cnt < 3)
+                    {
+                        bc_scheduler_plan_current_from_now(5);
+
+                        return;
+                    }
+
+                    self->_state = BC_CY8CMBR3102_STATE_ERROR;
+
+                    goto start;
+                }
+
+                bc_log_info("CY8CMBR3102: DEBUG_CP = %d", reg);
+            }
 
             /*
             bool is_touch;
