@@ -200,7 +200,14 @@ start:
 
         case BC_MODULE_STATE_DETECT_PRESENT:
         {
-            _bc_module_battery.next_update_start = bc_tick_get() + _bc_module_battery.update_interval;
+            if (_bc_module_battery.update_interval == BC_TICK_INFINITY)
+            {
+                _bc_module_battery.next_update_start = BC_TICK_INFINITY;
+            }
+            else
+            {
+                _bc_module_battery.next_update_start = bc_tick_get() + _bc_module_battery.update_interval;
+            }
 
             _bc_module_battery.format = BC_MODULE_BATTERY_FORMAT_UNKNOWN;
 
@@ -269,7 +276,14 @@ start:
         }
         case BC_MODULE_STATE_MEASURE:
         {
-            _bc_module_battery.next_update_start = bc_tick_get() + _bc_module_battery.update_interval;
+            if (_bc_module_battery.update_interval == BC_TICK_INFINITY)
+            {
+                _bc_module_battery.next_update_start = BC_TICK_INFINITY;
+            }
+            else
+            {
+                _bc_module_battery.next_update_start = bc_tick_get() + _bc_module_battery.update_interval;
+            }
 
             _bc_module_battery_measurement(ENABLE);
 
