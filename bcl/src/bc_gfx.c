@@ -42,7 +42,7 @@ bc_gfx_rotation_t bc_gfx_get_rotation(bc_gfx_t *self)
 
 void bc_gfx_draw_pixel(bc_gfx_t *self, int x, int y, uint32_t color)
 {
-    if (x > self->_caps.width || y > self->_caps.height || x < 0 || y < 0)
+    if (x >= self->_caps.width || y >= self->_caps.height || x < 0 || y < 0)
     {
         return;
     }
@@ -54,20 +54,20 @@ void bc_gfx_draw_pixel(bc_gfx_t *self, int x, int y, uint32_t color)
         case BC_GFX_ROTATION_90:
         {
             tmp = x;
-            x = 127 - y;
+            x = self->_caps.height - 1 - y;
             y = tmp;
             break;
         }
         case BC_GFX_ROTATION_180:
         {
-            x = 127 - x;
-            y = 127 - y;
+            x = self->_caps.width - 1 - x;
+            y = self->_caps.height - 1 - y;
             break;
         }
         case BC_GFX_ROTATION_270:
         {
             tmp = y;
-            y = 127 - x;
+            y = self->_caps.width - 1 - x;
             x = tmp;
             break;
         }
