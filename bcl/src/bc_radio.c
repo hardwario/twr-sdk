@@ -52,8 +52,8 @@ static struct
 
     bc_queue_t pub_queue;
     bc_queue_t rx_queue;
-    uint8_t pub_queue_buffer[128];
-    uint8_t rx_queue_buffer[128];
+    uint8_t pub_queue_buffer[BC_RADIO_PUB_QUEUE_BUFFER_SIZE];
+    uint8_t rx_queue_buffer[BC_RADIO_RX_QUEUE_BUFFER_SIZE];
 
     uint8_t ack_tx_cache_buffer[15];
     size_t ack_tx_cache_length;
