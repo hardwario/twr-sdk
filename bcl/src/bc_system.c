@@ -9,7 +9,9 @@
 static const uint32_t bc_system_clock_table[3] =
 {
     RCC_CFGR_SW_MSI,
+
     RCC_CFGR_SW_HSI,
+
     RCC_CFGR_SW_PLL
 };
 
@@ -18,6 +20,8 @@ static int _bc_system_hsi16_enable_semaphore;
 static int _bc_system_pll_enable_semaphore;
 
 static int _bc_system_deep_sleep_disable_semaphore;
+
+static bc_system_core_version_t _bc_system_core_version = BC_SYSTEM_CORE_VERSION_UNKNOWN;
 
 static void _bc_system_init_flash(void);
 
@@ -28,6 +32,8 @@ static void _bc_system_init_clock(void);
 static void _bc_system_init_power(void);
 
 static void _bc_system_init_gpio(void);
+
+static void _bc_system_detect_core_version(void);
 
 static void _bc_system_init_rtc(void);
 
@@ -46,6 +52,8 @@ void bc_system_init(void)
     _bc_system_init_power();
 
     _bc_system_init_gpio();
+
+    _bc_system_detect_core_version();
 
     _bc_system_init_rtc();
 
@@ -183,6 +191,27 @@ static void _bc_system_init_gpio(void)
 
     // Set analog mode on PA4
     GPIOA->MODER |= GPIO_MODER_MODE4_1 | GPIO_MODER_MODE4_0;
+}
+
+static void _bc_system_detect_core_version(void)
+{
+    bc_irq_disable();
+
+    // Input mode
+    GPIOA->MODER &= ~GPIO_MODER_MODE11_Msk;
+
+    // Pull Up
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPD11_0;
+
+    _bc_system_core_version = (GPIOA->IDR & GPIO_IDR_ID11) != 0 ? BC_SYSTEM_CORE_VERSION_R1 : BC_SYSTEM_CORE_VERSION_R2;
+
+    // Set reset state, analog mode
+    GPIOA->MODER |= GPIO_MODER_MODE11_Msk;
+
+    // Set reset state, no pull up, no pull down
+    GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD11_Msk;
+
+    bc_irq_enable();
 }
 
 static void _bc_system_init_rtc(void)
@@ -455,6 +484,11 @@ void bc_system_pll_disable(void)
 uint32_t bc_system_get_clock(void)
 {
     return SystemCoreClock;
+}
+
+bc_system_core_version_t bc_system_get_core_version(void)
+{
+    return _bc_system_core_version;
 }
 
 void bc_system_reset(void)
