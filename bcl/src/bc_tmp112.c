@@ -23,6 +23,15 @@ void bc_tmp112_init(bc_tmp112_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 }
 
+void bc_tmp112_deinit(bc_tmp112_t *self)
+{
+    bc_i2c_memory_write_16b(self->_i2c_channel, self->_i2c_address, 0x01, 0x0180);
+
+    bc_scheduler_unregister(self->_task_id_interval);
+
+    bc_scheduler_unregister(self->_task_id_measure);
+}
+
 void bc_tmp112_set_event_handler(bc_tmp112_t *self, void (*event_handler)(bc_tmp112_t *, bc_tmp112_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;

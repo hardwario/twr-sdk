@@ -61,6 +61,12 @@ struct bc_tmp112_t
 
 void bc_tmp112_init(bc_tmp112_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
+
+//! @brief Deinitialize TMP112
+//! @param[in] self Instance
+
+void bc_tmp112_deinit(bc_tmp112_t *self);
+
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address

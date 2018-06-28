@@ -70,8 +70,8 @@ typedef struct
 
 typedef union
 {
-    bc_gpio_channel_t gpio_channel;
-    int virtual_channel;
+    bc_gpio_channel_t gpio;
+    int virtual;
 
 } bc_led_channel_t;
 

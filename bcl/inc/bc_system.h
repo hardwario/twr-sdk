@@ -34,6 +34,8 @@ uint32_t bc_system_clock_get(void);
 
 bc_tick_t bc_system_tick_get(void);
 
+void bc_system_enter_standby_mode(void);
+
 void bc_system_reset(void);
 
 #endif // _BC_SYSTEM_H

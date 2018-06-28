@@ -258,7 +258,7 @@ static void _bc_module_lcd_led_init(bc_led_t *self)
 
 static void _bc_module_lcd_led_on(bc_led_t *self)
 {
-    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel.virtual_channel], self->_idle_state ? 0 : 1))
+    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel.virtual], self->_idle_state ? 0 : 1))
     {
     	_bc_module_lcd.is_tca9534a_initialized = false;
     }
@@ -266,7 +266,7 @@ static void _bc_module_lcd_led_on(bc_led_t *self)
 
 static void _bc_module_lcd_led_off(bc_led_t *self)
 {
-    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel.virtual_channel], self->_idle_state ? 1 : 0))
+    if (!bc_tca9534a_write_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_led_pin_lut[self->_channel.virtual], self->_idle_state ? 1 : 0))
     {
     	_bc_module_lcd.is_tca9534a_initialized = false;
     }
@@ -291,7 +291,7 @@ static int _bc_module_lcd_button_get_input(bc_button_t *self)
 
     int state;
 
-    if (!bc_tca9534a_read_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_button_pin_lut[self->_channel.virtual_channel], &state))
+    if (!bc_tca9534a_read_pin(&_bc_module_lcd.tca9534a, _bc_module_lcd_button_pin_lut[self->_channel.virtual], &state))
     {
     	_bc_module_lcd.is_tca9534a_initialized = false;
     	return 0;

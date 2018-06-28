@@ -280,6 +280,44 @@ void bc_system_deep_sleep_disable(void)
     _bc_system.deep_sleep_disable_semaphore++;
 }
 
+void bc_system_enter_standby_mode(void)
+{
+    bc_i2c_init(BC_I2C_I2C0, BC_I2C_SPEED_100_KHZ);
+
+    // tmp112
+    bc_i2c_memory_write_16b(BC_I2C_I2C0, 0x49, 0x01, 0x0180);
+
+    // lis2dh12
+    bc_i2c_memory_write_16b(BC_I2C_I2C0, 0x19, 0x20, 0x07);
+
+    bc_i2c_deinit(BC_I2C_I2C0);
+
+    __disable_irq();
+
+    GPIOA->MODER = 0xFFFFFFFF;
+    GPIOB->MODER = 0xFFFFFFFF;
+    GPIOC->MODER = 0xFFFFFFFF;
+    GPIOH->MODER = 0xFFFFFFFF;
+
+    // Disable RTC clock
+    RCC->CSR &= ~(RCC_CSR_RTCEN | RCC_CSR_LSEON | RCC_CSR_RTCSEL_LSE);
+
+    // Errata workaround
+    RCC->CSR;
+
+    RCC->CSR &= ~RCC_CSR_LSEDRV_Msk;
+
+    PWR->CR &= ~PWR_CR_LPSDSR;
+
+    PWR->CR |= PWR_CR_PDDS;
+
+    SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+
+    PWR->CR |= PWR_CR_CWUF;
+
+    __WFI();
+}
+
 bc_system_clock_t bc_system_clock_source_get(void)
 {
     if (_bc_system.pll_enable_semaphore != 0)
