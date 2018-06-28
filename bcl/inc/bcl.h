@@ -41,6 +41,7 @@
 #include <bc_tag_humidity.h>
 #include <bc_tag_lux_meter.h>
 #include <bc_tag_temperature.h>
+#include <bc_tag_nfc.h>
 
 // BigClown modules
 
