@@ -2,6 +2,8 @@
 #include <bc_scheduler.h>
 #include <bc_system.h>
 #include <stm32l0xx.h>
+#include <bc_gpio.h>
+#include <bc_timer.h>
 
 // Timer resolution in microseconds
 #define _BC_HC_SR04_RESOLUTION 5
@@ -29,38 +31,17 @@ void bc_hc_sr04_init(void)
 
     _bc_hc_sr04.task_id_interval = bc_scheduler_register(_bc_hc_sr04_task_interval, NULL, BC_TICK_INFINITY);
 
-    // Enable GPIOB clock
-    RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
+    // Pin Echo
+    bc_gpio_init(BC_GPIO_P8);
 
-    // Errata workaround
-    RCC->IOPENR;
+    bc_gpio_set_mode(BC_GPIO_P8, BC_GPIO_MODE_ALTERNATE_2);
 
-    // Set PB0 alternate function as TIM3_CH3
-    GPIOB->AFR[0] |= GPIO_AF2_TIM3 << GPIO_AFRL_AFRL0_Pos;
+    // Pin Trig
+    bc_gpio_init(BC_GPIO_P9);
 
-    // Set PB2 alternate function as LPTIM1_OUT
-    GPIOB->AFR[0] |= GPIO_AF2_LPTIM1 << GPIO_AFRL_AFRL2_Pos;
+    bc_gpio_set_mode(BC_GPIO_P9, BC_GPIO_MODE_OUTPUT);
 
-    // Set PB0 mode as alternate function
-    GPIOB->MODER &= ~GPIO_MODER_MODE0_0;
-
-    // Set PB2 mode as alternate function
-    GPIOB->MODER &= ~GPIO_MODER_MODE2_0;
-
-    // Enable LPTIM1 clock
-    RCC->APB1ENR |= RCC_APB1ENR_LPTIM1EN;
-
-    // Errata workaround
-    RCC->APB1ENR;
-
-    // Enable timer
-    LPTIM1->CR |= LPTIM_CR_ENABLE;
-
-    // Set compare register
-    LPTIM1->CMP = 1;
-
-    // Set auto-reload register
-    LPTIM1->ARR = 1 + 320;
+    bc_gpio_set_output(BC_GPIO_P9, 0);
 
     // Enable TIM3 clock
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
@@ -79,6 +60,8 @@ void bc_hc_sr04_init(void)
 
     // Enable TIM3 interrupts
     NVIC_EnableIRQ(TIM3_IRQn);
+
+    bc_timer_init();
 }
 
 void bc_hc_sr04_set_event_handler(void (*event_handler)(bc_hc_sr04_event_t, void *), void *event_param)
@@ -140,8 +123,15 @@ bool bc_hc_sr04_measure(void)
     // Enable Capture 4 / Compare 1 interrupt
     TIM3->DIER |= TIM_DIER_CC4IE | TIM_DIER_CC1IE;
 
-    // Start timer in Single mode
-    LPTIM1->CR |= LPTIM_CR_SNGSTRT;
+    bc_gpio_set_output(BC_GPIO_P9, 1);
+
+    bc_timer_start();
+
+    bc_timer_delay(10);
+
+    bc_timer_stop();
+
+    bc_gpio_set_output(BC_GPIO_P9, 0);
 
     return true;
 }
