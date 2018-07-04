@@ -1,8 +1,10 @@
 #include <bc_log.h>
 #include <bc_uart.h>
+#include <bc_error.h>
 
 typedef struct
 {
+    bool initialized;
     bc_log_level_t level;
     bc_log_timestamp_t timestamp;
     bc_tick_t tick_last;
@@ -13,12 +15,19 @@ typedef struct
 
 #ifndef RELEASE
 
-static bc_log_t _bc_log;
+static bc_log_t _bc_log = { .initialized = false };
+
+void application_error(bc_error_t code);
 
 static void _bc_log_message(bc_log_level_t level, char id, const char *format, va_list ap);
 
 void bc_log_init(bc_log_level_t level, bc_log_timestamp_t timestamp)
 {
+    if (_bc_log.initialized)
+    {
+        return;
+    }
+
     memset(&_bc_log, 0, sizeof(_bc_log));
 
     _bc_log.level = level;
@@ -26,6 +35,8 @@ void bc_log_init(bc_log_level_t level, bc_log_timestamp_t timestamp)
 
     bc_uart_init(BC_UART_UART2, BC_UART_BAUDRATE_115200, BC_UART_SETTING_8N1);
     bc_uart_write(BC_UART_UART2, "\r\n", 2);
+
+    _bc_log.initialized = true;
 }
 
 void bc_log_debug(const char *format, ...)
@@ -66,6 +77,11 @@ void bc_log_error(const char *format, ...)
 
 static void _bc_log_message(bc_log_level_t level, char id, const char *format, va_list ap)
 {
+    if (!_bc_log.initialized)
+    {
+        application_error(BC_ERROR_LOG_NOT_INITIALIZED);
+    }
+
     if (_bc_log.level == BC_LOG_LEVEL_OFF || _bc_log.level > level)
     {
         return;
