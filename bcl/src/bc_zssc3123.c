@@ -92,8 +92,6 @@ bool bc_zssc3123_start_cm(bc_zssc3123_t *self)
 {
     if (!bc_i2c_memory_write_16b(self->_i2c_channel, self->_i2c_address, 0xA0, 0x0000))
     {
-        bc_log_error("bc_zssc3123_start_cm bc_i2c_memory_write_16b 0xA0 0x0000");
-
         return false;
     }
 
@@ -104,8 +102,6 @@ bool bc_zssc3123_end_cm(bc_zssc3123_t *self)
 {
     if (!bc_i2c_memory_write_16b(self->_i2c_channel, self->_i2c_address, 0x80, 0x0000))
     {
-        bc_log_error("bc_zssc3123_end_cm bc_i2c_memory_write_16b 0x80 0x0000");
-
         return false;
     }
 
@@ -116,8 +112,6 @@ bool bc_zssc3123_eeprom_read(bc_zssc3123_t *self, uint8_t adr, uint16_t *word)
 {
     if (!bc_i2c_memory_write_16b(self->_i2c_channel, self->_i2c_address, adr, 0x0000))
     {
-        bc_log_error("bc_zssc3123_eeprom_read bc_i2c_memory_write_16b 0x%x", adr);
-
         return false;
     }
 
@@ -139,8 +133,6 @@ bool bc_zssc3123_eeprom_read(bc_zssc3123_t *self, uint8_t adr, uint16_t *word)
 
     if (!bc_i2c_read(self->_i2c_channel, &transfer))
     {
-        bc_log_error("bc_zssc3123_eeprom_read bc_i2c_read");
-
         return false;
 
     }
@@ -159,8 +151,6 @@ bool bc_zssc3123_eeprom_write(bc_zssc3123_t *self, uint8_t address, uint16_t wor
 {
     if (!bc_i2c_memory_write_16b(self->_i2c_channel, self->_i2c_address, 0x40 + address, word))
     {
-        bc_log_error("bc_zssc3123_eeprom_write bc_i2c_memory_write_16b 0x02%x 0x04%x", address, word);
-
         return false;
     }
 
@@ -187,8 +177,6 @@ static uint8_t _bc_zssc3123_get_response(bc_zssc3123_t *self)
 
     if (!bc_i2c_read(self->_i2c_channel, &transfer))
     {
-        bc_log_error("_bc_zssc3123_get_response bc_i2c_read");
-
         return 0xff;
     }
     else
@@ -211,8 +199,6 @@ static bool _bc_zssc3123_data_fetch(bc_zssc3123_t *self)
 
     if (!bc_i2c_read(self->_i2c_channel, &transfer))
     {
-        bc_log_error("_bc_zssc3123_data_fetch bc_i2c_read");
-
         return false;
     }
 
@@ -240,8 +226,6 @@ static bool _bc_zssc3123_measurement_request(bc_zssc3123_t *self)
 
     if (!bc_i2c_write(self->_i2c_channel, &transfer))
     {
-        bc_log_error("_bc_zssc3123_measurement_request bc_i2c_write");
-
         return false;
     }
 

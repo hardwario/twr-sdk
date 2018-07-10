@@ -8,8 +8,8 @@ static const bc_gpio_channel_t _bc_ds28e17_set_speed_lut[2] =
         [BC_I2C_SPEED_400_KHZ] = 0x01
 };
 
-static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_lenght, void *buffer, size_t length);
-static bool _bc_ds28e17_read(bc_ds28e17_t *self, uint8_t *head, size_t head_lenght, void *buffer, size_t length);
+static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_length, void *buffer, size_t length);
+static bool _bc_ds28e17_read(bc_ds28e17_t *self, uint8_t *head, size_t head_length, void *buffer, size_t length);
 
 void bc_ds28e17_init(bc_ds28e17_t *self, bc_gpio_channel_t channel, uint64_t device_number)
 {
@@ -87,7 +87,7 @@ bool bc_ds28e17_read(bc_ds28e17_t *self, const bc_i2c_transfer_t *transfer)
 
 bool bc_ds28e17_memory_write(bc_ds28e17_t *self, const bc_i2c_memory_transfer_t *transfer)
 {
-    size_t head_lenght;
+    size_t head_length;
     uint8_t head[5];
 
     head[0] = 0x4B;
@@ -95,24 +95,24 @@ bool bc_ds28e17_memory_write(bc_ds28e17_t *self, const bc_i2c_memory_transfer_t 
 
     if ((transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0)
     {
-        head_lenght = 5;
+        head_length = 5;
         head[2] = (uint8_t) transfer->length + 2;
         head[3] = transfer->memory_address >> 8;
         head[4] = transfer->memory_address;
     }
     else
     {
-        head_lenght = 4;
+        head_length = 4;
         head[2] = (uint8_t) transfer->length + 1;
         head[3] = (uint8_t) transfer->memory_address;
     }
 
-    return _bc_ds28e17_write(self, head, head_lenght, transfer->buffer, transfer->length);
+    return _bc_ds28e17_write(self, head, head_length, transfer->buffer, transfer->length);
 }
 
 bool bc_ds28e17_memory_read(bc_ds28e17_t *self, const bc_i2c_memory_transfer_t *transfer)
 {
-    size_t head_lenght;
+    size_t head_length;
     uint8_t head[6];
 
     head[0] = 0x2D;
@@ -120,7 +120,7 @@ bool bc_ds28e17_memory_read(bc_ds28e17_t *self, const bc_i2c_memory_transfer_t *
 
     if ((transfer->memory_address & BC_I2C_MEMORY_ADDRESS_16_BIT) != 0)
     {
-        head_lenght = 6;
+        head_length = 6;
         head[2] = 2;
         head[3] = transfer->memory_address >> 8;
         head[4] = transfer->memory_address;
@@ -128,16 +128,16 @@ bool bc_ds28e17_memory_read(bc_ds28e17_t *self, const bc_i2c_memory_transfer_t *
     }
     else
     {
-        head_lenght = 5;
+        head_length = 5;
         head[2] = 1;
         head[3] = transfer->memory_address;
         head[4] = transfer->length;
     }
 
-    return _bc_ds28e17_read(self, head, head_lenght, transfer->buffer, transfer->length);
+    return _bc_ds28e17_read(self, head, head_length, transfer->buffer, transfer->length);
 }
 
-static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_lenght, void *buffer, size_t length)
+static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_length, void *buffer, size_t length)
 {
     bc_onewire_transaction_start();
 
@@ -151,13 +151,13 @@ static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_len
         }
     }
 
-    uint16_t crc16 = bc_onewire_crc16(head, head_lenght, 0x00);
+    uint16_t crc16 = bc_onewire_crc16(head, head_length, 0x00);
 
     crc16 = bc_onewire_crc16(buffer, length, crc16);
 
     bc_onewire_select(self->_channel, &self->_device_number);
 
-    bc_onewire_write(self->_channel, head, head_lenght);
+    bc_onewire_write(self->_channel, head, head_length);
 
     bc_onewire_write(self->_channel, buffer, length);
 
@@ -192,7 +192,7 @@ static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_len
     return (status == 0x00) && (write_status == 0x00);
 }
 
-static bool _bc_ds28e17_read(bc_ds28e17_t *self, uint8_t *head, size_t head_lenght, void *buffer, size_t length)
+static bool _bc_ds28e17_read(bc_ds28e17_t *self, uint8_t *head, size_t head_length, void *buffer, size_t length)
 {
     bc_onewire_transaction_start();
 
@@ -206,11 +206,11 @@ static bool _bc_ds28e17_read(bc_ds28e17_t *self, uint8_t *head, size_t head_leng
         }
     }
 
-    uint16_t crc16 = bc_onewire_crc16(head, head_lenght, 0x00);
+    uint16_t crc16 = bc_onewire_crc16(head, head_length, 0x00);
 
     bc_onewire_select(self->_channel, &self->_device_number);
 
-    bc_onewire_write(self->_channel, head, head_lenght);
+    bc_onewire_write(self->_channel, head, head_length);
 
     crc16 = ~crc16;
 
@@ -238,9 +238,6 @@ static bool _bc_ds28e17_read(bc_ds28e17_t *self, uint8_t *head, size_t head_leng
 
     if ((status != 0x00) || (write_status != 0x00))
     {
-        bc_log_error("i2c status %x", status);
-        bc_log_error("i2c write_status %x", write_status);
-
         bc_ds28e17_enable_sleep_mode(self);
 
         bc_onewire_transaction_stop();
