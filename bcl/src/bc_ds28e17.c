@@ -1,5 +1,6 @@
 #include <bc_ds28e17.h>
 #include <bc_tick.h>
+#include <bc_log.h>
 
 static const bc_gpio_channel_t _bc_ds28e17_set_speed_lut[2] =
 {
@@ -17,6 +18,30 @@ void bc_ds28e17_init(bc_ds28e17_t *self, bc_gpio_channel_t channel, uint64_t dev
     self->_channel = channel;
 }
 
+void bc_ds28e17_deinit(bc_ds28e17_t *self)
+{
+    bc_ds28e17_enable_sleep_mode(self);
+}
+
+uint64_t bc_ds28e17_get_device_number(bc_ds28e17_t *self)
+{
+    return self->_device_number;
+}
+
+bool bc_ds28e17_enable_sleep_mode(bc_ds28e17_t *self)
+{
+    if (!bc_onewire_reset(self->_channel))
+    {
+        return false;
+    }
+
+    bc_onewire_select(self->_channel, &self->_device_number);
+
+    bc_onewire_write_8b(self->_channel, 0x1e);
+
+    return true;
+}
+
 bool bc_ds28e17_set_speed(bc_ds28e17_t *self, bc_i2c_speed_t speed)
 {
     if (!bc_onewire_reset(self->_channel))
@@ -32,6 +57,8 @@ bool bc_ds28e17_set_speed(bc_ds28e17_t *self, bc_i2c_speed_t speed)
     buffer[1] = _bc_ds28e17_set_speed_lut[speed];
 
     bc_onewire_write(self->_channel, buffer, sizeof(buffer));
+
+    bc_ds28e17_enable_sleep_mode(self);
 
     return true;
 }
@@ -52,7 +79,7 @@ bool bc_ds28e17_read(bc_ds28e17_t *self, const bc_i2c_transfer_t *transfer)
     uint8_t head[3];
 
     head[0] = 0x87;
-    head[1] = transfer->device_address << 1;
+    head[1] = (transfer->device_address << 1) | 0x01;
     head[2] = (uint8_t) transfer->length;
 
     return _bc_ds28e17_read(self, head, sizeof(head), transfer->buffer, transfer->length);
@@ -112,12 +139,20 @@ bool bc_ds28e17_memory_read(bc_ds28e17_t *self, const bc_i2c_memory_transfer_t *
 
 static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_lenght, void *buffer, size_t length)
 {
+    bc_onewire_transaction_start();
+
     if (!bc_onewire_reset(self->_channel))
     {
-        return false;
+        if (!bc_onewire_reset(self->_channel))
+        {
+            bc_onewire_transaction_stop();
+
+            return false;
+        }
     }
 
     uint16_t crc16 = bc_onewire_crc16(head, head_lenght, 0x00);
+
     crc16 = bc_onewire_crc16(buffer, length, crc16);
 
     bc_onewire_select(self->_channel, &self->_device_number);
@@ -136,22 +171,39 @@ static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_len
     {
         if (timeout < bc_tick_get())
         {
+            bc_ds28e17_enable_sleep_mode(self);
+
+            bc_onewire_transaction_stop();
+
             return false;
         }
+
         continue;
     }
 
     uint8_t status = bc_onewire_read_8b(self->_channel);
+
     uint8_t write_status = bc_onewire_read_8b(self->_channel);
+
+    bc_ds28e17_enable_sleep_mode(self);
+
+    bc_onewire_transaction_stop();
 
     return (status == 0x00) && (write_status == 0x00);
 }
 
 static bool _bc_ds28e17_read(bc_ds28e17_t *self, uint8_t *head, size_t head_lenght, void *buffer, size_t length)
 {
+    bc_onewire_transaction_start();
+
     if (!bc_onewire_reset(self->_channel))
     {
-        return false;
+        if (!bc_onewire_reset(self->_channel))
+        {
+            bc_onewire_transaction_stop();
+
+            return false;
+        }
     }
 
     uint16_t crc16 = bc_onewire_crc16(head, head_lenght, 0x00);
@@ -170,20 +222,37 @@ static bool _bc_ds28e17_read(bc_ds28e17_t *self, uint8_t *head, size_t head_leng
     {
         if (timeout < bc_tick_get())
         {
+            bc_ds28e17_enable_sleep_mode(self);
+
+            bc_onewire_transaction_stop();
+
             return false;
         }
+
         continue;
     }
 
     uint8_t status = bc_onewire_read_8b(self->_channel);
-    uint8_t write_status = bc_onewire_read_8b(self->_channel);
+
+    uint8_t write_status = head[0] == 0x87 ? 0 : bc_onewire_read_8b(self->_channel);
 
     if ((status != 0x00) || (write_status != 0x00))
     {
+        bc_log_error("i2c status %x", status);
+        bc_log_error("i2c write_status %x", write_status);
+
+        bc_ds28e17_enable_sleep_mode(self);
+
+        bc_onewire_transaction_stop();
+
         return false;
     }
 
     bc_onewire_read(self->_channel, buffer, length);
+
+    bc_ds28e17_enable_sleep_mode(self);
+
+    bc_onewire_transaction_stop();
 
     return true;
 }
