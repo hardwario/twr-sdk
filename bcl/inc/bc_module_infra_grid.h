@@ -67,20 +67,44 @@ struct bc_module_infra_grid_t
 
 void bc_module_infra_grid_init(bc_module_infra_grid_t *self);
 
+//! @brief Set callback function
+//! @param[in] self Instance
+//! @param[in] event_handler Function address
+//! @param[in] event_param Optional event parameter (can be NULL)
+
 void bc_module_infra_grid_set_event_handler(bc_module_infra_grid_t *self, void (*event_handler)(bc_module_infra_grid_t *, bc_module_infra_grid_event_t, void *), void *event_param);
+
+//! @brief Set measurement interval
+//! @param[in] self Instance
+//! @param[in] interval Measurement interval
 
 void bc_module_infra_grid_set_update_interval(bc_module_infra_grid_t *self, bc_tick_t interval);
 
+//! @brief Start measurement manually
+//! @param[in] self Instance
+//! @return true On success
+//! @return false When other measurement is in progress
+
 bool bc_module_infra_grid_measure(bc_module_infra_grid_t *self);
+
+//! @brief Read measured data from sensor to the buffer
+//! @param[in] self Instance
+//! @return true When values are valid
+//! @return false When values are invalid
 
 bool bc_module_ifra_grid_read_values(bc_module_infra_grid_t *self);
 
-void bc_module_ifra_grid_get_temperatures_celsius(bc_module_infra_grid_t *self, float *values);
+//! @brief Get measured temperature in degrees of Celsius as a array of float numbers
+//! @param[in] self Instance
+//! @param[out] values Pointer to float array of size 64 where result will be stored
+
+bool bc_module_ifra_grid_get_temperatures_celsius(bc_module_infra_grid_t *self, float *values);
+
+//! @brief Read and return thermistor temperature sensor value
+//! @param[in] self Instance
+//! @return value in degreen of Celsius
 
 float bc_module_ifra_grid_read_thermistor(bc_module_infra_grid_t *self);
-
-//void bc_module_infra_grid_set_update_interval(bc_module_infra_grid_t *self, bc_tick_t interval);
-//void bc_module_infra_grid_set_event_handler(bc_module_infra_grid_t *self, void (*event_handler)(bc_module_infra_grid_event_t, void *), void *event_param);
 
 //! @}
 

@@ -1,6 +1,5 @@
 #include <bc_module_infra_grid.h>
 
-
 // Reference registers, commands
 // https://na.industrial.panasonic.com/sites/default/pidsa/files/downloads/files/grid-eye-high-performance-specifications.pdf
 
@@ -118,7 +117,7 @@ bool bc_module_ifra_grid_read_values(bc_module_infra_grid_t *self)
     return bc_i2c_memory_read(self->_i2c_channel, &transfer);
 }
 
-void bc_module_ifra_grid_get_temperatures_celsius(bc_module_infra_grid_t *self, float *values)
+bool bc_module_ifra_grid_get_temperatures_celsius(bc_module_infra_grid_t *self, float *values)
 {
     if (!self->_temperature_valid)
     {
@@ -145,7 +144,6 @@ void bc_module_ifra_grid_get_temperatures_celsius(bc_module_infra_grid_t *self, 
     return true;
 }
 
-
 static void _bc_module_infra_grid_task_interval(void *param)
 {
     bc_module_infra_grid_t *self = param;
@@ -159,7 +157,7 @@ static void _bc_module_infra_grid_task_measure(void *param)
 {
     bc_module_infra_grid_t *self = param;
 
-start:
+    start:
 
     switch (self->_state)
     {
