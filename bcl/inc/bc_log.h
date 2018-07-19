@@ -11,20 +11,23 @@
 
 typedef enum
 {
-    //! @brief Logging disabled
-    BC_LOG_LEVEL_OFF = -1,
+    //! @brief Logging DUMP
+    BC_LOG_LEVEL_DUMP = 0,
 
     //! @brief Log level DEBUG
-    BC_LOG_LEVEL_DEBUG = 0,
+    BC_LOG_LEVEL_DEBUG = 1,
 
     //! @brief Log level INFO
-    BC_LOG_LEVEL_INFO = 1,
+    BC_LOG_LEVEL_INFO = 2,
 
     //! @brief Log level WARNING
-    BC_LOG_LEVEL_WARNING = 2,
+    BC_LOG_LEVEL_WARNING = 3,
 
     //! @brief Log level ERROR
-    BC_LOG_LEVEL_ERROR = 3
+    BC_LOG_LEVEL_ERROR = 4,
+
+    //! @brief Logging disabled
+    BC_LOG_LEVEL_OFF = 5
 
 } bc_log_level_t;
 
@@ -50,6 +53,14 @@ typedef enum
 //! @param[in] timestamp Timestamp logging setting
 
 void bc_log_init(bc_log_level_t level, bc_log_timestamp_t timestamp);
+
+//! @brief Log DUMP message (annotated in log as <X>)
+//! @param[in] buffer Pointer to source buffer
+//! @param[in] length Number of bytes to be printed
+//! @param[in] format Format string (printf style)
+//! @param[in] ... Optional format arguments
+
+void bc_log_dump(const void *buffer, size_t length, const char *format, ...);
 
 //! @brief Log DEBUG message (annotated in log as <D>)
 //! @param[in] format Format string (printf style)
@@ -78,6 +89,7 @@ void bc_log_error(const char *format, ...);
 #else
 
 #define bc_log_init(...)
+#define bc_log_dump(...)
 #define bc_log_debug(...)
 #define bc_log_info(...)
 #define bc_log_warning(...)
