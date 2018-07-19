@@ -55,6 +55,7 @@
 #include <bc_module_lcd.h>
 #include <bc_module_co2.h>
 #include <bc_module_sensor.h>
+#include <bc_module_infra_grid.h>
 
 // Other
 
