@@ -92,19 +92,19 @@ bool bc_module_infra_grid_measure(bc_module_infra_grid_t *self);
 //! @return true When values are valid
 //! @return false When values are invalid
 
-bool bc_module_ifra_grid_read_values(bc_module_infra_grid_t *self);
+bool bc_module_infra_grid_read_values(bc_module_infra_grid_t *self);
 
 //! @brief Get measured temperature in degrees of Celsius as a array of float numbers
 //! @param[in] self Instance
 //! @param[out] values Pointer to float array of size 64 where result will be stored
 
-bool bc_module_ifra_grid_get_temperatures_celsius(bc_module_infra_grid_t *self, float *values);
+bool bc_module_infra_grid_get_temperatures_celsius(bc_module_infra_grid_t *self, float *values);
 
 //! @brief Read and return thermistor temperature sensor value
 //! @param[in] self Instance
 //! @return value in degreen of Celsius
 
-float bc_module_ifra_grid_read_thermistor(bc_module_infra_grid_t *self);
+float bc_module_infra_grid_read_thermistor(bc_module_infra_grid_t *self);
 
 //! @}
 
