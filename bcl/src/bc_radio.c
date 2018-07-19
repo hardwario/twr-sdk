@@ -62,7 +62,7 @@ static struct
     bool ack;
 
     bc_radio_peer_t peer_devices[BC_RADIO_MAX_DEVICES];
-    int peer_devices_lenght;
+    int peer_devices_length;
 
     uint64_t peer_id;
 
@@ -201,7 +201,7 @@ bool bc_radio_peer_device_remove(uint64_t id)
 
 bool bc_radio_peer_device_purge_all(void)
 {
-    for (int i = _bc_radio.peer_devices_lenght -1; i > -1 ; i--)
+    for (int i = _bc_radio.peer_devices_length -1; i > -1 ; i--)
     {
         if (_bc_radio.peer_devices[i].id != 0)
         {
@@ -217,7 +217,7 @@ bool bc_radio_peer_device_purge_all(void)
 void bc_radio_get_peer_id(uint64_t *id, int length)
 {
     int i;
-    for (i = 0; (i < _bc_radio.peer_devices_lenght) && (i < length); i++)
+    for (i = 0; (i < _bc_radio.peer_devices_length) && (i < length); i++)
     {
         id[i] = _bc_radio.peer_devices[i].id;
     }
@@ -262,7 +262,7 @@ uint64_t bc_radio_get_event_id(void)
 
 bool bc_radio_is_peer_device(uint64_t id)
 {
-    for (int i = 0; i < _bc_radio.peer_devices_lenght; i++)
+    for (int i = 0; i < _bc_radio.peer_devices_length; i++)
     {
         if (id == _bc_radio.peer_devices[i].id)
         {
@@ -918,7 +918,7 @@ static void _bc_radio_load_peer_devices(void)
 
     bc_eeprom_read(bc_eeprom_get_size() - 1, &length, 1);
 
-    _bc_radio.peer_devices_lenght = 0;
+    _bc_radio.peer_devices_length = 0;
 
     for (int i = 0; (i < length) && (i < BC_RADIO_MAX_DEVICES); i++)
     {
@@ -947,9 +947,9 @@ static void _bc_radio_load_peer_devices(void)
 
         if (buffer[0] != 0)
         {
-            _bc_radio.peer_devices[_bc_radio.peer_devices_lenght].id = buffer[0];
-            _bc_radio.peer_devices[_bc_radio.peer_devices_lenght].message_id_synced = false;
-            _bc_radio.peer_devices_lenght++;
+            _bc_radio.peer_devices[_bc_radio.peer_devices_length].id = buffer[0];
+            _bc_radio.peer_devices[_bc_radio.peer_devices_length].message_id_synced = false;
+            _bc_radio.peer_devices_length++;
         }
     }
 }
@@ -963,7 +963,7 @@ static void _bc_radio_save_peer_devices(void)
 
     _bc_radio.save_peer_devices = false;
 
-    for (int i = 0; i < _bc_radio.peer_devices_lenght; i++)
+    for (int i = 0; i < _bc_radio.peer_devices_length; i++)
     {
         buffer_write[0] = _bc_radio.peer_devices[i].id;
         buffer_write[1] = _bc_radio.peer_devices[i].id;
@@ -989,7 +989,7 @@ static void _bc_radio_save_peer_devices(void)
         }
     }
 
-    if (!bc_eeprom_write(bc_eeprom_get_size() - 1, &_bc_radio.peer_devices_lenght, 1))
+    if (!bc_eeprom_write(bc_eeprom_get_size() - 1, &_bc_radio.peer_devices_length, 1))
     {
         _bc_radio.save_peer_devices = true;
 
@@ -1031,7 +1031,7 @@ static void _bc_radio_atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_ev
 
 static bool _bc_radio_peer_device_add(uint64_t id)
 {
-    if (_bc_radio.peer_devices_lenght + 1 == BC_RADIO_MAX_DEVICES)
+    if (_bc_radio.peer_devices_length + 1 == BC_RADIO_MAX_DEVICES)
     {
         if (_bc_radio.event_handler != NULL)
         {
@@ -1046,9 +1046,9 @@ static bool _bc_radio_peer_device_add(uint64_t id)
         return false;
     }
 
-    _bc_radio.peer_devices[_bc_radio.peer_devices_lenght].id = id;
-    _bc_radio.peer_devices[_bc_radio.peer_devices_lenght].message_id_synced = false;
-    _bc_radio.peer_devices_lenght++;
+    _bc_radio.peer_devices[_bc_radio.peer_devices_length].id = id;
+    _bc_radio.peer_devices[_bc_radio.peer_devices_length].message_id_synced = false;
+    _bc_radio.peer_devices_length++;
 
     _bc_radio.save_peer_devices = true;
     bc_scheduler_plan_now(_bc_radio.task_id);
@@ -1064,15 +1064,15 @@ static bool _bc_radio_peer_device_add(uint64_t id)
 
 static bool _bc_radio_peer_device_remove(uint64_t id)
 {
-    for (int i = 0; i < _bc_radio.peer_devices_lenght; i++)
+    for (int i = 0; i < _bc_radio.peer_devices_length; i++)
     {
         if (id == _bc_radio.peer_devices[i].id)
         {
-            _bc_radio.peer_devices_lenght--;
+            _bc_radio.peer_devices_length--;
 
-            if (i != _bc_radio.peer_devices_lenght)
+            if (i != _bc_radio.peer_devices_length)
             {
-                memcpy(_bc_radio.peer_devices + i, _bc_radio.peer_devices + _bc_radio.peer_devices_lenght, sizeof(bc_radio_peer_t));
+                memcpy(_bc_radio.peer_devices + i, _bc_radio.peer_devices + _bc_radio.peer_devices_length, sizeof(bc_radio_peer_t));
             }
 
             _bc_radio.save_peer_devices = true;
@@ -1093,7 +1093,7 @@ static bool _bc_radio_peer_device_remove(uint64_t id)
 
 static bc_radio_peer_t *_bc_radio_get_peer_device(uint64_t id)
 {
-    for (int i = 0; i < _bc_radio.peer_devices_lenght; i++)
+    for (int i = 0; i < _bc_radio.peer_devices_length; i++)
     {
         if (id == _bc_radio.peer_devices[i].id)
         {
