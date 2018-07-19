@@ -98,6 +98,16 @@ void bc_scheduler_plan_current_relative(bc_tick_t tick);
 
 void bc_scheduler_plan_current_from_now(bc_tick_t tick);
 
+//! @brief Get tick execution for task_id
+//! @return Tick of execution
+
+bc_tick_t bc_scheduler_get_tick_execution(bc_scheduler_task_id_t task_id);
+
+//! @brief Get tick execution for curent task
+//! @return Tick of execution
+
+bc_tick_t bc_scheduler_get_current_tick_execution(void);
+
 //! @}
 
 #endif // _BC_SCHEDULER_H

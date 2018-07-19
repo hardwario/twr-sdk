@@ -155,3 +155,13 @@ void bc_scheduler_plan_current_from_now(bc_tick_t tick)
 {
     _bc_scheduler.pool[_bc_scheduler.current_task_id].tick_execution = bc_tick_get() + tick;
 }
+
+bc_tick_t bc_scheduler_get_tick_execution(bc_scheduler_task_id_t task_id)
+{
+    return _bc_scheduler.pool[task_id].tick_execution;
+}
+
+bc_tick_t bc_scheduler_get_current_tick_execution(void)
+{
+    return _bc_scheduler.pool[_bc_scheduler.current_task_id].tick_execution;
+}
