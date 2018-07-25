@@ -9,7 +9,7 @@
 
 // Apply changes to the factory configuration
 const char *_init_commands[] =
-{  
+{
     "\rAT\r",
     "AT+DUTYCYCLE=0\r",
     "AT+DEVADDR?\r",
@@ -21,6 +21,7 @@ const char *_init_commands[] =
     "AT+BAND?\r",
     "AT+MODE?\r",
     "AT+CLASS?\r",
+    "AT+RX2?\r",
     NULL
 };
 
@@ -35,6 +36,7 @@ void bc_cmwx1zzabz_init(bc_cmwx1zzabz_t *self,  bc_uart_channel_t uart_channel)
     memset(self, 0, sizeof(*self));
 
     self->_uart_channel = uart_channel;
+    self->_tx_port = 2;
 
     bc_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
     bc_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
@@ -94,6 +96,24 @@ bool bc_cmwx1zzabz_send_message(bc_cmwx1zzabz_t *self, const void *buffer, size_
     return true;
 }
 
+bool bc_cmwx1zzabz_send_message_confirmed(bc_cmwx1zzabz_t *self, const void *buffer, size_t length)
+{
+    if (!bc_cmwx1zzabz_is_ready(self) || length == 0 || length > 51)
+    {
+        return false;
+    }
+
+    self->_message_length = length;
+
+    memcpy(self->_message_buffer, buffer, self->_message_length);
+
+    self->_state = BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_CONFIRMED_COMMAND;
+
+    bc_scheduler_plan_now(self->_task_id);
+
+    return true;
+}
+
 static void _bc_cmwx1zzabz_task(void *param)
 {
     bc_cmwx1zzabz_t *self = param;
@@ -114,7 +134,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 continue;
             }
             case BC_CMWX1ZZABZ_STATE_IDLE:
-            { 
+            {
                 if(self->_join_command)
                 {
                     self->_state = BC_CMWX1ZZABZ_STATE_JOIN_SEND;
@@ -129,46 +149,57 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 while (_bc_cmwx1zzabz_read_response(self))
                 {
-                    bool recv_data = (memcmp(self->_response, "+RECV=", 5) == 0);
-
-                    if (!recv_data)
+                    if (memcmp(self->_response, "+RECV=", 5) == 0)
                     {
-                        continue;
+                        self->_message_port = atoi(&self->_response[6]);
+
+                        char *comma_search = strchr(self->_response, ',');
+                        if (!comma_search)
+                        {
+                            continue;
+                        }
+
+                        // Parse from the next character
+                        self->_message_length = atoi(++comma_search);
+
+                        // Dummy read three /r/n/r characters
+                        char dummy[3];
+                        uint32_t bytes = bc_uart_async_read(self->_uart_channel, &dummy, 3);
+                        if (bytes != 3)
+                        {
+                            continue;
+                        }
+
+                        // Received data is bigger than library message buffer
+                        if (self->_message_length > sizeof(self->_message_buffer))
+                        {
+                            continue;
+                        }
+
+                        // Read the received message
+                        bytes = bc_uart_async_read(self->_uart_channel, self->_message_buffer, self->_message_length);
+                        if (bytes != self->_message_length)
+                        {
+                            continue;
+                        }
+
+                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED, self->_event_param);
                     }
 
-                    self->_message_port = atoi(&self->_response[6]);
-
-                    char *comma_search = strchr(self->_response, ',');
-                    if (!comma_search)
+                    if (memcmp(self->_response, "+ACK", 4) == 0)
                     {
-                        continue;
+                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_CONFIRMED, self->_event_param);
                     }
 
-                    // Parse from the next character
-                    self->_message_length = atoi(++comma_search);
-
-                    // Dummy read three /r/n/r characters
-                    char dummy[3];
-                    uint32_t bytes = bc_uart_async_read(self->_uart_channel, &dummy, 3);
-                    if (bytes != 3)
+                    if (memcmp(self->_response, "+NOACK", 4) == 0)
                     {
-                        continue;
+                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED, self->_event_param);
                     }
 
-                    // Received data is bigger than library message buffer
-                    if (self->_message_length > sizeof(self->_message_buffer))
+                    if (memcmp(self->_response, "+EVENT=2,2", 10) == 0)
                     {
-                        continue;
+                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RETRANSMISSION, self->_event_param);
                     }
-
-                    // Read the received message
-                    bytes = bc_uart_async_read(self->_uart_channel, self->_message_buffer, self->_message_length);
-                    if (bytes != self->_message_length)
-                    {
-                        continue;
-                    }
-
-                    self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED, self->_event_param);
                 }
 
                 return;
@@ -231,7 +262,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 const char *last_command = _init_commands[self->_init_command_index];
                 // Pointer to the first character of response value after +OK=
                 char *response_string_value = &self->_response[4];
-                
+
                 if (strcmp(last_command, "AT+DEVADDR?\r") == 0 && response_valid)
                 {
                     // Check if user did not filled this structure to save configuration, oterwise it would be overwritten
@@ -250,7 +281,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                         self->_config.deveui[16] = '\0';
                     }
                     response_handled = 1;
-                } 
+                }
                 else if (strcmp(last_command, "AT+APPEUI?\r") == 0 && response_valid)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPEUI) == 0)
@@ -259,7 +290,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                         self->_config.appeui[16] = '\0';
                     }
                     response_handled = 1;
-                } 
+                }
                 else if (strcmp(last_command, "AT+NWKSKEY?\r") == 0 && response_valid)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY) == 0)
@@ -268,7 +299,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                         self->_config.nwkskey[32] = '\0';
                     }
                     response_handled = 1;
-                } 
+                }
                 else if (strcmp(last_command, "AT+APPSKEY?\r") == 0 && response_valid)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY) == 0)
@@ -277,7 +308,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                         self->_config.appskey[32] = '\0';
                     }
                     response_handled = 1;
-                } 
+                }
                 else if (strcmp(last_command, "AT+APPKEY?\r") == 0 && response_valid)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPKEY) == 0)
@@ -286,7 +317,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                         self->_config.appkey[32] = '\0';
                     }
                     response_handled = 1;
-                } 
+                }
                 else if (strcmp(last_command, "AT+BAND?\r") == 0 && response_valid)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_BAND) == 0)
@@ -294,7 +325,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                         self->_config.band = response_string_value[0] - '0';
                     }
                     response_handled = 1;
-                } 
+                }
                 else if (strcmp(last_command, "AT+MODE?\r") == 0 && response_valid)
                 {
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_MODE) == 0)
@@ -308,6 +339,22 @@ static void _bc_cmwx1zzabz_task(void *param)
                     if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS) == 0)
                     {
                         self->_config.class = response_string_value[0] - '0';
+                    }
+                    response_handled = 1;
+                }
+                else if (strcmp(last_command, "AT+RX2?\r") == 0 && response_valid)
+                {
+                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_RX2) == 0)
+                    {
+                        self->_config.rx2_frequency = atoi(response_string_value);
+
+                        char *comma_search = strchr(response_string_value, ',');
+                        if (!comma_search)
+                        {
+                            continue;
+                        }
+
+                        self->_config.rx2_datarate = atoi(++comma_search);
                     }
                     response_handled = 1;
                 }
@@ -351,10 +398,18 @@ static void _bc_cmwx1zzabz_task(void *param)
                 continue;
             }
             case BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_COMMAND:
+            case BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_CONFIRMED_COMMAND:
             {
-                self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
+                if (self->_state == BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_CONFIRMED_COMMAND)
+                {
+                    snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+PCTX %d,%d\r", self->_tx_port, self->_message_length);
+                }
+                else
+                {
+                    snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+PUTX %d,%d\r", self->_tx_port, self->_message_length);
+                }
 
-                snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+UTX %d\r", self->_message_length);
+                self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
 
                 uint8_t command_length = strlen(self->_command);
 
@@ -426,7 +481,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 // Find config item that has been changed
                 uint8_t i;
                 for (i = 0; i < BC_CMWX1ZZABZ_CONFIG_INDEX_LAST_ITEM; i++)
-                { 
+                {
                     if (self->_save_config_mask & 1 << i)
                     {
                         self->_save_command_index = i;
@@ -487,6 +542,11 @@ static void _bc_cmwx1zzabz_task(void *param)
                         snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+CLASS=%d\r", self->_config.class);
                         break;
                     }
+                    case BC_CMWX1ZZABZ_CONFIG_INDEX_RX2:
+                    {
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+RX2=%d,%d\r", (int)self->_config.rx2_frequency, self->_config.rx2_datarate);
+                        break;
+                    }
                     default:
                     {
                         break;
@@ -499,7 +559,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     continue;
                 }
-        
+
                 self->_state = BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_RESPONSE;
                 bc_scheduler_plan_current_from_now(BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND);
                 return;
@@ -546,7 +606,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     continue;
                 }
-        
+
                 self->_state = BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE;
                 bc_scheduler_plan_current_from_now(BC_CMWX1ZZABZ_DELAY_JOIN_RESPONSE);
                 return;
@@ -572,7 +632,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                         break;
                     }
                 }
-                
+
                 if (join_successful)
                 {
                     if (self->_event_handler != NULL)
@@ -580,14 +640,14 @@ static void _bc_cmwx1zzabz_task(void *param)
                         self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_JOIN_SUCCESS, self->_event_param);
                     }
                 }
-                else 
+                else
                 {
                     if (self->_event_handler != NULL)
                     {
                         self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_JOIN_ERROR, self->_event_param);
                     }
-                }               
-                
+                }
+
                 self->_state = BC_CMWX1ZZABZ_STATE_IDLE;
                 continue;
             }
@@ -604,6 +664,16 @@ void bc_cmwx1zzabz_join(bc_cmwx1zzabz_t *self)
 {
     self->_join_command = true;
     bc_scheduler_plan_now(self->_task_id);
+}
+
+void bc_cmwx1zzabz_set_port(bc_cmwx1zzabz_t *self, uint8_t port)
+{
+    self->_tx_port = port;
+}
+
+uint8_t bc_cmwx1zzabz_get_port(bc_cmwx1zzabz_t *self)
+{
+    return self->_tx_port;
 }
 
 void bc_cmwx1zzabz_set_devaddr(bc_cmwx1zzabz_t *self, char *devaddr)
@@ -725,6 +795,19 @@ uint32_t bc_cmwx1zzabz_get_received_message_data(bc_cmwx1zzabz_t *self, uint8_t 
     memcpy(buffer, self->_message_buffer, self->_message_length);
 
     return self->_message_length;
+}
+
+void bc_cmwx1zzabz_set_rx2(bc_cmwx1zzabz_t *self, uint32_t frequency, uint8_t datarate)
+{
+    self->_config.rx2_frequency = frequency;
+    self->_config.rx2_datarate = datarate;
+    self->_save_config_mask |= (1 << BC_CMWX1ZZABZ_CONFIG_INDEX_RX2);
+}
+
+void bc_cmwx1zzabz_get_rx2(bc_cmwx1zzabz_t *self, uint32_t *frequency, uint8_t *datarate)
+{
+    *frequency = self->_config.rx2_frequency;
+    *datarate = self->_config.rx2_datarate;
 }
 
 static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)
