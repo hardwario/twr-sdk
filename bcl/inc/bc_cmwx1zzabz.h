@@ -42,7 +42,16 @@ typedef enum
     BC_CMWX1ZZABZ_EVENT_JOIN_ERROR = 6,
 
     //! @brief Received message
-    BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED = 7     
+    BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED = 7,
+
+    //! @brief REtransmission of the confirmed message
+    BC_CMWX1ZZABZ_EVENT_MESSAGE_RETRANSMISSION = 8,
+
+    //! @brief Sent message confirmed
+    BC_CMWX1ZZABZ_EVENT_MESSAGE_CONFIRMED = 9,
+
+    //! @brief Sent message not confirmed
+    BC_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED = 10
 
 } bc_cmwx1zzabz_event_t;
 
@@ -94,6 +103,7 @@ typedef enum
     BC_CMWX1ZZABZ_CONFIG_INDEX_BAND = 6,
     BC_CMWX1ZZABZ_CONFIG_INDEX_MODE = 7,
     BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS = 8,
+    BC_CMWX1ZZABZ_CONFIG_INDEX_RX2 = 9,
     BC_CMWX1ZZABZ_CONFIG_INDEX_LAST_ITEM
 
 } bc_cmwx1zzabz_config_index_t;
@@ -111,12 +121,13 @@ typedef enum
     BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_RESPONSE = 8,
 
     BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_COMMAND = 9,
-    BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_RESPONSE = 10,
+    BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_CONFIRMED_COMMAND = 10,
+    BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_RESPONSE = 11,
 
-    BC_CMWX1ZZABZ_STATE_JOIN_SEND = 11,
-    BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE = 12,
+    BC_CMWX1ZZABZ_STATE_JOIN_SEND = 12,
+    BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE = 13,
 
-    BC_CMWX1ZZABZ_STATE_RECEIVE = 13
+    BC_CMWX1ZZABZ_STATE_RECEIVE = 14
 
 } bc_cmwx1zzabz_state_t;
 
@@ -131,6 +142,8 @@ typedef struct
     char nwkskey[32+1];
     char appskey[32+1];
     char appkey[32+1];
+    uint32_t rx2_frequency;
+    uint8_t rx2_datarate;
 
 } bc_cmwx1zzabz_config;
 
@@ -157,6 +170,7 @@ struct bc_cmwx1zzabz_t
     uint32_t _save_config_mask;
     bc_cmwx1zzabz_config _config;
     bool _join_command;
+    uint8_t _tx_port;
 };
 
 //! @endcond
@@ -181,7 +195,7 @@ void bc_cmwx1zzabz_set_event_handler(bc_cmwx1zzabz_t *self, void (*event_handler
 
 bool bc_cmwx1zzabz_is_ready(bc_cmwx1zzabz_t *self);
 
-//! @brief Send RF frame command
+//! @brief Send LoRa message
 //! @param[in] self Instance
 //! @param[in] buffer Pointer to data to be transmitted
 //! @param[in] length Length of data to be transmitted in bytes (must be from 1 to 51 bytes)
@@ -189,6 +203,15 @@ bool bc_cmwx1zzabz_is_ready(bc_cmwx1zzabz_t *self);
 //! @return false If command was denied for processing
 
 bool bc_cmwx1zzabz_send_message(bc_cmwx1zzabz_t *self, const void *buffer, size_t length);
+
+//! @brief Send LoRa confirmed message
+//! @param[in] self Instance
+//! @param[in] buffer Pointer to data to be transmitted
+//! @param[in] length Length of data to be transmitted in bytes (must be from 1 to 51 bytes)
+//! @return true If command was accepted for processing
+//! @return false If command was denied for processing
+
+bool bc_cmwx1zzabz_send_message_confirmed(bc_cmwx1zzabz_t *self, const void *buffer, size_t length);
 
 //! @brief Set DEVADDR
 //! @param[in] self Instance
@@ -317,13 +340,39 @@ uint8_t bc_cmwx1zzabz_get_received_message_port(bc_cmwx1zzabz_t *self);
 
 uint32_t bc_cmwx1zzabz_get_received_message_length(bc_cmwx1zzabz_t *self);
 
-//! @brief Get port of the received message
+//! @brief Get received message data
 //! @param[in] self Instance
 //! @param[in] buffer Destination buffer for received data
 //! @param[in] buffer_size Size of the destination buffer
 //! @return Length of the received message. Zero if the destination buffer is not big enough.
 
 uint32_t bc_cmwx1zzabz_get_received_message_data(bc_cmwx1zzabz_t *self, uint8_t *buffer, uint32_t buffer_size);
+
+//! @brief Set the port for the transmission of the messages
+//! @param[in] self Instance
+//! @param[in] port Port
+
+void bc_cmwx1zzabz_set_port(bc_cmwx1zzabz_t *self, uint8_t port);
+
+//! @brief Get the port for the transmission of the messages
+//! @param[in] self Instance
+//! @return Port
+
+uint8_t bc_cmwx1zzabz_get_port(bc_cmwx1zzabz_t *self);
+
+//! @brief Set the frequency and datarate for RX2 receive window
+//! @param[in] self Instance
+//! @param[in] frequency Frequency in Hz
+//! @param[in] datarate Datarate
+
+void bc_cmwx1zzabz_set_rx2(bc_cmwx1zzabz_t *self, uint32_t frequency, uint8_t datarate);
+
+//! @brief Set the frequency and datarate for RX2 receive window
+//! @param[in] self Instance
+//! @param[in] frequency Pointer to save frequency in Hz
+//! @param[in] datarate Pointer to save datarate
+
+void bc_cmwx1zzabz_get_rx2(bc_cmwx1zzabz_t *self, uint32_t *frequency, uint8_t *datarate);
 
 //! @}
 
