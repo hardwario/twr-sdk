@@ -44,7 +44,7 @@ typedef enum
     //! @brief Received message
     BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED = 7,
 
-    //! @brief REtransmission of the confirmed message
+    //! @brief Retransmission of the confirmed message
     BC_CMWX1ZZABZ_EVENT_MESSAGE_RETRANSMISSION = 8,
 
     //! @brief Sent message confirmed
@@ -136,12 +136,12 @@ typedef struct
     bc_cmwx1zzabz_config_band_t band;
     bc_cmwx1zzabz_config_mode_t mode;
     bc_cmwx1zzabz_config_class_t class;
-    char devaddr[8+1];
-    char deveui[16+1];
-    char appeui[16+1];
-    char nwkskey[32+1];
-    char appskey[32+1];
-    char appkey[32+1];
+    char devaddr[8 + 1];
+    char deveui[16 + 1];
+    char appeui[16 + 1];
+    char nwkskey[32 + 1];
+    char appskey[32 + 1];
+    char appkey[32 + 1];
     uint32_t rx2_frequency;
     uint8_t rx2_datarate;
 
@@ -367,7 +367,7 @@ uint8_t bc_cmwx1zzabz_get_port(bc_cmwx1zzabz_t *self);
 
 void bc_cmwx1zzabz_set_rx2(bc_cmwx1zzabz_t *self, uint32_t frequency, uint8_t datarate);
 
-//! @brief Set the frequency and datarate for RX2 receive window
+//! @brief Get the frequency and datarate for RX2 receive window
 //! @param[in] self Instance
 //! @param[in] frequency Pointer to save frequency in Hz
 //! @param[in] datarate Pointer to save datarate
