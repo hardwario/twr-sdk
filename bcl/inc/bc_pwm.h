@@ -54,7 +54,13 @@ void bc_pwm_enable(bc_gpio_channel_t channel);
 
 //! @brief Set PWM value
 
-void bc_pwm_set(bc_gpio_channel_t channel, uint8_t pwm_value);
+void bc_pwm_set(bc_gpio_channel_t channel, uint16_t pwm_value);
+
+void bc_pwm_tim3_init(uint32_t resolution_us, uint32_t period_cycles);
+
+void bc_pwm_tim2_init(uint32_t resolution_us, uint32_t period_cycles);
+
+
 
 //! @}
 

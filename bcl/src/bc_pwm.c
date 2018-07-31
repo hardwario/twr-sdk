@@ -22,26 +22,21 @@ P16 PB8 none
 P17 PB9 none
 */
 
-void bc_pwm_tim2_init(void)
+void bc_pwm_tim2_init(uint32_t resolution_us, uint32_t period_cycles)
 {
-    static bool tim2_initialized = false;
-
-    if (tim2_initialized)
-    {
-        return;
-    }
-
-    bc_system_pll_enable();
-
     // Enable TIM2 clock
     RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
 
     // Errata workaround
     RCC->APB1ENR;
 
+    // Disable counter if it is running
+    TIM2->CR1 &= ~TIM_CR1_CEN;
+
     // Set prescaler to 5 * 32 (5 microseconds resolution)
-    TIM2->PSC = 5 * 32 - 1;
-    TIM2->ARR= 255 - 1;
+    //TIM2->PSC = 5 * 32 - 1;
+    TIM2->PSC = (resolution_us * 32) - 1;
+    TIM2->ARR= period_cycles - 1;
 
     // CH1
     TIM2->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;
@@ -57,31 +52,23 @@ void bc_pwm_tim2_init(void)
     TIM2->CCER |= TIM_CCER_CC4E;
 
     TIM2->CR1 |= TIM_CR1_CEN;
-
-    tim2_initialized = true;
 }
 
 
-void bc_pwm_tim3_init(void)
+void bc_pwm_tim3_init(uint32_t resolution_us, uint32_t period_cycles)
 {
-    static bool tim3_initialized = false;
-
-    if (tim3_initialized)
-    {
-        return;
-    }
-
-    bc_system_pll_enable();
-
     // Enable TIM3 clock
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
 
     // Errata workaround
     RCC->APB1ENR;
 
+    // Disable counter if it is running
+    TIM3->CR1 &= ~TIM_CR1_CEN;
+
     // Set prescaler to 5 * 32 (5 microseconds resolution)
-    TIM3->PSC = 5 * 32 - 1;
-    TIM3->ARR= 255 - 1;
+    TIM3->PSC = resolution_us * 32 - 1;
+    TIM3->ARR= period_cycles - 1;
 
     // CH1
     TIM3->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;
@@ -97,21 +84,32 @@ void bc_pwm_tim3_init(void)
     TIM3->CCER |= TIM_CCER_CC4E;
 
     TIM3->CR1 |= TIM_CR1_CEN;
-
-    tim3_initialized = true;
 }
 
 
 void bc_pwm_init(bc_gpio_channel_t channel)
 {
-    if (channel == BC_GPIO_P0 || channel == BC_GPIO_P1 || channel == BC_GPIO_P2 || channel == BC_GPIO_P3)
+    static bool tim2_initialized = false;
+    static bool tim3_initialized = false;
+    static bool pll_enabled = false;
+
+    if (!pll_enabled)
     {
-        bc_pwm_tim2_init();
+        bc_system_pll_enable();
+        pll_enabled = true;
     }
 
-    if (channel == BC_GPIO_P6 || channel == BC_GPIO_P7 || channel == BC_GPIO_P8)
+    if (!tim2_initialized && (channel == BC_GPIO_P0 || channel == BC_GPIO_P1 || channel == BC_GPIO_P2 || channel == BC_GPIO_P3))
     {
-        bc_pwm_tim3_init();
+        bc_pwm_tim2_init(5, 255);
+        tim2_initialized = true;
+    }
+
+    if (!tim3_initialized && (channel == BC_GPIO_P6 || channel == BC_GPIO_P7 || channel == BC_GPIO_P8))
+    {
+        // 5 us * 255 = cca 784 Hz
+        bc_pwm_tim3_init(5, 255);
+        tim3_initialized = true;
     }
 }
 
@@ -121,7 +119,7 @@ void bc_pwm_enable(bc_gpio_channel_t channel)
     bc_gpio_set_mode(channel, BC_GPIO_MODE_ALTERNATE_2);
 }
 
-void bc_pwm_set(bc_gpio_channel_t channel, uint8_t pwm_value)
+void bc_pwm_set(bc_gpio_channel_t channel, uint16_t pwm_value)
 {
     switch (channel)
     {
