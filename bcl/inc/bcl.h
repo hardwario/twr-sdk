@@ -23,6 +23,7 @@
 #include <bc_rtc.h>
 #include <bc_uart.h>
 #include <bc_spi.h>
+#include <bc_pwm.h>
 
 // Chip drivers
 

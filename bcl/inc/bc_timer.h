@@ -14,21 +14,21 @@ extern const uint16_t _bc_timer_prescaler_lut[3];
 
 inline void bc_timer_init(void)
 {
-    // Enable clock for TIM21
-    RCC->APB2ENR |= RCC_APB2ENR_TIM21EN;
+    // Enable clock for TIM22
+    RCC->APB2ENR |= RCC_APB2ENR_TIM22EN;
 }
 
 //! @brief Start timer
 
 inline void bc_timer_start(void)
 {
-    TIM21->PSC = _bc_timer_prescaler_lut[bc_system_clock_get()]; // 7 instructions
+    TIM22->PSC = _bc_timer_prescaler_lut[bc_system_clock_get()]; // 7 instructions
 
-    TIM21->CNT = 0;
+    TIM22->CNT = 0;
 
-    TIM21->EGR = TIM_EGR_UG;
+    TIM22->EGR = TIM_EGR_UG;
 
-    TIM21->CR1 |= TIM_CR1_CEN;
+    TIM22->CR1 |= TIM_CR1_CEN;
 }
 
 //! @brief Get actual tick of timer
@@ -36,7 +36,7 @@ inline void bc_timer_start(void)
 
 inline uint16_t bc_timer_get_microseconds(void)
 {
-    return TIM21->CNT;
+    return TIM22->CNT;
 }
 
 //! @brief Relative delay
@@ -56,14 +56,14 @@ inline void bc_timer_delay(uint16_t microseconds)
 
 inline void bc_timer_clear(void)
 {
-    TIM21->CNT = 0;
+    TIM22->CNT = 0;
 }
 
 //! @brief Stop timer
 
 inline void bc_timer_stop(void)
 {
-    TIM21->CR1 &= ~TIM_CR1_CEN;
+    TIM22->CR1 &= ~TIM_CR1_CEN;
 }
 
 //! @}
