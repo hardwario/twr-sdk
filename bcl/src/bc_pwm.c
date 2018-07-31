@@ -24,7 +24,7 @@
     P17 PB9 none
 */
 
-void bc_pwm_tim2_configure(uint32_t resolution_us, uint32_t period_cycles)
+static void _bc_pwm_tim2_configure(uint32_t resolution_us, uint32_t period_cycles)
 {
     // Enable TIM2 clock
     RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
@@ -56,7 +56,7 @@ void bc_pwm_tim2_configure(uint32_t resolution_us, uint32_t period_cycles)
     TIM2->CR1 |= TIM_CR1_CEN;
 }
 
-void bc_pwm_tim3_configure(uint32_t resolution_us, uint32_t period_cycles)
+static void _bc_pwm_tim3_configure(uint32_t resolution_us, uint32_t period_cycles)
 {
     // Enable TIM3 clock
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
@@ -87,7 +87,7 @@ void bc_pwm_tim3_configure(uint32_t resolution_us, uint32_t period_cycles)
     TIM3->CR1 |= TIM_CR1_CEN;
 }
 
-void bc_pwm_tim21_configure(uint32_t resolution_us, uint32_t period_cycles)
+static void _bc_pwm_tim21_configure(uint32_t resolution_us, uint32_t period_cycles)
 {
     // Enable TIM21 clock
     RCC->APB2ENR |= RCC_APB2ENR_TIM21EN;
@@ -112,6 +112,32 @@ void bc_pwm_tim21_configure(uint32_t resolution_us, uint32_t period_cycles)
     TIM21->CR1 |= TIM_CR1_CEN;
 }
 
+void bc_pwm_tim_configure(bc_pwm_tim_t tim, uint32_t resolution_us, uint32_t period_cycles)
+{
+    switch (tim)
+    {
+        case BC_PWM_TIM2_P0_P1_P2_P3:
+        {
+            _bc_pwm_tim2_configure(resolution_us, period_cycles);
+            break;
+        }
+        case BC_PWM_TIM3_P6_P7_P8:
+        {
+            _bc_pwm_tim3_configure(resolution_us, period_cycles);
+            break;
+        }
+        case BC_PWM_TIM21_P12_P14:
+        {
+            _bc_pwm_tim21_configure(resolution_us, period_cycles);
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+}
+
 void bc_pwm_init(bc_pwm_channel_t channel)
 {
     static bool tim2_initialized = false;
@@ -128,19 +154,19 @@ void bc_pwm_init(bc_pwm_channel_t channel)
     if (!tim2_initialized && (channel == BC_PWM_P0 || channel == BC_PWM_P1 || channel == BC_PWM_P2 || channel == BC_PWM_P3))
     {
         // 5 us * 255 = cca 784 Hz
-        bc_pwm_tim2_configure(5, 255);
+        bc_pwm_tim_configure(BC_PWM_TIM2_P0_P1_P2_P3, 5, 255);
         tim2_initialized = true;
     }
 
     if (!tim3_initialized && (channel == BC_PWM_P6 || channel == BC_PWM_P7 || channel == BC_PWM_P8))
     {
-        bc_pwm_tim3_configure(5, 255);
+        bc_pwm_tim_configure(BC_PWM_TIM3_P6_P7_P8, 5, 255);
         tim3_initialized = true;
     }
 
     if (!tim21_initialized && (channel == BC_PWM_P12 || channel == BC_PWM_P14))
     {
-        bc_pwm_tim21_configure(5, 255);
+        bc_pwm_tim_configure(BC_PWM_TIM21_P12_P14, 5, 255);
         tim21_initialized = true;
     }
 }

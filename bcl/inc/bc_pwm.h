@@ -27,6 +27,17 @@ typedef enum
 
 } bc_pwm_channel_t;
 
+//! @brief PWM timers
+//! @details Each timer controls a group of output PWM channels. The change of the specific timer affects also the other related PWM channels.
+
+typedef enum
+{
+    BC_PWM_TIM2_P0_P1_P2_P3,
+    BC_PWM_TIM3_P6_P7_P8,
+    BC_PWM_TIM21_P12_P14
+
+}  bc_pwm_tim_t;
+
 //! @brief Initialize PWM timers based on GPIO pin
 //! @param[in] channel GPIO channel
 
@@ -52,19 +63,7 @@ void bc_pwm_set(bc_pwm_channel_t channel, uint16_t pwm_value);
 //! @param[resolution_us] Set resolution of the timer in microseconds
 //! @param[period_cycles] Set number of periods of one cycle
 
-void bc_pwm_tim3_configure(uint32_t resolution_us, uint32_t period_cycles);
-
-//! @brief Reconfigure TIM2
-//! @param[resolution_us] Set resolution of the timer in microseconds
-//! @param[period_cycles] Set number of periods of one cycle
-
-void bc_pwm_tim2_configure(uint32_t resolution_us, uint32_t period_cycles);
-
-//! @brief Reconfigure TIM21
-//! @param[resolution_us] Set resolution of the timer in microseconds
-//! @param[period_cycles] Set number of periods of one cycle
-
-void bc_pwm_tim21_configure(uint32_t resolution_us, uint32_t period_cycles);
+void bc_pwm_tim_configure(bc_pwm_tim_t tim, uint32_t resolution_us, uint32_t period_cycles);
 
 //! @}
 
