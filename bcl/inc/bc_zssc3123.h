@@ -127,6 +127,13 @@ bool bc_zssc3123_eeprom_read(bc_zssc3123_t *self, uint8_t address, uint16_t *wor
 
 bool bc_zssc3123_eeprom_write(bc_zssc3123_t *self, uint8_t address, uint16_t word);
 
+//! @brief Unlock eerpom, work only with command mode
+//! @param[in] self Instance
+//! @return true On success
+//! @return false On failure
+
+bool bc_zssc3123_unlock_eeprom(bc_zssc3123_t *self);
+
 //! @}
 
 #endif // _BC_ZSSC3123_H

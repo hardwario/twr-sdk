@@ -163,6 +163,21 @@ bool bc_zssc3123_eeprom_write(bc_zssc3123_t *self, uint8_t address, uint16_t wor
     return (_bc_zssc3123_get_response(self) & 0x03) == 1;
 }
 
+bool bc_zssc3123_unlock_eeprom(bc_zssc3123_t *self)
+{
+    if (!bc_i2c_memory_write_16b(self->_i2c_channel, self->_i2c_address, 0xa2, 0x0000))
+    {
+        return false;
+    }
+
+    if (!bc_i2c_memory_write_16b(self->_i2c_channel, self->_i2c_address, 0xf0, 0x0021))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 static uint8_t _bc_zssc3123_get_response(bc_zssc3123_t *self)
 {
     bc_i2c_transfer_t transfer;
