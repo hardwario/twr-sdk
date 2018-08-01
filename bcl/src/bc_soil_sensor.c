@@ -72,9 +72,8 @@ bool bc_soil_sensor_get_temperature_kelvin(bc_soil_sensor_t *self, float *kelvin
 
 bool bc_soil_sensor_get_moisture(bc_soil_sensor_t *self, int *moisture)
 {
-
-    static int max = 215;
-    static int min = 10;
+    static const int max = 204;
+    static const int min = 75;
 
     uint16_t raw;
 
@@ -84,7 +83,6 @@ bool bc_soil_sensor_get_moisture(bc_soil_sensor_t *self, int *moisture)
     }
 
     raw >>= 6;
-
 
     if (raw < min)
     {
