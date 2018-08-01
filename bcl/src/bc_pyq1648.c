@@ -3,6 +3,7 @@
 #include <bc_gpio.h>
 #include <bc_system.h>
 #include <bc_timer.h>
+#include <stm32l0xx.h>
 
 #define BC_PYQ1648_BPF 0x00
 #define BC_PYQ1648_LPF 0x01
