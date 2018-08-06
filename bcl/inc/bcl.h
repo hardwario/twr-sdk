@@ -70,6 +70,7 @@
 #include <bc_error.h>
 #include <bc_dice.h>
 #include <bc_gfx.h>
+#include <bc_magnetic_switch.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
