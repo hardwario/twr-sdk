@@ -23,6 +23,7 @@
 #include <bc_rtc.h>
 #include <bc_uart.h>
 #include <bc_spi.h>
+#include <bc_pwm.h>
 
 // Chip drivers
 
@@ -41,6 +42,7 @@
 #include <bc_tag_humidity.h>
 #include <bc_tag_lux_meter.h>
 #include <bc_tag_temperature.h>
+#include <bc_tag_nfc.h>
 
 // BigClown modules
 
@@ -54,6 +56,7 @@
 #include <bc_module_lcd.h>
 #include <bc_module_co2.h>
 #include <bc_module_sensor.h>
+#include <bc_module_infra_grid.h>
 
 // Other
 
