@@ -84,7 +84,7 @@ struct bc_switch_t
     bc_tick_t _scan_interval;
     bc_tick_t _debounce_time;
     bc_tick_t _tick_debounce;
-    bc_tick_t _pull_advance_time;
+    uint16_t _pull_advance_time;
 };
 
 //! @endcond
@@ -122,11 +122,11 @@ void bc_switch_set_scan_interval(bc_switch_t *self, bc_tick_t scan_interval);
 
 void bc_switch_set_debounce_time(bc_switch_t *self, bc_tick_t debounce_time);
 
-//! @brief Set pull advance time (work only with dynamic pull up/down), default 10ms
+//! @brief Set pull advance time (work only with dynamic pull up/down), default 50us, for time bigger than 1000us is used scheduler
 //! @param[in] self Instance
-//! @param[in] pull_advance_time Pull advance time in ticks
+//! @param[in] pull_advance_time Pull advance time in us
 
-void bc_switch_set_pull_advance_time(bc_switch_t *self, bc_tick_t pull_advance_time);
+void bc_switch_set_pull_advance_time(bc_switch_t *self, uint16_t pull_advance_time_us);
 
 //! @}
 
