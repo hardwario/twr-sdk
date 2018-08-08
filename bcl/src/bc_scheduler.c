@@ -40,8 +40,6 @@ extern void bc_system_error(void);
 
 extern void _bc_system_hook_set_interrupt_tick(bc_tick_t tick);
 
-static inline bc_scheduler_task_id_t _bc_scheduler_task_get_first();
-
 static void _bc_scheduler_plan_task(bc_scheduler_task_id_t task_id, bc_tick_t tick);
 
 void bc_scheduler_init(void)
@@ -221,31 +219,6 @@ void bc_scheduler_plan_current_relative(bc_tick_t tick)
 void bc_scheduler_plan_current_from_now(bc_tick_t tick)
 {
     _bc_scheduler_plan_task(_bc_scheduler.current_task_id, bc_tick_get() + tick);
-}
-
-static inline bc_scheduler_task_id_t _bc_scheduler_task_get_first()
-{
-    bc_tick_t tick_first = BC_TICK_INFINITY;
-
-    bc_scheduler_task_id_t task_first;
-
-    bc_scheduler_task_t *task;
-
-    bc_scheduler_task_id_t task_id;
-
-    for (task_id = 0; task_id < _bc_scheduler.max_task_id; task_id++)
-    {
-        task = &_bc_scheduler.pool[task_id];
-
-        if ((_bc_scheduler.pool[task_id].task != NULL) && (task->tick_execution < tick_first))
-        {
-            task_first = task_id;
-
-            tick_first = task->tick_execution;
-        }
-    }
-
-    return task_first;
 }
 
 static void _bc_scheduler_plan_task(bc_scheduler_task_id_t task_id, bc_tick_t tick)

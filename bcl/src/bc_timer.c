@@ -3,9 +3,9 @@
 
 const uint16_t _bc_timer_prescaler_lut[3] =
 {
-    2,
-    15,
-    31,
+    [BC_SYSTEM_CLOCK_MSI] = 2,
+    [BC_SYSTEM_CLOCK_HSI] = 15,
+    [BC_SYSTEM_CLOCK_PLL] = 31,
 };
 
 inline void bc_timer_init(void)
@@ -16,7 +16,7 @@ inline void bc_timer_init(void)
 
 inline void bc_timer_start(void)
 {
-    TIM22->PSC = _bc_timer_prescaler_lut[bc_system_clock_get()]; // 7 instructions
+    TIM22->PSC = _bc_timer_prescaler_lut[bc_system_clock_source_get()]; // 7 instructions
 
     TIM22->CNT = 0;
 
