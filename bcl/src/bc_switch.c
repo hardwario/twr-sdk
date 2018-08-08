@@ -1,8 +1,9 @@
 #include <bc_switch.h>
+#include <bc_timer.h>
 
-#define _BC_SWITCH_SCAN_INTERVAL     50
-#define _BC_SWITCH_DEBOUNCE_TIME     20
-#define _BC_SWITCH_PULL_ADVANCE_TIME 10
+#define _BC_SWITCH_SCAN_INTERVAL        50
+#define _BC_SWITCH_DEBOUNCE_TIME        20
+#define _BC_SWITCH_PULL_ADVANCE_TIME_US 50
 
 static void _bc_switch_task(void *param);
 
@@ -22,21 +23,29 @@ void bc_switch_init(bc_switch_t *self, bc_gpio_channel_t channel, bc_switch_type
     self->_pull = pull;
     self->_scan_interval = _BC_SWITCH_SCAN_INTERVAL;
     self->_debounce_time = _BC_SWITCH_DEBOUNCE_TIME;
+    self->_pull_advance_time = _BC_SWITCH_PULL_ADVANCE_TIME_US;
 
     bc_gpio_init(channel);
 
     bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
 
-    bc_gpio_set_pull(self->_channel, _bc_switch_pull_lut[self->_pull]);
+    self->_task_id = bc_scheduler_register(_bc_switch_task, self, 0);
 
     if ((self->_pull == BC_SWITCH_PULL_UP_DYNAMIC) || (self->_pull == BC_SWITCH_PULL_DOWN_DYNAMIC))
     {
-        self->_task_state = BC_SWITCH_TASK_STATE_SET_PULL;
+        if (self->_pull_advance_time > 1000)
+        {
+            self->_task_state = BC_SWITCH_TASK_STATE_SET_PULL;
+        }
 
-        self->_pull_advance_time = _BC_SWITCH_PULL_ADVANCE_TIME;
+        bc_gpio_set_pull(self->_channel, BC_GPIO_PULL_NONE);
+
+        bc_timer_init();
     }
-
-    self->_task_id = bc_scheduler_register(_bc_switch_task, self, self->_pull_advance_time);
+    else
+    {
+        bc_gpio_set_pull(self->_channel, _bc_switch_pull_lut[self->_pull]);
+    }
 }
 
 bool bc_switch_get_state(bc_switch_t *self)
@@ -60,9 +69,9 @@ void bc_switch_set_debounce_time(bc_switch_t *self, bc_tick_t debounce_time)
     self->_debounce_time = debounce_time;
 }
 
-void bc_switch_set_pull_advance_time(bc_switch_t *self, bc_tick_t pull_advance_time)
+void bc_switch_set_pull_advance_time(bc_switch_t *self, uint16_t pull_advance_time_us)
 {
-    self->_pull_advance_time = pull_advance_time;
+    self->_pull_advance_time = pull_advance_time_us;
 }
 
 static void _bc_switch_task(void *param)
@@ -73,13 +82,32 @@ static void _bc_switch_task(void *param)
     {
         case BC_SWITCH_TASK_STATE_MEASURE:
         {
+            bool dynamic = (self->_pull == BC_SWITCH_PULL_UP_DYNAMIC) || (self->_pull == BC_SWITCH_PULL_DOWN_DYNAMIC);
+
+            if (dynamic)
+            {
+                if (self->_pull_advance_time < 1000)
+                {
+                    bc_gpio_set_pull(self->_channel, _bc_switch_pull_lut[self->_pull]);
+
+                    bc_timer_start();
+
+                    bc_timer_delay(self->_pull_advance_time);
+
+                    bc_timer_stop();
+                }
+            }
+
             int pin_state = bc_gpio_get_input(self->_channel);
 
-            if ((self->_pull == BC_SWITCH_PULL_UP_DYNAMIC) || (self->_pull == BC_SWITCH_PULL_DOWN_DYNAMIC))
+            if (dynamic)
             {
                 bc_gpio_set_pull(self->_channel, BC_GPIO_PULL_NONE);
 
-                self->_task_state = BC_SWITCH_TASK_STATE_SET_PULL;
+                if (self->_pull_advance_time > 1000)
+                {
+                    self->_task_state = BC_SWITCH_TASK_STATE_SET_PULL;
+                }
             }
 
             if (self->_type == BC_SWITCH_TYPE_NC)
@@ -95,7 +123,7 @@ static void _bc_switch_task(void *param)
                 {
                     self->_tick_debounce = tick_now + self->_debounce_time;
 
-                    bc_scheduler_plan_current_relative(self->_debounce_time - 10);
+                    bc_scheduler_plan_current_relative(self->_debounce_time);
 
                     return;
                 }
@@ -122,7 +150,7 @@ static void _bc_switch_task(void *param)
                 self->_tick_debounce = BC_TICK_INFINITY;
             }
 
-            bc_scheduler_plan_current_relative(self->_scan_interval - 10);
+            bc_scheduler_plan_current_relative(self->_scan_interval);
 
             return;
 
@@ -131,7 +159,7 @@ static void _bc_switch_task(void *param)
         {
             bc_gpio_set_pull(self->_channel, _bc_switch_pull_lut[self->_pull]);
 
-            bc_scheduler_plan_current_relative(self->_pull_advance_time);
+            bc_scheduler_plan_current_relative(self->_pull_advance_time / 1000);
 
             self->_task_state = BC_SWITCH_TASK_STATE_MEASURE;
 
