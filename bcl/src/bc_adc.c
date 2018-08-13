@@ -70,8 +70,8 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_format_t format)
         // Set auto-off mode, left align
         ADC1->CFGR1 |= ADC_CFGR1_AUTOFF | ADC_CFGR1_ALIGN;
 
-        // Enable Over-sampler with ratio (16x) and set PCLK/2 as a clock source
-        ADC1->CFGR2 = ADC_CFGR2_OVSE | ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0 | ADC_CFGR2_CKMODE_0;
+        // Set PCLK/2 as a clock source
+        ADC1->CFGR2 = ADC_CFGR2_CKMODE_0;
 
         // Sampling time selection (12.5 cycles)
         ADC1->SMPR |= ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0;
@@ -221,8 +221,7 @@ bool bc_adc_get_result(bc_adc_channel_t channel, void *result)
         }
         case BC_ADC_FORMAT_FLOAT:
         {
-            data *= _bc_adc.real_vdda_voltage / 3.3f;
-            *(float *) result = data * (3.3f / 65536.f);
+            *(float *) result = (data * _bc_adc.real_vdda_voltage) / 65536.f;
             break;
         }
         default:
