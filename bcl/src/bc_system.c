@@ -462,6 +462,27 @@ void bc_system_reset(void)
     NVIC_SystemReset();
 }
 
+bool bc_system_get_vbus_sense(void)
+{
+    static bool init = false;
+
+    if (!init)
+    {
+        // Enable clock for GPIOA
+        RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
+
+        // Errata workaround
+        RCC->IOPENR;
+
+        // Input mode
+        GPIOA->MODER &= ~GPIO_MODER_MODE12_Msk;
+
+        init = true;
+    }
+
+    return (GPIOA->IDR & GPIO_IDR_ID12) != 0;
+}
+
 __attribute__((weak)) void bc_system_error(void)
 {
 #ifdef RELEASE

@@ -35,4 +35,6 @@ uint32_t bc_system_get_clock(void);
 
 void bc_system_reset(void);
 
+bool bc_system_get_vbus_sense(void);
+
 #endif // _BC_SYSTEM_H
