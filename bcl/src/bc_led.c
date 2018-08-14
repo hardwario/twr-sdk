@@ -156,17 +156,34 @@ void bc_led_set_mode(bc_led_t *self, bc_led_mode_t mode)
         self->_selector = 0;
     }
 
+    self->_count = -1;
+
     bc_scheduler_plan_now(self->_task_id);
 }
 
 void bc_led_set_pattern(bc_led_t *self, uint32_t pattern)
 {
-    if (self->_pattern != pattern)
-    {
-        self->_pattern = pattern;
+    self->_pattern = pattern;
 
-        self->_selector = 0;
-    }
+    self->_selector = 0;
+
+    bc_scheduler_plan_now(self->_task_id);
+}
+
+void bc_led_set_count(bc_led_t *self, int count)
+{
+    self->_count = count;
+}
+
+void bc_led_blink(bc_led_t *self, int count)
+{
+    self->_pattern = 0xf0f0f0f0;
+
+    self->_selector = 0;
+
+    self->_count = count * 8;
+
+    bc_scheduler_plan_now(self->_task_id);
 }
 
 void bc_led_pulse(bc_led_t *self, bc_tick_t duration)
@@ -211,6 +228,16 @@ static void _bc_led_task(void *param)
     if (self->_selector == 0)
     {
         self->_selector = 0x80000000;
+    }
+
+    if (self->_count > -1)
+    {
+        if (--self->_count < 0)
+        {
+            self->_driver->off(self);
+
+            return;
+        }
     }
 
     if ((self->_pattern & self->_selector) != 0)
