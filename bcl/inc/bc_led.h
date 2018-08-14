@@ -84,6 +84,7 @@ struct bc_led_t
     bc_tick_t _slot_interval;
     uint32_t _pattern;
     uint32_t _selector;
+    int _count;
     bool _pulse_active;
     bc_scheduler_task_id_t _task_id;
 };
@@ -123,6 +124,18 @@ void bc_led_set_mode(bc_led_t *self, bc_led_mode_t mode);
 //! @param[in] pattern Blinking pattern (bits with log. 1 represent active slot)
 
 void bc_led_set_pattern(bc_led_t *self, uint32_t pattern);
+
+//! @brief Set count for blinking pattern executed
+//! @param[in] self Instance
+//! @param[in] count Count for blinking pattern executed, negative value means infinity
+
+void bc_led_set_count(bc_led_t *self, int count);
+
+//! @brief LED blink
+//! @param[in] self Instance
+//! @param[in] count Count of blink
+
+void bc_led_blink(bc_led_t *self, int count);
 
 //! @brief Turn on LED for the specified duration of time
 //! @param[in] self Instance
