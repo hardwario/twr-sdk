@@ -25,6 +25,21 @@ typedef struct
 
 void bc_ds28e17_init(bc_ds28e17_t *self, bc_gpio_channel_t channel, uint64_t device_number);
 
+//! @brief Deinitialize DS28E17
+//! @param[in] self Instance
+
+void bc_ds28e17_deinit(bc_ds28e17_t *self);
+
+//! @brief Get Device number
+//! @param[in] self Instance
+
+uint64_t bc_ds28e17_get_device_number(bc_ds28e17_t *self);
+
+//! @brief Enable Sleep Mode
+//! @param[in] self Instance
+
+bool bc_ds28e17_enable_sleep_mode(bc_ds28e17_t *self);
+
 //! @brief Set I2C speed
 //! @param[in] self Instance
 //! @param[in] speed I2C communication speed
