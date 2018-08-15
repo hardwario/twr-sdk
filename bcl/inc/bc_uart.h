@@ -143,6 +143,11 @@ typedef enum
 
 void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uart_setting_t setting);
 
+//! @brief Deinitialize UART channel
+//! @param[in] channel UART channel
+
+void bc_uart_deinit(bc_uart_channel_t channel);
+
 //! @brief Write data to UART channel (blocking call)
 //! @param[in] channel UART channel
 //! @param[in] buffer Pointer to source buffer
