@@ -454,12 +454,26 @@ bool bc_uart_async_read_cancel(bc_uart_channel_t channel)
 
     _bc_uart[channel].async_read_in_progress = false;
 
+    if (channel == BC_UART_UART2)
+    {
+        bc_dma_channel_stop(BC_DMA_CHANNEL_3);
+
+        bc_scheduler_unregister(_bc_uart_2_dma.read_task_id);
+
     bc_irq_disable();
+        // Disable receive DMA interrupt
+        _bc_uart[channel].usart->CR3 &= ~USART_CR3_DMAR_Msk;
+        bc_irq_enable();
+    }
+    else
+    {
+        bc_irq_disable();
 
     // Disable receive interrupt
-    _bc_uart[channel].usart->CR1 &= ~USART_CR1_RXNEIE;
+        _bc_uart[channel].usart->CR1 &= ~USART_CR1_RXNEIE_Msk;
 
     bc_irq_enable();
+    }
 
     if (_bc_uart[channel].usart != LPUART1)
     {
