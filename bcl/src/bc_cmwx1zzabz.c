@@ -29,6 +29,8 @@ static void _bc_cmwx1zzabz_task(void *param);
 
 static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self);
 
+static void _bc_cmwx1zzabz_save_config(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_index_t config_index);
+
 static void _uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void *param);
 
 void bc_cmwx1zzabz_init(bc_cmwx1zzabz_t *self,  bc_uart_channel_t uart_channel)
@@ -135,6 +137,12 @@ static void _bc_cmwx1zzabz_task(void *param)
             }
             case BC_CMWX1ZZABZ_STATE_IDLE:
             {
+                if (self->_save_config_mask != 0)
+                {
+                    self->_state = BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_SEND;
+                    continue;
+                }
+
                 if(self->_join_command)
                 {
                     self->_state = BC_CMWX1ZZABZ_STATE_JOIN_SEND;
@@ -678,7 +686,8 @@ uint8_t bc_cmwx1zzabz_get_port(bc_cmwx1zzabz_t *self)
 void bc_cmwx1zzabz_set_devaddr(bc_cmwx1zzabz_t *self, char *devaddr)
 {
     strncpy(self->_config.devaddr, devaddr, 8+1);
-    self->_save_config_mask |= 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR);
 }
 
 void bc_cmwx1zzabz_get_devaddr(bc_cmwx1zzabz_t *self, char *devaddr)
@@ -689,7 +698,8 @@ void bc_cmwx1zzabz_get_devaddr(bc_cmwx1zzabz_t *self, char *devaddr)
 void bc_cmwx1zzabz_set_deveui(bc_cmwx1zzabz_t *self, char *deveui)
 {
     strncpy(self->_config.deveui, deveui, 16+1);
-    self->_save_config_mask |= 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI);
 }
 
 void bc_cmwx1zzabz_get_deveui(bc_cmwx1zzabz_t *self, char *deveui)
@@ -700,7 +710,8 @@ void bc_cmwx1zzabz_get_deveui(bc_cmwx1zzabz_t *self, char *deveui)
 void bc_cmwx1zzabz_set_appeui(bc_cmwx1zzabz_t *self, char *appeui)
 {
     strncpy(self->_config.appeui, appeui, 16+1);
-    self->_save_config_mask |= 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPEUI;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_APPEUI);
 }
 
 void bc_cmwx1zzabz_get_appeui(bc_cmwx1zzabz_t *self, char *appeui)
@@ -711,7 +722,8 @@ void bc_cmwx1zzabz_get_appeui(bc_cmwx1zzabz_t *self, char *appeui)
 void bc_cmwx1zzabz_set_nwkskey(bc_cmwx1zzabz_t *self, char *nwkskey)
 {
     strncpy(self->_config.nwkskey, nwkskey, 32);
-    self->_save_config_mask |= 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY);
 }
 
 void bc_cmwx1zzabz_get_nwkskey(bc_cmwx1zzabz_t *self, char *nwkskey)
@@ -722,7 +734,8 @@ void bc_cmwx1zzabz_get_nwkskey(bc_cmwx1zzabz_t *self, char *nwkskey)
 void bc_cmwx1zzabz_set_appskey(bc_cmwx1zzabz_t *self, char *appskey)
 {
     strncpy(self->_config.appskey, appskey, 32);
-    self->_save_config_mask |= 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY);
 }
 
 void bc_cmwx1zzabz_get_appskey(bc_cmwx1zzabz_t *self, char *appskey)
@@ -733,7 +746,8 @@ void bc_cmwx1zzabz_get_appskey(bc_cmwx1zzabz_t *self, char *appskey)
 void bc_cmwx1zzabz_set_appkey(bc_cmwx1zzabz_t *self, char *appkey)
 {
     strncpy(self->_config.appkey, appkey, 32+1);
-    self->_save_config_mask |= 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPKEY;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_APPKEY);
 }
 
 void bc_cmwx1zzabz_get_appkey(bc_cmwx1zzabz_t *self, char *appkey)
@@ -744,7 +758,8 @@ void bc_cmwx1zzabz_get_appkey(bc_cmwx1zzabz_t *self, char *appkey)
 void bc_cmwx1zzabz_set_band(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_band_t band)
 {
     self->_config.band = band;
-    self->_save_config_mask |= 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_BAND;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_BAND);
 }
 
 bc_cmwx1zzabz_config_band_t bc_cmwx1zzabz_get_band(bc_cmwx1zzabz_t *self)
@@ -755,7 +770,8 @@ bc_cmwx1zzabz_config_band_t bc_cmwx1zzabz_get_band(bc_cmwx1zzabz_t *self)
 void bc_cmwx1zzabz_set_mode(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_mode_t mode)
 {
     self->_config.mode = mode;
-    self->_save_config_mask |= 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_MODE;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_MODE);
 }
 
 bc_cmwx1zzabz_config_mode_t bc_cmwx1zzabz_get_mode(bc_cmwx1zzabz_t *self)
@@ -766,7 +782,8 @@ bc_cmwx1zzabz_config_mode_t bc_cmwx1zzabz_get_mode(bc_cmwx1zzabz_t *self)
 void bc_cmwx1zzabz_set_class(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_class_t class)
 {
     self->_config.class = class;
-    self->_save_config_mask |= 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS);
 }
 
 bc_cmwx1zzabz_config_class_t bc_cmwx1zzabz_get_class(bc_cmwx1zzabz_t *self)
@@ -799,8 +816,10 @@ uint32_t bc_cmwx1zzabz_get_received_message_data(bc_cmwx1zzabz_t *self, uint8_t 
 void bc_cmwx1zzabz_set_rx2(bc_cmwx1zzabz_t *self, uint32_t frequency, uint8_t datarate)
 {
     self->_config.rx2_frequency = frequency;
+
     self->_config.rx2_datarate = datarate;
-    self->_save_config_mask |= 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_RX2;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_RX2);
 }
 
 void bc_cmwx1zzabz_get_rx2(bc_cmwx1zzabz_t *self, uint32_t *frequency, uint8_t *datarate)
@@ -850,4 +869,14 @@ static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)
     }
 
     return true;
+}
+
+static void _bc_cmwx1zzabz_save_config(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_index_t config_index)
+{
+    self->_save_config_mask |= 1 << config_index;
+
+    if (self->_state == BC_CMWX1ZZABZ_STATE_IDLE)
+    {
+        bc_scheduler_plan_now(self->_task_id);
+    }
 }
