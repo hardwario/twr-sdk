@@ -2,10 +2,17 @@
 #define _BC_LOG_H
 
 #include <bc_common.h>
+#include <bc_uart.h>
 
 //! @addtogroup bc_log bc_log
 //! @brief Logging facility (output on TXD2, format 115200 / 8N1)
 //! @{
+
+#ifndef BC_LOG_UART
+#define BC_LOG_UART       BC_UART_UART2
+#endif
+
+#define BC_LOG_DUMP_WIDTH 8
 
 //! @brief Log level
 
