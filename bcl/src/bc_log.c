@@ -1,5 +1,4 @@
 #include <bc_log.h>
-#include <bc_uart.h>
 #include <bc_error.h>
 
 typedef struct
@@ -33,8 +32,8 @@ void bc_log_init(bc_log_level_t level, bc_log_timestamp_t timestamp)
     _bc_log.level = level;
     _bc_log.timestamp = timestamp;
 
-    bc_uart_init(BC_UART_UART2, BC_UART_BAUDRATE_115200, BC_UART_SETTING_8N1);
-    bc_uart_write(BC_UART_UART2, "\r\n", 2);
+    bc_uart_init(BC_LOG_UART, BC_UART_BAUDRATE_115200, BC_UART_SETTING_8N1);
+    bc_uart_write(BC_LOG_UART, "\r\n", 2);
 
     _bc_log.initialized = true;
 }
@@ -137,7 +136,7 @@ void bc_log_dump(const void *buffer, size_t length, const char *format, ...)
             _bc_log.buffer[offset++] = '\r';
             _bc_log.buffer[offset++] = '\n';
 
-            bc_uart_write(BC_UART_UART2, _bc_log.buffer, offset);
+            bc_uart_write(BC_LOG_UART, _bc_log.buffer, offset);
         }
     }
 }
@@ -224,7 +223,7 @@ static void _bc_log_message(bc_log_level_t level, char id, const char *format, v
     _bc_log.buffer[offset++] = '\r';
     _bc_log.buffer[offset++] = '\n';
 
-    bc_uart_write(BC_UART_UART2, _bc_log.buffer, offset);
+    bc_uart_write(BC_LOG_UART, _bc_log.buffer, offset);
 }
 
 #endif
