@@ -11,13 +11,13 @@
 
 typedef enum
 {
-    //! @brief SPI communication speed is 125 KHz
+    //! @brief SPI communication speed is 125 kHz
     BC_SPI_SPEED_125_KHZ = 0,
     
-    //! @brief SPI communication speed is 250 KHz
+    //! @brief SPI communication speed is 250 kHz
     BC_SPI_SPEED_250_KHZ = 1,
     
-    //! @brief SPI communication speed is 500 KHz
+    //! @brief SPI communication speed is 500 kHz
     BC_SPI_SPEED_500_KHZ = 2,
 
     //! @brief SPI communication speed is 1 MHz
@@ -33,9 +33,7 @@ typedef enum
     BC_SPI_SPEED_8_MHZ = 6,
 
     //! @brief SPI communication speed is 16 MHz
-    BC_SPI_SPEED_16_MHZ = 7,
-
-
+    BC_SPI_SPEED_16_MHZ = 7
 
 } bc_spi_speed_t;
 
