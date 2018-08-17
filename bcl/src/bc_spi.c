@@ -8,14 +8,14 @@
 
 static const uint32_t _bc_spi_speed_table[8] =
 {
-    [BC_SPI_SPEED_125_KHZ] = 0x38,
-    [BC_SPI_SPEED_250_KHZ] = 0x30,
-    [BC_SPI_SPEED_500_KHZ] = 0x28,
-    [BC_SPI_SPEED_1_MHZ] = 0x20, // :16 (1MHz)
-    [BC_SPI_SPEED_2_MHZ] = 0x18, // :8  (2MHz)
-    [BC_SPI_SPEED_4_MHZ] = 0x10, // :4  (4MHz)
-    [BC_SPI_SPEED_8_MHZ] = 0x08, // :2  (8MHz)
-    [BC_SPI_SPEED_16_MHZ] = 0x00 // :1  (16MHz)
+    [BC_SPI_SPEED_125_KHZ] = 0x38,// :128 (500KHz)
+    [BC_SPI_SPEED_250_KHZ] = 0x30,// :64  (250KHz)
+    [BC_SPI_SPEED_500_KHZ] = 0x28,// :32  (500KHz)
+    [BC_SPI_SPEED_1_MHZ] = 0x20,  // :16  (1MHz)
+    [BC_SPI_SPEED_2_MHZ] = 0x18,  // :8   (2MHz)
+    [BC_SPI_SPEED_4_MHZ] = 0x10,  // :4   (4MHz)
+    [BC_SPI_SPEED_8_MHZ] = 0x08,  // :2   (8MHz)
+    [BC_SPI_SPEED_16_MHZ] = 0x00  // :1   (16MHz)
 };
 
 static const uint32_t _bc_spi_mode_table[4] =
