@@ -111,6 +111,13 @@ int bc_module_sensor_get_output(bc_module_sensor_channel_t channel);
 
 void bc_module_sensor_toggle_output(bc_module_sensor_channel_t channel);
 
+//! @brief Set VDD On / Off
+//! @param[in] on On
+//! @return true On success
+//! @return false On error
+
+bool bc_module_sensor_set_vdd(bool on);
+
 //! @}
 
 

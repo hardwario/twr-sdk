@@ -3,9 +3,9 @@
 
 #define _BC_MODULE_SENSOR_INITIALIZED_STATE 0xff
 #define _BC_MODULE_SENSOR_INITIALIZED_DIRECTION 0x00
-
-#define _BC_MODULE_SENSOR_CH_A_4K7   (1 << 5)
+#define _BC_MODULE_SENSOR_VDD        (1 << 3)
 #define _BC_MODULE_SENSOR_CH_A_56R   (1 << 4)
+#define _BC_MODULE_SENSOR_CH_A_4K7   (1 << 5)
 #define _BC_MODULE_SENSOR_CH_B_4K7   (1 << 6)
 #define _BC_MODULE_SENSOR_CH_B_56R   (1 << 7)
 
@@ -183,4 +183,28 @@ int bc_module_sensor_get_output(bc_module_sensor_channel_t channel)
 void bc_module_sensor_toggle_output(bc_module_sensor_channel_t channel)
 {
     bc_gpio_toggle_output(_bc_module_sensor_channel_gpio_lut[channel]);
+}
+
+bool bc_module_sensor_set_vdd(bool on)
+{
+    uint8_t port_actual;
+    uint8_t port_new;
+
+    port_actual = _bc_module_sensor.tca9534a._output_port;
+
+    if (on)
+    {
+        port_new = port_actual & ~_BC_MODULE_SENSOR_VDD;
+    }
+    else
+    {
+        port_new = port_actual | _BC_MODULE_SENSOR_VDD;
+    }
+
+    if (port_actual != port_new)
+    {
+        return bc_tca9534a_write_port(&_bc_module_sensor.tca9534a, port_new);
+    }
+
+    return true;
 }
