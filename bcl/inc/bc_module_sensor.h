@@ -58,6 +58,10 @@ typedef enum
 
 bool bc_module_sensor_init(void);
 
+//! @brief Deinitialize Sensor Module
+
+void bc_module_sensor_deinit(void);
+
 //! @brief Set pull of Sensor Module channel
 //! @param[in] channel Sensor Module channel
 //! @param[in] pull Sensor Module pull

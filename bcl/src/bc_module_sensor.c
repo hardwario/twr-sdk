@@ -62,6 +62,11 @@ bool bc_module_sensor_init(void)
     return true;
 }
 
+void bc_module_sensor_deinit(void)
+{
+    _bc_module_sensor.initialized = false;
+}
+
 bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sensor_pull_t pull)
 {
     uint8_t port_actual;
