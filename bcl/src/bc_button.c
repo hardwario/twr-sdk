@@ -1,5 +1,4 @@
 #include <bc_button.h>
-#include <bc_scheduler.h>
 
 #define _BC_BUTTON_SCAN_INTERVAL 20
 #define _BC_BUTTON_DEBOUNCE_TIME 50
@@ -38,7 +37,7 @@ void bc_button_init(bc_button_t *self, bc_gpio_channel_t gpio_channel, bc_gpio_p
     bc_gpio_set_pull(self->_channel.gpio, self->_gpio_pull);
     bc_gpio_set_mode(self->_channel.gpio, BC_GPIO_MODE_INPUT);
 
-    bc_scheduler_register(_bc_button_task, self, self->_scan_interval);
+    self->_task_id = bc_scheduler_register(_bc_button_task, self, BC_TICK_INFINITY);
 }
 
 void bc_button_init_virtual(bc_button_t *self, int channel, const bc_button_driver_t *driver, int idle_state)
@@ -61,13 +60,24 @@ void bc_button_init_virtual(bc_button_t *self, int channel, const bc_button_driv
         self->_driver->init(self);
     }
 
-    bc_scheduler_register(_bc_button_task, self, self->_scan_interval);
+    self->_task_id = bc_scheduler_register(_bc_button_task, self, BC_TICK_INFINITY);
 }
 
 void bc_button_set_event_handler(bc_button_t *self, void (*event_handler)(bc_button_t *, bc_button_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
     self->_event_param = event_param;
+
+    if (event_handler == NULL)
+    {
+        self->_tick_debounce = BC_TICK_INFINITY;
+
+        bc_scheduler_plan_absolute(self->_task_id, BC_TICK_INFINITY);
+    }
+    else
+    {
+        bc_scheduler_plan_now(self->_task_id);
+    }
 }
 
 void bc_button_set_scan_interval(bc_button_t *self, bc_tick_t scan_interval)

@@ -38,4 +38,6 @@ void bc_system_enter_standby_mode(void);
 
 void bc_system_reset(void);
 
+bool bc_system_get_vbus_sense(void);
+
 #endif // _BC_SYSTEM_H

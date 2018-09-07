@@ -244,6 +244,89 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
     _bc_uart[channel].initialized = true;
 }
 
+
+void bc_uart_deinit(bc_uart_channel_t channel)
+{
+    bc_uart_async_read_cancel(channel);
+
+    // Disable UART
+    _bc_uart[channel].usart->CR1 &= ~USART_CR1_UE_Msk;
+
+    switch(channel)
+    {
+        case BC_UART_UART0:
+        {
+            NVIC_DisableIRQ(USART4_5_IRQn);
+
+            // Disable clock for USART4
+            RCC->APB1ENR &= ~RCC_APB1ENR_USART4EN;
+
+            // Configure TXD0 and RXD0 pins as Analog
+            GPIOA->MODER |= (GPIO_MODER_MODE1_Msk | GPIO_MODER_MODE0_Msk);
+
+            // Clear alternate function for TXD0 and RXD0 pins
+            GPIOA->AFR[0] &= ~(GPIO_AFRL_AFRL1_Msk | GPIO_AFRL_AFRL0_Msk);
+
+            // Disable pull-up on RXD0 pin
+            GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD1_Msk;
+
+            break;
+        }
+        case BC_UART_UART1:
+        {
+            if (_bc_uart[channel].usart == LPUART1)
+            {
+                NVIC_DisableIRQ(LPUART1_IRQn);
+
+                // Disable clock for LPUART1
+                RCC->APB1ENR &= ~RCC_APB1ENR_LPUART1EN;
+            }
+            else
+            {
+                NVIC_DisableIRQ(USART2_IRQn);
+
+                // Disable clock for USART2
+                RCC->APB1ENR &= ~RCC_APB1ENR_USART2EN;
+            }
+
+            // Configure TXD1 and RXD1 pins as Analog
+            GPIOA->MODER |= (GPIO_MODER_MODE3_Msk | GPIO_MODER_MODE2_Msk);
+
+            // Clear alternate function for TXD1 and RXD1 pins
+            GPIOA->AFR[0] &= ~(GPIO_AFRL_AFRL3_Msk | GPIO_AFRL_AFRL2_Msk);
+
+            // Disable pull-up on RXD1 pin
+            GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD3_Msk;
+
+            break;
+        }
+        case BC_UART_UART2:
+        {
+            NVIC_DisableIRQ(USART1_IRQn);
+
+            // Disable clock for USART1
+            RCC->APB2ENR &= ~RCC_APB2ENR_USART1EN_Msk;
+
+            // Configure TXD2 and RXD2 pins as Analog
+            GPIOA->MODER |= (GPIO_MODER_MODE10_Msk | GPIO_MODER_MODE9_Msk);
+
+            // Clear alternate function for TXD2 and RXD2 pins
+            GPIOA->AFR[1] &= ~(GPIO_AFRH_AFRH2_Msk | GPIO_AFRH_AFRH1_Msk);
+
+            // Disable pull-up on RXD2 pin
+            GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD10_Msk;
+
+            break;
+        }
+        default:
+        {
+            return;
+        }
+    }
+
+    _bc_uart[channel].initialized = false;
+}
+
 size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t length)
 {
     if (!_bc_uart[channel].initialized || _bc_uart[channel].async_write_in_progress)
@@ -454,12 +537,26 @@ bool bc_uart_async_read_cancel(bc_uart_channel_t channel)
 
     _bc_uart[channel].async_read_in_progress = false;
 
-    bc_irq_disable();
+    if (channel == BC_UART_UART2)
+    {
+        bc_dma_channel_stop(BC_DMA_CHANNEL_3);
 
-    // Disable receive interrupt
-    _bc_uart[channel].usart->CR1 &= ~USART_CR1_RXNEIE;
+        bc_scheduler_unregister(_bc_uart_2_dma.read_task_id);
 
-    bc_irq_enable();
+        bc_irq_disable();
+        // Disable receive DMA interrupt
+        _bc_uart[channel].usart->CR3 &= ~USART_CR3_DMAR_Msk;
+        bc_irq_enable();
+    }
+    else
+    {
+        bc_irq_disable();
+
+        // Disable receive interrupt
+        _bc_uart[channel].usart->CR1 &= ~USART_CR1_RXNEIE_Msk;
+
+        bc_irq_enable();
+    }
 
     if (_bc_uart[channel].usart != LPUART1)
     {

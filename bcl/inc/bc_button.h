@@ -3,6 +3,7 @@
 
 #include <bc_gpio.h>
 #include <bc_tick.h>
+#include <bc_scheduler.h>
 
 //! @addtogroup bc_button bc_button
 //! @brief Driver for generic button
@@ -68,6 +69,7 @@ struct bc_button_t
     bc_tick_t _tick_hold_threshold;
     int _state;
     bool _hold_signalized;
+    bc_scheduler_task_id_t _task_id;
 };
 
 //! @endcond
