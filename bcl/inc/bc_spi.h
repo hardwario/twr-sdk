@@ -75,6 +75,13 @@ void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode);
 
 void bc_spi_set_speed(bc_spi_speed_t speed);
 
+//! @brief Set SPI timing
+//! @param[in] cs_delay in us
+//! @param[in] delay in us
+//! @param[in] cs_quit in us
+
+void bc_spi_set_timing(uint16_t cs_delay, uint16_t delay, uint16_t cs_quit);
+
 //! @brief Get SPI communication speed
 //! @return SPI communication speed
 
