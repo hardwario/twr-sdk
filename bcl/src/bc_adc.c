@@ -3,6 +3,8 @@
 #include <bc_irq.h>
 #include <stm32l083xx.h>
 
+#include <bc_system.h>
+
 #define VREFINT_CAL_ADDR 0x1ff80078
 
 #define BC_ADC_CHANNEL_INTERNAL_REFERENCE 6
@@ -19,10 +21,11 @@ typedef enum
 
 typedef struct
 {
-    bc_adc_format_t format;
     void (*event_handler)(bc_adc_channel_t, bc_adc_event_t, void *);
     void *event_param;
     bool pending;
+    bc_adc_resolution_t resolution;
+    bc_adc_oversampling_t oversampling;
     uint32_t chselr;
 
 } bc_adc_channel_config_t;
@@ -49,7 +52,7 @@ _bc_adc =
         [BC_ADC_CHANNEL_A3].chselr = ADC_CHSELR_CHSEL3,
         [BC_ADC_CHANNEL_A4].chselr = ADC_CHSELR_CHSEL4,
         [BC_ADC_CHANNEL_A5].chselr = ADC_CHSELR_CHSEL5,
-        [BC_ADC_CHANNEL_INTERNAL_REFERENCE] = { BC_ADC_FORMAT_16_BIT, NULL, NULL, false, ADC_CHSELR_CHSEL17 }
+        [BC_ADC_CHANNEL_INTERNAL_REFERENCE] = { NULL, NULL, false, BC_ADC_RESOLUTION_12_BIT, BC_ADC_OVERSAMPLING_256, ADC_CHSELR_CHSEL17 }
     }
 };
 
@@ -57,7 +60,7 @@ static void _bc_adc_task(void *param);
 
 static inline bool _bc_adc_get_pending(bc_adc_channel_t *next ,bc_adc_channel_t start);
 
-void bc_adc_init(bc_adc_channel_t channel, bc_adc_format_t format)
+void bc_adc_init()
 {
     if (_bc_adc.initialized != true)
     {
@@ -68,10 +71,10 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_format_t format)
         RCC->APB2ENR;
 
         // Set auto-off mode, left align
-        ADC1->CFGR1 |= ADC_CFGR1_AUTOFF | ADC_CFGR1_ALIGN;
+        ADC1->CFGR1 |= ADC_CFGR1_AUTOFF;
 
-        // Set PCLK/2 as a clock source
-        ADC1->CFGR2 = ADC_CFGR2_CKMODE_0;
+        // Set PCLK as a clock source
+        ADC1->CFGR2 = ADC_CFGR2_CKMODE_0 | ADC_CFGR2_CKMODE_1;
 
         // Sampling time selection (12.5 cycles)
         ADC1->SMPR |= ADC_SMPR_SMP_1 | ADC_SMPR_SMP_0;
@@ -80,26 +83,88 @@ void bc_adc_init(bc_adc_channel_t channel, bc_adc_format_t format)
         ADC1->CR |= ADC_CR_ADVREGEN;
 
         // Load Vrefint constant from ROM
-        _bc_adc.vrefint = (*(uint16_t *) VREFINT_CAL_ADDR) << 4;
+        _bc_adc.vrefint = (*(uint16_t *) VREFINT_CAL_ADDR);// << 4;
 
         NVIC_EnableIRQ(ADC1_COMP_IRQn);
 
         _bc_adc.initialized = true;
 
         _bc_adc.task_id = bc_scheduler_register(_bc_adc_task, NULL, BC_TICK_INFINITY);
+
+        bc_adc_calibration();
+    }
+}
+
+void bc_adc_oversampling_set(bc_adc_channel_t channel, bc_adc_oversampling_t oversampling)
+{
+    _bc_adc.channel_table[channel].oversampling = oversampling;
+}
+
+void bc_adc_resolution_set(bc_adc_channel_t channel, bc_adc_resolution_t resolution)
+{
+    _bc_adc.channel_table[channel].resolution = resolution;
+}
+
+void _bc_adc_configure_resolution(bc_adc_resolution_t resolution)
+{
+    ADC1->CFGR1 &= ~ADC_CFGR1_RES_Msk;
+    ADC1->CFGR1 |= resolution & ADC_CFGR1_RES_Msk;
+}
+
+void _bc_adc_configure_oversampling(bc_adc_oversampling_t oversampling)
+{
+    // Clear oversampling enable, oversampling register and oversampling shift register
+    ADC1->CFGR2 &= ~(ADC_CFGR2_OVSE_Msk | ADC_CFGR2_OVSR_Msk | ADC_CFGR2_OVSS_Msk);
+
+    static const uint16_t oversampling_register_lut[9] =
+    {
+        0, // no oversampling
+        ADC_CFGR2_OVSE                                                              | ADC_CFGR2_OVSS_0, // 2x
+        ADC_CFGR2_OVSE | ADC_CFGR2_OVSR_0                                           | ADC_CFGR2_OVSS_1, // 4x
+        ADC_CFGR2_OVSE | ADC_CFGR2_OVSR_1                                           | ADC_CFGR2_OVSS_1 | ADC_CFGR2_OVSS_0, // 8x
+        ADC_CFGR2_OVSE | ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0                        | ADC_CFGR2_OVSS_2, // 16x
+        ADC_CFGR2_OVSE | ADC_CFGR2_OVSR_2                                           | ADC_CFGR2_OVSS_2 | ADC_CFGR2_OVSS_0, // 32x
+        ADC_CFGR2_OVSE | ADC_CFGR2_OVSR_2 | ADC_CFGR2_OVSR_0                        | ADC_CFGR2_OVSS_2 | ADC_CFGR2_OVSS_1, // 64x
+        ADC_CFGR2_OVSE | ADC_CFGR2_OVSR_2 | ADC_CFGR2_OVSR_1                        | ADC_CFGR2_OVSS_2 | ADC_CFGR2_OVSS_1 | ADC_CFGR2_OVSS_0, // 128x
+        ADC_CFGR2_OVSE | ADC_CFGR2_OVSR_2 | ADC_CFGR2_OVSR_1 | ADC_CFGR2_OVSR_0     | ADC_CFGR2_OVSS_3, // 256x
+    };
+
+    ADC1->CFGR2 |= oversampling_register_lut[oversampling];
+}
+
+uint16_t _bc_adc_get_measured_value(bc_adc_channel_t channel)
+{
+    uint16_t value = ADC1->DR;
+
+    switch (_bc_adc.channel_table[channel].resolution)
+    {
+        case BC_ADC_RESOLUTION_6_BIT:
+        {
+            value <<= 10;
+            break;
+        }
+        case BC_ADC_RESOLUTION_8_BIT:
+        {
+            value <<= 8;
+            break;
+        }
+        case BC_ADC_RESOLUTION_10_BIT:
+        {
+            value <<= 6;
+            break;
+        }
+        case BC_ADC_RESOLUTION_12_BIT:
+        {
+            value <<= 4;
+            break;
+        }
+        default:
+        {
+            break;
+        }
     }
 
-    bc_adc_set_format(channel, format);
-}
-
-void bc_adc_set_format(bc_adc_channel_t channel, bc_adc_format_t format)
-{
-    _bc_adc.channel_table[channel].format = format;
-}
-
-bc_adc_format_t bc_adc_get_format(bc_adc_channel_t channel)
-{
-    return _bc_adc.channel_table[channel].format;
+    return value;
 }
 
 bool bc_adc_is_ready(bc_adc_channel_t channel)
@@ -109,7 +174,7 @@ bool bc_adc_is_ready(bc_adc_channel_t channel)
     return _bc_adc.channel_in_progress == BC_ADC_CHANNEL_NONE;
 }
 
-bool bc_adc_read(bc_adc_channel_t channel, void *result)
+bool bc_adc_get_value(bc_adc_channel_t channel, uint16_t *result)
 {
     // If ongoing conversion...
     if (_bc_adc.channel_in_progress != BC_ADC_CHANNEL_NONE)
@@ -126,6 +191,12 @@ bool bc_adc_read(bc_adc_channel_t channel, void *result)
     // Clear EOS flag (it is cleared by software writing 1 to it)
     ADC1->ISR = ADC_ISR_EOS;
 
+    // Clear ADRDY (it is cleared by software writing 1 to it)
+    ADC1->ISR |= ADC_ISR_ADRDY;
+
+    _bc_adc_configure_oversampling(_bc_adc.channel_table[channel].oversampling);
+    _bc_adc_configure_resolution(_bc_adc.channel_table[channel].resolution);
+
     // Start the AD measurement
     ADC1->CR |= ADC_CR_ADSTART;
 
@@ -137,7 +208,7 @@ bool bc_adc_read(bc_adc_channel_t channel, void *result)
 
     if (result != NULL)
     {
-        bc_adc_get_result(channel, result);
+        bc_adc_get_value(channel, result);
     }
 
     return true;
@@ -159,7 +230,7 @@ bool bc_adc_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc
     return true;
 }
 
-bool bc_adc_async_read(bc_adc_channel_t channel)
+bool bc_adc_async_measure(bc_adc_channel_t channel)
 {
     // If another conversion is ongoing...
     if (_bc_adc.channel_in_progress != BC_ADC_CHANNEL_NONE)
@@ -172,63 +243,47 @@ bool bc_adc_async_read(bc_adc_channel_t channel)
     _bc_adc.channel_in_progress = channel;
     _bc_adc.channel_table[channel].pending = false;
 
-    // Update internal state
-    _bc_adc.state = BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_BEGIN;
+    // Skip cal and measure VREF + channel
+    //------------------------------------
+    _bc_adc.state = BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_END;
 
-    // Disable interrupts
-    bc_irq_disable();
+    // Enable internal reference to ADC peripheral
+    ADC->CCR |= ADC_CCR_VREFEN;
 
-    // Clear end of calibration flag
+    _bc_adc_configure_oversampling(_bc_adc.channel_table[BC_ADC_CHANNEL_INTERNAL_REFERENCE].oversampling);
+    _bc_adc_configure_resolution(_bc_adc.channel_table[BC_ADC_CHANNEL_INTERNAL_REFERENCE].resolution);
+
+    // Set ADC channel
+    ADC1->CHSELR = _bc_adc.channel_table[BC_ADC_CHANNEL_INTERNAL_REFERENCE].chselr;
+
+    // Clear end of calibration interrupt
     ADC1->ISR = ADC_ISR_EOCAL;
 
-    // Enable end of calibration interrupt
-    ADC1->IER = ADC_IER_EOCALIE;
+    // Enable end of conversion interrupt
+    ADC1->IER = ADC_IER_EOCIE;
 
-    // Begin offset calibration
-    ADC1->CR |= ADC_CR_ADCAL;
+    // Begin internal reference reading
+    ADC1->CR |= ADC_CR_ADSTART;
 
-    // Enable interrupts
-    bc_irq_enable();
+    bc_scheduler_disable_sleep();
 
     return true;
 }
 
-bool bc_adc_get_result(bc_adc_channel_t channel, void *result)
+bool bc_adc_async_get_value(bc_adc_channel_t channel, uint16_t *result)
 {
-    uint32_t data = ADC1->DR;
+    uint16_t data = _bc_adc_get_measured_value(channel);
 
-    switch (_bc_adc.channel_table[channel].format)
-    {
-        case BC_ADC_FORMAT_8_BIT:
-        {
-            *(uint8_t *) result = data >> 8;
-            break;
-        }
-        case BC_ADC_FORMAT_16_BIT:
-        {
-            *(uint16_t *) result = data;
-            break;
-        }
-        case BC_ADC_FORMAT_24_BIT:
-        {
-            memcpy((uint8_t *) result + 1, &data, 3);
-            break;
-        }
-        case BC_ADC_FORMAT_32_BIT:
-        {
-            *(uint32_t *) result = data << 16;
-            break;
-        }
-        case BC_ADC_FORMAT_FLOAT:
-        {
-            *(float *) result = (data * _bc_adc.real_vdda_voltage) / 65536.f;
-            break;
-        }
-        default:
-        {
-            return false;
-        }
-    }
+    *result = data;
+    return true;
+}
+
+bool bc_adc_async_get_voltage(bc_adc_channel_t channel, float *result)
+{
+    (void) channel;
+    uint32_t data = _bc_adc_get_measured_value(channel);
+
+    *(float *) result = (data * _bc_adc.real_vdda_voltage) / 65536.f;
 
     return true;
 }
@@ -249,54 +304,33 @@ bool bc_adc_get_vdda_voltage(float *vdda_voltage)
 
 void ADC1_COMP_IRQHandler(void)
 {
-    // TODO ADC offset calibrated !!
-
-    // Read internal reference channel
-    if (_bc_adc.state == BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_BEGIN)
-    {
-        // Enable internal reference to ADC peripheral
-        ADC->CCR |= ADC_CCR_VREFEN;
-
-        // Set ADC channel
-        ADC1->CHSELR = _bc_adc.channel_table[BC_ADC_CHANNEL_INTERNAL_REFERENCE].chselr;
-
-        // Update internal state
-        _bc_adc.state = BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_END;
-
-        // Clear end of sequence interrupt
-        ADC1->ISR = ADC_ISR_EOS;
-
-        // Enable end of sequence interrupt
-        ADC1->IER = ADC_IER_EOSIE;
-
-        // Begin internal reference reading
-        ADC1->CR |= ADC_CR_ADSTART;
-    }
-
     // Get real VDDA and begin analog channel measurement
-    else if (_bc_adc.state == BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_END)
+    if (_bc_adc.state == BC_ADC_STATE_CALIBRATION_BY_INTERNAL_REFERENCE_END)
     {
-        // Disable internal reference
-        ADC->CCR &= ~ADC_CCR_VREFEN;
-
         // Compute actual VDDA
         _bc_adc.real_vdda_voltage = 3.f * ((float) _bc_adc.vrefint / (float) ADC1->DR);
+
+        _bc_adc_configure_oversampling(_bc_adc.channel_table[_bc_adc.channel_in_progress].oversampling);
+        _bc_adc_configure_resolution(_bc_adc.channel_table[_bc_adc.channel_in_progress].resolution);
 
         // Set ADC channel
         ADC1->CHSELR = _bc_adc.channel_table[_bc_adc.channel_in_progress].chselr;
 
         _bc_adc.state = BC_ADC_STATE_MEASURE_INPUT;
 
-        // Clear end of sequence interrupt
-        ADC1->ISR = ADC_ISR_EOS;
+        // Clear end of conversion interrupt
+        ADC1->ISR = ADC_ISR_EOC;
 
-        // Begin internal reference measurement
+        // Begin adc input channel measurement
         ADC1->CR |= ADC_CR_ADSTART;
     }
 
     // Measurement is done, plan calling callback
     else if (_bc_adc.state == BC_ADC_STATE_MEASURE_INPUT)
     {
+        // Disable internal reference
+        ADC->CCR &= ~ADC_CCR_VREFEN;
+
         // Plan ADC task
         bc_scheduler_plan_now(_bc_adc.task_id);
 
@@ -305,12 +339,19 @@ void ADC1_COMP_IRQHandler(void)
 
         // Disable all ADC interrupts
         ADC1->IER = 0;
+
+        bc_scheduler_enable_sleep();
     }
 }
 
 bool bc_adc_calibration(void)
 {
     if (_bc_adc.channel_in_progress != BC_ADC_CHANNEL_NONE)
+    {
+        return false;
+    }
+
+    if (!(ADC1->CR & ADC_CR_ADEN))
     {
         return false;
     }
@@ -368,7 +409,7 @@ static void _bc_adc_task(void *param)
     // Get pending
     if (_bc_adc_get_pending(&next, pending_result_channel) == true)
     {
-        bc_adc_async_read(next);
+        bc_adc_async_measure(next);
     }
 
     // Enable interrupts
