@@ -26,6 +26,7 @@ typedef struct
     bool pending;
     bc_adc_resolution_t resolution;
     bc_adc_oversampling_t oversampling;
+    uint16_t value;
     uint32_t chselr;
 
 } bc_adc_channel_config_t;
@@ -52,7 +53,7 @@ _bc_adc =
         [BC_ADC_CHANNEL_A3].chselr = ADC_CHSELR_CHSEL3,
         [BC_ADC_CHANNEL_A4].chselr = ADC_CHSELR_CHSEL4,
         [BC_ADC_CHANNEL_A5].chselr = ADC_CHSELR_CHSEL5,
-        [BC_ADC_CHANNEL_INTERNAL_REFERENCE] = { NULL, NULL, false, BC_ADC_RESOLUTION_12_BIT, BC_ADC_OVERSAMPLING_256, ADC_CHSELR_CHSEL17 }
+        [BC_ADC_CHANNEL_INTERNAL_REFERENCE] = { NULL, NULL, false, BC_ADC_RESOLUTION_12_BIT, BC_ADC_OVERSAMPLING_256, 0, ADC_CHSELR_CHSEL17 }
     }
 };
 
@@ -105,13 +106,13 @@ void bc_adc_resolution_set(bc_adc_channel_t channel, bc_adc_resolution_t resolut
     _bc_adc.channel_table[channel].resolution = resolution;
 }
 
-void _bc_adc_configure_resolution(bc_adc_resolution_t resolution)
+static void _bc_adc_configure_resolution(bc_adc_resolution_t resolution)
 {
     ADC1->CFGR1 &= ~ADC_CFGR1_RES_Msk;
     ADC1->CFGR1 |= resolution & ADC_CFGR1_RES_Msk;
 }
 
-void _bc_adc_configure_oversampling(bc_adc_oversampling_t oversampling)
+static void _bc_adc_configure_oversampling(bc_adc_oversampling_t oversampling)
 {
     // Clear oversampling enable, oversampling register and oversampling shift register
     ADC1->CFGR2 &= ~(ADC_CFGR2_OVSE_Msk | ADC_CFGR2_OVSR_Msk | ADC_CFGR2_OVSS_Msk);
@@ -132,7 +133,7 @@ void _bc_adc_configure_oversampling(bc_adc_oversampling_t oversampling)
     ADC1->CFGR2 |= oversampling_register_lut[oversampling];
 }
 
-uint16_t _bc_adc_get_measured_value(bc_adc_channel_t channel)
+static uint16_t _bc_adc_get_measured_value(bc_adc_channel_t channel)
 {
     uint16_t value = ADC1->DR;
 
@@ -167,10 +168,8 @@ uint16_t _bc_adc_get_measured_value(bc_adc_channel_t channel)
     return value;
 }
 
-bool bc_adc_is_ready(bc_adc_channel_t channel)
+bool bc_adc_is_ready()
 {
-    (void) channel;
-
     return _bc_adc.channel_in_progress == BC_ADC_CHANNEL_NONE;
 }
 
@@ -208,7 +207,7 @@ bool bc_adc_get_value(bc_adc_channel_t channel, uint16_t *result)
 
     if (result != NULL)
     {
-        bc_adc_get_value(channel, result);
+        *result = _bc_adc_get_measured_value(channel);
     }
 
     return true;
@@ -272,19 +271,13 @@ bool bc_adc_async_measure(bc_adc_channel_t channel)
 
 bool bc_adc_async_get_value(bc_adc_channel_t channel, uint16_t *result)
 {
-    uint16_t data = _bc_adc_get_measured_value(channel);
-
-    *result = data;
+    *result = _bc_adc.channel_table[channel].value;
     return true;
 }
 
 bool bc_adc_async_get_voltage(bc_adc_channel_t channel, float *result)
 {
-    (void) channel;
-    uint32_t data = _bc_adc_get_measured_value(channel);
-
-    *(float *) result = (data * _bc_adc.real_vdda_voltage) / 65536.f;
-
+    *result = (_bc_adc.channel_table[channel].value * _bc_adc.real_vdda_voltage) / 65536.f;
     return true;
 }
 
@@ -330,6 +323,8 @@ void ADC1_COMP_IRQHandler(void)
     {
         // Disable internal reference
         ADC->CCR &= ~ADC_CCR_VREFEN;
+
+        _bc_adc.channel_table[_bc_adc.channel_in_progress].value = _bc_adc_get_measured_value(_bc_adc.channel_in_progress);
 
         // Plan ADC task
         bc_scheduler_plan_now(_bc_adc.task_id);

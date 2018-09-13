@@ -92,18 +92,17 @@ typedef enum
 
 } bc_adc_event_t;
 
-//! @brief Initialize ADC channel
+//! @brief Initialize ADC converter
 
 void bc_adc_init();
 
 //! @brief Check if ADC  is ready for reading
-//! @param[in] self Instance
 //! @return true If ready
 //! @return false If not ready
 
-bool bc_adc_is_ready(bc_adc_channel_t channel);
+bool bc_adc_is_ready();
 
-//! @brief Reads the ADC channel voltage
+//! @brief Reads the ADC channel value
 //! @param[in] channel ADC channel
 //! @param[out] result Pointer to destination where ADC conversion will be stored
 //! @return true On success
@@ -127,13 +126,20 @@ bool bc_adc_set_event_handler(bc_adc_channel_t channel, void (*event_handler)(bc
 
 bool bc_adc_async_measure(bc_adc_channel_t channel);
 
-//! @brief Get measurement result
+//! @brief Get asynchronous measurement result
 //! @param[in] channel ADC channel
 //! @param[out] result Pointer to variable where result will be stored
 //! @return true On success
 //! @return false On failure
 
 bool bc_adc_async_get_value(bc_adc_channel_t channel, uint16_t *result);
+
+//! @brief Get asynchronous measurement result in volts
+//! @param[in] channel ADC channel
+//! @param[out] result Pointer to variable where result in volts will be stored
+//! @return true On success
+//! @return false On failure
+
 bool bc_adc_async_get_voltage(bc_adc_channel_t channel, float *result);
 
 //! @brief Get voltage on VDDA pin
@@ -149,10 +155,17 @@ bool bc_adc_get_vdda_voltage(float *vdda_voltage);
 
 bool bc_adc_calibration(void);
 
+//! @brief Set ADC resolution for specific channel
+//! @param[in] channel ADC channel
+//! @param[in] resolution Resolution can be 6, 8, 10 or 12 bit
+
 void bc_adc_resolution_set(bc_adc_channel_t channel, bc_adc_resolution_t resolution);
+
+//! @brief Set ADC oversampling for specific channel
+//! @param[in] channel ADC channel
+//! @param[in] oversampling Oversampling can be 2, 4, 8, 16, 32, 64, 128 or 256
+
 void bc_adc_oversampling_set(bc_adc_channel_t channel, bc_adc_oversampling_t oversampling);
-
-
 
 //! @}
 
