@@ -118,13 +118,10 @@ StatusBytes SdkEvalSpiReadFifo(uint8_t cNbBytes, uint8_t* pcBuffer);
 bc_spirit_status_t bc_spirit1_command(uint8_t command);
 bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t length);
 bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length);
-void bc_spirit1_hal_init(void);
-void bc_spirit1_hal_shutdown_low(void);
-void bc_spirit1_hal_shutdown_high(void);
 
-#define SpiritEnterShutdown                                            bc_spirit1_hal_shutdown_high
-#define SpiritExitShutdown                                             bc_spirit1_hal_shutdown_low
-#define SpiritSpiInit                                                  bc_spirit1_hal_init
+#define SpiritEnterShutdown                                            NULL
+#define SpiritExitShutdown                                             NULL
+#define SpiritSpiInit                                                  NULL
 #define SpiritSpiWriteRegisters(cRegAddress, cNbBytes, pcBuffer)       bc_spirit1_write(cRegAddress, pcBuffer, cNbBytes)
 #define SpiritSpiReadRegisters(cRegAddress, cNbBytes, pcBuffer)        bc_spirit1_read(cRegAddress, pcBuffer, cNbBytes)
 #define SpiritSpiCommandStrobes(cCommandCode)                          bc_spirit1_command(cCommandCode)

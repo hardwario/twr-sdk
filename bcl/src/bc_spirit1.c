@@ -83,6 +83,8 @@ static void _bc_spirit1_enter_state_rx(void);
 static void _bc_spirit1_check_state_rx(void);
 static void _bc_spirit1_enter_state_sleep(void);
 
+static void _bc_spirit1_shutdown_low(void);
+static void _bc_spirit1_shutdown_high(void);
 static void _bc_spirit1_cs(int state);
 static uint8_t _bc_spirit1_transfer(uint8_t value);
 static void _bc_spirit1_gpio_init(void);
@@ -106,12 +108,20 @@ bool bc_spirit1_init(void)
 
     SpiritRadioSetXtalFrequency(XTAL_FREQUENCY);
 
-    SpiritSpiInit();
+    // Initialize timer
+    bc_timer_init();
+
+    // Initialize GPIO
+    _bc_spirit1_gpio_init();
+
+    // Initialize SPI
+    _bc_spirit1_spi_init();
+
+    // Activate shutdown (forces delay)
+    _bc_spirit1_shutdown_high();
 
     /* Spirit ON */
-    SpiritEnterShutdown();
-
-    SpiritExitShutdown();
+    _bc_spirit1_shutdown_low();
 
     SpiritManagementWaExtraCurrent();
 
@@ -122,7 +132,7 @@ bool bc_spirit1_init(void)
     if (SpiritRadioInit(&xRadioInit) != 0)
     {
 
-        bc_spirit1_hal_shutdown_high();
+        _bc_spirit1_shutdown_high();
 
         _bc_spirit1_spi_deinit();
 
@@ -152,7 +162,7 @@ bool bc_spirit1_deinit(void)
         return false;
     }
 
-    bc_spirit1_hal_shutdown_high();
+    _bc_spirit1_shutdown_high();
 
     _bc_spirit1_spi_deinit();
 
@@ -550,22 +560,7 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
     return *((bc_spirit_status_t *) &status);
 }
 
-void bc_spirit1_hal_init(void)
-{
-    // Initialize timer
-    bc_timer_init();
-
-    // Initialize GPIO
-    _bc_spirit1_gpio_init();
-
-    // Initialize SPI
-    _bc_spirit1_spi_init();
-
-    // Activate shutdown (forces delay)
-    bc_spirit1_hal_shutdown_high();
-}
-
-void bc_spirit1_hal_shutdown_low(void)
+static void _bc_spirit1_shutdown_low(void)
 {
     // Output log. 0 on SDN pin
     GPIOB->BSRR = GPIO_BSRR_BR_7;
@@ -582,11 +577,8 @@ void bc_spirit1_hal_shutdown_low(void)
     bc_timer_stop();
 }
 
-void bc_spirit1_hal_shutdown_high(void)
+static void _bc_spirit1_shutdown_high(void)
 {
-    // Enable PLL
-    bc_system_pll_enable();
-
     // Output log. 0 on CS pin
     GPIOA->BSRR = GPIO_BSRR_BR_15;
 
@@ -602,11 +594,7 @@ void bc_spirit1_hal_shutdown_high(void)
     bc_timer_delay(50000);
 
     bc_timer_stop();
-
-    // Disable PLL
-    bc_system_pll_disable();
 }
-
 
 static void _bc_spirit1_cs(int state)
 {
