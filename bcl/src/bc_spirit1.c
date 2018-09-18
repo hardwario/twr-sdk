@@ -8,6 +8,26 @@
 #include "SDK_Configuration_Common.h"
 #include "MCU_Interface.h"
 
+#define _BC_SPIRIT1_XTAL_FREQUENCY   50000000
+#define _BC_SPIRIT1_XTAL_OFFSET_PPM  0
+#ifdef USE_HIGH_BAND
+  #if BAND == 915
+    #define _BC_SPIRIT1_BASE_FREQUENCY              915.0e6
+  #else
+    #define _BC_SPIRIT1_BASE_FREQUENCY              868.0e6
+  #endif
+#endif
+#define _BC_SPIRIT1_BANDWIDTH                   100e3
+#define _BC_SPIRIT1_CHANNEL_SPACE               20e3
+#define _BC_SPIRIT1_CHANNEL_NUMBER              0
+#define _BC_SPIRIT1_DATARATE                    19200
+#define _BC_SPIRIT1_MODULATION_SELECT           GFSK_BT1
+#define _BC_SPIRIT1_FREQ_DEVIATION              20e3
+
+
+#define FBASE_DIVIDER 262144
+#define ROUND(A)                                  (((A-(uint32_t)A)> 0.5)? (uint32_t)A+1:(uint32_t)A)
+
 typedef enum
 {
     BC_SPIRIT1_STATE_INIT = 0,
@@ -16,6 +36,27 @@ typedef enum
     BC_SPIRIT1_STATE_RX = 3
 
 } bc_spirit1_state_t;
+
+typedef struct
+{
+  uint8_t XO_ON:1;      /*!< This one bit field notifies if XO is operating
+                     (XO_ON is 1) or not (XO_On is 0) */
+  SpiritState MC_STATE: 7;  /*!< This 7 bits field indicates the state of the
+                     Main Controller of SPIRIT. The possible states
+                     and their corresponding values are defined in
+                     @ref SpiritState */
+  uint8_t ERROR_LOCK: 1;       /*!< This one bit field notifies if there is an
+                     error on RCO calibration (ERROR_LOCK is 1) or
+                     not (ERROR_LOCK is 0) */
+  uint8_t RX_FIFO_EMPTY: 1;    /*!< This one bit field notifies if RX FIFO is empty
+                     (RX_FIFO_EMPTY is 1) or not (RX_FIFO_EMPTY is 0) */
+  uint8_t TX_FIFO_FULL: 1;  /*!< This one bit field notifies if TX FIFO is full
+                     (TX_FIFO_FULL is 1) or not (TX_FIFO_FULL is 0) */
+  uint8_t ANT_SELECT: 1;       /*!< This one bit field notifies the currently selected
+                     antenna */
+  uint8_t : 4;          /*!< This 4 bits field are reserved and equal to 5 */
+
+} bc_spirit1_status_t;
 
 typedef struct
 {
@@ -31,23 +72,11 @@ typedef struct
     size_t rx_length;
     bc_tick_t rx_timeout;
     bc_tick_t rx_tick_timeout;
+    bc_spirit1_status_t status;
 
 } bc_spirit1_t;
 
 static bc_spirit1_t _bc_spirit1;
-
-#define XTAL_FREQUENCY 50000000
-
-SRadioInit xRadioInit = {
-  XTAL_OFFSET_PPM,
-  BASE_FREQUENCY,
-  CHANNEL_SPACE,
-  CHANNEL_NUMBER,
-  MODULATION_SELECT,
-  DATARATE,
-  FREQ_DEVIATION,
-  BANDWIDTH
-};
 
 PktBasicInit xBasicInit={
   PREAMBLE_LENGTH,
@@ -79,6 +108,7 @@ static void _bc_spirit1_enter_state_sleep(void);
 
 static void _bc_spirit1_write_register(uint8_t address, uint8_t value);
 static uint8_t _bc_spirit1_read_register(uint8_t address);
+static bool _bc_spirit1_refresh_status(void);
 static void _bc_spirit1_shutdown_low(void);
 static void _bc_spirit1_shutdown_high(void);
 static void _bc_spirit1_cs(int state);
@@ -102,7 +132,7 @@ bool bc_spirit1_init(void)
 
     memset(&_bc_spirit1, 0, sizeof(_bc_spirit1));
 
-    SpiritRadioSetXtalFrequency(XTAL_FREQUENCY);
+    SpiritRadioSetXtalFrequency(_BC_SPIRIT1_XTAL_FREQUENCY);
 
     // Initialize timer
     bc_timer_init();
@@ -122,8 +152,122 @@ bool bc_spirit1_init(void)
     // Spirit GPIO_0 IRQ config
     _bc_spirit1_write_register(GPIO0_CONF_BASE, CONF_GPIO_MODE_DIG_OUTL | CONF_GPIO_OUT_nIRQ);
 
-    /* Spirit Radio config */
-    if (SpiritRadioInit(&xRadioInit) != 0)
+    // Workaround for Vtune
+    _bc_spirit1_write_register(SYNTH_CONFIG0_BASE, VCOTH_BASE);
+
+    // Calculates the offset respect to RF frequency and according to xtal_ppm parameter: (xtal_ppm*FBase)/10^6
+    int32_t FOffsetTmp = (int32_t)(((float)_BC_SPIRIT1_XTAL_OFFSET_PPM * _BC_SPIRIT1_BASE_FREQUENCY) / 1000000);
+
+    bc_spirit1_command(COMMAND_STANDBY);
+
+    uint8_t count = 10;
+
+    do
+    {
+        // Delay for state transition
+        for(volatile uint8_t i=0; i!=0xFF; i++);
+
+        _bc_spirit1_refresh_status();
+
+        if (count-- == 0)
+        {
+            return false;
+        }
+
+    }
+    while (_bc_spirit1.status.MC_STATE != MC_STATE_STANDBY);
+
+    uint8_t value;
+
+    // Enables the synthesizer reference divider.
+    value = _bc_spirit1_read_register(XO_RCO_TEST_BASE);
+    _bc_spirit1_write_register(XO_RCO_TEST_BASE, value & 0xf7);
+
+    // Goes in READY state
+    bc_spirit1_command(COMMAND_READY);
+
+    do
+    {
+        // Delay for state transition
+        for(volatile uint8_t i=0; i!=0xFF; i++);
+
+        _bc_spirit1_refresh_status();
+
+    }
+    while (_bc_spirit1.status.MC_STATE != MC_STATE_READY);
+
+    int16_t xtalOffsetFactor;
+    uint8_t anaRadioRegArray[8];
+    uint8_t digRadioRegArray[4];
+    uint8_t drM, drE, FdevM, FdevE, bwM, bwE;
+
+    xtalOffsetFactor = (int16_t)(((float)FOffsetTmp * FBASE_DIVIDER) / _BC_SPIRIT1_XTAL_FREQUENCY);
+
+    anaRadioRegArray[2] = (uint8_t)((((uint16_t) xtalOffsetFactor ) >> 8) & 0x0F);
+    anaRadioRegArray[3] = (uint8_t)(xtalOffsetFactor);
+
+    // Calculates the channel space factor
+    anaRadioRegArray[0] = ((uint32_t)_BC_SPIRIT1_CHANNEL_SPACE << 9) / (_BC_SPIRIT1_XTAL_FREQUENCY >> 6) + 1;
+
+    SpiritManagementWaTRxFcMem(_BC_SPIRIT1_BASE_FREQUENCY);
+
+    // 2nd order DEM algorithm enabling
+    value = _bc_spirit1_read_register(0xA3);
+    _bc_spirit1_write_register(0xA3, value & ~0x02);
+
+    // Calculates the datarate mantissa and exponent
+    SpiritRadioSearchDatarateME(_BC_SPIRIT1_DATARATE, &drM, &drE);
+    digRadioRegArray[0] = (uint8_t)(drM);
+    digRadioRegArray[1] = (uint8_t)(0x00 | _BC_SPIRIT1_MODULATION_SELECT | drE);
+
+    // Read the fdev register to preserve the clock recovery algo bit
+    value = _bc_spirit1_read_register(FDEV0_BASE);
+
+    // Calculates the frequency deviation mantissa and exponent
+    SpiritRadioSearchFreqDevME(_BC_SPIRIT1_FREQ_DEVIATION, &FdevM, &FdevE);
+    digRadioRegArray[2] = (uint8_t)((FdevE <<4 ) | (value & 0x08) | FdevM);
+
+    // Calculates the channel filter mantissa and exponent
+    SpiritRadioSearchChannelBwME(_BC_SPIRIT1_BANDWIDTH, &bwM, &bwE);
+
+
+    digRadioRegArray[3] = (uint8_t)((bwM<<4) | bwE);
+
+    float if_off = (3.0 * 480140) / (_BC_SPIRIT1_XTAL_FREQUENCY >> 12) - 64;
+
+    _bc_spirit1_write_register(IF_OFFSET_ANA_BASE, ROUND(if_off));
+
+    if_off = (3.0 * 480140) / (_BC_SPIRIT1_XTAL_FREQUENCY >> 13) - 64;
+
+    anaRadioRegArray[1] = ROUND(if_off);
+
+    // Sets the Xtal configuration in the ANA_FUNC_CONF0 register
+    value = _bc_spirit1_read_register(ANA_FUNC_CONF0_BASE);
+    _bc_spirit1_write_register(ANA_FUNC_CONF0_BASE, value | SELECT_24_26_MHZ_MASK);
+
+    // Sets the channel number in the corresponding register
+    _bc_spirit1_write_register(CHNUM_BASE, _BC_SPIRIT1_CHANNEL_NUMBER);
+
+
+    // Configures the Analog Radio registers
+    bc_spirit1_write(CHSPACE_BASE, anaRadioRegArray, 4);
+
+    // Configures the Digital Radio registers
+    bc_spirit1_write(MOD1_BASE, digRadioRegArray, 4);
+
+    // Enable the freeze option of the AFC on the SYNC word
+    value = _bc_spirit1_read_register(AFC2_BASE);
+    _bc_spirit1_write_register(AFC2_BASE, value | AFC2_AFC_FREEZE_ON_SYNC_MASK);
+
+    // Set the IQC correction optimal value
+    anaRadioRegArray[0] = 0x80;
+    anaRadioRegArray[1] = 0xE3;
+    bc_spirit1_write(0x99, anaRadioRegArray, 2);
+
+    anaRadioRegArray[0] = 0x22;
+    bc_spirit1_write(0xBC, anaRadioRegArray, 1);
+
+    if (SpiritRadioSetFrequencyBase(_BC_SPIRIT1_BASE_FREQUENCY) != 0)
     {
         _bc_spirit1_shutdown_high();
 
@@ -475,11 +619,13 @@ bc_spirit_status_t bc_spirit1_command(uint8_t command)
     // Set chip select low
     _bc_spirit1_cs(0);
 
+    uint16_t *status = (uint16_t *) &_bc_spirit1.status;
+
     // Write header byte and read status bits (MSB)
-    uint16_t status = _bc_spirit1_transfer(0x80) << 8;
+    *status = _bc_spirit1_transfer(0x80) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= _bc_spirit1_transfer(command);
+    *status |= _bc_spirit1_transfer(command);
 
     // Set chip select high
     _bc_spirit1_cs(1);
@@ -488,7 +634,7 @@ bc_spirit_status_t bc_spirit1_command(uint8_t command)
     bc_system_pll_disable();
 
     // TODO Why this cast?
-    return *((bc_spirit_status_t *) &status);
+    return *((bc_spirit_status_t *) status);
 }
 
 bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t length)
@@ -499,11 +645,13 @@ bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t 
     // Set chip select low
     _bc_spirit1_cs(0);
 
+    uint16_t *status = (uint16_t *) &_bc_spirit1.status;
+
     // Write header byte and read status bits (MSB)
-    uint16_t status = _bc_spirit1_transfer(0) << 8;
+    *status = _bc_spirit1_transfer(0) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= _bc_spirit1_transfer(address);
+    *status |= _bc_spirit1_transfer(address);
 
     // Write buffer
     for (size_t i = 0; i < length; i++)
@@ -519,7 +667,7 @@ bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t 
     bc_system_pll_disable();
 
     // TODO Why this cast?
-    return *((bc_spirit_status_t *) &status);
+    return *((bc_spirit_status_t *) status);
 }
 
 bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
@@ -530,11 +678,13 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
     // Set chip select low
     _bc_spirit1_cs(0);
 
+    uint16_t *status = (uint16_t *) &_bc_spirit1.status;
+
     // Write header byte and read status bits (MSB)
-    uint16_t status = _bc_spirit1_transfer(1) << 8;
+    *status = _bc_spirit1_transfer(1) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= _bc_spirit1_transfer(address);
+    *status |= _bc_spirit1_transfer(address);
 
     // Read buffer
     for (size_t i = 0; i < length; i++)
@@ -550,7 +700,7 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
     bc_system_pll_disable();
 
     // TODO Why this cast?
-    return *((bc_spirit_status_t *) &status);
+    return *((bc_spirit_status_t *) status);
 }
 
 static void _bc_spirit1_write_register(uint8_t address, uint8_t value)
@@ -565,6 +715,25 @@ static uint8_t _bc_spirit1_read_register(uint8_t address)
     bc_spirit1_read(address, &value, 1);
 
     return value;
+}
+
+static bool _bc_spirit1_refresh_status(void)
+{
+    uint8_t buffer[2];
+
+    uint8_t *status = (uint8_t *) &_bc_spirit1.status;
+
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        bc_spirit1_read(MC_STATE1_BASE, buffer, 2);
+
+        if (((status[0] == buffer[1]) && ((status[1] & 0x0F) == buffer[0])))
+        {
+        return true;
+        }
+    }
+
+    return false;
 }
 
 static void _bc_spirit1_shutdown_low(void)
