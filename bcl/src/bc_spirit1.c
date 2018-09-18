@@ -83,13 +83,12 @@ static void _bc_spirit1_enter_state_rx(void);
 static void _bc_spirit1_check_state_rx(void);
 static void _bc_spirit1_enter_state_sleep(void);
 
-void bc_spirit1_hal_chip_select_low(void);
-void bc_spirit1_hal_chip_select_high(void);
-uint8_t bc_spirit1_hal_transfer_byte(uint8_t value);
-static void bc_spirit1_hal_init_gpio(void);
-static void bc_spirit1_hal_deinit_gpio(void);
-static void bc_spirit1_hal_init_spi(void);
-static void bc_spirit1_hal_deinit_spi(void);
+static void _bc_spirit1_cs(int state);
+static uint8_t _bc_spirit1_transfer(uint8_t value);
+static void _bc_spirit1_gpio_init(void);
+static void _bc_spirit1_gpio_deinit(void);
+static void _bc_spirit1_spi_init(void);
+static void _bc_spirit1_spi_deinit(void);
 
 static void _bc_spirit1_task(void *param);
 static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param);
@@ -125,9 +124,9 @@ bool bc_spirit1_init(void)
 
         bc_spirit1_hal_shutdown_high();
 
-        bc_spirit1_hal_deinit_spi();
+        _bc_spirit1_spi_deinit();
 
-        bc_spirit1_hal_deinit_gpio();
+        _bc_spirit1_gpio_deinit();
 
         return false;
     }
@@ -155,9 +154,9 @@ bool bc_spirit1_deinit(void)
 
     bc_spirit1_hal_shutdown_high();
 
-    bc_spirit1_hal_deinit_spi();
+    _bc_spirit1_spi_deinit();
 
-    bc_spirit1_hal_deinit_gpio();
+    _bc_spirit1_gpio_deinit();
 
     bc_scheduler_unregister(_bc_spirit1.task_id);
 
@@ -471,16 +470,16 @@ bc_spirit_status_t bc_spirit1_command(uint8_t command)
     bc_system_pll_enable();
 
     // Set chip select low
-    bc_spirit1_hal_chip_select_low();
+    _bc_spirit1_cs(0);
 
     // Write header byte and read status bits (MSB)
-    uint16_t status = bc_spirit1_hal_transfer_byte(0x80) << 8;
+    uint16_t status = _bc_spirit1_transfer(0x80) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= bc_spirit1_hal_transfer_byte(command);
+    status |= _bc_spirit1_transfer(command);
 
     // Set chip select high
-    bc_spirit1_hal_chip_select_high();
+    _bc_spirit1_cs(1);
 
     // Disable PLL
     bc_system_pll_disable();
@@ -495,23 +494,23 @@ bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t 
     bc_system_pll_enable();
 
     // Set chip select low
-    bc_spirit1_hal_chip_select_low();
+    _bc_spirit1_cs(0);
 
     // Write header byte and read status bits (MSB)
-    uint16_t status = bc_spirit1_hal_transfer_byte(0) << 8;
+    uint16_t status = _bc_spirit1_transfer(0) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= bc_spirit1_hal_transfer_byte(address);
+    status |= _bc_spirit1_transfer(address);
 
     // Write buffer
     for (size_t i = 0; i < length; i++)
     {
         // Write data
-        bc_spirit1_hal_transfer_byte(*((uint8_t *) buffer + i));
+        _bc_spirit1_transfer(*((uint8_t *) buffer + i));
     }
 
     // Set chip select high
-    bc_spirit1_hal_chip_select_high();
+    _bc_spirit1_cs(1);
 
     // Disable PLL
     bc_system_pll_disable();
@@ -526,23 +525,23 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
     bc_system_pll_enable();
 
     // Set chip select low
-    bc_spirit1_hal_chip_select_low();
+    _bc_spirit1_cs(0);
 
     // Write header byte and read status bits (MSB)
-    uint16_t status = bc_spirit1_hal_transfer_byte(1) << 8;
+    uint16_t status = _bc_spirit1_transfer(1) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= bc_spirit1_hal_transfer_byte(address);
+    status |= _bc_spirit1_transfer(address);
 
     // Read buffer
     for (size_t i = 0; i < length; i++)
     {
         // Write dummy byte and read data
-        *((uint8_t *) buffer + i) = bc_spirit1_hal_transfer_byte(0);
+        *((uint8_t *) buffer + i) = _bc_spirit1_transfer(0);
     }
 
     // Set chip select high
-    bc_spirit1_hal_chip_select_high();
+    _bc_spirit1_cs(1);
 
     // Disable PLL
     bc_system_pll_disable();
@@ -557,10 +556,10 @@ void bc_spirit1_hal_init(void)
     bc_timer_init();
 
     // Initialize GPIO
-    bc_spirit1_hal_init_gpio();
+    _bc_spirit1_gpio_init();
 
     // Initialize SPI
-    bc_spirit1_hal_init_spi();
+    _bc_spirit1_spi_init();
 
     // Activate shutdown (forces delay)
     bc_spirit1_hal_shutdown_high();
@@ -608,22 +607,8 @@ void bc_spirit1_hal_shutdown_high(void)
     bc_system_pll_disable();
 }
 
-void bc_spirit1_hal_chip_select_low(void)
-{
-    // Set CS pin to log. 0
-    GPIOA->BSRR = GPIO_BSRR_BR_15;
 
-    bc_timer_start();
-
-    while(bc_timer_get_microseconds() < 4)
-    {
-        continue;
-    }
-
-    bc_timer_stop();
-}
-
-void bc_spirit1_hal_chip_select_high(void)
+static void _bc_spirit1_cs(int state)
 {
     bc_timer_start();
 
@@ -632,18 +617,24 @@ void bc_spirit1_hal_chip_select_high(void)
         continue;
     }
 
-    // Set CS pin to log. 1
-    GPIOA->BSRR = GPIO_BSRR_BS_15;
-
-    while(bc_timer_get_microseconds() < 8)
+    if (state == 0)
     {
-        continue;
+        GPIOA->BSRR = GPIO_BSRR_BR_15;
+    }
+    else
+    {
+        GPIOA->BSRR = GPIO_BSRR_BS_15;
+
+        while(bc_timer_get_microseconds() < 8)
+        {
+            continue;
+        }
     }
 
     bc_timer_stop();
 }
 
-uint8_t bc_spirit1_hal_transfer_byte(uint8_t value)
+static uint8_t _bc_spirit1_transfer(uint8_t value)
 {
     // Wait until transmit buffer is empty
     while ((SPI1->SR & SPI_SR_TXE) == 0)
@@ -666,7 +657,7 @@ uint8_t bc_spirit1_hal_transfer_byte(uint8_t value)
     return value;
 }
 
-static void bc_spirit1_hal_init_gpio(void)
+static void _bc_spirit1_gpio_init(void)
 {
     // Enable clock for GPIOH, GPIOB and GPIOA
     RCC->IOPENR |= RCC_IOPENR_GPIOHEN | RCC_IOPENR_GPIOBEN | RCC_IOPENR_GPIOAEN;
@@ -702,7 +693,7 @@ static void bc_spirit1_hal_init_gpio(void)
     GPIOH->MODER &= ~(GPIO_MODER_MODE0_1 | GPIO_MODER_MODE0_0);
 }
 
-static void bc_spirit1_hal_deinit_gpio(void)
+static void _bc_spirit1_gpio_deinit(void)
 {
     // Low speed on CS pin
     GPIOA->OSPEEDR &= ~GPIO_OSPEEDER_OSPEED15_Msk;
@@ -732,7 +723,7 @@ static void bc_spirit1_hal_deinit_gpio(void)
     GPIOH->PUPDR &= ~GPIO_PUPDR_PUPD0_Msk;
 }
 
-static void bc_spirit1_hal_init_spi(void)
+static void _bc_spirit1_spi_init(void)
 {
     // Enable clock for SPI1
     RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
@@ -744,7 +735,7 @@ static void bc_spirit1_hal_init_spi(void)
     SPI1->CR1 |= SPI_CR1_SPE;
 }
 
-static void bc_spirit1_hal_deinit_spi(void)
+static void _bc_spirit1_spi_deinit(void)
 {
     // Disable SPI
     SPI1->CR1 = 0;
