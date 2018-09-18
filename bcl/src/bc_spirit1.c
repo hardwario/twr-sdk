@@ -71,18 +71,14 @@ PktBasicAddressesInit xAddressInit={
   BROADCAST_ADDRESS
 };
 
-SGpioInit xGpioIRQ={
-  SPIRIT_GPIO_0,
-  SPIRIT_GPIO_MODE_DIGITAL_OUTPUT_LP,
-  SPIRIT_GPIO_DIG_OUT_IRQ
-};
-
 static void _bc_spirit1_enter_state_tx(void);
 static void _bc_spirit1_check_state_tx(void);
 static void _bc_spirit1_enter_state_rx(void);
 static void _bc_spirit1_check_state_rx(void);
 static void _bc_spirit1_enter_state_sleep(void);
 
+static void _bc_spirit1_write_register(uint8_t address, uint8_t value);
+static uint8_t _bc_spirit1_read_register(uint8_t address);
 static void _bc_spirit1_shutdown_low(void);
 static void _bc_spirit1_shutdown_high(void);
 static void _bc_spirit1_cs(int state);
@@ -120,18 +116,15 @@ bool bc_spirit1_init(void)
     // Activate shutdown (forces delay)
     _bc_spirit1_shutdown_high();
 
-    /* Spirit ON */
+    // Spirit ON
     _bc_spirit1_shutdown_low();
 
-    SpiritManagementWaExtraCurrent();
-
-    /* Spirit IRQ config */
-    SpiritGpioInit(&xGpioIRQ);
+    // Spirit GPIO_0 IRQ config
+    _bc_spirit1_write_register(GPIO0_CONF_BASE, CONF_GPIO_MODE_DIG_OUTL | CONF_GPIO_OUT_nIRQ);
 
     /* Spirit Radio config */
     if (SpiritRadioInit(&xRadioInit) != 0)
     {
-
         _bc_spirit1_shutdown_high();
 
         _bc_spirit1_spi_deinit();
@@ -560,6 +553,20 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
     return *((bc_spirit_status_t *) &status);
 }
 
+static void _bc_spirit1_write_register(uint8_t address, uint8_t value)
+{
+    bc_spirit1_write(address, &value, 1);
+}
+
+static uint8_t _bc_spirit1_read_register(uint8_t address)
+{
+    uint8_t value;
+
+    bc_spirit1_read(address, &value, 1);
+
+    return value;
+}
+
 static void _bc_spirit1_shutdown_low(void)
 {
     // Output log. 0 on SDN pin
@@ -568,13 +575,21 @@ static void _bc_spirit1_shutdown_low(void)
     // Output log. 1 on CS pin
     GPIOA->BSRR = GPIO_BSRR_BS_15;
 
-    // TODO This delay might not exist (maybe poll GPIO?)...
-
     bc_timer_start();
 
-    bc_timer_delay(10000);
+    bc_timer_delay(1000);
 
     bc_timer_stop();
+
+    // Disable Extra current consumption after power-on
+
+    _bc_spirit1_write_register(0xB2, 0xCA);
+
+    _bc_spirit1_write_register(0xA8, 0x04);
+
+    _bc_spirit1_read_register(0xA8); // just a read to loose some microsecs more
+
+    _bc_spirit1_write_register(0xA8, 0x00);
 }
 
 static void _bc_spirit1_shutdown_high(void)
