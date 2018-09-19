@@ -24,6 +24,13 @@
 #define _BC_SPIRIT1_MODULATION_SELECT           GFSK_BT1
 #define _BC_SPIRIT1_FREQ_DEVIATION              20e3
 
+#define _BC_SPIRIT1_PREAMBLE_LENGTH             PKT_PREAMBLE_LENGTH_04BYTES
+#define _BC_SPIRIT1_SYNC_LENGTH                 PKT_SYNC_LENGTH_4BYTES
+#define _BC_SPIRIT1_SYNC_WORD                   0x88888888
+#define _BC_SPIRIT1_LENGTH_TYPE                 PKT_LENGTH_VAR
+#define _BC_SPIRIT1_CONTROL_LENGTH              PKT_CONTROL_LENGTH_0BYTES
+#define _BC_SPIRIT1_LENGTH_WIDTH                8
+#define _BC_SPIRIT1_CRC_MODE                    PKT_CRC_MODE_8BITS
 
 #define FBASE_DIVIDER 262144
 #define ROUND(A)                                  (((A-(uint32_t)A)> 0.5)? (uint32_t)A+1:(uint32_t)A)
@@ -39,22 +46,13 @@ typedef enum
 
 typedef struct
 {
-  uint8_t XO_ON:1;      /*!< This one bit field notifies if XO is operating
-                     (XO_ON is 1) or not (XO_On is 0) */
-  SpiritState MC_STATE: 7;  /*!< This 7 bits field indicates the state of the
-                     Main Controller of SPIRIT. The possible states
-                     and their corresponding values are defined in
-                     @ref SpiritState */
-  uint8_t ERROR_LOCK: 1;       /*!< This one bit field notifies if there is an
-                     error on RCO calibration (ERROR_LOCK is 1) or
-                     not (ERROR_LOCK is 0) */
-  uint8_t RX_FIFO_EMPTY: 1;    /*!< This one bit field notifies if RX FIFO is empty
-                     (RX_FIFO_EMPTY is 1) or not (RX_FIFO_EMPTY is 0) */
-  uint8_t TX_FIFO_FULL: 1;  /*!< This one bit field notifies if TX FIFO is full
-                     (TX_FIFO_FULL is 1) or not (TX_FIFO_FULL is 0) */
-  uint8_t ANT_SELECT: 1;       /*!< This one bit field notifies the currently selected
-                     antenna */
-  uint8_t : 4;          /*!< This 4 bits field are reserved and equal to 5 */
+  uint8_t XO_ON:1;          // This one bit field notifies if XO is operating (XO_ON is 1) or not (XO_On is 0)
+  SpiritState MC_STATE: 7;  // This 7 bits field indicates the state
+  uint8_t ERROR_LOCK: 1;    // < This one bit field notifies if there is an error on RCO calibration (ERROR_LOCK is 1) or not (ERROR_LOCK is 0)/
+  uint8_t RX_FIFO_EMPTY: 1; // This one bit field notifies if RX FIFO is empty (RX_FIFO_EMPTY is 1) or not (RX_FIFO_EMPTY is 0) */
+  uint8_t TX_FIFO_FULL: 1;  // This one bit field notifies if TX FIFO is full (TX_FIFO_FULL is 1) or not (TX_FIFO_FULL is 0)
+  uint8_t ANT_SELECT: 1;    // This one bit field notifies the currently selected antenna
+  uint8_t CONST: 4;         // This 4 bits field are reserved and equal to 5
 
 } bc_spirit1_status_t;
 
@@ -77,28 +75,6 @@ typedef struct
 } bc_spirit1_t;
 
 static bc_spirit1_t _bc_spirit1;
-
-PktBasicInit xBasicInit={
-  PREAMBLE_LENGTH,
-  SYNC_LENGTH,
-  SYNC_WORD,
-  LENGTH_TYPE,
-  LENGTH_WIDTH,
-  CRC_MODE,
-  CONTROL_LENGTH,
-  EN_ADDRESS,
-  EN_FEC,
-  EN_WHITENING
-};
-
-PktBasicAddressesInit xAddressInit={
-  EN_FILT_MY_ADDRESS,
-  MY_ADDRESS,
-  EN_FILT_MULTICAST_ADDRESS,
-  MULTICAST_ADDRESS,
-  EN_FILT_BROADCAST_ADDRESS,
-  BROADCAST_ADDRESS
-};
 
 static void _bc_spirit1_enter_state_tx(void);
 static void _bc_spirit1_check_state_tx(void);
@@ -152,6 +128,17 @@ bool bc_spirit1_init(void)
     // Spirit GPIO_0 IRQ config
     _bc_spirit1_write_register(GPIO0_CONF_BASE, CONF_GPIO_MODE_DIG_OUTL | CONF_GPIO_OUT_nIRQ);
 
+    if ((_bc_spirit1.status.MC_STATE != MC_STATE_READY ) && (_bc_spirit1.status.CONST != 5))
+    {
+        _bc_spirit1_shutdown_high();
+
+        _bc_spirit1_spi_deinit();
+
+        _bc_spirit1_gpio_deinit();
+
+        return false;
+    }
+
     // Workaround for Vtune
     _bc_spirit1_write_register(SYNTH_CONFIG0_BASE, VCOTH_BASE);
 
@@ -164,8 +151,7 @@ bool bc_spirit1_init(void)
 
     do
     {
-        // Delay for state transition
-        for(volatile uint8_t i=0; i!=0xFF; i++);
+        for(volatile uint8_t i=0; i!=0xFF; i++); // Delay for state transition
 
         _bc_spirit1_refresh_status();
 
@@ -173,7 +159,6 @@ bool bc_spirit1_init(void)
         {
             return false;
         }
-
     }
     while (_bc_spirit1.status.MC_STATE != MC_STATE_STANDBY);
 
@@ -188,11 +173,9 @@ bool bc_spirit1_init(void)
 
     do
     {
-        // Delay for state transition
-        for(volatile uint8_t i=0; i!=0xFF; i++);
+        for(volatile uint8_t i=0; i!=0xFF; i++); // Delay for state transition
 
         _bc_spirit1_refresh_status();
-
     }
     while (_bc_spirit1.status.MC_STATE != MC_STATE_READY);
 
@@ -230,8 +213,7 @@ bool bc_spirit1_init(void)
     // Calculates the channel filter mantissa and exponent
     SpiritRadioSearchChannelBwME(_BC_SPIRIT1_BANDWIDTH, &bwM, &bwE);
 
-
-    digRadioRegArray[3] = (uint8_t)((bwM<<4) | bwE);
+    digRadioRegArray[3] = (uint8_t)((bwM << 4) | bwE);
 
     float if_off = (3.0 * 480140) / (_BC_SPIRIT1_XTAL_FREQUENCY >> 12) - 64;
 
@@ -278,10 +260,29 @@ bool bc_spirit1_init(void)
         return false;
     }
 
-    /* Spirit Packet config */
-    SpiritPktBasicInit(&xBasicInit);
+    // Initializes the SPIRIT Basic packet
 
-    SpiritPktBasicAddressesInit(&xAddressInit);
+    // Always set the automatic packet filtering
+    _bc_spirit1_write_register(PROTOCOL1_BASE, PROTOCOL1_AUTO_PCKT_FLT_MASK);
+
+    // Always reset the control and source filtering (also if it is not present in basic), CRC check bit
+    _bc_spirit1_write_register(PCKT_FLT_OPTIONS_BASE, PCKT_FLT_OPTIONS_RX_TIMEOUT_AND_OR_SELECT | PCKT_FLT_OPTIONS_CRC_CHECK_MASK);
+
+    // Disable destination address and set control field in bytes
+    _bc_spirit1_write_register(PCKTCTRL4_BASE, (0x00 | _BC_SPIRIT1_CONTROL_LENGTH));
+
+    // Packet format and width length setting
+    _bc_spirit1_write_register(PCKTCTRL3_BASE, PCKTCTRL3_PCKT_FRMT_BASIC | (_BC_SPIRIT1_LENGTH_WIDTH - 1));
+
+    // Preamble, sync and fixed or variable length setting
+    _bc_spirit1_write_register(PCKTCTRL2_BASE, _BC_SPIRIT1_PREAMBLE_LENGTH | _BC_SPIRIT1_SYNC_LENGTH | _BC_SPIRIT1_LENGTH_TYPE);
+
+    // CRC length, whitening and FEC setting
+    _bc_spirit1_write_register(PCKTCTRL1_BASE, _BC_SPIRIT1_CRC_MODE | PCKTCTRL1_WHIT_MASK);
+
+    // Sync words
+    uint32_t sync_word = (uint32_t) _BC_SPIRIT1_SYNC_WORD;
+    bc_spirit1_write(SYNC4_BASE, &sync_word, 4);
 
     _bc_spirit1.desired_state = BC_SPIRIT1_STATE_SLEEP;
 
