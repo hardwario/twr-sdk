@@ -103,6 +103,8 @@ extern "C" {
  * @{
  */
 
+#include <stdbool.h>
+
 typedef SpiritStatus StatusBytes;
 
 void SdkEvalSpiDeinit(void);
@@ -116,17 +118,17 @@ StatusBytes SdkEvalSpiReadFifo(uint8_t cNbBytes, uint8_t* pcBuffer);
 #define bc_spirit_status_t SpiritStatus
 
 bc_spirit_status_t bc_spirit1_command(uint8_t command);
-bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t length);
-bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length);
+bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t length, bool reversed);
+bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length,  bool reversed);
 
 #define SpiritEnterShutdown                                            NULL
 #define SpiritExitShutdown                                             NULL
 #define SpiritSpiInit                                                  NULL
-#define SpiritSpiWriteRegisters(cRegAddress, cNbBytes, pcBuffer)       bc_spirit1_write(cRegAddress, pcBuffer, cNbBytes)
-#define SpiritSpiReadRegisters(cRegAddress, cNbBytes, pcBuffer)        bc_spirit1_read(cRegAddress, pcBuffer, cNbBytes)
+#define SpiritSpiWriteRegisters(cRegAddress, cNbBytes, pcBuffer)       bc_spirit1_write(cRegAddress, pcBuffer, cNbBytes, false)
+#define SpiritSpiReadRegisters(cRegAddress, cNbBytes, pcBuffer)        bc_spirit1_read(cRegAddress, pcBuffer, cNbBytes, false)
 #define SpiritSpiCommandStrobes(cCommandCode)                          bc_spirit1_command(cCommandCode)
-#define SpiritSpiWriteLinearFifo(cNbBytes, pcBuffer)                   bc_spirit1_write(0xFF, pcBuffer, cNbBytes)
-#define SpiritSpiReadLinearFifo(cNbBytes, pcBuffer)                    bc_spirit1_read(0xFF, pcBuffer, cNbBytes)
+#define SpiritSpiWriteLinearFifo(cNbBytes, pcBuffer)                   bc_spirit1_write(0xFF, pcBuffer, cNbBytes, false)
+#define SpiritSpiReadLinearFifo(cNbBytes, pcBuffer)                    bc_spirit1_read(0xFF, pcBuffer, cNbBytes, false)
 
 /**
  * @}

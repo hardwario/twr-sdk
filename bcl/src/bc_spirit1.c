@@ -7,6 +7,7 @@
 #include "SPIRIT_Config.h"
 #include "SDK_Configuration_Common.h"
 #include "MCU_Interface.h"
+#include <bc_log.h>
 
 #define _BC_SPIRIT1_XTAL_FREQUENCY   50000000
 #define _BC_SPIRIT1_XTAL_OFFSET_PPM  0
@@ -18,18 +19,18 @@
   #endif
 #endif
 #define _BC_SPIRIT1_BANDWIDTH                   100e3
+#define _BC_SPIRIT1_FREQ_DEVIATION              20e3
 #define _BC_SPIRIT1_CHANNEL_SPACE               20e3
 #define _BC_SPIRIT1_CHANNEL_NUMBER              0
 #define _BC_SPIRIT1_DATARATE                    19200
 #define _BC_SPIRIT1_MODULATION_SELECT           GFSK_BT1
-#define _BC_SPIRIT1_FREQ_DEVIATION              20e3
-
 #define _BC_SPIRIT1_PREAMBLE_LENGTH             PKT_PREAMBLE_LENGTH_04BYTES
 #define _BC_SPIRIT1_SYNC_LENGTH                 PKT_SYNC_LENGTH_4BYTES
 #define _BC_SPIRIT1_SYNC_WORD                   0x88888888
 #define _BC_SPIRIT1_LENGTH_TYPE                 PKT_LENGTH_VAR
-#define _BC_SPIRIT1_CONTROL_LENGTH              PKT_CONTROL_LENGTH_0BYTES
-#define _BC_SPIRIT1_LENGTH_WIDTH                8
+#define _BC_SPIRIT1_PACKET_ADDRESS_LENGTH       0
+#define _BC_SPIRIT1_PACKET_CONTROL_LENGTH       PKT_CONTROL_LENGTH_0BYTES
+#define _BC_SPIRIT1_PACKET_LENGTH_WIDTH         7
 #define _BC_SPIRIT1_CRC_MODE                    PKT_CRC_MODE_8BITS
 
 #define FBASE_DIVIDER 262144
@@ -96,6 +97,7 @@ static void _bc_spirit1_spi_deinit(void);
 
 static void _bc_spirit1_task(void *param);
 static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param);
+static void _bc_spirit1_irq_clear_status(void);
 
 bool bc_spirit1_init(void)
 {
@@ -194,12 +196,13 @@ bool bc_spirit1_init(void)
 
     SpiritManagementWaTRxFcMem(_BC_SPIRIT1_BASE_FREQUENCY);
 
-    // 2nd order DEM algorithm enabling
-    value = _bc_spirit1_read_register(0xA3);
-    _bc_spirit1_write_register(0xA3, value & ~0x02);
+//    // 2nd order DEM algorithm enabling
+//    value = _bc_spirit1_read_register(0xA3);
+//    _bc_spirit1_write_register(0xA3, value & ~0x02);
 
     // Calculates the datarate mantissa and exponent
     SpiritRadioSearchDatarateME(_BC_SPIRIT1_DATARATE, &drM, &drE);
+
     digRadioRegArray[0] = (uint8_t)(drM);
     digRadioRegArray[1] = (uint8_t)(0x00 | _BC_SPIRIT1_MODULATION_SELECT | drE);
 
@@ -224,30 +227,24 @@ bool bc_spirit1_init(void)
     anaRadioRegArray[1] = ROUND(if_off);
 
     // Sets the Xtal configuration in the ANA_FUNC_CONF0 register
-    value = _bc_spirit1_read_register(ANA_FUNC_CONF0_BASE);
-    _bc_spirit1_write_register(ANA_FUNC_CONF0_BASE, value | SELECT_24_26_MHZ_MASK);
+    _bc_spirit1_write_register(ANA_FUNC_CONF0_BASE, 0x80 | SELECT_24_26_MHZ_MASK);
 
     // Sets the channel number in the corresponding register
     _bc_spirit1_write_register(CHNUM_BASE, _BC_SPIRIT1_CHANNEL_NUMBER);
 
-
     // Configures the Analog Radio registers
-    bc_spirit1_write(CHSPACE_BASE, anaRadioRegArray, 4);
+    bc_spirit1_write(CHSPACE_BASE, anaRadioRegArray, 4, false);
 
     // Configures the Digital Radio registers
-    bc_spirit1_write(MOD1_BASE, digRadioRegArray, 4);
+    bc_spirit1_write(MOD1_BASE, digRadioRegArray, 4, false);
 
-    // Enable the freeze option of the AFC on the SYNC word
-    value = _bc_spirit1_read_register(AFC2_BASE);
-    _bc_spirit1_write_register(AFC2_BASE, value | AFC2_AFC_FREEZE_ON_SYNC_MASK);
+    // Enable the freeze option of the AFC on the SYNC word, AFC PD leakage
+    _bc_spirit1_write_register(AFC2_BASE, AFC2_AFC_FREEZE_ON_SYNC_MASK | AFC2_AFC_MASK | 8);
 
     // Set the IQC correction optimal value
-    anaRadioRegArray[0] = 0x80;
-    anaRadioRegArray[1] = 0xE3;
-    bc_spirit1_write(0x99, anaRadioRegArray, 2);
-
-    anaRadioRegArray[0] = 0x22;
-    bc_spirit1_write(0xBC, anaRadioRegArray, 1);
+    _bc_spirit1_write_register(0x99, 0x80);
+    _bc_spirit1_write_register(0x9A, 0xE3);
+    _bc_spirit1_write_register(0xBC, 0x22);
 
     if (SpiritRadioSetFrequencyBase(_BC_SPIRIT1_BASE_FREQUENCY) != 0)
     {
@@ -265,14 +262,16 @@ bool bc_spirit1_init(void)
     // Always set the automatic packet filtering
     _bc_spirit1_write_register(PROTOCOL1_BASE, PROTOCOL1_AUTO_PCKT_FLT_MASK);
 
+    _bc_spirit1_write_register(PROTOCOL2_BASE, PROTOCOL2_SQI_TIMEOUT_MASK | PROTOCOL2_VCO_CALIBRATION_MASK | PROTOCOL2_RCO_CALIBRATION_MASK);
+
     // Always reset the control and source filtering (also if it is not present in basic), CRC check bit
     _bc_spirit1_write_register(PCKT_FLT_OPTIONS_BASE, PCKT_FLT_OPTIONS_RX_TIMEOUT_AND_OR_SELECT | PCKT_FLT_OPTIONS_CRC_CHECK_MASK);
 
     // Disable destination address and set control field in bytes
-    _bc_spirit1_write_register(PCKTCTRL4_BASE, (0x00 | _BC_SPIRIT1_CONTROL_LENGTH));
+    _bc_spirit1_write_register(PCKTCTRL4_BASE, ((_BC_SPIRIT1_PACKET_ADDRESS_LENGTH << 3) | _BC_SPIRIT1_PACKET_CONTROL_LENGTH));
 
-    // Packet format and width length setting
-    _bc_spirit1_write_register(PCKTCTRL3_BASE, PCKTCTRL3_PCKT_FRMT_BASIC | (_BC_SPIRIT1_LENGTH_WIDTH - 1));
+    // Packet format and width length field setting
+    _bc_spirit1_write_register(PCKTCTRL3_BASE, PCKTCTRL3_PCKT_FRMT_BASIC | _BC_SPIRIT1_PACKET_LENGTH_WIDTH);
 
     // Preamble, sync and fixed or variable length setting
     _bc_spirit1_write_register(PCKTCTRL2_BASE, _BC_SPIRIT1_PREAMBLE_LENGTH | _BC_SPIRIT1_SYNC_LENGTH | _BC_SPIRIT1_LENGTH_TYPE);
@@ -281,8 +280,9 @@ bool bc_spirit1_init(void)
     _bc_spirit1_write_register(PCKTCTRL1_BASE, _BC_SPIRIT1_CRC_MODE | PCKTCTRL1_WHIT_MASK);
 
     // Sync words
-    uint32_t sync_word = (uint32_t) _BC_SPIRIT1_SYNC_WORD;
-    bc_spirit1_write(SYNC4_BASE, &sync_word, 4);
+    const uint32_t sync_word = (uint32_t) _BC_SPIRIT1_SYNC_WORD;
+
+    bc_spirit1_write(SYNC4_BASE, &sync_word, 4, false);
 
     _bc_spirit1.desired_state = BC_SPIRIT1_STATE_SLEEP;
 
@@ -452,35 +452,45 @@ static void _bc_spirit1_enter_state_tx(void)
 
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_TX;
 
-    SpiritCmdStrobeSabort();
-    SpiritCmdStrobeReady();
-    SpiritCmdStrobeFlushTxFifo();
+    bc_spirit1_command(COMMAND_SABORT);
+    bc_spirit1_command(COMMAND_READY);
+    bc_spirit1_command(COMMAND_FLUSHTXFIFO);
 
-    SpiritIrqDeInit(NULL);
-    SpiritIrqClearStatus();
-    SpiritIrq(TX_DATA_SENT, S_ENABLE);
+    // Set interapt
+    _bc_spirit1_write_register(IRQ_MASK0_BASE, IRQ_MASK0_TX_DATA_SENT);
+    _bc_spirit1_irq_clear_status();
 
-    SpiritPktBasicSetPayloadLength(_bc_spirit1.tx_length);
+    // Set packet payload length
+    uint16_t length = _bc_spirit1.tx_length + _BC_SPIRIT1_PACKET_ADDRESS_LENGTH + _BC_SPIRIT1_PACKET_CONTROL_LENGTH;
+    bc_spirit1_write(PCKTLEN1_BASE, &length, 2, true);
 
-    // TODO Why needed?
-    SpiritPktBasicSetDestinationAddress(0x35);
-
-    SpiritSpiWriteLinearFifo(_bc_spirit1.tx_length, _bc_spirit1.tx_buffer);
+    // Write to tx fifo
+    bc_spirit1_write(0xFF, _bc_spirit1.tx_buffer, _bc_spirit1.tx_length, false);
 
     bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt, NULL);
 
-    SpiritCmdStrobeTx();
+    // No additional PA load capacitor
+    _bc_spirit1_write_register(PA_POWER0_BASE, _bc_spirit1_read_register(PA_POWER0_BASE) & 0x3F);
+
+    // Enable VCO_L buffer
+    _bc_spirit1_write_register(0xa9, 0x11);
+
+    // Set SMPS switching frequency
+    _bc_spirit1_write_register(PM_CONFIG1_BASE, 0x20);
+
+    bc_spirit1_command(COMMAND_TX);
 }
 
 static void _bc_spirit1_check_state_tx(void)
 {
     SpiritIrqs xIrqStatus;
 
-    SpiritIrqGetStatus(&xIrqStatus);
+    // Get the IRQ status
+    bc_spirit1_read(IRQ_STATUS3_BASE, &xIrqStatus, 4, true);
 
     if (xIrqStatus.IRQ_TX_DATA_SENT)
     {
-        SpiritIrqClearStatus();
+        _bc_spirit1_irq_clear_status();
 
         _bc_spirit1.desired_state = BC_SPIRIT1_STATE_SLEEP;
 
@@ -506,6 +516,11 @@ static void _bc_spirit1_check_state_tx(void)
 
 static void _bc_spirit1_enter_state_rx(void)
 {
+    if (_bc_spirit1.current_state == BC_SPIRIT1_STATE_SLEEP)
+    {
+       bc_spirit1_command(COMMAND_READY);
+    }
+
     GPIOA->PUPDR |= GPIO_PUPDR_PUPD7_1;
 
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_RX;
@@ -521,58 +536,83 @@ static void _bc_spirit1_enter_state_rx(void)
 
     bc_scheduler_plan_current_absolute(_bc_spirit1.rx_tick_timeout);
 
-    SpiritIrqs xIrqStatus;
+    // Set interapt
+    _bc_spirit1_write_register(IRQ_MASK0_BASE, IRQ_MASK0_RX_DATA_READY | IRQ_MASK0_RX_DATA_DISC);
 
-    SpiritIrqDeInit(&xIrqStatus);
-    SpiritIrq(RX_DATA_DISC, S_ENABLE);
-    SpiritIrq(RX_DATA_READY, S_ENABLE);
+    // enable SQI check
+    uint8_t value = _bc_spirit1_read_register(QI_BASE);
+    value &= 0x3F;
+    value |= ((uint8_t) 0x00); // SQI_TH_0
+    _bc_spirit1_write_register(QI_BASE, value | QI_SQI_MASK);
 
-    /* payload length config */
-    SpiritPktBasicSetPayloadLength(20);
+    // RX timeout config 1000ms
+    //    SpiritTimerSetRxTimeoutMs(1000.0);
+    _bc_spirit1_write_register(TIMERS5_RX_TIMEOUT_PRESCALER_BASE, 82);
+    _bc_spirit1_write_register(TIMERS4_RX_TIMEOUT_COUNTER_BASE, 248);
 
-    /* enable SQI check */
-    SpiritQiSetSqiThreshold(SQI_TH_0);
-    SpiritQiSqiCheck(S_ENABLE);
-
-    /* RX timeout config */
-    SpiritTimerSetRxTimeoutMs(1000.0);
-    SpiritTimerSetRxTimeoutStopCondition(SQI_ABOVE_THRESHOLD);
-
-    /* IRQ registers blanking */
-    SpiritIrqClearStatus();
+    // IRQ registers blanking
+    _bc_spirit1_irq_clear_status();
 
     bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt, NULL);
 
-    /* RX command */
-    SpiritCmdStrobeRx();
+    // Set SMPS switching frequency
+    _bc_spirit1_write_register(PM_CONFIG1_BASE, 0x98);
+
+    // Set the correct CWC parameter
+    _bc_spirit1_write_register(PA_POWER0_BASE, 0x07 | PA_POWER0_CWC_0);
+
+    bc_spirit1_command(COMMAND_RX);
 }
 
 static void _bc_spirit1_check_state_rx(void)
 {
     SpiritIrqs xIrqStatus;
 
-    /* Get the IRQ status */
-    SpiritIrqGetStatus(&xIrqStatus);
+    // Get the IRQ status
+    bc_spirit1_read(IRQ_STATUS3_BASE, &xIrqStatus, 4, true);
+
+    if (xIrqStatus.IRQ_VALID_PREAMBLE)
+    {
+        bc_log_info("IRQ_VALID_PREAMBLE");
+    }
+
+    if (xIrqStatus.IRQ_VALID_SYNC)
+    {
+        bc_log_info("IRQ_VALID_SYNC");
+    }
+
+    if (xIrqStatus.IRQ_RX_TIMEOUT)
+    {
+//        bc_log_debug("IRQ_RX_TIMEOUT");
+    }
 
     /* Check the SPIRIT RX_DATA_DISC IRQ flag */
     if (xIrqStatus.IRQ_RX_DATA_DISC)
     {
+        bc_log_error("IRQ_RX_DATA_DISC");
+
       /* RX command - to ensure the device will be ready for the next reception */
-      SpiritCmdStrobeRx();
+      //SpiritCmdStrobeRx();
     }
 
     /* Check the SPIRIT RX_DATA_READY IRQ flag */
     if (xIrqStatus.IRQ_RX_DATA_READY)
     {
-      /* Get the RX FIFO size */
-      uint8_t cRxData = SpiritLinearFifoReadNumElementsRxFifo();
+      // Get the RX FIFO size
+      uint8_t length =  _bc_spirit1_read_register(LINEAR_FIFO_STATUS0_BASE) & 0x7F;
 
-        if (cRxData <= BC_SPIRIT1_MAX_PACKET_SIZE)
+      bc_log_debug("RX length %d", length);
+
+      if (length > BC_SPIRIT1_MAX_PACKET_SIZE) length = BC_SPIRIT1_MAX_PACKET_SIZE;
+
+        if (length <= BC_SPIRIT1_MAX_PACKET_SIZE)
         {
-            /* Read the RX FIFO */
-            SpiritSpiReadLinearFifo(cRxData, _bc_spirit1.rx_buffer);
+            // Read the RX FIFO
+            bc_spirit1_read(0xFF, _bc_spirit1.rx_buffer, length, false);
 
-            _bc_spirit1.rx_length = cRxData;
+            _bc_spirit1.rx_length = length;
+
+            bc_log_dump( _bc_spirit1.rx_buffer, length, "RX BUFFER");
 
             if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
             {
@@ -592,22 +632,22 @@ static void _bc_spirit1_check_state_rx(void)
         }
     }
 
-    /* Flush the RX FIFO */
-    SpiritCmdStrobeFlushRxFifo();
+    // Flush the RX FIFO
+    bc_spirit1_command(COMMAND_FLUSHRXFIFO);
 
-    /* RX command - to ensure the device will be ready for the next reception */
-    SpiritCmdStrobeRx();
+    // RX command - to ensure the device will be ready for the next reception
+    bc_spirit1_command(COMMAND_RX);
 }
 
 static void _bc_spirit1_enter_state_sleep(void)
 {
     _bc_spirit1.current_state = BC_SPIRIT1_STATE_SLEEP;
 
-    SpiritCmdStrobeSabort();
-    SpiritCmdStrobeReady();
-    SpiritIrqDeInit(NULL);
-    SpiritIrqClearStatus();
-    SpiritCmdStrobeStandby();
+    bc_spirit1_command(COMMAND_SABORT);
+    bc_spirit1_command(COMMAND_READY);
+    _bc_spirit1_write_register(IRQ_MASK3_BASE, 0x00);
+    _bc_spirit1_irq_clear_status();
+    bc_spirit1_command(COMMAND_STANDBY);
 
     GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD7_1;
 }
@@ -638,7 +678,7 @@ bc_spirit_status_t bc_spirit1_command(uint8_t command)
     return *((bc_spirit_status_t *) status);
 }
 
-bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t length)
+bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t length, bool reversed)
 {
     // Enable PLL
     bc_system_pll_enable();
@@ -655,10 +695,19 @@ bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t 
     *status |= _bc_spirit1_transfer(address);
 
     // Write buffer
+    if (reversed)
+    {
+        for (size_t i = length - 1; i < length; i--)
+        {
+            _bc_spirit1_transfer(*((uint8_t *) buffer + i));
+        }
+    }
+    else
+    {
     for (size_t i = 0; i < length; i++)
     {
-        // Write data
         _bc_spirit1_transfer(*((uint8_t *) buffer + i));
+    }
     }
 
     // Set chip select high
@@ -671,7 +720,7 @@ bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t 
     return *((bc_spirit_status_t *) status);
 }
 
-bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
+bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length, bool reversed)
 {
     // Enable PLL
     bc_system_pll_enable();
@@ -687,13 +736,21 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
     // Write memory map address and read status bits (LSB)
     *status |= _bc_spirit1_transfer(address);
 
-    // Read buffer
+    // Read buffer, Write dummy byte and read data
+    if (reversed)
+    {
+        for (size_t i = length - 1; i < length; i--)
+        {
+            *((uint8_t *) buffer + i) = _bc_spirit1_transfer(0);
+        }
+    }
+    else
+    {
     for (size_t i = 0; i < length; i++)
     {
-        // Write dummy byte and read data
         *((uint8_t *) buffer + i) = _bc_spirit1_transfer(0);
     }
-
+    }
     // Set chip select high
     _bc_spirit1_cs(1);
 
@@ -706,14 +763,14 @@ bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
 
 static void _bc_spirit1_write_register(uint8_t address, uint8_t value)
 {
-    bc_spirit1_write(address, &value, 1);
+    bc_spirit1_write(address, &value, 1, false);
 }
 
 static uint8_t _bc_spirit1_read_register(uint8_t address)
 {
     uint8_t value;
 
-    bc_spirit1_read(address, &value, 1);
+    bc_spirit1_read(address, &value, 1, false);
 
     return value;
 }
@@ -726,7 +783,7 @@ static bool _bc_spirit1_refresh_status(void)
 
     for (uint8_t i = 0; i < 10; i++)
     {
-        bc_spirit1_read(MC_STATE1_BASE, buffer, 2);
+        bc_spirit1_read(MC_STATE1_BASE, buffer, 2, false);
 
         if (((status[0] == buffer[1]) && ((status[1] & 0x0F) == buffer[0])))
         {
@@ -923,4 +980,10 @@ static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param)
     (void) param;
 
     bc_scheduler_plan_now(_bc_spirit1.task_id);
+}
+
+static void _bc_spirit1_irq_clear_status(void)
+{
+    static uint8_t buffer[4];
+    bc_spirit1_read(IRQ_STATUS3_BASE, buffer, sizeof(buffer), true);
 }
