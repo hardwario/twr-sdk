@@ -346,7 +346,7 @@ bool bc_adc_calibration(void)
         return false;
     }
 
-    if (!(ADC1->CR & ADC_CR_ADEN))
+    if (ADC1->CR & ADC_CR_ADEN)
     {
         return false;
     }
