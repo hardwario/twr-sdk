@@ -47,9 +47,9 @@ bool bc_module_iqrf_init(void)
         return false;
     }
 
-    // Delay
+    // Delay - checked with oscilloscope that the voltage goest to zero
     bc_tick_t timestamp = bc_tick_get();
-    while (bc_tick_get() - timestamp < 2000)
+    while (bc_tick_get() - timestamp < 50)
     {
         continue;
     }
@@ -287,7 +287,7 @@ void CustomDpaHandler( byte dataLength )
                 }
 
                 // 1st byte is sensor type
-                _DpaMessage.Response.PData[0] = STD_SENSOR_TYPE_BINARYDATA7;
+                _DpaMessage.Response.PData[0] = STD_SENSOR_TYPE_BINARYDATA30; //STD_SENSOR_TYPE_BINARYDATA7;
 
                 // Return just one sensor type
                 returnDataLength = _DpaDataLength = sizeof( _DpaMessage.Response.PData[0] );
@@ -322,10 +322,15 @@ void CustomDpaHandler( byte dataLength )
                 {
                   // Return also sensor type?
                   if ( _PCMD == PCMD_STD_SENSORS_READ_TYPES_AND_VALUES )
-                    *pResponseData++ = STD_SENSOR_TYPE_BINARYDATA7;
+                    *pResponseData++ = STD_SENSOR_TYPE_BINARYDATA30; //STD_SENSOR_TYPE_BINARYDATA7;
+
+                  uint32_t val = 1234;
 
                   // Return sensor data
-                  *pResponseData++ = GetSensor0Value();
+                  *pResponseData++ = (val >> 0) & 0xFF;
+                  *pResponseData++ = (val >> 8) & 0xFF;
+                  *pResponseData++ = (val >> 16) & 0xFF;
+                  *pResponseData++ = (val >> 24) & 0xFF;
                 }
 
                 // Returned data length
@@ -349,8 +354,8 @@ void CustomDpaHandler( byte dataLength )
       if ( dataLength >= ( 2 + 1 + 2 ) )
       {
         // Fake important DPA variables for the DPA FRC handling
-#define FrcCommand               (RxBuffer[1])
-#define DataOutBeforeResponseFRC ((byte*)( &RxBuffer[2] ))
+        #define FrcCommand               (RxBuffer[1])
+        #define DataOutBeforeResponseFRC ((byte*)( &RxBuffer[2] ))
 
       // Check the correct FRC request
         if ( DataOutBeforeResponseFRC[0] == PNUM_STD_SENSORS &&
@@ -391,17 +396,7 @@ static void _bc_module_iqrf_task(void *param)
     // Active low
     while (!bc_gpio_get_input(BC_GPIO_INT))
     {
-
-
-        GPIOB->BSRR = GPIO_BSRR_BR_12;
-
-
-
-        volatile int a = 0; a++;
-
         // Read the byte from IQRF
-        //uint8_t oneByte = SPI.transfer( HDLC_FRM_CONTROL_ESCAPE );
-
         uint8_t spiSource = HDLC_FRM_CONTROL_ESCAPE;
         uint8_t oneByte;
         bc_spi_transfer(&spiSource, &oneByte, 1);
@@ -436,14 +431,6 @@ _NextState:
           {
             if ( rxLength >= MIN_RX_PACKET_DATA_LENGTH )
             {
-                // Delay
-                /*
-        bc_tick_t timestamp = bc_tick_get();
-        while (bc_tick_get() - timestamp < 50)
-        {
-            continue;
-        }*/
-
               // Packet received, handle it
               CustomDpaHandler( rxLength );
               // Exit loop
@@ -492,6 +479,5 @@ _SetRXstateWaitHead:
 
     }
 
-    GPIOB->BSRR = GPIO_BSRR_BS_12;
     bc_scheduler_plan_current_now();
 }
