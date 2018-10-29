@@ -107,6 +107,26 @@ bool bc_aes_cbc_decrypt(void *buffer_out, const void *buffer_in, size_t length, 
     return _bc_aes_process(buffer_out, buffer_in, length);
 }
 
+void bc_aes_key_from_uint8(bc_aes_key_t key, const uint8_t *buffer)
+{
+    uint8_t *tmp = (uint8_t *) key;
+
+    for (int i = 0; i < 16; i++)
+    {
+        tmp[15 - i] = buffer[i];
+    }
+}
+
+void bc_aes_iv_from_uint8(bc_aes_iv_t iv, const uint8_t *buffer)
+{
+    uint8_t *tmp = (uint8_t *) iv;
+
+    for (int i = 0; i < 16; i++)
+    {
+        tmp[15 - i] = buffer[i];
+    }
+}
+
 static void _bc_aes_set_key(const bc_aes_key_t key)
 {
     AES->KEYR0 = key[0];
