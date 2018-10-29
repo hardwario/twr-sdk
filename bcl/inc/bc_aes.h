@@ -55,7 +55,7 @@ bool bc_aes_ecb_decrypt(void *buffer_out, const void *buffer_in, size_t length, 
 //! @param[in] buffer_in Pointer to source buffer
 //! @param[in] length Number of bytes
 //! @param[in] key 128-bit encryption key
-//! @param[in] key 128-bit Initialization vector
+//! @param[in] iv 128-bit Initialization vector
 //! @return true On success
 //! @return false On failure
 
@@ -66,11 +66,23 @@ bool bc_aes_cbc_encrypt(void *buffer_out, const void *buffer_in, size_t length, 
 //! @param[in] buffer_in Pointer to source buffer
 //! @param[in] length Number of bytes
 //! @param[in] key 128-bit decryption key
-//! @param[in] key 128-bit Initialization vector
+//! @param[in] iv 128-bit Initialization vector
 //! @return true On success
 //! @return false On failure
 
 bool bc_aes_cbc_decrypt(void *buffer_out, const void *buffer_in, size_t length, bc_aes_key_t key, bc_aes_iv_t iv);
+
+//! @brief Create key from uint8 array
+//! @param[out] key key 128-bit encryption key
+//! @param[in] buffer Pointer to source buffer
+
+void bc_aes_key_from_uint8(bc_aes_key_t key, const uint8_t *buffer);
+
+//! @brief Create Initialization vector from uint8 array
+//! @param[out] iv 128-bit Initialization vector
+//! @param[in] buffer Pointer to source buffer
+
+void bc_aes_iv_from_uint8(bc_aes_iv_t iv, const uint8_t *buffer);
 
 //! @}
 
