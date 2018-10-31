@@ -21,7 +21,6 @@ static void _bc_module_iqrf_task(void *param);
 #define _BC_MODULE_IQRF_EXPANDER_IQRF_POWER (1 << 4)
 #define _BC_MODULE_IQRF_EXPANDER_IQRF_EN_CS (1 << 7)
 
-#define HWPID_HARDWARIO_PRESENSCE_SENSOR 0x0015
 
 
 
@@ -67,9 +66,7 @@ bool bc_module_iqrf_init(void)
 
     bc_scheduler_register(_bc_module_iqrf_task, NULL, 0);
 
-    bc_scheduler_disable_sleep();
-    bc_system_deep_sleep_disable();
-
+    //bc_scheduler_disable_sleep();
     bc_system_pll_enable();
 
     return true;
@@ -92,10 +89,7 @@ void bc_module_iqrf_set_event_handler(void (*event_handler)(bc_module_iqrf_t *, 
 // Asynchronous transparency modifier
 #define   HDLC_FRM_ESCAPE_BIT       0x20
 
-// Flag to DpaEvent_DpaRequest event value to indicate return TRUE not FALSE
-#define EVENT_RETURN_TRUE           0x80
-// Flag to DpaEvent_DpaRequest event value to report error, error value is the 1st data byte
-#define EVENT_RESPONSE_ERROR        0x40
+
 
 // Received data from IQRF
 uint8_t RxBuffer[2 * sizeof( byte ) + sizeof( TDpaIFaceHeader ) + sizeof( TDpaMessage )];
@@ -229,19 +223,19 @@ void CustomDpaHandler( byte dataLength )
         #define _DpaMessage     (*((TDpaMessage*)(RxBuffer+8)))
 
         self->dpa_message = &_DpaMessage;
-
+        self->dpa_data_length = &RxBuffer[1];
 
             // Fake Custom DPA Handler macro to return DPA error (this macro does not do return the same way the DPA original macro)
         #define DpaApiReturnPeripheralError(error) do { \
         _DpaMessage.ErrorAnswer.ErrN = error; \
-        returnDataLength = _DpaDataLength = sizeof( _DpaMessage.ErrorAnswer.ErrN ); \
-        returnFlags = EVENT_RESPONSE_ERROR | EVENT_RETURN_TRUE; \
+        self->return_data_length = *self->dpa_data_length = sizeof( _DpaMessage.ErrorAnswer.ErrN ); \
+        self->return_flags = EVENT_RESPONSE_ERROR | EVENT_RETURN_TRUE; \
         } while( 0 )
 
         // Value or error flag to return from Custom DPA handler
-        byte returnFlags = 0;
+        //byte returnFlags = 0;
         // Length data to return (may not equal to _DpaDataLength)
-        byte returnDataLength = 0;
+        //byte returnDataLength = 0;
 
         // Device enumeration?
         if ( IsDpaEnumPeripheralsRequest() )
@@ -251,17 +245,17 @@ void CustomDpaHandler( byte dataLength )
             {
                 self->_event_handler(self, BC_MODULE_IQRF_EVENT_PERIPHERAL_REQUEST, self->_event_param);
             }
+/*
+            // We implement 1 user peripheral
+            _DpaMessage.EnumPeripheralsAnswer.UserPerNr = 1;
+            FlagUserPer( _DpaMessage.EnumPeripheralsAnswer.UserPer, PNUM_STD_SENSORS );
+            _DpaMessage.EnumPeripheralsAnswer.HWPID = HWPID_HARDWARIO_PRESENSCE_SENSOR;
+            _DpaMessage.EnumPeripheralsAnswer.HWPIDver = 0xABCD;
 
-          // We implement 1 user peripheral
-          _DpaMessage.EnumPeripheralsAnswer.UserPerNr = 1;
-          FlagUserPer( _DpaMessage.EnumPeripheralsAnswer.UserPer, PNUM_STD_SENSORS );
-          _DpaMessage.EnumPeripheralsAnswer.HWPID = HWPID_HARDWARIO_PRESENSCE_SENSOR;
-          _DpaMessage.EnumPeripheralsAnswer.HWPIDver = 0xABCD;
-
-          // Return the enumeration structure but do not modify _DpaDataLength
-          returnDataLength = sizeof( _DpaMessage.EnumPeripheralsAnswer );
-          // Return TRUE
-          returnFlags = EVENT_RETURN_TRUE;
+            // Return the enumeration structure but do not modify _DpaDataLength
+            self->return_data_length = sizeof( _DpaMessage.EnumPeripheralsAnswer );
+            // Return TRUE
+            self->return_flags = EVENT_RETURN_TRUE;*/
         }
 
         // Get information about peripherals?
@@ -275,15 +269,15 @@ void CustomDpaHandler( byte dataLength )
                 self->_event_handler(self, BC_MODULE_IQRF_EVENT_PERIPHERAL_INFO_REQUEST, self->_event_param);
             }
 
-            _DpaMessage.PeripheralInfoAnswer.PerT = PERIPHERAL_TYPE_STD_SENSORS;
+            /*_DpaMessage.PeripheralInfoAnswer.PerT = PERIPHERAL_TYPE_STD_SENSORS;
             _DpaMessage.PeripheralInfoAnswer.PerTE = PERIPHERAL_TYPE_EXTENDED_READ_WRITE;
             // Set standard version
             _DpaMessage.PeripheralInfoAnswer.Par1 = 13;
 
             // Return the information structure but do not modify _DpaDataLength
-            returnDataLength = sizeof( _DpaMessage.PeripheralInfoAnswer );
+            self->return_data_length = sizeof( _DpaMessage.PeripheralInfoAnswer );
             // Return TRUE
-            returnFlags = EVENT_RETURN_TRUE;
+            self->return_flags = EVENT_RETURN_TRUE;*/
           }
         }
         else
@@ -305,7 +299,7 @@ void CustomDpaHandler( byte dataLength )
                 // Sensor enumeration
               case PCMD_STD_ENUMERATE:
                 // Check data request length
-                if ( _DpaDataLength != 0 )
+                if ( *self->dpa_data_length != 0 )
                 {
                   DpaApiReturnPeripheralError( ERROR_DATA_LEN );
                   break;
@@ -315,14 +309,14 @@ void CustomDpaHandler( byte dataLength )
                 {
                     self->_event_handler(self, BC_MODULE_IQRF_EVENT_PCMD_STD_ENUMERATE, self->_event_param);
                 }
-
+/*
                 // 1st byte is sensor type
                 _DpaMessage.Response.PData[0] = STD_SENSOR_TYPE_BINARYDATA30; //STD_SENSOR_TYPE_BINARYDATA7;
 
                 // Return just one sensor type
-                returnDataLength = _DpaDataLength = sizeof( _DpaMessage.Response.PData[0] );
+                self->return_data_length = *self->dpa_data_length = sizeof( _DpaMessage.Response.PData[0] );
                 // Return TRUE
-                returnFlags = EVENT_RETURN_TRUE;
+                self->return_flags = EVENT_RETURN_TRUE;*/
                 break;
 
                 // Supported commands. They are handled almost the same way
@@ -330,15 +324,15 @@ void CustomDpaHandler( byte dataLength )
               case PCMD_STD_SENSORS_READ_TYPES_AND_VALUES:
               {
                 // No sensor bitmap specified?
-                if ( _DpaDataLength == 0 )
+                if ( *self->dpa_data_length == 0 )
                 {
                   // Bitmap is 32 bits long = 4
-                  _DpaDataLength = 4;
+                  *self->dpa_data_length = 4;
                   // Simulate 1st sensor in the bitmap (states of the other unimplemented sensors do not care)
                   _DpaMessage.Request.PData[0] |= 0x01; // Note: must not modify W
                 }
                 // Valid bitmap length?
-                else if ( _DpaDataLength != 4 )
+                else if ( *self->dpa_data_length != 4 )
                 {
                   // Return error
                   DpaApiReturnPeripheralError( ERROR_DATA_LEN );
@@ -358,6 +352,7 @@ void CustomDpaHandler( byte dataLength )
                     self->_event_handler(self, event, self->_event_param);
                 }
 
+/*
                 // Pointer to the response data
                 byte *pResponseData = _DpaMessage.Response.PData;
                 // Is my only sensor selected?
@@ -377,9 +372,10 @@ void CustomDpaHandler( byte dataLength )
                 }
 
                 // Returned data length
-                returnDataLength = _DpaDataLength = ( pResponseData - _DpaMessage.Response.PData );
+                self->return_data_length = _DpaDataLength = ( pResponseData - _DpaMessage.Response.PData );
                 // Return TRUE
-                returnFlags = EVENT_RETURN_TRUE;
+                self->return_flags = EVENT_RETURN_TRUE;
+                */
                 break;
               }
             }
@@ -387,7 +383,7 @@ void CustomDpaHandler( byte dataLength )
         }
 
         // Return DPA response
-        ResponseCommand( returnFlags, _DpaDataLength, returnDataLength, (byte*)&_DpaMessage );
+        ResponseCommand( self->return_flags, *self->dpa_data_length, self->return_data_length, (byte*)&_DpaMessage );
       }
       break;
 
@@ -436,91 +432,98 @@ static void _bc_module_iqrf_task(void *param)
 
     state = RXstateWaitHead;
 
-    // Active low
-    while (!bc_gpio_get_input(BC_GPIO_INT))
+    if(!bc_gpio_get_input(BC_GPIO_INT))
     {
-        // Read the byte from IQRF
-        uint8_t spiSource = HDLC_FRM_CONTROL_ESCAPE;
-        uint8_t oneByte;
-        bc_spi_transfer(&spiSource, &oneByte, 1);
+        bc_system_pll_enable();
 
-        //bc_log_debug("RX raw byte: 0x%02x, state: %d", oneByte, state);
-
-         switch ( state )
-    {
-      // Waiting for the DLHC header
-      case RXstateWaitHead:
-      {
-        if ( oneByte == HDLC_FRM_FLAG_SEQUENCE )
+        // Active low
+        while (!bc_gpio_get_input(BC_GPIO_INT))
         {
-          rxLength = 0;
-          pRxBuffer = RxBuffer;
-          // RXstatePacket
-_NextState:
-          state++;
-        }
-        break;
-      }
+            // Read the byte from IQRF
+            uint8_t spiSource = HDLC_FRM_CONTROL_ESCAPE;
+            uint8_t oneByte;
+            bc_spi_transfer(&spiSource, &oneByte, 1);
 
-      // Handling packet data byte
-      case RXstatePacket:
-      {
-        switch ( oneByte )
+            //bc_log_debug("RX raw byte: 0x%02x, state: %d", oneByte, state);
+
+            switch ( state )
         {
-          case HDLC_FRM_CONTROL_ESCAPE:
-            goto _NextState;
-
-          case HDLC_FRM_FLAG_SEQUENCE:
-          {
-            if ( rxLength >= MIN_RX_PACKET_DATA_LENGTH )
+        // Waiting for the DLHC header
+        case RXstateWaitHead:
+        {
+            if ( oneByte == HDLC_FRM_FLAG_SEQUENCE )
             {
-              // Packet received, handle it
-              CustomDpaHandler( rxLength );
-              // Exit loop
-              bc_scheduler_plan_current_relative(10);
-              return;
+            rxLength = 0;
+            pRxBuffer = RxBuffer;
+            // RXstatePacket
+    _NextState:
+            state++;
+            }
+            break;
+        }
+
+        // Handling packet data byte
+        case RXstatePacket:
+        {
+            switch ( oneByte )
+            {
+            case HDLC_FRM_CONTROL_ESCAPE:
+                goto _NextState;
+
+            case HDLC_FRM_FLAG_SEQUENCE:
+            {
+                if ( rxLength >= MIN_RX_PACKET_DATA_LENGTH )
+                {
+                // Packet received, handle it
+                CustomDpaHandler( rxLength );
+                // Exit loop
+                bc_scheduler_plan_current_relative(10);
+                return;
+                }
+
+                goto _SetRXstateWaitHead;
             }
 
+            default:
+                break;
+            }
+
+    _StoreByte:
+            if ( rxLength == ( MAX_RX_PACKET_DATA_LENGTH + 2 ) )
             goto _SetRXstateWaitHead;
-          }
 
-          default:
+            *pRxBuffer++ = oneByte;
+            rxLength++;
             break;
         }
 
-_StoreByte:
-        if ( rxLength == ( MAX_RX_PACKET_DATA_LENGTH + 2 ) )
-          goto _SetRXstateWaitHead;
-
-        *pRxBuffer++ = oneByte;
-        rxLength++;
-        break;
-      }
-
-      // Handle escaped byte
-      case RXstateEscape:
-      {
-        switch ( oneByte )
+        // Handle escaped byte
+        case RXstateEscape:
         {
-          case HDLC_FRM_FLAG_SEQUENCE:
-          case HDLC_FRM_CONTROL_ESCAPE:
-_SetRXstateWaitHead:
-            state = RXstateWaitHead;
+            switch ( oneByte )
+            {
+            case HDLC_FRM_FLAG_SEQUENCE:
+            case HDLC_FRM_CONTROL_ESCAPE:
+    _SetRXstateWaitHead:
+                state = RXstateWaitHead;
+                break;
+
+            default:
+                state--; // RXstatePacket
+                oneByte ^= HDLC_FRM_ESCAPE_BIT;
+                goto _StoreByte;
+            }
             break;
-
-          default:
-            state--; // RXstatePacket
-            oneByte ^= HDLC_FRM_ESCAPE_BIT;
-            goto _StoreByte;
         }
-        break;
-      }
-      default:
-        break;
+        default:
+            break;
+        }
+
+
+        }
+
+    bc_system_pll_disable();
     }
 
-
-    }
-
-    bc_scheduler_plan_current_now();
+    bc_scheduler_plan_current_relative(10);
 }

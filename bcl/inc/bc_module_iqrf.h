@@ -51,8 +51,16 @@ struct bc_module_iqrf_t
 
     uint8_t return_flags;
     uint8_t return_data_length;
-    uint8_t return_dpa_data_length;
+    uint8_t *dpa_data_length;
 };
+
+// Flag to DpaEvent_DpaRequest event value to indicate return TRUE not FALSE
+#define EVENT_RETURN_TRUE           0x80
+// Flag to DpaEvent_DpaRequest event value to report error, error value is the 1st data byte
+#define EVENT_RESPONSE_ERROR        0x40
+
+#define HWPID_HARDWARIO_PRESENSCE_SENSOR 0x0015
+
 
 //! @endcond
 
