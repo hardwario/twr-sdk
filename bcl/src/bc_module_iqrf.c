@@ -200,10 +200,8 @@ byte GetSensor0Value()
 void CustomDpaHandler( byte dataLength )
 //############################################################################################
 {
-
     bc_module_iqrf_t *self = &_bc_module_iqrf;
-
-    bc_log_debug("DPA Handler len:%d, evt: %d", dataLength, RxBuffer[0]);
+    bc_log_debug("DPAlen:%d,e:%d", dataLength, RxBuffer[0]);
 
   // Which Custom DPA Handler event to handle?
   switch ( RxBuffer[0] )
@@ -225,60 +223,32 @@ void CustomDpaHandler( byte dataLength )
         self->dpa_message = &_DpaMessage;
         self->dpa_data_length = &RxBuffer[1];
 
-            // Fake Custom DPA Handler macro to return DPA error (this macro does not do return the same way the DPA original macro)
+        // Fake Custom DPA Handler macro to return DPA error (this macro does not do return the same way the DPA original macro)
         #define DpaApiReturnPeripheralError(error) do { \
         _DpaMessage.ErrorAnswer.ErrN = error; \
         self->return_data_length = *self->dpa_data_length = sizeof( _DpaMessage.ErrorAnswer.ErrN ); \
         self->return_flags = EVENT_RESPONSE_ERROR | EVENT_RETURN_TRUE; \
         } while( 0 )
 
-        // Value or error flag to return from Custom DPA handler
-        //byte returnFlags = 0;
-        // Length data to return (may not equal to _DpaDataLength)
-        //byte returnDataLength = 0;
-
-        // Device enumeration?
+        // Device enumeration
         if ( IsDpaEnumPeripheralsRequest() )
         {
-
             if (self->_event_handler != NULL)
             {
                 self->_event_handler(self, BC_MODULE_IQRF_EVENT_PERIPHERAL_REQUEST, self->_event_param);
             }
-/*
-            // We implement 1 user peripheral
-            _DpaMessage.EnumPeripheralsAnswer.UserPerNr = 1;
-            FlagUserPer( _DpaMessage.EnumPeripheralsAnswer.UserPer, PNUM_STD_SENSORS );
-            _DpaMessage.EnumPeripheralsAnswer.HWPID = HWPID_HARDWARIO_PRESENSCE_SENSOR;
-            _DpaMessage.EnumPeripheralsAnswer.HWPIDver = 0xABCD;
-
-            // Return the enumeration structure but do not modify _DpaDataLength
-            self->return_data_length = sizeof( _DpaMessage.EnumPeripheralsAnswer );
-            // Return TRUE
-            self->return_flags = EVENT_RETURN_TRUE;*/
         }
 
         // Get information about peripherals?
         else if ( IsDpaPeripheralInfoRequest() )
         {
-          if ( _PNUM == PNUM_STD_SENSORS )
-          {
-
-            if (self->_event_handler != NULL)
+            if ( _PNUM == PNUM_STD_SENSORS )
             {
-                self->_event_handler(self, BC_MODULE_IQRF_EVENT_PERIPHERAL_INFO_REQUEST, self->_event_param);
+                if (self->_event_handler != NULL)
+                {
+                    self->_event_handler(self, BC_MODULE_IQRF_EVENT_PERIPHERAL_INFO_REQUEST, self->_event_param);
+                }
             }
-
-            /*_DpaMessage.PeripheralInfoAnswer.PerT = PERIPHERAL_TYPE_STD_SENSORS;
-            _DpaMessage.PeripheralInfoAnswer.PerTE = PERIPHERAL_TYPE_EXTENDED_READ_WRITE;
-            // Set standard version
-            _DpaMessage.PeripheralInfoAnswer.Par1 = 13;
-
-            // Return the information structure but do not modify _DpaDataLength
-            self->return_data_length = sizeof( _DpaMessage.PeripheralInfoAnswer );
-            // Return TRUE
-            self->return_flags = EVENT_RETURN_TRUE;*/
-          }
         }
         else
         {
@@ -309,14 +279,7 @@ void CustomDpaHandler( byte dataLength )
                 {
                     self->_event_handler(self, BC_MODULE_IQRF_EVENT_PCMD_STD_ENUMERATE, self->_event_param);
                 }
-/*
-                // 1st byte is sensor type
-                _DpaMessage.Response.PData[0] = STD_SENSOR_TYPE_BINARYDATA30; //STD_SENSOR_TYPE_BINARYDATA7;
 
-                // Return just one sensor type
-                self->return_data_length = *self->dpa_data_length = sizeof( _DpaMessage.Response.PData[0] );
-                // Return TRUE
-                self->return_flags = EVENT_RETURN_TRUE;*/
                 break;
 
                 // Supported commands. They are handled almost the same way
@@ -351,37 +314,11 @@ void CustomDpaHandler( byte dataLength )
 
                     self->_event_handler(self, event, self->_event_param);
                 }
-
-/*
-                // Pointer to the response data
-                byte *pResponseData = _DpaMessage.Response.PData;
-                // Is my only sensor selected?
-                if ( ( _DpaMessage.Request.PData[0] & 0x01 ) != 0 )
-                {
-                  // Return also sensor type?
-                  if ( _PCMD == PCMD_STD_SENSORS_READ_TYPES_AND_VALUES )
-                    *pResponseData++ = STD_SENSOR_TYPE_BINARYDATA30; //STD_SENSOR_TYPE_BINARYDATA7;
-
-                  uint32_t val = 1234;
-
-                  // Return sensor data
-                  *pResponseData++ = (val >> 0) & 0xFF;
-                  *pResponseData++ = (val >> 8) & 0xFF;
-                  *pResponseData++ = (val >> 16) & 0xFF;
-                  *pResponseData++ = (val >> 24) & 0xFF;
-                }
-
-                // Returned data length
-                self->return_data_length = _DpaDataLength = ( pResponseData - _DpaMessage.Response.PData );
-                // Return TRUE
-                self->return_flags = EVENT_RETURN_TRUE;
-                */
                 break;
               }
             }
           }
         }
-
         // Return DPA response
         ResponseCommand( self->return_flags, *self->dpa_data_length, self->return_data_length, (byte*)&_DpaMessage );
       }
