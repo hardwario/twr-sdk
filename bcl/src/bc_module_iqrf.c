@@ -10,16 +10,9 @@
 
 #include <stm32l0xx.h>
 
+#include <bc_module_iqrf.h>
 
-#define int8 int8_t
-#define int16 int16_t
-#define uns8 uint8_t
-#define uns16 uint16_t
-#define byte uint8_t
 
-#include "DPA.h"
-#include "IQRF_HWPID.h"
-#include "IQRFstandard.h"
 
 bc_tca9534a_t tca9534a;
 
@@ -27,6 +20,12 @@ static void _bc_module_iqrf_task(void *param);
 
 #define _BC_MODULE_IQRF_EXPANDER_IQRF_POWER (1 << 4)
 #define _BC_MODULE_IQRF_EXPANDER_IQRF_EN_CS (1 << 7)
+
+#define HWPID_HARDWARIO_PRESENSCE_SENSOR 0x0015
+
+
+
+bc_module_iqrf_t _bc_module_iqrf;
 
 bool bc_module_iqrf_init(void)
 {
@@ -74,6 +73,15 @@ bool bc_module_iqrf_init(void)
     bc_system_pll_enable();
 
     return true;
+}
+
+
+void bc_module_iqrf_set_event_handler(void (*event_handler)(bc_module_iqrf_t *, bc_module_iqrf_event_t, void *), void *event_param)
+{
+    bc_module_iqrf_t *self = &_bc_module_iqrf;
+
+    self->_event_handler = event_handler;
+    self->_event_param = event_param;
 }
 
 // HDLC byte stuffing bytes
@@ -199,6 +207,8 @@ void CustomDpaHandler( byte dataLength )
 //############################################################################################
 {
 
+    bc_module_iqrf_t *self = &_bc_module_iqrf;
+
     bc_log_debug("DPA Handler len:%d, evt: %d", dataLength, RxBuffer[0]);
 
   // Which Custom DPA Handler event to handle?
@@ -218,6 +228,9 @@ void CustomDpaHandler( byte dataLength )
         #define _HWPIDhigh      (RxBuffer[7])
         #define _DpaMessage     (*((TDpaMessage*)(RxBuffer+8)))
 
+        self->dpa_message = &_DpaMessage;
+
+
             // Fake Custom DPA Handler macro to return DPA error (this macro does not do return the same way the DPA original macro)
         #define DpaApiReturnPeripheralError(error) do { \
         _DpaMessage.ErrorAnswer.ErrN = error; \
@@ -233,10 +246,16 @@ void CustomDpaHandler( byte dataLength )
         // Device enumeration?
         if ( IsDpaEnumPeripheralsRequest() )
         {
+
+            if (self->_event_handler != NULL)
+            {
+                self->_event_handler(self, BC_MODULE_IQRF_EVENT_PERIPHERAL_REQUEST, self->_event_param);
+            }
+
           // We implement 1 user peripheral
           _DpaMessage.EnumPeripheralsAnswer.UserPerNr = 1;
           FlagUserPer( _DpaMessage.EnumPeripheralsAnswer.UserPer, PNUM_STD_SENSORS );
-          _DpaMessage.EnumPeripheralsAnswer.HWPID = 0x123F;
+          _DpaMessage.EnumPeripheralsAnswer.HWPID = HWPID_HARDWARIO_PRESENSCE_SENSOR;
           _DpaMessage.EnumPeripheralsAnswer.HWPIDver = 0xABCD;
 
           // Return the enumeration structure but do not modify _DpaDataLength
@@ -250,6 +269,12 @@ void CustomDpaHandler( byte dataLength )
         {
           if ( _PNUM == PNUM_STD_SENSORS )
           {
+
+            if (self->_event_handler != NULL)
+            {
+                self->_event_handler(self, BC_MODULE_IQRF_EVENT_PERIPHERAL_INFO_REQUEST, self->_event_param);
+            }
+
             _DpaMessage.PeripheralInfoAnswer.PerT = PERIPHERAL_TYPE_STD_SENSORS;
             _DpaMessage.PeripheralInfoAnswer.PerTE = PERIPHERAL_TYPE_EXTENDED_READ_WRITE;
             // Set standard version
@@ -286,6 +311,11 @@ void CustomDpaHandler( byte dataLength )
                   break;
                 }
 
+                if (self->_event_handler != NULL)
+                {
+                    self->_event_handler(self, BC_MODULE_IQRF_EVENT_PCMD_STD_ENUMERATE, self->_event_param);
+                }
+
                 // 1st byte is sensor type
                 _DpaMessage.Response.PData[0] = STD_SENSOR_TYPE_BINARYDATA30; //STD_SENSOR_TYPE_BINARYDATA7;
 
@@ -313,6 +343,19 @@ void CustomDpaHandler( byte dataLength )
                   // Return error
                   DpaApiReturnPeripheralError( ERROR_DATA_LEN );
                   break;
+                }
+
+
+                if (self->_event_handler != NULL)
+                {
+                    bc_module_iqrf_event_t event = BC_MODULE_IQRF_EVENT_PCMD_STD_SENSORS_READ_VALUES;
+
+                    if(_PCMD == PCMD_STD_SENSORS_READ_TYPES_AND_VALUES)
+                    {
+                        event = BC_MODULE_IQRF_EVENT_PCMD_STD_SENSORS_READ_TYPES_AND_VALUES;
+                    }
+
+                    self->_event_handler(self, event, self->_event_param);
                 }
 
                 // Pointer to the response data
