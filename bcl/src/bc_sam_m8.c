@@ -144,7 +144,14 @@ static void _bc_sam_m8_task(void *param)
                 }
             }
 
-            bc_scheduler_plan_current_relative(100);
+            if (self->_state == BC_SAM_M8_STATE_UPDATE)
+            {
+                goto start;
+            }
+            else
+            {
+                bc_scheduler_plan_current_relative(100);
+            }
 
             break;
             
