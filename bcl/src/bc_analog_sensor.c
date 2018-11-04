@@ -1,32 +1,22 @@
 #include <bc_analog_sensor.h>
 
-static const uint8_t _bc_analog_sensor_format_lut[] =
-{
-    [BC_ADC_FORMAT_8_BIT] = 1,
-    [BC_ADC_FORMAT_16_BIT] = 2,
-    [BC_ADC_FORMAT_24_BIT] = 3,
-    [BC_ADC_FORMAT_32_BIT] = 4,
-    [BC_ADC_FORMAT_FLOAT] = 4
-};
-
 static void _bc_analog_sensor_task_interval(void *param);
 
 static void _bc_analog_sensor_task_measure(void *param);
 
 static void _bc_analog_sensor_adc_event_handler(bc_adc_channel_t channel, bc_adc_event_t event, void *param);
 
-void bc_analog_sensor_init(bc_analog_sensor_t *self, bc_adc_channel_t adc_channel, bc_adc_format_t adc_format, const bc_analog_sensor_driver_t *driver)
+void bc_analog_sensor_init(bc_analog_sensor_t *self, bc_adc_channel_t adc_channel, const bc_analog_sensor_driver_t *driver)
 {
     memset(self, 0, sizeof(*self));
 
     self->_adc_channel = adc_channel;
-    self->_adc_format = adc_format;
     self->_driver = driver;
 
     self->_task_id_interval = bc_scheduler_register(_bc_analog_sensor_task_interval, self, BC_TICK_INFINITY);
     self->_task_id_measure = bc_scheduler_register(_bc_analog_sensor_task_measure, self, BC_TICK_INFINITY);
 
-    bc_adc_init(self->_adc_channel, self->_adc_format);
+    bc_adc_init();
 
     bc_adc_set_event_handler(self->_adc_channel, _bc_analog_sensor_adc_event_handler, self);
 
@@ -72,14 +62,14 @@ bool bc_analog_sensor_measure(bc_analog_sensor_t *self)
     return true;
 }
 
-bool bc_analog_sensor_get_result(bc_analog_sensor_t *self, void *result)
+bool bc_analog_sensor_get_value(bc_analog_sensor_t *self, uint16_t *result)
 {
     if (self->_state != BC_ANALOG_SENSOR_STATE_UPDATE)
     {
         return false;
     }
 
-    memcpy(result, &self->_value, _bc_analog_sensor_format_lut[self->_adc_format]);
+    *result = self->_value;
 
     return true;
 }
@@ -134,9 +124,7 @@ start:
         }
         case BC_ANALOG_SENSOR_STATE_MEASURE:
         {
-            bc_adc_set_format(self->_adc_channel, self->_adc_format);
-
-            if (!bc_adc_read(self->_adc_channel, &self->_value))
+            if (!bc_adc_get_value(self->_adc_channel, &self->_value))
             {
                 self->_state = BC_ANALOG_SENSOR_STATE_ERROR;
 

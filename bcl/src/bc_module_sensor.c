@@ -3,9 +3,9 @@
 
 #define _BC_MODULE_SENSOR_INITIALIZED_STATE 0xff
 #define _BC_MODULE_SENSOR_INITIALIZED_DIRECTION 0x00
-
-#define _BC_MODULE_SENSOR_CH_A_4K7   (1 << 5)
+#define _BC_MODULE_SENSOR_VDD        (1 << 3)
 #define _BC_MODULE_SENSOR_CH_A_56R   (1 << 4)
+#define _BC_MODULE_SENSOR_CH_A_4K7   (1 << 5)
 #define _BC_MODULE_SENSOR_CH_B_4K7   (1 << 6)
 #define _BC_MODULE_SENSOR_CH_B_56R   (1 << 7)
 
@@ -13,6 +13,7 @@ static struct
 {
     bool initialized;
     bc_tca9534a_t tca9534a;
+    bc_module_sensor_revision_t revision;
 
 } _bc_module_sensor;
 
@@ -60,6 +61,11 @@ bool bc_module_sensor_init(void)
     }
 
     return true;
+}
+
+void bc_module_sensor_deinit(void)
+{
+    _bc_module_sensor.initialized = false;
 }
 
 bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sensor_pull_t pull)
@@ -178,4 +184,79 @@ int bc_module_sensor_get_output(bc_module_sensor_channel_t channel)
 void bc_module_sensor_toggle_output(bc_module_sensor_channel_t channel)
 {
     bc_gpio_toggle_output(_bc_module_sensor_channel_gpio_lut[channel]);
+}
+
+bool bc_module_sensor_set_vdd(bool on)
+{
+    uint8_t port_actual;
+    uint8_t port_new;
+
+    if (bc_module_sensor_get_revision() < BC_MODULE_SENSOR_REVISION_R1_1)
+    {
+        return false;
+    }
+
+    port_actual = _bc_module_sensor.tca9534a._output_port;
+
+    if (on)
+    {
+        port_new = port_actual & ~_BC_MODULE_SENSOR_VDD;
+    }
+    else
+    {
+        port_new = port_actual | _BC_MODULE_SENSOR_VDD;
+    }
+
+    if (port_actual != port_new)
+    {
+        return bc_tca9534a_write_port(&_bc_module_sensor.tca9534a, port_new);
+    }
+
+    return true;
+}
+
+bc_module_sensor_revision_t bc_module_sensor_get_revision(void)
+{
+    if (!_bc_module_sensor.initialized)
+    {
+        return BC_MODULE_SENSOR_REVISION_UNKNOWN;
+    }
+
+    if (_bc_module_sensor.revision == BC_MODULE_SENSOR_REVISION_UNKNOWN)
+    {
+        if (!bc_tca9534a_set_pin_direction(&_bc_module_sensor.tca9534a, BC_TCA9534A_PIN_P1, BC_TCA9534A_PIN_DIRECTION_INPUT))
+        {
+            return BC_MODULE_SENSOR_REVISION_UNKNOWN;
+        }
+
+        uint8_t test_vector = 0x86;
+        int value_input;
+        int value_output;
+
+        for (size_t i = 0; i < sizeof(test_vector); i++)
+        {
+            value_output = (test_vector >> i) & 0x01;
+
+            if (!bc_tca9534a_write_pin(&_bc_module_sensor.tca9534a, BC_TCA9534A_PIN_P0, value_output))
+            {
+                return BC_MODULE_SENSOR_REVISION_UNKNOWN;
+            }
+
+            if (!bc_tca9534a_read_pin(&_bc_module_sensor.tca9534a, BC_TCA9534A_PIN_P1, &value_input))
+            {
+                return BC_MODULE_SENSOR_REVISION_UNKNOWN;
+            }
+
+            if (value_output != value_input)
+            {
+                _bc_module_sensor.revision = BC_MODULE_SENSOR_REVISION_R1_0;
+
+                return _bc_module_sensor.revision;
+            }
+        }
+
+        _bc_module_sensor.revision = BC_MODULE_SENSOR_REVISION_R1_1;
+    }
+
+    return _bc_module_sensor.revision;
 }

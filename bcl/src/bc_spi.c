@@ -2,6 +2,7 @@
 #include <bc_scheduler.h>
 #include <bc_dma.h>
 #include <bc_system.h>
+#include <bc_timer.h>
 #include <stm32l0xx.h>
 
 #define _BC_SPI_EVENT_CLEAR 0
@@ -36,6 +37,9 @@ static struct
     bool pending_event_done;
     bool initilized;
     bc_scheduler_task_id_t task_id;
+    uint16_t cs_delay;
+    uint16_t delay;
+    uint16_t cs_quit;
 
 } _bc_spi;
 
@@ -104,6 +108,8 @@ void bc_spi_init(bc_spi_speed_t speed, bc_spi_mode_t mode)
 
     bc_dma_init();
 
+    bc_timer_init();
+
     bc_dma_set_event_handler(BC_DMA_CHANNEL_5, _bc_spi_dma_event_handler, NULL);
 
     _bc_spi.task_id = bc_scheduler_register(_bc_spi_task, NULL, BC_TICK_INFINITY);
@@ -129,6 +135,15 @@ void bc_spi_set_speed(bc_spi_speed_t speed)
 
     // Enable SPI
     SPI2->CR1 |= SPI_CR1_SPE;
+}
+
+void bc_spi_set_timing(uint16_t cs_delay, uint16_t delay, uint16_t cs_quit)
+{
+    _bc_spi.cs_delay = cs_delay;
+
+    _bc_spi.delay = delay;
+
+    _bc_spi.cs_quit = cs_quit;
 }
 
 bc_spi_speed_t bc_spi_get_speed(void)
@@ -186,6 +201,13 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
     // Set CS to active level
     GPIOB->BSRR = GPIO_BSRR_BR_12;
 
+    if (_bc_spi.cs_delay > 0)
+    {
+        bc_timer_start();
+        bc_timer_delay(_bc_spi.cs_delay);
+        bc_timer_stop();
+    }
+
     if (source == NULL)
     {
         for (size_t i = 0; i < length; i++)
@@ -209,6 +231,13 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
             // Read and write byte
             *((uint8_t *) destination + i) = _bc_spi_transfer_byte(*((uint8_t *) source + i));
         }
+    }
+
+    if (_bc_spi.cs_quit > 0)
+    {
+        bc_timer_start();
+        bc_timer_delay(_bc_spi.cs_quit);
+        bc_timer_stop();
     }
 
     // Set CS to inactive level
@@ -306,6 +335,13 @@ static uint8_t _bc_spi_transfer_byte(uint8_t value)
 
     // Read data register
     value = SPI2->DR;
+
+    if (_bc_spi.delay > 0)
+    {
+        bc_timer_start();
+        bc_timer_delay(_bc_spi.delay);
+        bc_timer_stop();
+    }
 
     return value;
 }
