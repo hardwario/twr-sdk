@@ -8,15 +8,6 @@
 //! @brief Driver for SAM M8 module
 //! @{
 
-// TODO: Adjust
-#define BC_SAM_M8_DEFAULT_I2C_ADDRESS 0x42
-
-// TODO: Adjust
-#define BC_SAM_M8_DEFAULT_EXPANDER_I2C_ADDRESS 0x00
-
-// TODO: Adjust
-#define BC_SAM_M8_DEFAULT_EXPANDER_PIN (1 << 0)
-
 //! @brief Callback events
 
 typedef enum
