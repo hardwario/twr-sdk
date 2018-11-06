@@ -59,6 +59,7 @@ LINKER_SCRIPT ?= $(SDK_DIR)/sys/lkr/stm32l083cz.ld
 INC_DIR += $(APP_DIR)
 INC_DIR += $(SDK_DIR)/bcl/inc
 INC_DIR += $(SDK_DIR)/bcl/stm/inc
+INC_DIR += $(SDK_DIR)/iqrf
 INC_DIR += $(SDK_DIR)/stm/hal/inc
 INC_DIR += $(SDK_DIR)/stm/spirit1/inc
 INC_DIR += $(SDK_DIR)/stm/usb/inc
