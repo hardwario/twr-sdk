@@ -4,6 +4,7 @@
 #include <bc_log.h>
 #include <bc_gpio.h>
 #include <bc_system.h>
+#include <bc_button.h>
 
 #include <bc_tca9534a.h>
 #include <bc_scheduler.h>
@@ -12,35 +13,58 @@
 
 #include <bc_module_iqrf.h>
 
-
-
-bc_tca9534a_t tca9534a;
-
+static void _bc_module_iqrf_button_init(bc_button_t *self);
+static int _bc_module_iqrf_button_get_input(bc_button_t *self);
+static void _iqrf_button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param);
 static void _bc_module_iqrf_task(void *param);
 
 #define _BC_MODULE_IQRF_EXPANDER_IQRF_POWER (1 << 4)
 #define _BC_MODULE_IQRF_EXPANDER_IQRF_EN_CS (1 << 7)
 
+static const bc_button_driver_t bc_module_iqrf_button_driver =
+{
+    .init = _bc_module_iqrf_button_init,
+    .get_input = _bc_module_iqrf_button_get_input,
+};
+
+//! @brief Virtual button channels
+
+typedef enum
+{
+    //! @brief LCD left button channel
+    BC_MODULE_IQRF_BUTTON_SW1 = 0,
+
+    //! @brief LCD right button channel
+    BC_MODULE_IQRF_BUTTON_SW2  = 1
+
+} bc_module_lcd_button_t;
 
 
+static bc_tca9534a_pin_t _bc_module_iqrf_button_pin_lut[2] =
+{
+        [BC_MODULE_IQRF_BUTTON_SW1] = BC_TCA9534A_PIN_P0,
+        [BC_MODULE_IQRF_BUTTON_SW2] = BC_TCA9534A_PIN_P1
+};
 
 bc_module_iqrf_t _bc_module_iqrf;
 
+
 bool bc_module_iqrf_init(void)
 {
+    bc_module_iqrf_t *self = &_bc_module_iqrf;
 
-    if (!bc_tca9534a_init(&tca9534a, BC_I2C_I2C0, 0x20))
+    if (!bc_tca9534a_init(&self->tca9534a, BC_I2C_I2C0, 0x20))
     {
         return false;
     }
 
     // Disconnect power
-    if (!bc_tca9534a_write_port(&tca9534a, 0x00))
+    if (!bc_tca9534a_write_port(&self->tca9534a, 0x00))
     {
         return false;
     }
 
-    if (!bc_tca9534a_set_port_direction(&tca9534a, (uint8_t)~(_BC_MODULE_IQRF_EXPANDER_IQRF_POWER | _BC_MODULE_IQRF_EXPANDER_IQRF_EN_CS)))
+    if (!bc_tca9534a_set_port_direction(&self->tca9534a, (uint8_t)~(_BC_MODULE_IQRF_EXPANDER_IQRF_POWER | _BC_MODULE_IQRF_EXPANDER_IQRF_EN_CS)))
     {
         return false;
     }
@@ -53,10 +77,12 @@ bool bc_module_iqrf_init(void)
     }
 
     // Connect power
-    if (!bc_tca9534a_write_port(&tca9534a, _BC_MODULE_IQRF_EXPANDER_IQRF_POWER | _BC_MODULE_IQRF_EXPANDER_IQRF_EN_CS))
+    if (!bc_tca9534a_write_port(&self->tca9534a, _BC_MODULE_IQRF_EXPANDER_IQRF_POWER | _BC_MODULE_IQRF_EXPANDER_IQRF_EN_CS))
     {
         return false;
     }
+
+    self->is_iqrf_powered = true;
 
     bc_gpio_init(BC_GPIO_INT);
     bc_gpio_set_mode(BC_GPIO_INT, BC_GPIO_MODE_INPUT);
@@ -64,12 +90,84 @@ bool bc_module_iqrf_init(void)
     bc_spi_init(BC_SPI_SPEED_250_KHZ, BC_SPI_MODE_1);
     bc_spi_set_timing(15, 700, 15);
 
-    bc_scheduler_register(_bc_module_iqrf_task, NULL, 0);
+    // Disable CS
+    bc_gpio_set_mode(BC_GPIO_P15, BC_GPIO_MODE_OUTPUT);
+    bc_gpio_set_output(BC_GPIO_P15, false);
+
+    bc_scheduler_register(_bc_module_iqrf_task, self, 0);
+
+    // SW1
+    bc_button_init_virtual(&self->button_sw1, BC_MODULE_IQRF_BUTTON_SW1, &bc_module_iqrf_button_driver, false);
+    bc_button_set_event_handler(&self->button_sw1, _iqrf_button_event_handler, self);
+
+    // SW2
+    bc_button_init_virtual(&self->button_sw2, BC_MODULE_IQRF_BUTTON_SW2, &bc_module_iqrf_button_driver, false);
+    bc_button_set_event_handler(&self->button_sw2, _iqrf_button_event_handler, self);
 
     //bc_scheduler_disable_sleep();
-    bc_system_pll_enable();
+    //bc_system_pll_enable();
 
     return true;
+}
+
+static void _iqrf_button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param)
+{
+    (void) self;
+    (void) event_param;
+
+    if (event == BC_BUTTON_EVENT_PRESS)
+    {
+        //bc_led_set_mode(&led, BC_LED_MODE_TOGGLE);
+    }
+
+    // Button SW1
+    if(&_bc_module_iqrf.button_sw1 == self)
+    {
+        bc_log_info("Button - event: %i, btn:2", event);
+        if (event == BC_BUTTON_EVENT_PRESS)
+        {
+            // Simulate button C5 press
+            if (!bc_tca9534a_write_pin(&_bc_module_iqrf.tca9534a, BC_TCA9534A_PIN_P7, 0))
+            {
+                return;
+            }
+        }
+        else if (event == BC_BUTTON_EVENT_RELEASE)
+        {
+            // Simulate button C5 release
+            if (!bc_tca9534a_write_pin(&_bc_module_iqrf.tca9534a, BC_TCA9534A_PIN_P7, 1))
+            {
+                return;
+            }
+        }
+    }
+
+    // Button SW2
+    if(&_bc_module_iqrf.button_sw2 == self)
+    {
+        bc_log_info("Button - event: %i, btn:1", event);
+        if (event == BC_BUTTON_EVENT_PRESS)
+        {
+            // Disable power
+            if (!bc_tca9534a_write_pin(&_bc_module_iqrf.tca9534a, BC_TCA9534A_PIN_P4, 0))
+            {
+                return;
+            }
+
+            _bc_module_iqrf.is_iqrf_powered = false;
+        }
+        else if (event == BC_BUTTON_EVENT_RELEASE)
+        {
+            // Enable power
+            if (!bc_tca9534a_write_pin(&_bc_module_iqrf.tca9534a, BC_TCA9534A_PIN_P4, 1))
+            {
+                return;
+            }
+
+            _bc_module_iqrf.is_iqrf_powered = true;
+        }
+    }
+
 }
 
 
@@ -122,9 +220,7 @@ void TxByte( byte data )
     //SPI.transfer( data );
     //delayMicroseconds( SPI_BYTES_GAP );
 
-    uint8_t spiSource = data;
-    uint8_t oneByte;
-    bc_spi_transfer(&spiSource, &oneByte, 1);
+    bc_spi_transfer_byte(data);
 
     //bc_log_debug("TX Byte %02x", data);
 }
@@ -366,20 +462,19 @@ void CustomDpaHandler( byte dataLength )
 static void _bc_module_iqrf_task(void *param)
 {
     (void) param;
+    bc_module_iqrf_t *self = (bc_module_iqrf_t*)param;
 
     state = RXstateWaitHead;
 
-    if(!bc_gpio_get_input(BC_GPIO_INT))
+    if(!bc_gpio_get_input(BC_GPIO_INT) && self->is_iqrf_powered)
     {
         bc_system_pll_enable();
 
         // Active low
-        while (!bc_gpio_get_input(BC_GPIO_INT))
+        while (!bc_gpio_get_input(BC_GPIO_INT) && self->is_iqrf_powered)
         {
             // Read the byte from IQRF
-            uint8_t spiSource = HDLC_FRM_CONTROL_ESCAPE;
-            uint8_t oneByte;
-            bc_spi_transfer(&spiSource, &oneByte, 1);
+            uint8_t oneByte = bc_spi_transfer_byte(HDLC_FRM_CONTROL_ESCAPE);
 
             //bc_log_debug("RX raw byte: 0x%02x, state: %d", oneByte, state);
 
@@ -462,5 +557,34 @@ static void _bc_module_iqrf_task(void *param)
     bc_system_pll_disable();
     }
 
-    bc_scheduler_plan_current_relative(10);
+    bc_scheduler_plan_current_relative(20);
+}
+
+
+static void _bc_module_iqrf_button_init(bc_button_t *self)
+{
+    (void) self;
+
+    //_bc_module_lcd_tca9534a_init();
+
+    bc_gpio_set_mode(BC_GPIO_BUTTON, BC_GPIO_MODE_INPUT);
+    bc_gpio_init(BC_GPIO_BUTTON);
+}
+
+static int _bc_module_iqrf_button_get_input(bc_button_t *self)
+{
+    if (bc_gpio_get_input(BC_GPIO_BUTTON) == 0)
+    {
+        return 0;
+    }
+
+    int state;
+
+    if (!bc_tca9534a_read_pin(&_bc_module_iqrf.tca9534a, _bc_module_iqrf_button_pin_lut[self->_channel.virtual], &state))
+    {
+    	_bc_module_iqrf.is_tca9534a_initialized = false;
+    	return 0;
+    }
+
+    return state;
 }

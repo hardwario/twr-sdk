@@ -7,9 +7,9 @@
 #define uns16 uint16_t
 #define byte uint8_t
 
-#include "DPA.h"
-#include "IQRF_HWPID.h"
-#include "IQRFstandard.h"
+#include <DPA.h>
+#include <IQRF_HWPID.h>
+#include <IQRFstandard.h>
 
 //! @addtogroup bc_module_iqrf bc_module_iqrf
 //! @brief Driver for IQRF Module
@@ -52,6 +52,14 @@ struct bc_module_iqrf_t
     uint8_t return_flags;
     uint8_t return_data_length;
     uint8_t *dpa_data_length;
+
+    bc_button_t button_sw1;
+    bc_button_t button_sw2;
+
+    bc_tca9534a_t tca9534a;
+    uint8_t is_tca9534a_initialized;
+
+    bool is_iqrf_powered;
 };
 
 // Flag to DpaEvent_DpaRequest event value to indicate return TRUE not FALSE
