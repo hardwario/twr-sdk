@@ -54,8 +54,6 @@ static bc_dma_channel_config_t _bc_spi_dma_config =
     .priority = BC_DMA_PRIORITY_HIGH
 };
 
-static uint8_t _bc_spi_transfer_byte(uint8_t value);
-
 static void _bc_spi_dma_event_handler(bc_dma_channel_t channel, bc_dma_event_t event, void *event_param);
 
 static void _bc_spi_task();
@@ -213,7 +211,7 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
         for (size_t i = 0; i < length; i++)
         {
             // Read byte
-            *((uint8_t *) destination + i) = _bc_spi_transfer_byte(0);
+            *((uint8_t *) destination + i) = bc_spi_transfer_byte(0);
         }
     }
     else if (destination == NULL)
@@ -221,7 +219,7 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
         for (size_t i = 0; i < length; i++)
         {
             // Write byte
-            _bc_spi_transfer_byte(*((uint8_t *) source + i));
+            bc_spi_transfer_byte(*((uint8_t *) source + i));
         }
     }
     else
@@ -229,7 +227,7 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
         for (size_t i = 0; i < length; i++)
         {
             // Read and write byte
-            *((uint8_t *) destination + i) = _bc_spi_transfer_byte(*((uint8_t *) source + i));
+            *((uint8_t *) destination + i) = bc_spi_transfer_byte(*((uint8_t *) source + i));
         }
     }
 
@@ -316,7 +314,7 @@ bool bc_spi_async_transfer(const void *source, void *destination, size_t length,
     return false;
 }
 
-static uint8_t _bc_spi_transfer_byte(uint8_t value)
+uint8_t bc_spi_transfer_byte(uint8_t value)
 {
     // Wait until transmit buffer is empty...
     while ((SPI2->SR & SPI_SR_TXE) == 0)

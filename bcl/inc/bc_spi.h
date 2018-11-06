@@ -13,10 +13,10 @@ typedef enum
 {
     //! @brief SPI communication speed is 125 kHz
     BC_SPI_SPEED_125_KHZ = 0,
-    
+
     //! @brief SPI communication speed is 250 kHz
     BC_SPI_SPEED_250_KHZ = 1,
-    
+
     //! @brief SPI communication speed is 500 kHz
     BC_SPI_SPEED_500_KHZ = 2,
 
@@ -118,6 +118,12 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length);
 //! @param[in] event_param Optional event parameter (can be NULL)
 
 bool bc_spi_async_transfer(const void *source, void *destination, size_t length, void (*event_handler)(bc_spi_event_t event, void *event_param), void (*event_param));
+
+//! @brief Execute single byte SPI transfer
+//! @param[in] transmit byte
+//! @return received byte
+
+uint8_t bc_spi_transfer_byte(uint8_t value);
 
 //! @}
 
