@@ -28,6 +28,7 @@
 // Chip drivers
 
 #include <bc_sgp30.h>
+#include <bc_sgpc3.h>
 #include <bc_cp201t.h>
 #include <bc_hc_sr04.h>
 #include <bc_lis2dh12.h>
