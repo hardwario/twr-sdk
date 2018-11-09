@@ -44,6 +44,8 @@ bool bc_aes_key_derivation(bc_aes_key_t decryption_key, const bc_aes_key_t key)
 
     AES->CR |= AES_CR_CCFC;
 
+    bc_system_pll_disable();
+
     return true;
 }
 
