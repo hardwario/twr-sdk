@@ -44,6 +44,8 @@
 #include <bc_tag_lux_meter.h>
 #include <bc_tag_temperature.h>
 #include <bc_tag_nfc.h>
+#include <bc_tag_voc.h>
+#include <bc_tag_voc_lp.h>
 
 // BigClown modules
 
