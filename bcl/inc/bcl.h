@@ -36,7 +36,7 @@
 #include <bc_spirit1.h>
 #include <bc_ls013b7dh03.h>
 #include <bc_cmwx1zzabz.h>
-#include <bc_sam_m8.h>
+#include <bc_sam_m8q.h>
 
 // BigClown tags
 
@@ -51,6 +51,7 @@
 #include <bc_module_battery.h>
 #include <bc_module_climate.h>
 #include <bc_module_encoder.h>
+#include <bc_module_gps.h>
 #include <bc_module_pir.h>
 #include <bc_module_power.h>
 #include <bc_module_relay.h>
