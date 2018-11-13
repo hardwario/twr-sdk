@@ -107,6 +107,7 @@ CFLAGS += -D'__weak=__attribute__((weak))'
 CFLAGS += -D'__packed=__attribute__((__packed__))'
 CFLAGS += -D'USE_HAL_DRIVER'
 CFLAGS += -D'STM32L083xx'
+CFLAGS += -D'HAL_IWDG_MODULE_ENABLED'
 CFLAGS += -ffunction-sections
 CFLAGS += -fdata-sections
 CFLAGS += -std=c11
