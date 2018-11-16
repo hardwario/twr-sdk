@@ -52,11 +52,30 @@ typedef enum
 
 } bc_module_sensor_mode_t;
 
+//! @brief Sensor Module hardware revision
+
+typedef enum
+{
+    //! @brief Hardware revision unknown
+    BC_MODULE_SENSOR_REVISION_UNKNOWN = 0,
+
+    //! @brief Hardware revision R1.0
+    BC_MODULE_SENSOR_REVISION_R1_0 = 1,
+
+    //! @brief Hardware revision R1.1
+    BC_MODULE_SENSOR_REVISION_R1_1 = 2,
+
+} bc_module_sensor_revision_t;
+
 //! @brief Initialize Sensor Module
 //! @return true On success
 //! @return false On Error
 
 bool bc_module_sensor_init(void);
+
+//! @brief Deinitialize Sensor Module
+
+void bc_module_sensor_deinit(void);
 
 //! @brief Set pull of Sensor Module channel
 //! @param[in] channel Sensor Module channel
@@ -106,6 +125,17 @@ int bc_module_sensor_get_output(bc_module_sensor_channel_t channel);
 //! @param[in] channel Sensor Module channel
 
 void bc_module_sensor_toggle_output(bc_module_sensor_channel_t channel);
+
+//! @brief Set VDD On / Off
+//! @param[in] on On
+//! @return true On success
+//! @return false On error
+
+bool bc_module_sensor_set_vdd(bool on);
+
+//! @brief Get Sensor Module revision
+
+bc_module_sensor_revision_t bc_module_sensor_get_revision(void);
 
 //! @}
 
