@@ -1,6 +1,8 @@
 #ifndef _BC_WATCHDOG_H
 #define _BC_WATCHDOG_H
 
+//#define BC_WATCHDOG_ENABLED
+
 typedef enum
 {
     BC_WATCHDOG_27S = 0,
