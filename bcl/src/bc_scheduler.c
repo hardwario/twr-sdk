@@ -20,8 +20,6 @@ typedef struct
 {
     bc_tick_t tick_spin;
 
-    bool extra_spin;
-
     int sleep_bypass_semaphore;
 
     bc_scheduler_task_id_t current_task_id;
@@ -38,13 +36,13 @@ static bc_scheduler_t _bc_scheduler;
 
 extern void bc_system_error(void);
 
-extern void _bc_system_hook_set_interrupt_tick(bc_tick_t tick);
-
 static void _bc_scheduler_plan_task(bc_scheduler_task_id_t task_id, bc_tick_t tick);
 
 void bc_scheduler_init(void)
 {
     memset(&_bc_scheduler, 0, sizeof(_bc_scheduler));
+
+    _bc_scheduler.first_task_tick = BC_TICK_INFINITY;
 }
 
 void bc_scheduler_run(void)
@@ -57,8 +55,10 @@ void bc_scheduler_run(void)
     {
         _bc_scheduler.tick_spin = bc_system_tick_get();
 
-        if (_bc_scheduler.tick_spin > _bc_scheduler.first_task_tick)
+        if (_bc_scheduler.tick_spin >= _bc_scheduler.first_task_tick)
         {
+            _bc_scheduler.first_task_tick = BC_TICK_INFINITY;
+
             for (*task_id = 0; *task_id <= _bc_scheduler.max_task_id; (*task_id)++)
             {
                 if (_bc_scheduler.pool[*task_id].task != NULL)
@@ -73,38 +73,34 @@ void bc_scheduler_run(void)
                     }
                 }
             }
-
-            if (_bc_scheduler.extra_spin)
-            {
-                _bc_scheduler.extra_spin = false;
-
-                continue;
-            }
-
-            bc_tick_t tick_first = BC_TICK_INFINITY;
-
-            for (bc_scheduler_task_id_t i = 0; i < _bc_scheduler.max_task_id; i++)
-            {
-                task = &_bc_scheduler.pool[i];
-
-                if ((task->task != NULL) && (task->tick_execution < tick_first))
-                {
-                    tick_first = task->tick_execution;
-                }
-            }
-            
-            if (tick_first < bc_system_tick_get())
-            {
-                continue;
-            }
-
-            _bc_system_hook_set_interrupt_tick(tick_first);
         }
 
-        if (_bc_scheduler.sleep_bypass_semaphore == 0)
+        if (_bc_scheduler.sleep_bypass_semaphore != 0)
         {
-            bc_system_sleep();
+            continue;
         }
+
+        if (_bc_scheduler.first_task_tick <= bc_system_tick_get())
+        {
+            continue;
+        }
+
+        for (*task_id = 0; *task_id <= _bc_scheduler.max_task_id; (*task_id)++)
+        {
+            task = &_bc_scheduler.pool[*task_id];
+
+            if ((task->task != NULL) && (task->tick_execution < _bc_scheduler.first_task_tick))
+            {
+                _bc_scheduler.first_task_tick = task->tick_execution;
+            }
+        }
+
+        if (_bc_scheduler.first_task_tick <= bc_system_tick_get())
+        {
+            continue;
+        }
+
+        bc_system_sleep(_bc_scheduler.first_task_tick);
 
         continue;
     }
@@ -139,8 +135,6 @@ bc_scheduler_task_id_t bc_scheduler_register(void (*task)(void *), void *param, 
 
 void bc_scheduler_unregister(bc_scheduler_task_id_t task_id)
 {
-    bc_scheduler_task_t *task = &_bc_scheduler.pool[task_id];
-
     _bc_scheduler.pool[task_id].task = NULL;
 
     if (_bc_scheduler.max_task_id == task_id)
@@ -156,9 +150,6 @@ void bc_scheduler_unregister(bc_scheduler_task_id_t task_id)
 
         } while (_bc_scheduler.pool[_bc_scheduler.max_task_id].task == NULL);
     }
-
-    // TODO
-    // _bc_scheduler_reconfigure_timer_if_needed(task);
 }
 
 bc_scheduler_task_id_t bc_scheduler_get_current_task_id(void)
@@ -223,13 +214,8 @@ void bc_scheduler_plan_current_from_now(bc_tick_t tick)
 
 static void _bc_scheduler_plan_task(bc_scheduler_task_id_t task_id, bc_tick_t tick)
 {
-    if (_bc_scheduler.first_task_tick >= tick)
+    if (_bc_scheduler.first_task_tick > tick)
     {
-        if (tick <= bc_system_tick_get())
-        {
-            _bc_scheduler.extra_spin = true;
-        }
-
         _bc_scheduler.first_task_tick = tick;
     }
 

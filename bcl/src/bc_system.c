@@ -51,8 +51,6 @@ static void _bc_system_init_shutdown_tmp112(void);
 
 static void _bc_system_switch_clock(bc_system_clock_t clock);
 
-void _bc_system_hook_set_interrupt_tick(bc_tick_t tick);
-
 void bc_system_init(void)
 {
     _bc_system_init_flash();
@@ -229,10 +227,6 @@ static void _bc_system_init_lptim(void)
     // Use LSE as a clock source for LPTIM
     RCC->CCIPR |= RCC_CCIPR_LPTIM1SEL;
 
-    EXTI->IMR |= EXTI_IMR_IM29;
-
-    EXTI->RTSR |= EXTI_IMR_IM29;
-
     LPTIM1->ICR = LPTIM_ICR_ARRMCF | LPTIM_ICR_CMPMCF;
 
     LPTIM1->IER = LPTIM_IER_ARRMIE;
@@ -255,9 +249,48 @@ static void _bc_system_init_shutdown_tmp112(void)
     bc_i2c_deinit(BC_I2C_I2C0);
 }
 
-void bc_system_sleep(void)
+void bc_system_sleep(bc_tick_t interrupt_tick)
 {
-    __WFI();
+	static uint64_t interrupt_tick_counter;
+
+    static uint32_t diff;
+
+    if (interrupt_tick == BC_TICK_INFINITY)
+    {
+        __WFI();
+
+        return;
+    }
+
+	interrupt_tick_counter = interrupt_tick << 5;
+
+    while (1)
+    {
+    	_bc_system.counter_overflow = false;
+
+        LPTIM1->IER &= ~LPTIM_IER_CMPMIE;
+
+        diff = interrupt_tick_counter - _bc_system.tick_counter;
+
+        if (diff < LPTIM1->ARR)
+        {
+            LPTIM1->CMP = diff;
+
+            LPTIM1->IER |= LPTIM_IER_CMPMIE;
+
+            if (diff <= LPTIM1->CNT)
+            {
+                return;
+            }
+        }
+
+		if (_bc_system.counter_overflow == false)
+		{
+			__WFI();
+
+            return;
+		}
+    }
 }
 
 void bc_system_deep_sleep_enable(void)
@@ -500,8 +533,6 @@ void HardFault_Handler(void)
 
 void LPTIM1_IRQHandler(void)
 {
-	_bc_system.counter_overflow = true;
-
     if ((LPTIM1->ISR & LPTIM_ISR_ARRM) != 0)
     {
         // Clear interrupt flag
@@ -509,6 +540,8 @@ void LPTIM1_IRQHandler(void)
 
         // Counter overflow period is 2 seconds
         _bc_system.tick_counter += 65536;
+
+        _bc_system.counter_overflow = true;
     }
     // This interrupt is used as a wakeup for scheduler
     else if ((LPTIM1->ISR & LPTIM_ISR_CMPM) != 0)
@@ -519,9 +552,6 @@ void LPTIM1_IRQHandler(void)
         // Clear interrupt flag
         LPTIM1->ICR = LPTIM_ICR_CMPMCF;
     }
-
-    // Clear EXTI interrupt flag
-    EXTI->PR = EXTI_IMR_IM29;
 }
 
 static void _bc_system_switch_clock(bc_system_clock_t clock)
@@ -536,40 +566,4 @@ static void _bc_system_switch_clock(bc_system_clock_t clock)
     RCC->CFGR = rcc_cfgr;
 
     bc_irq_enable();
-}
-
-void _bc_system_hook_set_interrupt_tick(bc_tick_t tick)
-{
-	static uint64_t tick_counter;
-
-    static bc_tick_t tick_system_now;
-
-    static uint64_t tick_counter_now;
-
-    while (1)
-    {
-    	_bc_system.counter_overflow = false;
-
-		tick_counter = tick << 5;
-
-		tick_system_now = bc_system_tick_get();
-
-		tick_counter_now = tick_system_now << 5;
-
-		if ((tick_counter_now & 0xffffffffffff0000) == (tick_counter & 0xffffffffffff0000))
-		{
-			LPTIM1->CMP = tick_counter & 0x000000000000ffff;
-
-			LPTIM1->IER |= LPTIM_IER_CMPMIE;
-		}
-		else
-		{
-			LPTIM1->IER &= ~LPTIM_IER_CMPMIE;
-		}
-
-		if (_bc_system.counter_overflow == false)
-		{
-			break;
-		}
-    }
 }

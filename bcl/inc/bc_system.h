@@ -14,7 +14,7 @@ typedef enum
 
 void bc_system_init(void);
 
-void bc_system_sleep(void);
+void bc_system_sleep(bc_tick_t interrupt_tick);
 
 bc_system_clock_t bc_system_clock_source_get(void);
 
