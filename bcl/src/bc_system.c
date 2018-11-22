@@ -3,6 +3,7 @@
 #include <bc_irq.h>
 #include <bc_i2c.h>
 #include <stm32l0xx.h>
+#include <bc_gpio.h>
 
 #define _BC_SYSTEM_DEBUG_ENABLE 0
 
@@ -255,20 +256,11 @@ void bc_system_sleep(bc_tick_t interrupt_tick)
 
     static uint32_t diff;
 
-    if (interrupt_tick == BC_TICK_INFINITY)
+    if (interrupt_tick != BC_TICK_INFINITY)
     {
-        __WFI();
+        interrupt_tick_counter = interrupt_tick << 5;
 
-        return;
-    }
-
-	interrupt_tick_counter = interrupt_tick << 5;
-
-    while (1)
-    {
-    	_bc_system.counter_overflow = false;
-
-        LPTIM1->IER &= ~LPTIM_IER_CMPMIE;
+        LPTIM1->IER = LPTIM_IER_ARRMIE;
 
         diff = interrupt_tick_counter - _bc_system.tick_counter;
 
@@ -276,21 +268,20 @@ void bc_system_sleep(bc_tick_t interrupt_tick)
         {
             LPTIM1->CMP = diff;
 
-            LPTIM1->IER |= LPTIM_IER_CMPMIE;
+            LPTIM1->IER = LPTIM_IER_ARRMIE | LPTIM_IER_CMPMIE;
 
             if (diff <= LPTIM1->CNT)
             {
                 return;
             }
         }
-
-		if (_bc_system.counter_overflow == false)
-		{
-			__WFI();
-
-            return;
-		}
     }
+
+    bc_gpio_set_output(BC_GPIO_P16, 1);
+    __DSB();
+    __WFI();
+    __ISB();
+    bc_gpio_set_output(BC_GPIO_P16, 0);
 }
 
 void bc_system_deep_sleep_enable(void)
@@ -547,7 +538,7 @@ void LPTIM1_IRQHandler(void)
     else if ((LPTIM1->ISR & LPTIM_ISR_CMPM) != 0)
     {
         // Disable compare IRQ
-        LPTIM1->IER &= ~LPTIM_IER_CMPMIE;
+        LPTIM1->IER = LPTIM_IER_ARRMIE;
 
         // Clear interrupt flag
         LPTIM1->ICR = LPTIM_ICR_CMPMCF;

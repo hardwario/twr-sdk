@@ -1,6 +1,7 @@
 #include <bc_scheduler.h>
 #include <bc_system.h>
 #include <bc_error.h>
+#include <stm32l0xx.h>
 
 #define _BC_SCHEDULER_TASK_COUNT 64
 
@@ -85,6 +86,10 @@ void bc_scheduler_run(void)
             continue;
         }
 
+        __disable_irq();
+        __DSB();
+        __DMB();
+
         for (*task_id = 0; *task_id <= _bc_scheduler.max_task_id; (*task_id)++)
         {
             task = &_bc_scheduler.pool[*task_id];
@@ -97,10 +102,14 @@ void bc_scheduler_run(void)
 
         if (_bc_scheduler.first_task_tick <= bc_system_tick_get())
         {
+            __enable_irq();
+
             continue;
         }
 
         bc_system_sleep(_bc_scheduler.first_task_tick);
+
+        __enable_irq();
 
         continue;
     }
