@@ -112,11 +112,11 @@ static void _bc_hc_sr04_task_measure(void *param)
     bc_timer_init();
     bc_timer_start();
 
-    bc_gpio_set_output(BC_GPIO_P9, 1);
+    bc_gpio_set_output(self->_channel_trig, 1);
     bc_timer_delay(10);
-    bc_gpio_set_output(BC_GPIO_P9, 0);
+    bc_gpio_set_output(self->_channel_trig, 0);
 
-    self->_echo_duration = pulseIn(BC_GPIO_P8, 1, 30000);
+    self->_echo_duration = pulseIn(self->_channel_echo, 1, 30000);
 
     bc_timer_stop();
     bc_system_pll_disable();
