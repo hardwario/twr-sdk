@@ -57,7 +57,6 @@ typedef enum
 struct bc_analog_sensor_t
 {
     bc_adc_channel_t _adc_channel;
-    bc_adc_format_t _adc_format;
     const bc_analog_sensor_driver_t *_driver;
     bc_scheduler_task_id_t _task_id_interval;
     bc_scheduler_task_id_t _task_id_measure;
@@ -66,7 +65,7 @@ struct bc_analog_sensor_t
     bool _measurement_active;
     bc_tick_t _update_interval;
     bc_analog_sensor_state_t _state;
-    uint32_t _value;
+    uint16_t _value;
 };
 
 //! @endcond
@@ -77,7 +76,7 @@ struct bc_analog_sensor_t
 //! @param[in] adc_format ADC result format
 //! @param[in] driver Optional driver interface (can be NULL)
 
-void bc_analog_sensor_init(bc_analog_sensor_t *self, bc_adc_channel_t adc_channel, bc_adc_format_t adc_format, const bc_analog_sensor_driver_t *driver);
+void bc_analog_sensor_init(bc_analog_sensor_t *self, bc_adc_channel_t adc_channel, const bc_analog_sensor_driver_t *driver);
 
 //! @brief Set callback function
 //! @param[in] self Instance

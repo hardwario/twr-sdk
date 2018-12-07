@@ -230,11 +230,11 @@ start:
 
             _bc_module_battery_measurement(ENABLE);
 
-            bc_adc_init(BC_ADC_CHANNEL_A0, BC_ADC_FORMAT_FLOAT);
-
+            bc_adc_init();
+            bc_adc_oversampling_set(BC_ADC_CHANNEL_A0, BC_ADC_OVERSAMPLING_256);
             bc_adc_set_event_handler(BC_ADC_CHANNEL_A0, _bc_module_battery_adc_event_handler, NULL);
 
-            bc_adc_async_read(BC_ADC_CHANNEL_A0);
+            bc_adc_async_measure(BC_ADC_CHANNEL_A0);
 
             _bc_module_battery.state = BC_MODULE_STATE_DETECT_FORMAT;
 
@@ -289,7 +289,7 @@ start:
 
             bc_adc_set_event_handler(BC_ADC_CHANNEL_A0, _bc_module_battery_adc_event_handler, NULL);
 
-            bc_adc_async_read(BC_ADC_CHANNEL_A0);
+            bc_adc_async_measure(BC_ADC_CHANNEL_A0);
 
             _bc_module_battery.state = BC_MODULE_STATE_READ;
 
@@ -366,7 +366,7 @@ static void _bc_module_battery_adc_event_handler(bc_adc_channel_t channel, bc_ad
     if (event == BC_ADC_EVENT_DONE)
     {
 
-        if (!bc_adc_get_result(BC_ADC_CHANNEL_A0, &_bc_module_battery.adc_value))
+        if (!bc_adc_async_get_voltage(BC_ADC_CHANNEL_A0, &_bc_module_battery.adc_value))
         {
             _bc_module_battery.adc_value = NAN;
         }
