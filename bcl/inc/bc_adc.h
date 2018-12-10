@@ -2,7 +2,7 @@
 #define _BC_ADC_H
 
 #include <bc_common.h>
-#include <stm32l083xx.h>
+#include <stm32l0xx.h>
 
 //! @addtogroup bc_adc bc_adc
 //! @brief Driver for ADC (analog to digital converter)

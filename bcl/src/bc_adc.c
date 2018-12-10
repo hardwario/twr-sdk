@@ -1,8 +1,6 @@
 #include <bc_adc.h>
 #include <bc_scheduler.h>
 #include <bc_irq.h>
-#include <stm32l083xx.h>
-
 #include <bc_system.h>
 
 #define VREFINT_CAL_ADDR 0x1ff80078

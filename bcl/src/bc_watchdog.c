@@ -1,7 +1,7 @@
 #include <bc_watchdog.h>
 
+#include <stm32l0xx.h>
 #include <stm32l0xx_hal.h>
-#include <stm32l083xx.h>
 
 #ifdef BC_WATCHDOG_ENABLED
 static IWDG_HandleTypeDef _bc_watchdog_hiwdg;
