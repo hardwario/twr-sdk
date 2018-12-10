@@ -2177,3 +2177,4 @@ static void CRYP_SetDMAConfig(CRYP_HandleTypeDef *hcryp, uint32_t inputaddr, uin
 #endif /* STM32L021xx || STM32L041xx || STM32L061xx || STM32L062xx || STM32L063xx || STM32L081xx || STM32L082xx || STM32L083xx */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 
+typedef int make_iso_compilers_happy;

@@ -23,6 +23,21 @@ ECHO = @echo
 endif
 
 ################################################################################
+# Attributtes                                                                  #
+################################################################################
+# BOARD: CORE, MURATA, CLOONY
+
+BAND ?= 868
+BOARD ?= CORE
+VERSION ?= vdev
+
+ifeq ("$(BOARD)","MURATA")
+MCU = STM32L072xx
+else
+MCU = STM32L083xx
+endif
+
+################################################################################
 # Directories                                                                  #
 ################################################################################
 
@@ -63,6 +78,7 @@ INC_DIR += $(SDK_DIR)/stm/hal/inc
 INC_DIR += $(SDK_DIR)/stm/spirit1/inc
 INC_DIR += $(SDK_DIR)/stm/usb/inc
 INC_DIR += $(SDK_DIR)/sys/inc
+INC_DIR += $(SDK_DIR)/vendor/inc
 
 ################################################################################
 # Source directories                                                           #
@@ -106,7 +122,7 @@ CFLAGS += -Wswitch-enum
 CFLAGS += -D'__weak=__attribute__((weak))'
 CFLAGS += -D'__packed=__attribute__((__packed__))'
 CFLAGS += -D'USE_HAL_DRIVER'
-CFLAGS += -D'STM32L083xx'
+CFLAGS += -D'${MCU}'
 CFLAGS += -D'HAL_IWDG_MODULE_ENABLED'
 CFLAGS += -ffunction-sections
 CFLAGS += -fdata-sections
@@ -116,9 +132,11 @@ CFLAGS_DEBUG += -Og
 CFLAGS_DEBUG += -D'DEBUG'
 CFLAGS_RELEASE += -Os
 CFLAGS_RELEASE += -D'RELEASE'
-
-BAND ?= 868
+CFLAGS += -D'$(BOARD)'
 CFLAGS += -D'BAND=$(BAND)'
+CFLAGS += -D'MCU="$(MCU)"'
+CFLAGS += -D'VERSION="${VERSION}"'
+CFLAGS += -D'BOARD="${BOARD}"'
 
 ################################################################################
 # Compiler flags for "s" files                                                 #
@@ -169,6 +187,8 @@ DEP = $(OBJ:%.o=%.d)
 
 .PHONY: debug
 debug:
+	$(Q)$(MAKE) info
+	$(Q)$(MAKE) .clean-out
 	$(Q)$(MAKE) .clean-out
 	$(Q)$(MAKE) .obj-debug
 	$(Q)$(MAKE) elf
@@ -181,6 +201,7 @@ debug:
 
 .PHONY: release
 release:
+	$(Q)$(MAKE) info TYPE=release
 	$(Q)$(MAKE) clean TYPE=release
 	$(Q)$(MAKE) .obj-release TYPE=release
 	$(Q)$(MAKE) elf TYPE=release
@@ -206,6 +227,19 @@ clean:
 .clean-out:
 	$(Q)$(ECHO) "Clean output ..."
 	$(Q)rm -f "$(ELF)" "$(MAP)" "$(BIN)"
+
+
+################################################################################
+# Print info                                                                  #
+################################################################################
+.PHONY: info
+info:
+	$(Q)$(ECHO) "OUT ${OUT}"
+	$(Q)$(ECHO) "TYPE ${TYPE}"
+	$(Q)$(ECHO) "BOARD ${BOARD}"
+	$(Q)$(ECHO) "MCU ${MCU}"
+	$(Q)$(ECHO) "BAND ${BAND}"
+	$(Q)$(ECHO) "VERSION ${VERSION}"
 
 ################################################################################
 # Flash firmware using DFU bootloader                                          #
