@@ -286,6 +286,21 @@ void bc_gfx_draw_fill_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, 
     }
 }
 
+void bc_gfx_draw_fill_rectangle_dithering(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color)
+{
+    int y;
+    for (; x0 <= x1; x0++)
+    {
+        for (y = y0; y <= y1; y++)
+        {
+            uint8_t dx = x0 % 4;
+            uint8_t dy = y % 4;
+            uint32_t d_color = color & (1 << (dx + 4*dy));
+            bc_gfx_draw_pixel(self, x0, y, d_color);
+        }
+    }
+}
+
 void bc_gfx_draw_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t color)
 {
     int x = radius-1;
