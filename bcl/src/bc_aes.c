@@ -3,6 +3,8 @@
 #include <bc_tick.h>
 #include <stm32l0xx.h>
 
+#ifdef STM32L083xx
+
 #define _BC_AES_DATATYPE AES_CR_DATATYPE_1
 
 static void _bc_aes_set_key(const bc_aes_key_t key);
@@ -209,3 +211,5 @@ static bool _bc_aes_process(void *buffer_out, const void *buffer_in, size_t leng
 
     return true;
 }
+
+#endif
