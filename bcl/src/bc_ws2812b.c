@@ -1,8 +1,8 @@
-#include "stm32l0xx.h"
 #include <bc_ws2812b.h>
 #include <bc_scheduler.h>
 #include <bc_dma.h>
 #include <bc_system.h>
+#include <stm32l0xx.h>
 
 #define _BC_WS2812_TIMER_PERIOD 40               // 32000000 / 800000 = 20; 0,125us period (10 times lower the 1,25us period to have fixed math below)
 #define _BC_WS2812_TIMER_RESET_PULSE_PERIOD 1666 // 60us just to be sure = (32000000 / (320 * 60))
@@ -10,8 +10,15 @@
 #define _BC_WS2812_COMPARE_PULSE_LOGIC_1     26  //(10 * timer_period) / 15;
 
 #define _BC_WS2812_BC_WS2812_RESET_PERIOD 100
-#define _BC_WS2812_BC_WS2812B_PORT GPIOA
-#define _BC_WS2812_BC_WS2812B_PIN GPIO_PIN_1
+
+#define BC_WS2812_GPIO_P1 1
+#define BC_WS2812_GPIO_P2 2
+
+#ifdef MURATA
+#define BC_WS2812_PIN BC_WS2812_GPIO_P2
+#else
+#define BC_WS2812_PIN BC_WS2812_GPIO_P1
+#endif
 
 static struct ws2812b_t
 {
@@ -32,8 +39,12 @@ static bc_dma_channel_config_t _bc_ws2812b_dma_config =
     .data_size_memory = BC_DMA_SIZE_1,
     .data_size_peripheral = BC_DMA_SIZE_2,
     .mode = BC_DMA_MODE_STANDARD,
-    .address_peripheral = (void *)&(TIM2->CCR2),
-    .priority = BC_DMA_PRIORITY_VERY_HIGH
+    .priority = BC_DMA_PRIORITY_VERY_HIGH,
+#if BC_WS2812_PIN == BC_WS2812_GPIO_P2
+    .address_peripheral = (void *)&(TIM2->CCR3)
+#else
+    .address_peripheral = (void *)&(TIM2->CCR2)
+#endif
 };
 
 TIM_HandleTypeDef _bc_ws2812b_timer2_handle;
@@ -79,12 +90,16 @@ bool bc_ws2812b_init(const bc_led_strip_buffer_t *led_strip)
 
     //Init pin
     GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Pin = _BC_WS2812_BC_WS2812B_PIN;
+#if BC_WS2812_PIN == BC_WS2812_GPIO_P2
+    GPIO_InitStruct.Pin = GPIO_PIN_2;
+#else
+    GPIO_InitStruct.Pin = GPIO_PIN_1;
+#endif
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Alternate = GPIO_AF2_TIM2;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(_BC_WS2812_BC_WS2812B_PORT, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     bc_dma_init();
     bc_dma_set_event_handler(BC_DMA_CHANNEL_2, _bc_ws2812b_dma_event_handler, NULL);
@@ -106,15 +121,24 @@ bool bc_ws2812b_init(const bc_led_strip_buffer_t *led_strip)
     _bc_ws2812b_timer2_oc1.OCPolarity = TIM_OCPOLARITY_HIGH;
     _bc_ws2812b_timer2_oc1.Pulse = 0;
     _bc_ws2812b_timer2_oc1.OCFastMode = TIM_OCFAST_DISABLE;
+
+#if BC_WS2812_PIN == BC_WS2812_GPIO_P2
+    HAL_TIM_PWM_ConfigChannel(&_bc_ws2812b_timer2_handle, &_bc_ws2812b_timer2_oc1, TIM_CHANNEL_3);
+
+    TIM2->CR1 &= ~TIM_CR1_CEN;
+
+    TIM2->CCER |= (uint32_t)(TIM_CCx_ENABLE << TIM_CHANNEL_3);
+
+    TIM2->DCR = TIM_DMABASE_CCR3 | TIM_DMABURSTLENGTH_1TRANSFER;
+#else
     HAL_TIM_PWM_ConfigChannel(&_bc_ws2812b_timer2_handle, &_bc_ws2812b_timer2_oc1, TIM_CHANNEL_2);
 
     TIM2->CR1 &= ~TIM_CR1_CEN;
 
     TIM2->CCER |= (uint32_t)(TIM_CCx_ENABLE << TIM_CHANNEL_2);
 
-    //HAL_TIM_PWM_Start(&_bc_ws2812b_timer2_handle, TIM_CHANNEL_2);
-
     TIM2->DCR = TIM_DMABASE_CCR2 | TIM_DMABURSTLENGTH_1TRANSFER;
+#endif
 
     _bc_ws2812b.task_id = bc_scheduler_register(_bc_ws2812b_task, NULL, BC_TICK_INFINITY);
 
@@ -183,7 +207,8 @@ bool bc_ws2812b_write(void)
     bc_system_pll_enable();
 
     HAL_TIM_Base_Stop(&_bc_ws2812b_timer2_handle);
-    (&_bc_ws2812b_timer2_handle)->Instance->CR1 &= ~((0x1U << (0U)));
+
+    TIM2->CR1 &= ~TIM_CR1_CEN;
 
     // clear all DMA flags
     __HAL_DMA_CLEAR_FLAG(&_bc_ws2812b_dma_update, DMA_FLAG_TC2 | DMA_FLAG_HT2 | DMA_FLAG_TE2);
@@ -194,17 +219,28 @@ bool bc_ws2812b_write(void)
     size_t dma_bit_buffer_size = _bc_ws2812b.buffer->count * _bc_ws2812b.buffer->type * 8;
 
     _bc_ws2812b_dma_config.address_memory = (void *)_bc_ws2812b.dma_bit_buffer;
+
     _bc_ws2812b_dma_config.length = dma_bit_buffer_size;
+
     bc_dma_channel_config(BC_DMA_CHANNEL_2, &_bc_ws2812b_dma_config);
+
     bc_dma_channel_run(BC_DMA_CHANNEL_2);
 
     TIM2->CNT = _BC_WS2812_TIMER_PERIOD - 1;
 
+    TIM2->ARR = _BC_WS2812_TIMER_PERIOD;
+
     // Set zero length for first pulse because the first bit loads after first TIM_UP
+    // Enable PWM Compare
+#if BC_WS2812_PIN == BC_WS2812_GPIO_P2
+    TIM2->CCR3 = 0;
+
+    TIM2->CCMR2 |= TIM_CCMR2_OC3M_1;
+#else
     TIM2->CCR2 = 0;
 
-    // Enable PWM Compare 2
-    (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC2M_1;
+    TIM2->CCMR1 |= TIM_CCMR1_OC2M_1;
+#endif
 
     // IMPORTANT: enable the TIM2 DMA requests AFTER enabling the DMA channels!
     __HAL_TIM_ENABLE_DMA(&_bc_ws2812b_timer2_handle, TIM_DMA_UPDATE);
@@ -234,9 +270,17 @@ static void _bc_ws2812b_dma_event_handler(bc_dma_channel_t channel, bc_dma_event
         // Disable the DMA requests
         __HAL_TIM_DISABLE_DMA(&_bc_ws2812b_timer2_handle, TIM_DMA_UPDATE);
 
-        // Disable PWM output Compare 2
-        (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 &= ~(TIM_CCMR1_OC2M_Msk);
-        (&_bc_ws2812b_timer2_handle)->Instance->CCMR1 |= TIM_CCMR1_OC2M_2;
+        // Disable PWM output Compare
+
+#if BC_WS2812_PIN == BC_WS2812_GPIO_P2
+        TIM2->CCMR2 &= ~(TIM_CCMR2_OC3M_Msk);
+
+        TIM2->CCMR2 |= TIM_CCMR2_OC3M_2;
+#else
+        TIM2->CCMR1 &= ~(TIM_CCMR1_OC2M_Msk);
+
+        TIM2->CCMR1 |= TIM_CCMR1_OC2M_2; // Force low
+#endif
 
         // Set 50us period for Treset pulse
         TIM2->ARR = _BC_WS2812_TIMER_RESET_PULSE_PERIOD;
