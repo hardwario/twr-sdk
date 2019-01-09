@@ -1,5 +1,12 @@
 #include <bc_timer.h>
-#include <stm32l0xx.h>
+
+typedef struct bc_timer_irq_t
+{
+    void (*irq_handler)(void *);
+    void *irq_param;
+} bc_timer_irq_t;
+
+bc_timer_irq_t bc_timer_tim3_irq;
 
 const uint16_t _bc_timer_prescaler_lut[3] =
 {
@@ -48,4 +55,21 @@ inline void bc_timer_clear(void)
 inline void bc_timer_stop(void)
 {
     TIM22->CR1 &= ~TIM_CR1_CEN;
+}
+
+void bc_timer_set_irq_handler(TIM_TypeDef *tim, void (*irq_handler)(void *), void *irq_param)
+{
+    if (tim == TIM3)
+    {
+        bc_timer_tim3_irq.irq_handler = irq_handler;
+        bc_timer_tim3_irq.irq_param = irq_param;
+    }
+}
+
+void TIM3_IRQHandler(void)
+{
+    if (bc_timer_tim3_irq.irq_handler)
+    {
+        bc_timer_tim3_irq.irq_handler(bc_timer_tim3_irq.irq_param);
+    }
 }

@@ -2,6 +2,7 @@
 #define _BC_TIMER_H
 
 #include <bc_system.h>
+#include <stm32l0xx.h>
 
 //! @addtogroup bc_timer bc_timer
 //! @brief Driver for timer
@@ -34,6 +35,13 @@ void bc_timer_clear(void);
 //! @brief Stop timer
 
 void bc_timer_stop(void);
+
+//! @brief Register timer IRQ handler
+//! @param[in] tim Timer, e.g. TIM3
+//! @param[in] irq_handler pointer to IRQ handler function
+//! @param[in] irq_param parameter
+
+void bc_timer_set_irq_handler(TIM_TypeDef *tim, void (*irq_handler)(void *), void *irq_param);
 
 //! @}
 
