@@ -48,8 +48,7 @@ enum
     BC_RADIO_PUB_EVENT_LCD_BUTTON_LEFT = 2,
     BC_RADIO_PUB_EVENT_LCD_BUTTON_RIGHT = 3,
     BC_RADIO_PUB_EVENT_ACCELEROMETER_ALERT = 4,
-    BC_RADIO_PUB_EVENT_HOLD_BUTTON = 5,
-    BC_RADIO_PUB_EVENT_PRESS_TIME_BUTTON = 6
+    BC_RADIO_PUB_EVENT_HOLD_BUTTON = 5
 };
 
 enum
@@ -58,6 +57,11 @@ enum
     BC_RADIO_PUB_STATE_RELAY_MODULE_0 = 1,
     BC_RADIO_PUB_STATE_RELAY_MODULE_1 = 2,
     BC_RADIO_PUB_STATE_POWER_MODULE_RELAY = 3
+};
+
+enum
+{
+    BC_RADIO_PUB_VALUE_HOLD_DURATION_BUTTON = 0
 };
 
 //! @brief Publish event count
@@ -146,6 +150,13 @@ bool bc_radio_pub_buffer(void *buffer, size_t length);
 //! @return false On failure
 
 bool bc_radio_pub_state(uint8_t state_id, bool *state);
+
+//! @brief Publish int value
+//! @param[in] value_id State id from enum BC_RADIO_PUB_VALUE_*
+//! @param[in] value Pointer to value, can be null
+//! @return true On success
+
+bool bc_radio_pub_value_int(uint8_t value_id, int *value);
 
 //! @brief Publish bool value in custom topic
 //! @param[in] subtopic Subtopic (example: node/{id}/{subtopic})
