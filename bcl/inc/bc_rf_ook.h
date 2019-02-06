@@ -9,7 +9,6 @@
 //! @brief Driver for ON-OFF-KEY modulation for 433 MHz Radio modules
 //! @{
 
-
 //! @brief Initialize RF OOK library
 //! @param[in] gpio GPIO pin
 
@@ -38,7 +37,11 @@ bool bc_rf_ook_send_hex_string(char *hex_string);
 
 //! @brief Data sending in progress
 
-bool bc_rf_is_busy();
+bool bc_rf_ook_is_busy();
+
+//! @brief Data can be send
+
+bool bc_rf_ook_is_ready();
 
 //! @}
 

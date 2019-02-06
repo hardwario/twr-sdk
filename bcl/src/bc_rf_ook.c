@@ -1,30 +1,6 @@
 #include <bc_rf_ook.h>
 #include <bc_timer.h>
 
-/*
-    Table of pins and TIM channels
-
-    P0 PA0 TIM2_CH1
-    P1 PA1 TIM2_CH2
-    P2 PA2 TIM2_CH3 TIM21_CH1
-    P3 PA3 TIM2_CH4 TIM21_CH2
-    P4 PA4 none
-    P5 PA5 TIM2_CH1
-    P6 PB1 TIM3_CH4
-    P7 PA6 TIM3_CH1 TIM22_CH2
-    P8 PB0 TIM3_CH3
-    P9 PB2 LPTIM1_OUT
-
-    P10 PA10 none
-    P11 PA9 none
-    P12 PB14 TIM21_CH2
-    P13 PB15 none
-    P14 PB13 TIM21_CH1
-    P15 PB12 none
-    P16 PB8 none
-    P17 PB9 none
-*/
-
 void _bc_rf_ook_irq_TIM3_handler(void *param);
 
 static struct
@@ -37,7 +13,7 @@ static struct
     bc_gpio_channel_t gpio;
 } _bc_rf_ook;
 
-static int char_to_int(char input)
+static int _bc_rf_ook_char_to_int(char input)
 {
     if(input >= '0' && input <= '9')
     {
@@ -57,17 +33,17 @@ static int char_to_int(char input)
     }
 }
 
-static uint8_t string_to_array(char *str, uint8_t *array)
+static uint8_t _bc_rf_ook_string_to_array(char *str, uint8_t *array)
 {
     uint8_t array_length = (strlen(str) + 1) / 2;
 
     for(int i = 0; i < array_length; i++)
     {
-        array[i] = char_to_int(str[i*2]) * 16;
+        array[i] = _bc_rf_ook_char_to_int(str[i*2]) * 16;
 
         if(!(i == array_length - 1 && strlen(str) % 2 == 1))
         {
-           array[i] += char_to_int(str[i*2 + 1]);
+           array[i] += _bc_rf_ook_char_to_int(str[i*2 + 1]);
         }
     }
 
@@ -93,7 +69,6 @@ static void _bc_rf_ook_tim3_configure(uint32_t resolution_us, uint32_t period_cy
     // Enable TIM3 interrupts
     NVIC_EnableIRQ(TIM3_IRQn);
 }
-
 
 void bc_rf_ook_init(bc_gpio_channel_t gpio)
 {
@@ -123,9 +98,15 @@ void bc_rf_ook_set_bitlength(uint32_t bit_length_us)
 
 bool bc_rf_ook_send(uint8_t *packet, uint8_t length)
 {
-    if (TIM3->CR1 && TIM_CR1_CEN)
+    if ((TIM3->CR1 & TIM_CR1_CEN) != 0)
     {
         // TIM3 is busy
+        return false;
+    }
+
+    if (length > sizeof(_bc_rf_ook.packet_data))
+    {
+        // Packet is too long for library's buffer
         return false;
     }
 
@@ -149,13 +130,24 @@ bool bc_rf_ook_send(uint8_t *packet, uint8_t length)
 
 bool bc_rf_ook_send_hex_string(char *hex_string)
 {
-    uint8_t packet_length = string_to_array(hex_string, _bc_rf_ook.packet_data);
+    uint8_t packet_length = _bc_rf_ook_string_to_array(hex_string, _bc_rf_ook.packet_data);
 
     return bc_rf_ook_send(_bc_rf_ook.packet_data, packet_length);
 }
 
-bool bc_rf_is_busy()
+bool bc_rf_ook_is_busy()
 {
+    return _bc_rf_ook.is_busy;
+}
+
+bool bc_rf_ook_is_ready()
+{
+    if ((TIM3->CR1 & TIM_CR1_CEN) != 0)
+    {
+        // TIM3 is busy
+        return false;
+    }
+
     return _bc_rf_ook.is_busy;
 }
 
