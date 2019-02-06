@@ -36,6 +36,7 @@ void bc_module_encoder_init(void)
 
     // Init encoder GPIO pins
     bc_gpio_init(BC_GPIO_P4);
+
     bc_gpio_init(BC_GPIO_P5);
 
     // Register task
@@ -48,11 +49,13 @@ void bc_module_encoder_deinit(void)
     bc_scheduler_unregister(_bc_module_encoder.task_id);
 
     bc_gpio_set_mode(BC_GPIO_P4, BC_GPIO_MODE_ANALOG);
+
     bc_gpio_set_mode(BC_GPIO_P5, BC_GPIO_MODE_ANALOG);
 
     if (_bc_module_encoder.initialized)
     {
         bc_exti_unregister(BC_EXTI_LINE_P4);
+
         bc_exti_unregister(BC_EXTI_LINE_P5);
     }
 }
@@ -60,6 +63,7 @@ void bc_module_encoder_deinit(void)
 void bc_module_encoder_set_event_handler(void (*event_handler)(bc_module_encoder_event_t, void *), void *event_param)
 {
     _bc_module_encoder.event_handler = event_handler;
+
     _bc_module_encoder.event_param = event_param;
 }
 
@@ -199,7 +203,7 @@ static bool _bc_module_encoder_test_pin(bc_gpio_channel_t channel)
 
     bc_timer_start();
 
-    bc_timer_delay(10);
+    bc_timer_delay(20);
 
     bc_timer_stop();
 
@@ -217,6 +221,10 @@ static bool _bc_module_encoder_present_test(void)
     bc_system_pll_enable();
 
     bc_timer_init();
+
+    bc_gpio_init(BC_GPIO_P4);
+
+    bc_gpio_init(BC_GPIO_P5);
 
     bool is_present = _bc_module_encoder_test_pin(BC_GPIO_P4) && _bc_module_encoder_test_pin(BC_GPIO_P5);
 
