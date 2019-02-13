@@ -99,7 +99,7 @@ int bc_onewire_search_all(bc_gpio_channel_t channel, uint64_t *device_list, size
 
 int bc_onewire_search_family(bc_gpio_channel_t channel, uint8_t family_code, uint64_t *device_list, size_t device_list_size);
 
-//! @brief Start of manual search, see also bc_onewire_search_next()
+//! @brief Start of manual search, see also bc_onewire_search_next
 //! @param[in] family_code Family code of 1-Wire device or NULL
 
 void bc_onewire_search_start(uint8_t family_code);
