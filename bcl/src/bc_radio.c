@@ -739,11 +739,21 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                             {
                                 bc_radio_id_from_buffer(buffer + 9, &_bc_radio.peer_id);
 
-                                _bc_radio_peer_device_add(_bc_radio.peer_id);
-
-                                if (_bc_radio.event_handler)
+                                if ((_bc_radio.mode != BC_RADIO_MODE_GATEWAY) && (_bc_radio.peer_devices[0].id != _bc_radio.peer_id))
                                 {
-                                    _bc_radio.event_handler(BC_RADIO_EVENT_PAIRED, _bc_radio.event_param);
+                                    _bc_radio.peer_devices[0].id = _bc_radio.peer_id;
+                                    _bc_radio.peer_devices[0].message_id_synced = false;
+                                    _bc_radio.peer_devices_length = 1;
+
+                                    _bc_radio.save_peer_devices = true;
+                                    bc_scheduler_plan_now(_bc_radio.task_id);
+
+                                    _bc_radio.sent_subs = 0;
+
+                                    if (_bc_radio.event_handler)
+                                    {
+                                        _bc_radio.event_handler(BC_RADIO_EVENT_PAIRED, _bc_radio.event_param);
+                                    }
                                 }
                             }
                         }
