@@ -74,6 +74,7 @@
 #include <bc_image.h>
 #include <bc_system.h>
 #include <bc_switch.h>
+#include <bc_timer.h>
 #include <bc_error.h>
 #include <bc_dice.h>
 #include <bc_gfx.h>

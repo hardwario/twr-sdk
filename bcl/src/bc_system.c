@@ -2,6 +2,7 @@
 #include <bc_scheduler.h>
 #include <bc_irq.h>
 #include <bc_i2c.h>
+#include <bc_timer.h>
 #include <stm32l0xx.h>
 
 #define _BC_SYSTEM_DEBUG_ENABLE 0
@@ -468,16 +469,24 @@ bool bc_system_get_vbus_sense(void)
 
     if (!init)
     {
+        init = true;
+
         // Enable clock for GPIOA
         RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
 
         // Errata workaround
         RCC->IOPENR;
 
+        // Enable pull-down
+        GPIOA->PUPDR |= GPIO_PUPDR_PUPD12_1;
+
         // Input mode
         GPIOA->MODER &= ~GPIO_MODER_MODE12_Msk;
 
-        init = true;
+        bc_timer_init();
+        bc_timer_start();
+        bc_timer_delay(10);
+        bc_timer_stop();
     }
 
     return (GPIOA->IDR & GPIO_IDR_ID12) != 0;

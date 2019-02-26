@@ -24,7 +24,6 @@ static void _bc_onewire_start(void);
 static void _bc_onewire_stop(void);
 static void _bc_onewire_search_reset(void);
 static void _bc_onewire_search_target_setup(uint8_t family_code);
-static bool _bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number);
 static int _bc_onewire_search_devices(bc_gpio_channel_t channel, uint64_t *device_list, size_t device_list_size);
 
 void bc_onewire_init(bc_gpio_channel_t channel)
@@ -366,7 +365,19 @@ static void _bc_onewire_search_target_setup(uint8_t family_code)
     _bc_onewire_search.last_device_flag = false;
 }
 
-static bool _bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number)
+void bc_onewire_search_start(uint8_t family_code)
+{
+    if (family_code != 0)
+    {
+        _bc_onewire_search_target_setup(family_code);
+    }
+    else
+    {
+        _bc_onewire_search_reset();
+    }
+}
+
+bool bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number)
 {
     bool search_result = false;
     uint8_t id_bit_number;
@@ -508,7 +519,7 @@ static int _bc_onewire_search_devices(bc_gpio_channel_t channel, uint64_t *devic
     int devices = 0;
     int max_devices = device_list_size / sizeof(uint64_t);
 
-    while ((devices < max_devices) && _bc_onewire_search_next(channel, device_list))
+    while ((devices < max_devices) && bc_onewire_search_next(channel, device_list))
     {
         device_list++;
         devices++;

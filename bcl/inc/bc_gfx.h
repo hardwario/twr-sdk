@@ -209,6 +209,16 @@ void bc_gfx_draw_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint3
 
 void bc_gfx_draw_fill_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
 
+//! @brief Display draw fill rectangle with a dithering pattern defined in the color parameter
+//! @param[in] self Instance
+//! @param[in] x0 Pixels from left edge
+//! @param[in] y0 Pixels from top edge
+//! @param[in] x1 Pixels from left edge
+//! @param[in] y1 Pixels from top edge
+//! @param[in] color Dithering mask, 16 bits define bit pattern in the 4 by 4 area
+
+void bc_gfx_draw_fill_rectangle_dithering(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
+
 //! @brief Lcd draw circle, using Midpoint circle algorithm
 //! @param[in] self Instance
 //! @param[in] x0 Center - pixels from left edge

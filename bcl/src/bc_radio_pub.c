@@ -18,6 +18,8 @@ __attribute__((weak)) void bc_radio_pub_on_int(uint64_t *id, char *subtopic, int
 __attribute__((weak)) void bc_radio_pub_on_uint32(uint64_t *id, char *subtopic, uint32_t *value) { (void) id; (void) subtopic; (void) value; }
 __attribute__((weak)) void bc_radio_pub_on_float(uint64_t *id, char *subtopic, float *value) { (void) id; (void) subtopic; (void) value; }
 __attribute__((weak)) void bc_radio_pub_on_string(uint64_t *id, char *subtopic, char *value) { (void) id; (void) subtopic; (void) value; }
+__attribute__((weak)) void bc_radio_pub_on_value_int(uint64_t *id, uint8_t value_id, int *value) { (void) id; (void) value_id; (void) value; }
+
 
 bool bc_radio_pub_event_count(uint8_t event_id, uint16_t *event_count)
 {
@@ -150,6 +152,18 @@ bool bc_radio_pub_state(uint8_t state_id, bool *state)
     return bc_radio_pub_queue_put(buffer, sizeof(buffer));
 }
 
+bool bc_radio_pub_value_int(uint8_t value_id, int *value)
+{
+    uint8_t buffer[1 + sizeof(uint8_t) + sizeof(int)];
+
+    buffer[0] = BC_RADIO_HEADER_PUB_VALUE_INT;
+    buffer[1] = value_id;
+
+    bc_radio_int_to_buffer(value, buffer + 2);
+
+    return bc_radio_pub_queue_put(buffer, sizeof(buffer));
+}
+
 bool bc_radio_pub_bool(const char *subtopic, bool *value)
 {
     size_t len = strlen(subtopic);
@@ -269,6 +283,11 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
         uint16_t event_count;
         uint16_t *pevent_count;
 
+        if (length != (1 + sizeof(uint8_t) + sizeof(uint16_t)))
+        {
+            return;
+        }
+
         bc_radio_uint16_from_buffer(buffer + 2, &event_count, &pevent_count);
 
         if (buffer[1] == BC_RADIO_PUB_EVENT_PUSH_BUTTON)
@@ -283,6 +302,11 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
         float celsius;
         float *pcelsius;
 
+        if (length != (1 + sizeof(uint8_t) + sizeof(float)))
+        {
+            return;
+        }
+
         bc_radio_float_from_buffer(buffer + 2, &celsius, &pcelsius);
 
         bc_radio_pub_on_temperature(id, buffer[1], pcelsius);
@@ -292,6 +316,11 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
         float percentage;
         float *ppercentage;
 
+        if (length != (1 + sizeof(uint8_t) + sizeof(float)))
+        {
+            return;
+        }
+
         bc_radio_float_from_buffer(buffer + 2, &percentage, &ppercentage);
 
         bc_radio_pub_on_humidity(id, buffer[1], ppercentage);
@@ -300,6 +329,11 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
     {
         float lux;
         float *plux;
+
+        if (length != (1 + sizeof(uint8_t) + sizeof(float)))
+        {
+            return;
+        }
 
         bc_radio_float_from_buffer(buffer + 2, &lux, &plux);
 
@@ -312,6 +346,11 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
         float meter;
         float *pmeter;
 
+        if (length != (1 + sizeof(uint8_t) + sizeof(float) + sizeof(float)))
+        {
+            return;
+        }
+
         uint8_t *pointer = bc_radio_float_from_buffer(buffer + 2, &pascal, &ppascal);
 
         bc_radio_float_from_buffer(pointer, &meter, &pmeter);
@@ -323,6 +362,11 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
         float concentration;
         float *pconcentration;
 
+        if (length != (1 + sizeof(float)))
+        {
+            return;
+        }
+
         bc_radio_float_from_buffer(buffer + 1, &concentration, &pconcentration);
 
         bc_radio_pub_on_co2(id, pconcentration);
@@ -332,7 +376,19 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
         float voltage;
         float *pvoltage;
 
-        bc_radio_float_from_buffer(buffer + (length == 5 ? 1 : 2), &voltage, &pvoltage);
+        if (length == (1 + sizeof(float)))
+        {
+            bc_radio_float_from_buffer(buffer + 1, &voltage, &pvoltage);
+        }
+        else if (length == (1 + 1 + sizeof(float)))
+        {
+            // Old format
+            bc_radio_float_from_buffer(buffer + 2, &voltage, &pvoltage);
+        }
+        else
+        {
+            return;
+        }
 
         bc_radio_pub_on_battery(id, pvoltage);
     }
@@ -366,6 +422,11 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
     {
         bool state;
         bool *pstate = NULL;
+
+        if (length != (1 + sizeof(uint8_t) + sizeof(bool)))
+        {
+            return;
+        }
 
         bc_radio_bool_from_buffer(buffer + 2, &state, &pstate);
 
@@ -422,5 +483,19 @@ void bc_radio_pub_decode(uint64_t *id, uint8_t *buffer, size_t length)
         size_t len = strlen((char *) buffer + 1);
 
         bc_radio_pub_on_string(id, (char *) buffer + 1, (char *) buffer + 2 + len);
+    }
+    else if (buffer[0] == BC_RADIO_HEADER_PUB_VALUE_INT)
+    {
+        int value;
+        int *pvalue;
+
+        if (length != (1 + sizeof(uint8_t) + sizeof(int)))
+        {
+            return;
+        }
+
+        bc_radio_int_from_buffer(buffer + 2, &value, &pvalue);
+
+        bc_radio_pub_on_value_int(id, buffer[1], pvalue);
     }
 }

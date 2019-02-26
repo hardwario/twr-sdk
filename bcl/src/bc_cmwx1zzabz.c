@@ -22,6 +22,7 @@ const char *_init_commands[] =
     "AT+MODE?\r",
     "AT+CLASS?\r",
     "AT+RX2?\r",
+    "AT+NWK?\r",
     NULL
 };
 
@@ -366,6 +367,14 @@ static void _bc_cmwx1zzabz_task(void *param)
                     }
                     response_handled = 1;
                 }
+                else if (strcmp(last_command, "AT+NWK?\r") == 0 && response_valid)
+                {
+                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_NWK) == 0)
+                    {
+                        self->_config.nwk_public = response_string_value[0] - '0';
+                    }
+                    response_handled = 1;
+                }
                 else if (   strcmp(last_command, "AT\r") == 0 &&
                             strcmp(self->_response, "+OK\r") == 0
                         )
@@ -552,6 +561,11 @@ static void _bc_cmwx1zzabz_task(void *param)
                     case BC_CMWX1ZZABZ_CONFIG_INDEX_RX2:
                     {
                         snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+RX2=%d,%d\r", (int) self->_config.rx2_frequency, self->_config.rx2_datarate);
+                        break;
+                    }
+                    case BC_CMWX1ZZABZ_CONFIG_INDEX_NWK:
+                    {
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+NWK=%d\r", (int) self->_config.nwk_public);
                         break;
                     }
                     default:
@@ -826,6 +840,18 @@ void bc_cmwx1zzabz_get_rx2(bc_cmwx1zzabz_t *self, uint32_t *frequency, uint8_t *
 {
     *frequency = self->_config.rx2_frequency;
     *datarate = self->_config.rx2_datarate;
+}
+
+void bc_cmwx1zzabz_set_nwk_public(bc_cmwx1zzabz_t *self, uint8_t public)
+{
+    self->_config.nwk_public = public;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_NWK);
+}
+
+uint8_t bc_cmwx1zzabz_get_nwk_public(bc_cmwx1zzabz_t *self)
+{
+    return self->_config.nwk_public;
 }
 
 static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)
