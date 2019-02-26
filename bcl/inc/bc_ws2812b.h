@@ -23,6 +23,10 @@ void bc_ws2812b_set_pixel_from_rgb(int position, uint8_t red, uint8_t green, uin
 
 void bc_ws2812b_set_pixel_from_uint32(int position, uint32_t color);
 
+void bc_ws2812b_set_pixel_from_rgb_swap_rg(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white);
+
+void bc_ws2812b_set_pixel_from_uint32_swap_rg(int position, uint32_t color);
+
 bool bc_ws2812b_write(void);
 
 bool bc_ws2812b_is_ready(void);

@@ -76,7 +76,7 @@ struct bc_data_stream_t
 
 void bc_data_stream_init(bc_data_stream_t *self, int min_number_of_samples, bc_data_stream_buffer_t *buffer);
 
-//! @brief Initialize data stream instance
+//! @brief Feed data into stream instance
 //! @param[in] self Instance
 //! @param[in] data Input data to be fed into data stream
 

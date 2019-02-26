@@ -22,6 +22,8 @@ const bc_led_strip_buffer_t bc_module_power_led_strip_buffer_rgb_150 =
     .buffer = _bc_module_power_led_strip_dma_buffer_rgb_150
 };
 
+#if LED_STRIP_SWAP_RG == 0
+
 const bc_led_strip_driver_t bc_module_power_led_strip_driver =
 {
     .init = bc_ws2812b_init,
@@ -30,6 +32,19 @@ const bc_led_strip_driver_t bc_module_power_led_strip_driver =
     .set_pixel_rgbw = bc_ws2812b_set_pixel_from_rgb,
     .is_ready = bc_ws2812b_is_ready
 };
+
+#else
+
+const bc_led_strip_driver_t bc_module_power_led_strip_driver =
+{
+    .init = bc_ws2812b_init,
+    .write = bc_ws2812b_write,
+    .set_pixel = bc_ws2812b_set_pixel_from_uint32_swap_rg,
+    .set_pixel_rgbw = bc_ws2812b_set_pixel_from_rgb_swap_rg,
+    .is_ready = bc_ws2812b_is_ready
+};
+
+#endif
 
 static struct
 {

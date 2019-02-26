@@ -245,7 +245,7 @@ start:
         }
         case BC_MODULE_STATE_DETECT_FORMAT:
         {
-            float voltage = _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value);
+            float voltage = _BC_MODULE_BATTERY_STANDARD_CALIBRATION(_BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value));
 
             if ((voltage > 3.8) && (voltage < 7.0))
             {
@@ -306,7 +306,7 @@ start:
             }
             else
             {
-                _bc_module_battery.voltage = _BC_MODULE_BATTERY_MINI_CALIBRATION(_BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value));
+                _bc_module_battery.voltage = _BC_MODULE_BATTERY_STANDARD_CALIBRATION(_BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value));
             }
 
             _bc_module_battery.measurement_active = false;

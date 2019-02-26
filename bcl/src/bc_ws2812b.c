@@ -155,7 +155,6 @@ void bc_ws2812b_set_event_handler(void (*event_handler)(bc_ws2812b_event_t, void
 
 void bc_ws2812b_set_pixel_from_rgb(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
 {
-
     uint32_t calculated_position = (position * _bc_ws2812b.buffer->type * 2);
 
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(green & 0xf0) >> 4];
@@ -183,6 +182,46 @@ void bc_ws2812b_set_pixel_from_uint32(int position, uint32_t color)
 
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0xf0000000) >> 28];
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x0f000000) >> 24];
+
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x0000f000) >> 12];
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x00000f00) >>  8];
+
+     if (_bc_ws2812b.buffer->type == BC_LED_STRIP_TYPE_RGBW)
+     {
+         _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x000000f0) >> 4];
+         _bc_ws2812b.dma_bit_buffer[calculated_position] = _bc_ws2812b_pulse_tab[color & 0x0000000f];
+     }
+}
+
+void bc_ws2812b_set_pixel_from_rgb_swap_rg(int position, uint8_t red, uint8_t green, uint8_t blue, uint8_t white)
+{
+    uint32_t calculated_position = (position * _bc_ws2812b.buffer->type * 2);
+
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(red & 0xf0) >> 4];
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[red & 0x0f];
+
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(green & 0xf0) >> 4];
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[green & 0x0f];
+
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(blue & 0xf0) >> 4];
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[blue & 0x0f];
+
+     if (_bc_ws2812b.buffer->type == BC_LED_STRIP_TYPE_RGBW)
+     {
+         _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(white & 0xf0) >> 4];
+         _bc_ws2812b.dma_bit_buffer[calculated_position] = _bc_ws2812b_pulse_tab[white & 0x0f];
+     }
+}
+
+void bc_ws2812b_set_pixel_from_uint32_swap_rg(int position, uint32_t color)
+{
+    uint32_t calculated_position = (position * _bc_ws2812b.buffer->type * 2);
+
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0xf0000000) >> 28];
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x0f000000) >> 24];
+
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x00f00000) >> 20];
+    _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x000f0000) >> 16];
 
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x0000f000) >> 12];
     _bc_ws2812b.dma_bit_buffer[calculated_position++] = _bc_ws2812b_pulse_tab[(color & 0x00000f00) >>  8];

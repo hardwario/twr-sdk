@@ -25,6 +25,8 @@ static void _bc_hc_sr04_task_interval(void *param);
 
 static void _bc_hc_sr04_task_notify(void *param);
 
+static void _bc_hc_sr04_iqr_handler(void *param);
+
 void bc_hc_sr04_init(void)
 {
     memset(&_bc_hc_sr04, 0, sizeof(_bc_hc_sr04));
@@ -57,6 +59,8 @@ void bc_hc_sr04_init(void)
 
     // Set prescaler to 5 * 32 (5 microseconds resolution)
     TIM3->PSC = _BC_HC_SR04_RESOLUTION * 32 - 1;
+
+    bc_timer_set_irq_handler(TIM3, _bc_hc_sr04_iqr_handler, NULL);
 
     // Enable TIM3 interrupts
     NVIC_EnableIRQ(TIM3_IRQn);
@@ -181,8 +185,10 @@ static void _bc_hc_sr04_task_notify(void *param)
     }
 }
 
-void TIM3_IRQHandler(void)
+static void _bc_hc_sr04_iqr_handler(void *param)
 {
+    (void) param;
+
     // Disable Capture 4 / Compare 1 interrupt
     TIM3->DIER &= ~(TIM_DIER_CC4IE | TIM_DIER_CC1IE);
 
@@ -226,3 +232,5 @@ void TIM3_IRQHandler(void)
     // Schedule task for immediate execution
     bc_scheduler_plan_now(_bc_hc_sr04.task_id_notify);
 }
+
+
