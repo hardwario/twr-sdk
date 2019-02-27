@@ -48,7 +48,7 @@ typedef struct bc_pyq1648_t bc_pyq1648_t;
 typedef enum
 {
     BC_PYQ1648_STATE_ERROR = -1,
-    BC_PYQ1648_STATE_INITIALIZE = 0,
+    BC_PYQ1648_STATE_INIT = 0,
     BC_PYQ1648_STATE_IGNORE = 1,
     BC_PYQ1648_STATE_CHECK = 2
 
@@ -61,7 +61,6 @@ struct bc_pyq1648_t
     void (*_event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t, void *);
     void *_event_param;
     bc_pyq1648_state_t _state;
-    uint32_t _config;
     uint8_t _sensitivity;
     bc_tick_t _blank_period;
     bc_tick_t _aware_time;
