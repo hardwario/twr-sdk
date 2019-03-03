@@ -105,7 +105,7 @@ start:
 
             self->_state = BC_PYQ1648_STATE_INIT;
 
-            bc_scheduler_plan_current_relative(50);
+            bc_scheduler_plan_current_relative(BC_PYQ1648_DELAY_PREINIT);
 
             return;
         }
@@ -236,7 +236,7 @@ static void _bc_pyq1648_init(bc_pyq1648_t *self)
 
     uint16_t bit_buffer[BC_PYQ1648_CONFIG_BIT_COUNT];
     _bc_pyq1648_compose_bit_buffer(self, bit_buffer);
-    
+
     bc_irq_disable();
 
     // Enable PLL
