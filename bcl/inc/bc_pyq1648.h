@@ -48,9 +48,10 @@ typedef struct bc_pyq1648_t bc_pyq1648_t;
 typedef enum
 {
     BC_PYQ1648_STATE_ERROR = -1,
-    BC_PYQ1648_STATE_INIT = 0,
-    BC_PYQ1648_STATE_IGNORE = 1,
-    BC_PYQ1648_STATE_CHECK = 2
+    BC_PYQ1648_STATE_PREINIT = 0,
+    BC_PYQ1648_STATE_INIT = 1,
+    BC_PYQ1648_STATE_IGNORE = 2,
+    BC_PYQ1648_STATE_CHECK = 3
 
 } bc_pyq1648_state_t;
 

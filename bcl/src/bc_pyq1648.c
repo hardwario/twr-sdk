@@ -2,7 +2,6 @@
 #include <bc_irq.h>
 #include <bc_gpio.h>
 #include <bc_system.h>
-#include <bc_timer.h>
 #include <stm32l0xx.h>
 
 #define BC_PYQ1648_BPF 0x00
@@ -10,7 +9,7 @@
 #define BC_PYQ1648_WAKE_UP_MODE 0x02
 
 #define BC_PYQ1648_DELAY_RUN 50
-#define BC_PYQ1648_DELAY_PREINIT 100
+#define BC_PYQ1648_DELAY_PREINIT 10
 #define BC_PYQ1648_DELAY_INITIALIZATION 10
 #define BC_PYQ1648_UPDATE_INTERVAL 100
 
@@ -20,6 +19,7 @@ static void _bc_pyq1648_task(void *param);
 
 static void _bc_pyq1648_clear_event(bc_pyq1648_t *self);
 static void _bc_pyq1648_compose_bit_buffer(bc_pyq1648_t *self, uint16_t *bit_buffer);
+static void _bc_pyq1648_preinit(bc_pyq1648_t *self);
 static void _bc_pyq1648_init(bc_pyq1648_t *self);
 
 static const uint8_t _bc_pyq1648_sensitivity_table[4] =
@@ -93,9 +93,19 @@ start:
                 self->_event_handler(self, BC_PYQ1648_EVENT_ERROR, self->_event_param);
             }
 
-            self->_state = BC_PYQ1648_STATE_INIT;
+            self->_state = BC_PYQ1648_STATE_PREINIT;
 
             bc_scheduler_plan_current_relative(BC_PYQ1648_UPDATE_INTERVAL);
+
+            return;
+        }
+        case BC_PYQ1648_STATE_PREINIT:
+        {
+            _bc_pyq1648_preinit(self);
+
+            self->_state = BC_PYQ1648_STATE_INIT;
+
+            bc_scheduler_plan_current_relative(50);
 
             return;
         }
@@ -203,6 +213,14 @@ static void _bc_pyq1648_compose_bit_buffer(bc_pyq1648_t *self, uint16_t *bit_buf
             *bit_buffer++ = _bc_pyq1648_pulse_count[0];
         }
     }
+}
+
+static void _bc_pyq1648_preinit(bc_pyq1648_t *self)
+{
+    // Set inactive level
+    bc_gpio_init(self->_gpio_channel_serin);
+    bc_gpio_set_output(self->_gpio_channel_serin, 0);
+    bc_gpio_set_mode(self->_gpio_channel_serin, BC_GPIO_MODE_OUTPUT);
 }
 
 static void _bc_pyq1648_init(bc_pyq1648_t *self)
