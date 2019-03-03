@@ -225,11 +225,6 @@ static void _bc_pyq1648_preinit(bc_pyq1648_t *self)
 
 static void _bc_pyq1648_init(bc_pyq1648_t *self)
 {
-    bc_irq_disable();
-
-    // Enable PLL
-    bc_system_pll_enable();
-
     // Initialize SerialIn (SERIN) GPIO pin
     bc_gpio_init(self->_gpio_channel_serin);
     bc_gpio_set_mode(self->_gpio_channel_serin, BC_GPIO_MODE_ALTERNATE_2);
@@ -238,6 +233,14 @@ static void _bc_pyq1648_init(bc_pyq1648_t *self)
     bc_gpio_init(self->_gpio_channel_dl);
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
     bc_gpio_set_pull(self->_gpio_channel_dl, BC_GPIO_PULL_DOWN);
+
+    uint16_t bit_buffer[BC_PYQ1648_CONFIG_BIT_COUNT];
+    _bc_pyq1648_compose_bit_buffer(self, bit_buffer);
+    
+    bc_irq_disable();
+
+    // Enable PLL
+    bc_system_pll_enable();
 
     // Enable peripheral
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
@@ -275,10 +278,6 @@ static void _bc_pyq1648_init(bc_pyq1648_t *self)
     // Run timer
     TIM3->CR1 |= TIM_CR1_CEN;
 
-    uint16_t bit_buffer[BC_PYQ1648_CONFIG_BIT_COUNT];
-
-    _bc_pyq1648_compose_bit_buffer(self, bit_buffer);
-
     for (int n = 0; n < BC_PYQ1648_CONFIG_BIT_COUNT; n++)
     {
         // Update compare value for next update
@@ -297,12 +296,12 @@ static void _bc_pyq1648_init(bc_pyq1648_t *self)
     // Stop timer
     TIM3->CR1 &= ~(TIM_CR1_CEN);
 
-    // Set inactive level
-    bc_gpio_set_output(self->_gpio_channel_serin, 0);
-    bc_gpio_set_mode(self->_gpio_channel_serin, BC_GPIO_MODE_OUTPUT);
-
     // Disable PLL
     bc_system_pll_disable();
 
     bc_irq_enable();
+
+    // Set inactive level
+    bc_gpio_set_output(self->_gpio_channel_serin, 0);
+    bc_gpio_set_mode(self->_gpio_channel_serin, BC_GPIO_MODE_OUTPUT);
 }
