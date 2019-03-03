@@ -4,16 +4,15 @@
 #include <bc_system.h>
 #include <stm32l0xx.h>
 
-#define BC_PYQ1648_BPF 0x00
-#define BC_PYQ1648_LPF 0x01
-#define BC_PYQ1648_WAKE_UP_MODE 0x02
+#define _BC_PYQ1648_BPF 0x00
+#define _BC_PYQ1648_WAKE_UP_MODE 0x02
 
-#define BC_PYQ1648_DELAY_RUN 50
-#define BC_PYQ1648_DELAY_PREINIT 10
-#define BC_PYQ1648_DELAY_INITIALIZATION 10
-#define BC_PYQ1648_UPDATE_INTERVAL 100
+#define _BC_PYQ1648_DELAY_RUN 50
+#define _BC_PYQ1648_DELAY_PREINIT 10
+#define _BC_PYQ1648_UPDATE_INTERVAL 100
+#define _BC_PYQ1648_IGNORE_INTERVAL 5000
 
-#define BC_PYQ1648_CONFIG_BIT_COUNT 24
+#define _BC_PYQ1648_CONFIG_BIT_COUNT 24
 
 static void _bc_pyq1648_task(void *param);
 
@@ -50,7 +49,7 @@ void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, b
     self->_gpio_channel_dl = gpio_channel_dl;
 
     // Register task
-    self->_task_id = bc_scheduler_register(_bc_pyq1648_task, self, BC_PYQ1648_DELAY_RUN);
+    self->_task_id = bc_scheduler_register(_bc_pyq1648_task, self, _BC_PYQ1648_DELAY_RUN);
 }
 
 void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t, void *), void *event_param)
@@ -95,7 +94,7 @@ start:
 
             self->_state = BC_PYQ1648_STATE_PREINIT;
 
-            bc_scheduler_plan_current_relative(BC_PYQ1648_UPDATE_INTERVAL);
+            bc_scheduler_plan_current_relative(_BC_PYQ1648_UPDATE_INTERVAL);
 
             return;
         }
@@ -105,7 +104,7 @@ start:
 
             self->_state = BC_PYQ1648_STATE_INIT;
 
-            bc_scheduler_plan_current_relative(BC_PYQ1648_DELAY_PREINIT);
+            bc_scheduler_plan_current_relative(_BC_PYQ1648_DELAY_PREINIT);
 
             return;
         }
@@ -121,8 +120,7 @@ start:
         {
             if (self->_ignore_untill == 0)
             {
-                // TODO ... acquire !!!
-                self->_ignore_untill = bc_tick_get() + (75000 / 15);
+                self->_ignore_untill = bc_tick_get() + _BC_PYQ1648_IGNORE_INTERVAL;
             }
 
             if (bc_gpio_get_input(self->_gpio_channel_dl) != 0)
@@ -139,7 +137,7 @@ start:
                 self->_state = BC_PYQ1648_STATE_IGNORE;
             }
 
-            bc_scheduler_plan_current_relative(BC_PYQ1648_UPDATE_INTERVAL);
+            bc_scheduler_plan_current_relative(_BC_PYQ1648_UPDATE_INTERVAL);
 
             return;
         }
@@ -164,7 +162,7 @@ start:
 
             self->_state = BC_PYQ1648_STATE_CHECK;
 
-            bc_scheduler_plan_current_relative(BC_PYQ1648_UPDATE_INTERVAL);
+            bc_scheduler_plan_current_relative(_BC_PYQ1648_UPDATE_INTERVAL);
 
             return;
         }
@@ -195,10 +193,10 @@ static void _bc_pyq1648_compose_bit_buffer(bc_pyq1648_t *self, uint16_t *bit_buf
     // |     From self    |  Handled by SW  |        0x00        |       0x00       |    Wake up mode    |  Band pass filter  | Has to be 16  |
     //  --------------------------------------------------------------------------------------------------------------------------------------
 
-    uint32_t config = (self->_sensitivity << 17) | (BC_PYQ1648_WAKE_UP_MODE << 7) | (BC_PYQ1648_BPF << 5) | 0x10;
+    uint32_t config = (self->_sensitivity << 17) | (_BC_PYQ1648_WAKE_UP_MODE << 7) | (_BC_PYQ1648_BPF << 5) | 0x10;
 
     // Mask every single valid bit in config by mask (top to bottom)
-    for (uint32_t mask = 1 << (BC_PYQ1648_CONFIG_BIT_COUNT - 1); mask != 0; mask >>= 1)
+    for (uint32_t mask = 1 << (_BC_PYQ1648_CONFIG_BIT_COUNT - 1); mask != 0; mask >>= 1)
     {
         // ...If logical 1...
         if ((config & mask) != 0)
@@ -234,7 +232,7 @@ static void _bc_pyq1648_init(bc_pyq1648_t *self)
     bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
     bc_gpio_set_pull(self->_gpio_channel_dl, BC_GPIO_PULL_DOWN);
 
-    uint16_t bit_buffer[BC_PYQ1648_CONFIG_BIT_COUNT];
+    uint16_t bit_buffer[_BC_PYQ1648_CONFIG_BIT_COUNT];
     _bc_pyq1648_compose_bit_buffer(self, bit_buffer);
 
     bc_irq_disable();
@@ -278,7 +276,7 @@ static void _bc_pyq1648_init(bc_pyq1648_t *self)
     // Run timer
     TIM3->CR1 |= TIM_CR1_CEN;
 
-    for (int n = 0; n < BC_PYQ1648_CONFIG_BIT_COUNT; n++)
+    for (int n = 0; n < _BC_PYQ1648_CONFIG_BIT_COUNT; n++)
     {
         // Update compare value for next update
         TIM3->CCR3 = bit_buffer[n];
