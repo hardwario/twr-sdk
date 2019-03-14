@@ -137,6 +137,22 @@ bool bc_module_sensor_set_vdd(bool on);
 
 bc_module_sensor_revision_t bc_module_sensor_get_revision(void);
 
+//! @brief Initialize 1-Wire on channel B
+
+void bc_module_sensor_onewire_init(void);
+
+//! @brief Semaphore for 1Wire Power up: for R1.1 set VDD On, for R1.0 pull up 56R on channel A
+//! @return true On success
+//! @return false On error
+
+bool bc_module_sensor_onewire_power_up(void);
+
+//! @brief Semaphore for 1Wire Power down: for R1.1 set VDD Off, for R1.0 pull none on channel A
+//! @return true On success
+//! @return false On error
+
+bool bc_module_sensor_onewire_power_down(void);
+
 //! @}
 
 

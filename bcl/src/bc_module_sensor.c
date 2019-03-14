@@ -1,5 +1,6 @@
 #include <bc_module_sensor.h>
 #include <bc_tca9534a.h>
+#include <bc_onewire.h>
 
 #define _BC_MODULE_SENSOR_INITIALIZED_STATE 0xff
 #define _BC_MODULE_SENSOR_INITIALIZED_DIRECTION 0x00
@@ -14,6 +15,7 @@ static struct
     bool initialized;
     bc_tca9534a_t tca9534a;
     bc_module_sensor_revision_t revision;
+    int onewire_init_semaphore;
 
 } _bc_module_sensor;
 
@@ -259,4 +261,69 @@ bc_module_sensor_revision_t bc_module_sensor_get_revision(void)
     }
 
     return _bc_module_sensor.revision;
+}
+
+void bc_module_sensor_onewire_init(void)
+{
+    bc_onewire_init(_bc_module_sensor_channel_gpio_lut[BC_MODULE_SENSOR_CHANNEL_B]);
+}
+
+bool bc_module_sensor_onewire_power_up(void)
+{
+    if (_bc_module_sensor.onewire_init_semaphore == 0)
+    {
+        if (bc_module_sensor_get_revision() == BC_MODULE_SENSOR_REVISION_R1_1)
+        {
+            if (!bc_module_sensor_set_vdd(1))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_UP_56R))
+            {
+                return false;
+            }
+        }
+
+        if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_PULL_UP_4K7))
+        {
+            return false;
+        }
+    }
+
+    _bc_module_sensor.onewire_init_semaphore++;
+
+    return true;
+}
+
+bool bc_module_sensor_onewire_power_down(void)
+{
+    _bc_module_sensor.onewire_init_semaphore--;
+
+    if (_bc_module_sensor.onewire_init_semaphore == 0)
+    {
+        if (bc_module_sensor_get_revision() == BC_MODULE_SENSOR_REVISION_R1_1)
+        {
+            if (!bc_module_sensor_set_vdd(0))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_NONE))
+            {
+                return false;
+            }
+        }
+
+        if (!bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_PULL_NONE))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
