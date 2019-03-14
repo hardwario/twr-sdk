@@ -4,16 +4,21 @@
 #include <bc_system.h>
 #include <bc_timer.h>
 
-static struct
+typedef struct
 {
+    bool initialized;
+
     uint8_t last_discrepancy;
     uint8_t last_family_discrepancy;
     bool last_device_flag;
     uint8_t last_rom_no[8];
 
-} _bc_onewire_search;
+    bool transaction;
+    bc_gpio_channel_t channel;
 
-static bool _bc_onewire_transaction = false;
+} _bc_onewire_t;
+
+static _bc_onewire_t _bc_onewire = { .initialized = false };
 
 static bool _bc_onewire_reset(bc_gpio_channel_t channel);
 static void _bc_onewire_write_byte(bc_gpio_channel_t channel, uint8_t byte);
@@ -28,32 +33,47 @@ static int _bc_onewire_search_devices(bc_gpio_channel_t channel, uint64_t *devic
 
 void bc_onewire_init(bc_gpio_channel_t channel)
 {
+    if (!_bc_onewire.initialized)
+    {
+        memset(&_bc_onewire, 0, sizeof(_bc_onewire));
+
+        _bc_onewire.initialized = true;
+    }
+
     bc_gpio_init(channel);
+
     bc_gpio_set_pull(channel, BC_GPIO_PULL_NONE);
+
+    bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
 }
 
-bool bc_onewire_transaction_start(void)
+bool bc_onewire_transaction_start(bc_gpio_channel_t channel)
 {
-	if (_bc_onewire_transaction)
+	if (_bc_onewire.transaction)
 	{
 		return false;
 	}
 
 	_bc_onewire_start();
 
-	_bc_onewire_transaction = true;
+    _bc_onewire.transaction = true;
+
+    _bc_onewire.channel = channel;
 
 	return true;
 }
 
-bool bc_onewire_transaction_stop(void)
+bool bc_onewire_transaction_stop(bc_gpio_channel_t channel)
 {
-	if (!_bc_onewire_transaction)
+	if (!_bc_onewire.transaction)
 	{
 		return false;
 	}
 
 	_bc_onewire_transaction = false;
+
+
+	_bc_onewire.transaction = false;
 
 	_bc_onewire_stop();
 
@@ -325,7 +345,7 @@ static uint8_t _bc_onewire_read_bit(bc_gpio_channel_t channel)
 
 static void _bc_onewire_start(void)
 {
-	if (_bc_onewire_transaction)
+	if (_bc_onewire.transaction)
 	{
 		return;
 	}
@@ -339,7 +359,7 @@ static void _bc_onewire_start(void)
 
 static void _bc_onewire_stop(void)
 {
-	if (_bc_onewire_transaction)
+	if (_bc_onewire.transaction)
 	{
 		return;
 	}
@@ -351,18 +371,18 @@ static void _bc_onewire_stop(void)
 
 static void _bc_onewire_search_reset(void)
 {
-    _bc_onewire_search.last_discrepancy = 0;
-    _bc_onewire_search.last_device_flag = false;
-    _bc_onewire_search.last_family_discrepancy = 0;
+    _bc_onewire.last_discrepancy = 0;
+    _bc_onewire.last_device_flag = false;
+    _bc_onewire.last_family_discrepancy = 0;
 }
 
 static void _bc_onewire_search_target_setup(uint8_t family_code)
 {
-    memset(_bc_onewire_search.last_rom_no, 0, sizeof(_bc_onewire_search.last_rom_no));
-    _bc_onewire_search.last_rom_no[0] = family_code;
-    _bc_onewire_search.last_discrepancy = 64;
-    _bc_onewire_search.last_family_discrepancy = 0;
-    _bc_onewire_search.last_device_flag = false;
+    memset(_bc_onewire.last_rom_no, 0, sizeof(_bc_onewire.last_rom_no));
+    _bc_onewire.last_rom_no[0] = family_code;
+    _bc_onewire.last_discrepancy = 64;
+    _bc_onewire.last_family_discrepancy = 0;
+    _bc_onewire.last_device_flag = false;
 }
 
 void bc_onewire_search_start(uint8_t family_code)
@@ -391,7 +411,7 @@ bool bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number)
     rom_byte_number = 0;
     rom_byte_mask = 1;
 
-    if (!_bc_onewire_search.last_device_flag)
+    if (!_bc_onewire.last_device_flag)
     {
 
         _bc_onewire_start();
@@ -428,14 +448,14 @@ bool bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number)
                 else
                 {
                     /* If this discrepancy is before the Last Discrepancy on a previous next then pick the same as last time */
-                    if (id_bit_number < _bc_onewire_search.last_discrepancy)
+                    if (id_bit_number < _bc_onewire.last_discrepancy)
                     {
-                        search_direction = ((_bc_onewire_search.last_rom_no[rom_byte_number] & rom_byte_mask) > 0);
+                        search_direction = ((_bc_onewire.last_rom_no[rom_byte_number] & rom_byte_mask) > 0);
                     }
                     else
                     {
                         /* If equal to last pick 1, if not then pick 0 */
-                        search_direction = (id_bit_number == _bc_onewire_search.last_discrepancy);
+                        search_direction = (id_bit_number == _bc_onewire.last_discrepancy);
                     }
 
                     /* If 0 was picked then record its position in LastZero */
@@ -446,7 +466,7 @@ bool bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number)
                         /* Check for Last discrepancy in family */
                         if (last_zero < 9)
                         {
-                            _bc_onewire_search.last_family_discrepancy = last_zero;
+                            _bc_onewire.last_family_discrepancy = last_zero;
                         }
                     }
                 }
@@ -454,11 +474,11 @@ bool bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number)
                 /* Set or clear the bit in the ROM byte rom_byte_number with mask rom_byte_mask */
                 if (search_direction == 1)
                 {
-                    _bc_onewire_search.last_rom_no[rom_byte_number] |= rom_byte_mask;
+                    _bc_onewire.last_rom_no[rom_byte_number] |= rom_byte_mask;
                 }
                 else
                 {
-                    _bc_onewire_search.last_rom_no[rom_byte_number] &= ~rom_byte_mask;
+                    _bc_onewire.last_rom_no[rom_byte_number] &= ~rom_byte_mask;
                 }
 
                 /* Serial number search direction write bit */
@@ -482,29 +502,29 @@ bool bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number)
         if (!(id_bit_number < 65))
         {
             /* Search successful so set LastDiscrepancy, LastDeviceFlag, search_result */
-            _bc_onewire_search.last_discrepancy = last_zero;
+            _bc_onewire.last_discrepancy = last_zero;
 
             /* Check for last device */
-            if (_bc_onewire_search.last_discrepancy == 0)
+            if (_bc_onewire.last_discrepancy == 0)
             {
-                _bc_onewire_search.last_device_flag = true;
+                _bc_onewire.last_device_flag = true;
             }
 
-            search_result = !_bc_onewire_search.last_rom_no[0] ? false : true;
+            search_result = !_bc_onewire.last_rom_no[0] ? false : true;
         }
 
         _bc_onewire_stop();
     }
 
     if (search_result
-            && bc_onewire_crc8(_bc_onewire_search.last_rom_no, sizeof(_bc_onewire_search.last_rom_no), 0x00) != 0)
+            && bc_onewire_crc8(_bc_onewire.last_rom_no, sizeof(_bc_onewire.last_rom_no), 0x00) != 0)
     {
         search_result = false;
     }
 
     if (search_result)
     {
-        memcpy(device_number, _bc_onewire_search.last_rom_no, sizeof(_bc_onewire_search.last_rom_no));
+        memcpy(device_number, _bc_onewire.last_rom_no, sizeof(_bc_onewire.last_rom_no));
     }
     else
     {

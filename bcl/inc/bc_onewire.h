@@ -15,16 +15,18 @@
 void bc_onewire_init(bc_gpio_channel_t channel);
 
 //! @brief Start transaction, enable pll and run timer
+//! @param channel GPIO channel
 //! @return true On success
 //! @return false On failure
 
-bool bc_onewire_transaction_start(void);
+bool bc_onewire_transaction_start(bc_gpio_channel_t channel);
 
 //! @brief Stop transaction
+//! @param channel GPIO channel
 //! @return true On success
 //! @return false On failure
 
-bool bc_onewire_transaction_stop(void);
+bool bc_onewire_transaction_stop(bc_gpio_channel_t channel);
 
 //! @brief Reset the 1-Wire bus and return the presence of any device
 //! @param channel GPIO channel
@@ -119,7 +121,7 @@ bool bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number);
 
 uint8_t bc_onewire_crc8(const void *buffer, size_t length, uint8_t crc);
 
-//! @brief Calculate 16-bit CRC
+//! @brief Calculate 16-bit CRC, polynomial 0x8005
 //! @param[in] buffer
 //! @param[in] length Number of bytes
 //! @param[in] The crc starting value
