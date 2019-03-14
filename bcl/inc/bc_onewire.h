@@ -113,6 +113,11 @@ void bc_onewire_search_start(uint8_t family_code);
 
 bool bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number);
 
+//! @brief Enable call sleep mode for all ds28e17 after transaction
+//! @param[in] on
+
+void bc_onewire_auto_ds28e17_sleep_mode(bool on);
+
 //! @brief Calculate 8-bit CRC
 //! @param[in] buffer
 //! @param[in] length Number of bytes
