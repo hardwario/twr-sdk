@@ -15,6 +15,7 @@ typedef struct
 
     bool transaction;
     bc_gpio_channel_t channel;
+    bool auto_ds28e17_sleep_mode;
 
 } _bc_onewire_t;
 
@@ -51,10 +52,10 @@ bool bc_onewire_transaction_start(bc_gpio_channel_t channel)
 {
 	if (_bc_onewire.transaction)
 	{
-		return false;
+        return false;
 	}
 
-	_bc_onewire_start();
+    _bc_onewire_start();
 
     _bc_onewire.transaction = true;
 
@@ -70,8 +71,15 @@ bool bc_onewire_transaction_stop(bc_gpio_channel_t channel)
 		return false;
 	}
 
-	_bc_onewire_transaction = false;
+    if (_bc_onewire.auto_ds28e17_sleep_mode)
+    {
+        if (_bc_onewire_reset(channel))
+        {
+            _bc_onewire_write_byte(channel, 0xcc);
 
+            _bc_onewire_write_byte(channel, 0x1e);
+        }
+    }
 
 	_bc_onewire.transaction = false;
 
@@ -532,6 +540,11 @@ bool bc_onewire_search_next(bc_gpio_channel_t channel, uint64_t *device_number)
     }
 
     return search_result;
+}
+
+void bc_onewire_auto_ds28e17_sleep_mode(bool on)
+{
+    _bc_onewire.auto_ds28e17_sleep_mode = on;
 }
 
 static int _bc_onewire_search_devices(bc_gpio_channel_t channel, uint64_t *device_list, size_t device_list_size)
