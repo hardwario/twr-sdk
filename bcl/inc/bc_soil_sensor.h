@@ -20,6 +20,60 @@ typedef enum
 
 } bc_soil_sensor_event_t;
 
+//! @brief Error numbers
+
+typedef enum
+{
+    //! @brief No error
+    BC_SOIL_SENSOR_ERROR_NONE = 0,
+
+    //! @brief Sensor Module initialize error
+    BC_SOIL_SENSOR_ERROR_SENSOR_MODULE_INITIALIZE = 1,
+
+    //! @brief Sensor Module onewire power up error
+    BC_SOIL_SENSOR_ERROR_SENSOR_MODULE_POWER_UP = 2,
+
+    //! @brief No sensor found
+    BC_SOIL_SENSOR_ERROR_NO_SENSOR_FOUND = 3,
+
+    //! @brief Tmp112 inicialize error
+    BC_SOIL_SENSOR_ERROR_TMP112_INITIALIZE = 4,
+
+    //! @brief EEPROM header read error
+    BC_SOIL_SENSOR_ERROR_EEPROM_HEADER_READ = 5,
+
+    //! @brief EEPROM signature error
+    BC_SOIL_SENSOR_ERROR_EEPROM_SIGNATURE= 6,
+
+    //! @brief EEPROM version error
+    BC_SOIL_SENSOR_ERROR_EEPROM_VERSION = 7,
+
+    //! @brief EEPROM payload length error
+    BC_SOIL_SENSOR_ERROR_EEPROM_PAYLOAD_LENGTH = 8,
+
+    //! @brief EEPROM payload readerror
+    BC_SOIL_SENSOR_ERROR_EEPROM_PAYLOAD_READ = 9,
+
+    //! @brief EEPROM payload crc error
+    BC_SOIL_SENSOR_ERROR_EEPROM_PAYLOAD_CRC = 10,
+
+    //! @brief Zssc3123 inicialize error
+    BC_SOIL_SENSOR_ERROR_ZSSC3123_INITIALIZE = 11,
+
+    //! @brief Tmp112 measurement request
+    BC_SOIL_SENSOR_ERROR_TMP112_MEASUREMENT_REQUEST = 12,
+
+    //! @brief Zssc3123 measurement request
+    BC_SOIL_SENSOR_ERROR_ZSSC3123_MEASUREMENT_REQUEST = 13,
+
+    //! @brief Tmp112 data fetch
+    BC_SOIL_SENSOR_ERROR_TMP112_DATA_FETCH = 14,
+
+    //! @brief Zssc3123 data fetch
+    BC_SOIL_SENSOR_ERROR_ZSSC3123_DATA_FETCH = 15
+
+} bc_soil_sensor_error_t;
+
 //! @brief Soil sensor instance
 
 typedef struct bc_soil_sensor_t bc_soil_sensor_t;
@@ -74,7 +128,7 @@ struct bc_soil_sensor_t
     bc_soil_sensor_state_t _state;
     bool _measurement_active;
     bc_tick_t _update_interval;
-    void (*_event_handler)(bc_soil_sensor_t *, uint64_t device_address, bc_soil_sensor_event_t, void *);
+    void (*_event_handler)(bc_soil_sensor_t *, uint64_t, bc_soil_sensor_event_t, void *);
     void *_event_param;
 
     bc_gpio_channel_t _channel;
@@ -82,6 +136,7 @@ struct bc_soil_sensor_t
     int _sensor_count;
     int _sensor_found;
     bc_ds28e17_t _ds28e17;
+    bc_soil_sensor_error_t _error;
 };
 
 struct bc_soil_sensor_sensor_t
@@ -91,16 +146,20 @@ struct bc_soil_sensor_sensor_t
     int16_t _temperature_raw;
     bool _cap_valid;
     uint16_t _cap_raw;
-    bc_soil_sensor_eeprom_t eeprom;
+    bc_soil_sensor_eeprom_t _eeprom;
 };
 
 //! @endcond
 
 //! @brief Initialize Soil sensor
 //! @param[in] self Instance
-//! @param[in] device_number Device number
 
 void bc_soil_sensor_init(bc_soil_sensor_t *self);
+
+//! @brief Initialize multiple Soil sensor
+//! @param[in] self Instance
+//! @param[in] sensors Sensors array
+//! @param[in] sensor_count Sensors count
 
 void bc_soil_sensor_init_multiple(bc_soil_sensor_t *self, bc_soil_sensor_sensor_t *sensors, int sensor_count);
 
@@ -109,13 +168,19 @@ void bc_soil_sensor_init_multiple(bc_soil_sensor_t *self, bc_soil_sensor_sensor_
 //! @param[in] event_handler Function address
 //! @param[in] event_param Optional event parameter (can be NULL)
 
-void bc_soil_sensor_set_event_handler(bc_soil_sensor_t *self, void (*event_handler)(bc_soil_sensor_t *, uint64_t device_address, bc_soil_sensor_event_t, void *), void *event_param);
+void bc_soil_sensor_set_event_handler(bc_soil_sensor_t *self, void (*event_handler)(bc_soil_sensor_t *, uint64_t, bc_soil_sensor_event_t, void *), void *event_param);
 
 //! @brief Set measurement interval
 //! @param[in] self Instance
 //! @param[in] interval Measurement interval
 
 void bc_soil_sensor_set_update_interval(bc_soil_sensor_t *self, bc_tick_t interval);
+
+//! @brief Get sensors found
+//! @param[in] self Instance
+//! @return Number od found sensors
+
+int bc_soil_sensor_get_sensor_found(bc_soil_sensor_t *self);
 
 //! @brief Start measurement manually
 //! @param[in] self Instance
@@ -181,8 +246,18 @@ bool bc_soil_sensor_get_moisture(bc_soil_sensor_t *self, uint64_t device_address
 //! @brief Get device index by its device address
 //! @param[in] self Instance
 //! @param[in] device_address 64b device address
+//! @return -1 Means no index for device address
+//! @return > 0 Is valid index
 
 int bc_soil_sensor_get_index_by_device_address(bc_soil_sensor_t *self, uint64_t device_address);
+
+//! @brief Get device device address by its index
+//! @param[in] self Instance
+//! @param[in] index Index
+//! @return 0 Means no device address for index
+//! @return > 0 Is valid device address
+
+uint64_t bc_soil_sensor_get_device_address_by_index(bc_soil_sensor_t *self, int index);
 
 //! @brief Get device label by its device address
 //! @param[in] self Instance
@@ -210,7 +285,16 @@ bool bc_soil_sensor_set_label(bc_soil_sensor_t *self, uint64_t device_address, c
 
 bool bc_soil_sensor_calibration_set_point(bc_soil_sensor_t *self, uint64_t device_address, uint8_t point, uint16_t value);
 
+//! @brief Save calibration points and label to eeprom by device address
+//! @param[in] self Instance
+//! @param[in] device_address 64b device address
+
 bool bc_soil_sensor_eeprom_save(bc_soil_sensor_t *self, uint64_t device_address);
+
+//! @brief Get error number
+//! @param[in] self Instance
+
+bc_soil_sensor_error_t bc_soil_sensor_get_error(bc_soil_sensor_t *self);
 
 //! @}
 
