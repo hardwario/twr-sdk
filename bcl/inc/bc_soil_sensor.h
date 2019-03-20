@@ -135,7 +135,6 @@ struct bc_soil_sensor_t
     bc_soil_sensor_sensor_t *_sensor;
     int _sensor_count;
     int _sensor_found;
-    bc_ds28e17_t _ds28e17;
     bc_soil_sensor_error_t _error;
 };
 

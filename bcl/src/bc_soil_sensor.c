@@ -46,7 +46,9 @@ void bc_soil_sensor_init_multiple(bc_soil_sensor_t *self, bc_soil_sensor_sensor_
     self->_task_id_interval = bc_scheduler_register(_bc_soil_sensor_task_interval, self, BC_TICK_INFINITY);
     self->_task_id_measure = bc_scheduler_register(_bc_soil_sensor_task_measure, self, 10);
 
-    bc_ds28e17_init(&self->_ds28e17, self->_channel, 0);
+    bc_onewire_init(self->_channel);
+
+    bc_onewire_auto_ds28e17_sleep_mode(true);
 }
 
 void bc_soil_sensor_set_event_handler(bc_soil_sensor_t *self, void (*event_handler)(bc_soil_sensor_t *, uint64_t device_address, bc_soil_sensor_event_t, void *), void *event_param)
@@ -465,20 +467,27 @@ static void _bc_soil_sensor_task_measure(void *param)
         {
             bc_onewire_auto_ds28e17_sleep_mode(false);
 
-            if (!_bc_soil_sensor_tmp112_measurement_request(&self->_ds28e17))
+            for (int i = 0; i < self->_sensor_found; i++)
             {
-                _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_TMP112_MEASUREMENT_REQUEST);
+                if (!_bc_soil_sensor_zssc3123_measurement_request(&self->_sensor[i]._ds28e17))
+                {
+                    _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_ZSSC3123_MEASUREMENT_REQUEST);
 
-                return;
-            }
+                    return;
+                }
 
-            bc_onewire_auto_ds28e17_sleep_mode(true);
+                if (i + 1 == self->_sensor_found) // last sensor
+                {
+                    bc_onewire_auto_ds28e17_sleep_mode(true);
+                }
 
-            if (!_bc_soil_sensor_zssc3123_measurement_request(&self->_ds28e17))
-            {
-                _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_ZSSC3123_MEASUREMENT_REQUEST);
+                if (!_bc_soil_sensor_tmp112_measurement_request(&self->_sensor[i]._ds28e17))
+                {
+                    _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_TMP112_MEASUREMENT_REQUEST);
 
-                return;
+                    return;
+                }
+
             }
 
             self->_state = BC_SOIL_SENSOR_STATE_READ;
