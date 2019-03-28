@@ -21,9 +21,7 @@ static bool _bc_soil_sensor_tmp112_data_fetch(bc_soil_sensor_sensor_t *sensor);
 static bool _bc_soil_sensor_zssc3123_measurement_request(bc_ds28e17_t *ds28e17);
 static bool _bc_soil_sensor_zssc3123_data_fetch(bc_soil_sensor_sensor_t *sensor);
 static bc_soil_sensor_error_t _bc_soil_sensor_eeprom_load(bc_soil_sensor_sensor_t *sensor);
-#ifdef BC_SOIL_SENSOR_SUPPORT_OLD_VERSION
-static void _bc_soil_sensor_eeprom_reset(bc_soil_sensor_sensor_t *sensor);
-#endif
+static void _bc_soil_sensor_eeprom_fill(bc_soil_sensor_sensor_t *sensor);
 static bool _bc_soil_sensor_eeprom_save(bc_soil_sensor_sensor_t *sensor);
 static bool _bc_soil_sensor_eeprom_read(bc_soil_sensor_sensor_t *sensor, uint8_t address, void *buffer, size_t length);
 static bool _bc_soil_sensor_eeprom_write(bc_soil_sensor_sensor_t *sensor, uint8_t address, const void *buffer, size_t length);
@@ -419,14 +417,12 @@ static void _bc_soil_sensor_task_measure(void *param)
 
                 if (error)
                 {
-                    #ifdef BC_SOIL_SENSOR_SUPPORT_OLD_VERSION
                     if (error == BC_SOIL_SENSOR_ERROR_EEPROM_HEADER_READ)
                     {
-                        _bc_soil_sensor_eeprom_reset(&self->_sensor[i]);
+                        _bc_soil_sensor_eeprom_fill(&self->_sensor[i]);
 
                         continue;
                     }
-                    #endif
 
                     _bc_soil_sensor_error(self, error);
 
@@ -665,7 +661,7 @@ static bc_soil_sensor_error_t _bc_soil_sensor_eeprom_load(bc_soil_sensor_sensor_
         return BC_SOIL_SENSOR_ERROR_EEPROM_HEADER_READ;
     }
 
-    if (header.signature != 0x4b425048)
+    if (header.signature != 0xdeadbeef)
     {
         return BC_SOIL_SENSOR_ERROR_EEPROM_SIGNATURE;
     }
@@ -693,9 +689,9 @@ static bc_soil_sensor_error_t _bc_soil_sensor_eeprom_load(bc_soil_sensor_sensor_
     return BC_SOIL_SENSOR_ERROR_NONE;
 }
 
-#ifdef BC_SOIL_SENSOR_SUPPORT_OLD_VERSION
-static void _bc_soil_sensor_eeprom_reset(bc_soil_sensor_sensor_t *sensor)
+static void _bc_soil_sensor_eeprom_fill(bc_soil_sensor_sensor_t *sensor)
 {
+    sensor->_eeprom.product = 0;
     sensor->_eeprom.revision = 0x0104;
 
     sensor->_eeprom.calibration[0] = 1700;
@@ -710,12 +706,11 @@ static void _bc_soil_sensor_eeprom_reset(bc_soil_sensor_sensor_t *sensor)
 
     memset(sensor->_eeprom.label, 0, sizeof(sensor->_eeprom.label));
 }
-#endif
 
 static bool _bc_soil_sensor_eeprom_save(bc_soil_sensor_sensor_t *sensor)
 {
     bc_soil_sensor_eeprom_header_t header = {
-        .signature = 0x4b425048,
+        .signature = 0xdeadbeef,
         .version = 1,
         .length = sizeof(bc_soil_sensor_eeprom_t),
         .crc = bc_onewire_crc16(&sensor->_eeprom, sizeof(bc_soil_sensor_eeprom_t), 0)

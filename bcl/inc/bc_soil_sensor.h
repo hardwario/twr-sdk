@@ -84,24 +84,30 @@ typedef struct bc_soil_sensor_sensor_t bc_soil_sensor_sensor_t;
 
 typedef struct
 {
-    //! @brief Signature 0x4b425048
+    //! @brief Signature 0xdeadbeef
     uint32_t signature;
+    //! @brief Data Version
     uint8_t version;
+    //! @brief Data Length
     uint8_t length;
+    //! @brief Data CRC
     uint16_t crc;
 
 } bc_soil_sensor_eeprom_header_t;
 
 typedef struct
 {
-    //! @brief Sensor revision
-    uint16_t revision;
+    //! @brief Product number
+    uint8_t product;
 
-    //! @brief Calibration points
-    uint16_t calibration[11];
+    //! @brief Hardware Revision
+    uint16_t revision;
 
     //! @brief Label
     char label[16 + 1];
+
+    //! @brief Calibration points
+    uint16_t calibration[11];
 
 } bc_soil_sensor_eeprom_t;
 
