@@ -127,6 +127,11 @@ static void _bc_sam_m8q_task(void *param)
         self->_state = BC_SAM_M8Q_STATE_STOP;
     }
 
+    if (self->_running && self->_state == BC_SAM_M8Q_STATE_STOP)
+    {
+        self->_state = BC_SAM_M8Q_STATE_START;
+    }
+
 start:
 
     switch (self->_state)
