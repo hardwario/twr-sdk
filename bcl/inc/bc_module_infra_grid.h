@@ -2,6 +2,7 @@
 #define _BC_MODULE_INFRA_GRID_H
 
 #include <bc_i2c.h>
+#include <bc_tca9534a.h>
 #include <bc_scheduler.h>
 
 //! @addtogroup bc_module_infra_grid bc_module_infra_grid
@@ -24,6 +25,18 @@ typedef enum
 
 typedef struct bc_module_infra_grid_t bc_module_infra_grid_t;
 
+//! @brief Infragrid Module Revision
+
+typedef enum
+{
+    //! @brief Error event
+    BC_MODULE_INFRA_GRID_REVISION_R1_0 = 0,
+
+    //! @brief Update event
+    BC_MODULE_INFRA_GRID_REVISION_R1_1 = 1
+
+} bc_module_infra_grid_revision_t;
+
 //! @cond
 
 typedef enum
@@ -31,11 +44,12 @@ typedef enum
     BC_MODULE_INFRA_GRID_STATE_ERROR = -1,
     BC_MODULE_INFRA_GRID_STATE_INITIALIZE = 0,
     BC_MODULE_INFRA_GRID_STATE_MODE_CHANGE = 1,
-    BC_MODULE_INFRA_GRID_STATE_INITIAL_RESET = 2,
-    BC_MODULE_INFRA_GRID_STATE_FLAG_RESET = 3,
-    BC_MODULE_INFRA_GRID_STATE_MEASURE = 4,
-    BC_MODULE_INFRA_GRID_STATE_READ = 5,
-    BC_MODULE_INFRA_GRID_STATE_UPDATE = 6
+    BC_MODULE_INFRA_GRID_STATE_POWER_UP = 2,
+    BC_MODULE_INFRA_GRID_STATE_INITIAL_RESET = 3,
+    BC_MODULE_INFRA_GRID_STATE_FLAG_RESET = 4,
+    BC_MODULE_INFRA_GRID_STATE_MEASURE = 5,
+    BC_MODULE_INFRA_GRID_STATE_READ = 6,
+    BC_MODULE_INFRA_GRID_STATE_UPDATE = 7
 
 } bc_module_infra_grid_state_t;
 
@@ -43,6 +57,8 @@ struct bc_module_infra_grid_t
 {
     int16_t _sensor_data[64];
 
+    bc_tca9534a_t _tca9534;
+    bc_module_infra_grid_revision_t _revision;
     bc_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
     bc_scheduler_task_id_t _task_id_interval;
@@ -105,6 +121,13 @@ bool bc_module_infra_grid_get_temperatures_celsius(bc_module_infra_grid_t *self,
 //! @return value in degreen of Celsius
 
 float bc_module_infra_grid_read_thermistor(bc_module_infra_grid_t *self);
+
+//! @brief Get module revision
+//! @param[in] self Instance
+//! @return module revision
+
+bc_module_infra_grid_revision_t bc_module_infra_grid_get_revision(bc_module_infra_grid_t *self);
+
 
 //! @}
 

@@ -30,8 +30,9 @@
 #define _BC_MODULE_INFRA_GRID_DELAY_MEASUREMENT 5
 
 #define _BC_MODULE_INFRA_GRID_DELAY_MODE_CHANGE 50
+#define _BC_MODULE_INFRA_GRID_DELAY_POWER_UP 50
 #define _BC_MODULE_INFRA_GRID_DELAY_INITIAL_RESET 10
-#define _BC_MODULE_INFRA_GRID_DELAY_FLAG_RESET 10
+#define _BC_MODULE_INFRA_GRID_DELAY_FLAG_RESET 110
 
 static void _bc_module_infra_grid_task_interval(void *param);
 static void _bc_module_infra_grid_task_measure(void *param);
@@ -60,7 +61,7 @@ void bc_module_infra_grid_set_update_interval(bc_module_infra_grid_t *self, bc_t
 {
     self->_update_interval = interval;
 
-    if (self->_update_interval > 1000)
+    if (self->_update_interval >= 1000)
     {
         self->_cmd_sleep = true;
     }
@@ -174,12 +175,41 @@ static void _bc_module_infra_grid_task_measure(void *param)
         {
             self->_state = BC_MODULE_INFRA_GRID_STATE_ERROR;
 
+            if (bc_tca9534a_init(&self->_tca9534, BC_I2C_I2C0 , 0x23))
+            {
+                self->_revision = BC_MODULE_INFRA_GRID_REVISION_R1_1;
+            }
+            else
+            {
+                self->_revision = BC_MODULE_INFRA_GRID_REVISION_R1_0;
+            }
+
+            if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_1)
+            {
+                bc_tca9534a_set_pin_direction(&self->_tca9534, BC_TCA9534A_PIN_P7, BC_TCA9534A_PIN_DIRECTION_OUTPUT);
+                bc_tca9534a_write_pin(&self->_tca9534, BC_TCA9534A_PIN_P7, 1);
+            }
+
+            // Update sleep flag
+            if (self->_enable_sleep != self->_cmd_sleep)
+            {
+                self->_enable_sleep = self->_cmd_sleep;
+            }
+
             if (self->_enable_sleep)
             {
-                // Sleep mode
-                if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_PCLT, 0x10))
+                if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_0)
                 {
-                    goto start;
+                    // Sleep mode
+                    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_PCLT, 0x10))
+                    {
+                        goto start;
+                    }
+                }
+                else if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_1)
+                {
+                    // Revision 1.1 - disconnect power to infragrid
+                    bc_tca9534a_write_pin(&self->_tca9534, BC_TCA9534A_PIN_P7, 0);
                 }
             }
             else
@@ -220,33 +250,68 @@ static void _bc_module_infra_grid_task_measure(void *param)
                 goto start;
             }
 
+            if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_0)
+            {
+                // The module is already powered up
+                self->_state = BC_MODULE_INFRA_GRID_STATE_POWER_UP;
+                goto start;
+            }
+            else if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_1)
+            {
+                // Revision 1.1 - connect power
+                bc_tca9534a_write_pin(&self->_tca9534, BC_TCA9534A_PIN_P7, 1);
+                self->_state = BC_MODULE_INFRA_GRID_STATE_POWER_UP;
+                bc_scheduler_plan_current_from_now(_BC_MODULE_INFRA_GRID_DELAY_POWER_UP);
+            }
+
+            return;
+        }
+        case BC_MODULE_INFRA_GRID_STATE_POWER_UP:
+        {
+            self->_state = BC_MODULE_INFRA_GRID_STATE_ERROR;
+
             // Normal Mode
-            bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_PCLT, 0x00);
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_PCLT, 0x00))
+            {
+                goto start;
+            }
             self->_state = BC_MODULE_INFRA_GRID_STATE_INITIAL_RESET;
             bc_scheduler_plan_current_from_now(_BC_MODULE_INFRA_GRID_DELAY_MODE_CHANGE);
             return;
         }
         case BC_MODULE_INFRA_GRID_STATE_INITIAL_RESET:
         {
+            self->_state = BC_MODULE_INFRA_GRID_STATE_ERROR;
+
             // Write initial reset
-            bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_RST, 0x3f);
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_RST, 0x3f))
+            {
+                goto start;
+            }
+
             self->_state = BC_MODULE_INFRA_GRID_STATE_FLAG_RESET;
             bc_scheduler_plan_current_from_now(_BC_MODULE_INFRA_GRID_DELAY_INITIAL_RESET);
             return;
         }
         case BC_MODULE_INFRA_GRID_STATE_FLAG_RESET:
         {
+            self->_state = BC_MODULE_INFRA_GRID_STATE_ERROR;
+
             // Write flag reset
-            bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_RST, 0x30);
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_RST, 0x30))
+            {
+                goto start;
+            }
+
             self->_state = BC_MODULE_INFRA_GRID_STATE_MEASURE;
-            bc_scheduler_plan_current_from_now(20);
+            bc_scheduler_plan_current_from_now(_BC_MODULE_INFRA_GRID_DELAY_FLAG_RESET);
             return;
         }
         case BC_MODULE_INFRA_GRID_STATE_MEASURE:
         {
             self->_state = BC_MODULE_INFRA_GRID_STATE_ERROR;
 
-            if (!bc_i2c_memory_write_8b (self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_FPSC, 0x01))
+            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_FPSC, 0x01))
             {
                 goto start;
             }
@@ -285,7 +350,19 @@ static void _bc_module_infra_grid_task_measure(void *param)
             if (self->_enable_sleep)
             {
                 // Sleep Mode
-                bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_PCLT, 0x10);
+                if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_0)
+                {
+                    // Sleep mode
+                    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_AMG88xx_PCLT, 0x10))
+                    {
+                        goto start;
+                    }
+                }
+                else if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_1)
+                {
+                    // Revision 1.1 has power disconnect
+                    bc_tca9534a_write_pin(&self->_tca9534, BC_TCA9534A_PIN_P7, 0);
+                }
             }
 
             self->_temperature_valid = true;
@@ -306,18 +383,20 @@ static void _bc_module_infra_grid_task_measure(void *param)
             if (self->_enable_sleep != self->_cmd_sleep)
             {
                 self->_enable_sleep = self->_cmd_sleep;
-                self->_state = BC_MODULE_INFRA_GRID_STATE_INITIALIZE;
             }
 
             self->_state = BC_MODULE_INFRA_GRID_STATE_MODE_CHANGE;
-
             return;
         }
         default:
         {
             self->_state = BC_MODULE_INFRA_GRID_STATE_ERROR;
-
             goto start;
         }
     }
+}
+
+bc_module_infra_grid_revision_t bc_module_infra_grid_get_revision(bc_module_infra_grid_t *self)
+{
+    return self->_revision;
 }
