@@ -87,6 +87,13 @@ bool bc_lp8_get_concentration_ppm(bc_lp8_t *self, float *ppm)
     return true;
 }
 
+bool bc_lp8_get_error(bc_lp8_t *self, bc_lp8_error_t *error)
+{
+    *error = self->_error;
+
+    return true;
+}
+
 void bc_lp8_calibration(bc_lp8_t *self, bc_lp8_calibration_t calibration)
 {
     self->_calibration = calibration;
@@ -103,6 +110,13 @@ static void _bc_lp8_task_interval(void *param)
     bc_lp8_measure(self);
 
     bc_scheduler_plan_current_relative(self->_update_interval);
+}
+
+static void _bc_lp8_error(bc_lp8_t *self, bc_lp8_error_t error)
+{
+    self->_state = BC_LP8_STATE_ERROR;
+    self->_error = error;
+    bc_scheduler_plan_current_now();
 }
 
 static void _bc_lp8_task_measure(void *param)
@@ -130,20 +144,22 @@ start:
 
             self->_state = BC_LP8_STATE_INITIALIZE;
 
+            bc_scheduler_plan_current_from_now(500);
+
             return;
         }
         case BC_LP8_STATE_INITIALIZE:
         {
-            self->_state = BC_LP8_STATE_ERROR;
-
             if (!self->_driver->charge_enable(true))
             {
+                _bc_lp8_error(self, BC_LP8_ERROR_INITIALIZE);
                 goto start;
             }
 
             self->_state = BC_LP8_STATE_CHARGE;
 
-            bc_scheduler_plan_current_from_now(60000);
+            bc_scheduler_plan_current_from_now/*(5000);*/(60000);
+            //#warning "delay"
 
             return;
         }
@@ -155,6 +171,7 @@ start:
         {
             if (!self->_driver->charge_enable(true))
             {
+                _bc_lp8_error(self, BC_LP8_ERROR_PRECHARGE);
                 goto start;
             }
 
@@ -166,15 +183,15 @@ start:
         }
         case BC_LP8_STATE_CHARGE:
         {
-            self->_state = BC_LP8_STATE_ERROR;
-
             if (!self->_driver->charge_enable(false))
             {
+                _bc_lp8_error(self, BC_LP8_ERROR_CHARGE_CHARGE_ENABLE);
                 goto start;
             }
 
             if (!self->_driver->device_enable(true))
             {
+                _bc_lp8_error(self, BC_LP8_ERROR_CHARGE_DEVICE_ENABLE);
                 goto start;
             }
 
@@ -194,8 +211,7 @@ start:
 
             if (!self->_driver->read_signal_rdy(&signal_rdy_value))
             {
-                self->_state = BC_LP8_STATE_ERROR;
-
+                _bc_lp8_error(self, BC_LP8_ERROR_BOOT_SIGNAL_READY);
                 goto start;
             }
 
@@ -203,8 +219,7 @@ start:
             {
                 if (bc_tick_get() >= self->_tick_timeout)
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
-
+                    _bc_lp8_error(self, BC_LP8_ERROR_BOOT_TIMEOUT);
                     goto start;
                 }
                 else
@@ -264,14 +279,14 @@ start:
 
             if (!self->_driver->uart_enable(true))
             {
-                self->_state = BC_LP8_STATE_ERROR;
+                _bc_lp8_error(self, BC_LP8_ERROR_BOOT_UART_ENABLE);
 
                 goto start;
             }
 
             if (self->_driver->uart_write(self->_tx_buffer, length) != length)
             {
-                self->_state = BC_LP8_STATE_ERROR;
+                _bc_lp8_error(self, BC_LP8_ERROR_BOOT_UART_WRITE);
 
                 goto start;
             }
@@ -294,28 +309,28 @@ start:
             {
                 if (!self->_driver->uart_enable(false))
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
+                    _bc_lp8_error(self, BC_LP8_ERROR_BOOT_READ_UART_ENABLE);
 
                     goto start;
                 }
 
                 if (self->_rx_buffer[0] != _BC_LP8_MODBUS_DEVICE_ADDRESS)
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
+                    _bc_lp8_error(self, BC_LP8_ERROR_BOOT_READ_DEVICE_ADDRESS);
 
                     goto start;
                 }
 
                 if (self->_rx_buffer[1] != self->_tx_buffer[1])
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
+                    _bc_lp8_error(self, BC_LP8_ERROR_BOOT_READ_COMMAND);
 
                     goto start;
                 }
 
                 if (_bc_lp8_calculate_crc16(self->_rx_buffer, 4) != 0)
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
+                    _bc_lp8_error(self, BC_LP8_ERROR_BOOT_READ_CRC);
 
                     goto start;
                 }
@@ -331,7 +346,7 @@ start:
 
             if (bc_tick_get() >= self->_tick_timeout)
             {
-                self->_state = BC_LP8_STATE_ERROR;
+                _bc_lp8_error(self, BC_LP8_ERROR_BOOT_READ_TIMEOUT);
 
                 goto start;
             }
@@ -346,7 +361,7 @@ start:
 
             if (!self->_driver->read_signal_rdy(&signal_rdy_value))
             {
-                self->_state = BC_LP8_STATE_ERROR;
+                _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_SIGNAL_RDY);
 
                 goto start;
             }
@@ -355,7 +370,7 @@ start:
             {
                 if (bc_tick_get() >= self->_tick_timeout)
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
+                    _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_SIGNAL_RDY_TIMEOUT);
 
                     goto start;
                 }
@@ -380,14 +395,14 @@ start:
 
             if (!self->_driver->uart_enable(true))
             {
-                self->_state = BC_LP8_STATE_ERROR;
+                _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_UART_ENABLE);
 
                 goto start;
             }
 
             if (self->_driver->uart_write(self->_tx_buffer,  7) !=  7)
             {
-                self->_state = BC_LP8_STATE_ERROR;
+                _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_UART_WRITE);
 
                 goto start;
             }
@@ -410,41 +425,42 @@ start:
             {
                 if (!self->_driver->uart_enable(false))
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
+                    _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_READ_UART_ENABLE);
 
                     goto start;
                 }
 
                 if (!self->_driver->device_enable(false))
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
+                    _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_READ_DEVICE_ENABLE);
 
                     goto start;
                 }
 
                 if (self->_rx_buffer[0] != _BC_LP8_MODBUS_DEVICE_ADDRESS)
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
+                    _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_READ_DEVICE_ADDRESS);
 
                     goto start;
                 }
 
                 if (self->_rx_buffer[1] != self->_tx_buffer[1])
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
+                    _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_READ_COMMAND);
 
                     goto start;
                 }
 
                 if (_bc_lp8_calculate_crc16(self->_rx_buffer, 49) != 0)
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
+                    _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_READ_CRC);
 
                     goto start;
                 }
 
-                if ((self->_rx_buffer[_BC_LP8_RX_ERROR_STATUS0] & 0xfd) != 0)
+                if ((self->_rx_buffer[_BC_LP8_RX_ERROR_STATUS0] & 0xdd) != 0)
                 {
+
                     if (self->_calibration_run)
                     {
                         if ((self->_rx_buffer[_BC_LP8_RX_ERROR_STATUS0] == 8) &&
@@ -460,7 +476,7 @@ start:
                     }
                     else
                     {
-                        self->_state = BC_LP8_STATE_ERROR;
+                        _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_READ_CALIBRATION_RUN);
 
                         goto start;
                     }
@@ -468,7 +484,7 @@ start:
 
                 if ((self->_rx_buffer[_BC_LP8_RX_ERROR_STATUS1] & 0xf7) != 0)
                 {
-                     self->_state = BC_LP8_STATE_ERROR;
+                     _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_READ_STATUS1);
 
                      goto start;
                 }
@@ -502,7 +518,7 @@ start:
             {
                 if (bc_tick_get() >= self->_tick_timeout)
                 {
-                    self->_state = BC_LP8_STATE_ERROR;
+                    _bc_lp8_error(self, BC_LP8_ERROR_MEASURE_READ_TIMEOUT);
 
                     goto start;
                 }
