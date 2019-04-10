@@ -158,8 +158,7 @@ start:
 
             self->_state = BC_LP8_STATE_CHARGE;
 
-            bc_scheduler_plan_current_from_now/*(5000);*/(60000);
-            //#warning "delay"
+            bc_scheduler_plan_current_from_now(60000);
 
             return;
         }
