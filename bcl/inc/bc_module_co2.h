@@ -48,6 +48,13 @@ bool bc_module_co2_measure(void);
 
 bool bc_module_co2_get_concentration_ppm(float *ppm);
 
+//! @brief Get last error code
+//! @param[out] pointer to the variable where error code will be stored
+//! @return true On success
+//! @return false On failure
+
+bool bc_module_co2_get_error(bc_lp8_error_t *error);
+
 //! @brief Request sensor calibration
 //! @param[in] calibration Calibration type
 
