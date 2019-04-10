@@ -34,6 +34,8 @@
 #define _BC_MODULE_INFRA_GRID_DELAY_INITIAL_RESET 10
 #define _BC_MODULE_INFRA_GRID_DELAY_FLAG_RESET 110
 
+#define _BC_MODULE_INFRA_GRID_PIN_POWER BC_TCA9534A_PIN_P7
+
 static void _bc_module_infra_grid_task_interval(void *param);
 static void _bc_module_infra_grid_task_measure(void *param);
 
@@ -187,8 +189,14 @@ static void _bc_module_infra_grid_task_measure(void *param)
 
             if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_1)
             {
-                bc_tca9534a_set_pin_direction(&self->_tca9534, BC_TCA9534A_PIN_P7, BC_TCA9534A_PIN_DIRECTION_OUTPUT);
-                bc_tca9534a_write_pin(&self->_tca9534, BC_TCA9534A_PIN_P7, 1);
+                if (!bc_tca9534a_set_pin_direction(&self->_tca9534, _BC_MODULE_INFRA_GRID_PIN_POWER , BC_TCA9534A_PIN_DIRECTION_OUTPUT))
+                {
+                    goto start;
+                }
+                if (!bc_tca9534a_write_pin(&self->_tca9534, _BC_MODULE_INFRA_GRID_PIN_POWER , 1))
+                {
+                    goto start;
+                }
             }
 
             // Update sleep flag
@@ -209,8 +217,8 @@ static void _bc_module_infra_grid_task_measure(void *param)
                 }
                 else if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_1)
                 {
-                    // Revision 1.1 - disconnect power to infragrid
-                    bc_tca9534a_write_pin(&self->_tca9534, BC_TCA9534A_PIN_P7, 0);
+                    // Revision 1.1 - Disconnect power to Infra Grid Module
+                    bc_tca9534a_write_pin(&self->_tca9534, _BC_MODULE_INFRA_GRID_PIN_POWER , 0);
                 }
             }
             else
@@ -253,14 +261,18 @@ static void _bc_module_infra_grid_task_measure(void *param)
 
             if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_0)
             {
-                // The module is already powered up
+                // Revision 1.0 - The module is already powered up
                 self->_state = BC_MODULE_INFRA_GRID_STATE_POWER_UP;
                 goto start;
             }
             else if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_1)
             {
-                // Revision 1.1 - connect power
-                bc_tca9534a_write_pin(&self->_tca9534, BC_TCA9534A_PIN_P7, 1);
+                // Revision 1.1 - Enable power for Infra Grid Module
+                if (!bc_tca9534a_write_pin(&self->_tca9534, _BC_MODULE_INFRA_GRID_PIN_POWER , 1))
+                {
+                    self->_state = BC_MODULE_INFRA_GRID_STATE_ERROR;
+                    goto start;
+                }
                 self->_state = BC_MODULE_INFRA_GRID_STATE_POWER_UP;
                 bc_scheduler_plan_current_from_now(_BC_MODULE_INFRA_GRID_DELAY_POWER_UP);
             }
@@ -362,7 +374,7 @@ static void _bc_module_infra_grid_task_measure(void *param)
                 else if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_1)
                 {
                     // Revision 1.1 has power disconnect
-                    bc_tca9534a_write_pin(&self->_tca9534, BC_TCA9534A_PIN_P7, 0);
+                    bc_tca9534a_write_pin(&self->_tca9534, _BC_MODULE_INFRA_GRID_PIN_POWER , 0);
                 }
             }
 
