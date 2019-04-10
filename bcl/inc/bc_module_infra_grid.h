@@ -29,10 +29,10 @@ typedef struct bc_module_infra_grid_t bc_module_infra_grid_t;
 
 typedef enum
 {
-    //! @brief Error event
+    //! @brief Revision 1.0
     BC_MODULE_INFRA_GRID_REVISION_R1_0 = 0,
 
-    //! @brief Update event
+    //! @brief Revision 1.1
     BC_MODULE_INFRA_GRID_REVISION_R1_1 = 1
 
 } bc_module_infra_grid_revision_t;
@@ -127,7 +127,6 @@ float bc_module_infra_grid_read_thermistor(bc_module_infra_grid_t *self);
 //! @return module revision
 
 bc_module_infra_grid_revision_t bc_module_infra_grid_get_revision(bc_module_infra_grid_t *self);
-
 
 //! @}
 
