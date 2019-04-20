@@ -102,6 +102,18 @@ typedef struct
 
 } bc_sam_m8q_quality_t;
 
+//! @brief Accuracy data structure
+
+typedef struct
+{
+    //! @brief Horizontal accuracy estimate
+    float horizontal;
+
+    //! @brief Vertical accuracy estimate
+    float vertical;
+
+} bc_sam_m8q_accuracy_t;
+
 //! @cond
 
 typedef enum
@@ -125,6 +137,7 @@ struct bc_sam_m8q_t
     bc_sam_m8q_event_handler_t *_event_handler;
     void *_event_param;
     bool _running;
+    bool _configured;
     bc_sam_m8q_state_t _state;
     uint8_t _ddc_buffer[64];
     size_t _ddc_length;
@@ -157,6 +170,14 @@ struct bc_sam_m8q_t
         float altitude;
         char altitude_units;
     } _gga;
+    struct
+    {
+        bool valid;
+        float h_accuracy;
+        float v_accuracy;
+        float speed;
+        float course;
+    } _pubx;
 };
 
 //! @endcond
@@ -200,7 +221,7 @@ bool bc_sam_m8q_get_time(bc_sam_m8q_t *self, bc_sam_m8q_time_t *time);
 
 //! @brief Get position
 //! @param[in] self Instance
-//! @param[out] time Position data structure
+//! @param[out] position Position data structure
 //! @return true On success
 //! @return false On failure
 
@@ -208,7 +229,7 @@ bool bc_sam_m8q_get_position(bc_sam_m8q_t *self, bc_sam_m8q_position_t *position
 
 //! @brief Get altitude
 //! @param[in] self Instance
-//! @param[out] time Altitude data structure
+//! @param[out] altitude Altitude data structure
 //! @return true On success
 //! @return false On failure
 
@@ -216,10 +237,18 @@ bool bc_sam_m8q_get_altitude(bc_sam_m8q_t *self, bc_sam_m8q_altitude_t *altitude
 
 //! @brief Get quality
 //! @param[in] self Instance
-//! @param[out] time Quality data structure
+//! @param[out] quality Quality data structure
 //! @return true On success
 //! @return false On failure
 
 bool bc_sam_m8q_get_quality(bc_sam_m8q_t *self, bc_sam_m8q_quality_t *quality);
+
+//! @brief Get accuracy
+//! @param[in] self Instance
+//! @param[out] accuracy Accuracy data structure
+//! @return true On success
+//! @return false On failure
+
+bool bc_sam_m8q_get_accuracy(bc_sam_m8q_t *self, bc_sam_m8q_accuracy_t *accuracy);
 
 #endif // _BC_SAM_M8Q

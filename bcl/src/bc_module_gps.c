@@ -93,6 +93,11 @@ bool bc_module_gps_get_quality(bc_module_gps_quality_t *quality)
     return bc_sam_m8q_get_quality(&_bc_module_gps.sam_m8q, quality);
 }
 
+bool bc_module_gps_get_accuracy(bc_module_gps_accuracy_t *accuracy)
+{
+    return bc_sam_m8q_get_accuracy(&_bc_module_gps.sam_m8q, accuracy);
+}
+
 const bc_led_driver_t *bc_module_gps_get_led_driver(void)
 {
     static const bc_led_driver_t bc_module_gps_led_driver =

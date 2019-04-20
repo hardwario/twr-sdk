@@ -54,6 +54,10 @@ typedef bc_sam_m8q_altitude_t bc_module_gps_altitude_t;
 
 typedef bc_sam_m8q_quality_t bc_module_gps_quality_t;
 
+//! @brief Accuracy data structure
+
+typedef bc_sam_m8q_accuracy_t bc_module_gps_accuracy_t;
+
 //! @cond
 
 typedef void (bc_module_gps_event_handler_t)(bc_module_gps_event_t, void *);
@@ -92,25 +96,32 @@ void bc_module_gps_invalidate(void);
 bool bc_module_gps_get_time(bc_module_gps_time_t *time);
 
 //! @brief Get position
-//! @param[out] time Position data structure
+//! @param[out] position Position data structure
 //! @return true On success
 //! @return false On failure
 
 bool bc_module_gps_get_position(bc_module_gps_position_t *position);
 
 //! @brief Get altitude
-//! @param[out] time Altitude data structure
+//! @param[out] altitude Altitude data structure
 //! @return true On success
 //! @return false On failure
 
 bool bc_module_gps_get_altitude(bc_module_gps_altitude_t *altitude);
 
 //! @brief Get quality
-//! @param[out] time Quality data structure
+//! @param[out] quality Quality data structure
 //! @return true On success
 //! @return false On failure
 
 bool bc_module_gps_get_quality(bc_module_gps_quality_t *quality);
+
+//! @brief Get accuracy
+//! @param[out] accuracy Accuracy data structure
+//! @return true On success
+//! @return false On failure
+
+bool bc_module_gps_get_accuracy(bc_module_gps_accuracy_t *accuracy);
 
 //! @brief Get LED driver
 //! @return Driver for on-board LED

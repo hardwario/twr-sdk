@@ -246,13 +246,16 @@ bool minmea_scan(const char *sentence, const char *format, ...)
 
                 if (field[0] != '$')
                     goto parse_error;
-                for (int f=0; f<5; f++)
+                int type_length = 5;
+                if (field[1] == 'P')
+                    type_length = 4;
+                for (int f=0; f<type_length; f++)
                     if (!minmea_isfield(field[1+f]))
                         goto parse_error;
 
                 char *buf = va_arg(ap, char *);
-                memcpy(buf, field+1, 5);
-                buf[5] = '\0';
+                memcpy(buf, field+1, type_length);
+                buf[type_length] = '\0';
             } break;
 
             case 'D': { // Date (int, int, int), -1 if empty.
@@ -374,6 +377,8 @@ enum minmea_sentence_id minmea_sentence_id(const char *sentence, bool strict)
         return MINMEA_SENTENCE_VTG;
     if (!strcmp(type+2, "ZDA"))
         return MINMEA_SENTENCE_ZDA;
+    if (!strcmp(type, "PUBX"))
+        return MINMEA_SENTENCE_PUBX;
 
     return MINMEA_UNKNOWN;
 }
@@ -610,6 +615,68 @@ bool minmea_parse_zda(struct minmea_sentence_zda *frame, const char *sentence)
       return false;
 
   return true;
+}
+
+bool minmea_parse_pubx(struct minmea_sentence_pubx *frame, const char *sentence)
+{
+    // $PUBX,00,175056.00,4951.55890,N,01819.12489,E,285.013,G3,8.0,6.2,0.363,182.11,0.059,,2.28,1.83,1.80,8,0,0*6C
+    char type[6];
+    int latitude_direction;
+    int longitude_direction;
+    char status[3];
+
+    if(!minmea_scan(sentence, "tiTfdfdfsfffffifffiii",
+            type,
+            &frame->msg_id,
+            &frame->time,
+            &frame->latitude, &latitude_direction,
+            &frame->longitude, &longitude_direction,
+            &frame->altitude,
+            status,
+            &frame->h_accuracy,
+            &frame->v_accuracy,
+            &frame->speed,
+            &frame->course,
+            &frame->velocity,
+            &frame->age,
+            &frame->hdop,
+            &frame->vdop,
+            &frame->tdop,
+            &frame->satellites,
+            &frame->reserved,
+            &frame->dr))
+        return false;
+    if (strcmp(type, "PUBX"))
+        return false;
+
+    frame->latitude.value *= latitude_direction;
+    frame->longitude.value *= longitude_direction;
+
+    // No fix
+    frame->status = 0;
+    // Dead reckoning only solution
+    if (strcmp(status, "DR") == 0)
+        frame->status = 1;
+    // Stand alone 2D solution
+    if (strcmp(status, "G2") == 0)
+        frame->status = 2;
+    // Stand alone 3D solution
+    if (strcmp(status, "G3") == 0)
+        frame->status = 3;
+    // Differential 2D solution
+    if (strcmp(status, "D2") == 0)
+        frame->status = 4;
+    // Differential 3D solution
+    if (strcmp(status, "D3") == 0)
+        frame->status = 5;
+    // Combined GPS + dead reckoning solution
+    if (strcmp(status, "RK") == 0)
+        frame->status = 6;
+    // Time only solution
+    if (strcmp(status, "TT") == 0)
+        frame->status = 7;
+
+    return true;
 }
 
 /* vim: set ts=4 sw=4 et: */
