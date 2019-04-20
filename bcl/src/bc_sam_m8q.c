@@ -8,6 +8,7 @@ static bool _bc_sam_m8q_feed(bc_sam_m8q_t *self, char c);
 static void _bc_sam_m8q_clear(bc_sam_m8q_t *self);
 static bool _bc_sam_m8q_enable(bc_sam_m8q_t *self);
 static bool _bc_sam_m8q_disable(bc_sam_m8q_t *self);
+static bool _bc_sam_m8q_send_config(bc_sam_m8q_t *self);
 
 void bc_sam_m8q_init(bc_sam_m8q_t *self, bc_i2c_channel_t channel, uint8_t i2c_address, const bc_sam_m8q_driver_t *driver)
 {
@@ -52,6 +53,7 @@ void bc_sam_m8q_invalidate(bc_sam_m8q_t *self)
 {
     self->_rmc.valid = false;
     self->_gga.valid = false;
+    self->_pubx.valid = false;
 }
 
 bool bc_sam_m8q_get_time(bc_sam_m8q_t *self, bc_sam_m8q_time_t *time)
@@ -114,6 +116,21 @@ bool bc_sam_m8q_get_quality(bc_sam_m8q_t *self, bc_sam_m8q_quality_t *quality)
 
     quality->fix_quality = self->_gga.fix_quality;
     quality->satellites_tracked = self->_gga.satellites_tracked;
+
+    return true;
+}
+
+bool bc_sam_m8q_get_accuracy(bc_sam_m8q_t *self, bc_sam_m8q_accuracy_t *accuracy)
+{
+    memset(accuracy, 0, sizeof(*accuracy));
+
+    if (!self->_pubx.valid)
+    {
+        return false;
+    }
+
+    accuracy->horizontal = self->_pubx.h_accuracy;
+    accuracy->vertical = self->_pubx.v_accuracy;
 
     return true;
 }
@@ -308,6 +325,24 @@ static bool _bc_sam_m8q_parse(bc_sam_m8q_t *self, const char *line)
             ret = true;
         }
     }
+    else if (id == MINMEA_SENTENCE_PUBX)
+    {
+        struct minmea_sentence_pubx frame;
+
+        if (minmea_parse_pubx(&frame, line))
+        {
+            if (frame.status > 0)
+            {
+                self->_pubx.h_accuracy = minmea_tofloat(&frame.h_accuracy);
+                self->_pubx.v_accuracy = minmea_tofloat(&frame.v_accuracy);
+                self->_pubx.speed = minmea_tofloat(&frame.speed);
+                self->_pubx.course = minmea_tofloat(&frame.course);
+                self->_pubx.valid = true;
+
+                ret = true;
+            }
+        }
+    }
 
     return ret;
 }
@@ -329,6 +364,13 @@ static bool _bc_sam_m8q_feed(bc_sam_m8q_t *self, char c)
             }
 
             _bc_sam_m8q_clear(self);
+
+            if (!self->_configured) {
+                if (_bc_sam_m8q_send_config(self))
+                {
+                    self->_configured = true;
+                }
+            }
         }
     }
     else
@@ -375,6 +417,45 @@ static bool _bc_sam_m8q_disable(bc_sam_m8q_t *self)
         {
             return false;
         }
+    }
+
+    return true;
+}
+
+static bool _bc_sam_m8q_send_config(bc_sam_m8q_t *self)
+{
+    // enable PUBX POSITION message
+    uint8_t configMsg[] = {
+        0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF1, 0x00,
+        0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x04, 0x3B
+    };
+    bc_i2c_transfer_t transfer;
+    transfer.device_address = self->_i2c_address;
+    transfer.buffer = configMsg;
+    transfer.length = sizeof(configMsg);
+    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    {
+        return false;
+    }
+
+    // enable Galileo
+    uint8_t configGnss[] = {
+        0xB5, 0x62, 0x06, 0x3E, 0x3C, 0x00, 0x00, 0x00,
+        0x20, 0x07, 0x00, 0x08, 0x10, 0x00, 0x01, 0x00,
+        0x01, 0x01, 0x01, 0x01, 0x03, 0x00, 0x01, 0x00,
+        0x01, 0x01, 0x02, 0x04, 0x08, 0x00, 0x01, 0x00,
+        0x01, 0x01, 0x03, 0x08, 0x10, 0x00, 0x00, 0x00,
+        0x01, 0x01, 0x04, 0x00, 0x08, 0x00, 0x00, 0x00,
+        0x01, 0x01, 0x05, 0x00, 0x03, 0x00, 0x01, 0x00,
+        0x01, 0x01, 0x06, 0x08, 0x0E, 0x00, 0x01, 0x00,
+        0x01, 0x01, 0x30, 0xAD,
+    };
+    transfer.device_address = self->_i2c_address;
+    transfer.buffer = configGnss;
+    transfer.length = sizeof(configGnss);
+    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    {
+        return false;
     }
 
     return true;
