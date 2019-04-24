@@ -186,7 +186,7 @@ static void _bc_atci_process_character(char character)
             {
                 bc_atci_write_error();
             }
-        } 
+        }
         else if (_bc_atci.rx_error)
         {
             bc_atci_write_error();
@@ -272,4 +272,81 @@ static void _bc_atci_uart_vbus_sense_test_task(void *param)
     }
 
     bc_scheduler_plan_current_relative(_BC_ATCI_UART_VBUS_SCAN_TIME);
+}
+
+bool bc_atci_get_uint(bc_atci_param_t *param, uint32_t *value)
+{
+    char c;
+
+    *value = 0;
+
+    while (param->offset < param->length)
+    {
+        c = param->txt[param->offset];
+
+        if (isdigit(c))
+        {
+            *value *= 10;
+            *value += c - '0';
+        }
+        else
+        {
+            if (c == ',')
+            {
+                return true;
+            }
+            return false;
+        }
+
+        param->offset++;
+    }
+
+    return true;
+}
+
+bool bc_atci_get_string(bc_atci_param_t *param, char *str, size_t length)
+{
+    if (((param->length - param->offset) < 2) || (length < 1) || (str == NULL))
+    {
+        return false;
+    }
+
+    if (param->txt[param->offset++] != '"')
+    {
+        return false;
+    }
+
+    char c;
+    size_t i;
+
+    for (i = 0; i < length; i++)
+    {
+        c = param->txt[param->offset++];
+
+        if (c == '"')
+        {
+            str[i] = 0;
+
+            return true;
+        }
+
+        if ((c < ' ') || (c == ',') || (c > '~'))
+        {
+            return false;
+        }
+
+        str[i] = c;
+    }
+
+    return false;
+}
+
+bool bc_atci_is_comma(bc_atci_param_t *param)
+{
+    return param->txt[param->offset++] == ',';
+}
+
+bool bc_atci_is_quotation_mark(bc_atci_param_t *param)
+{
+    return param->txt[param->offset++] == '\"';
 }
