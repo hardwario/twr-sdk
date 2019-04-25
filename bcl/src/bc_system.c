@@ -188,63 +188,78 @@ static void _bc_system_init_gpio(void)
 
 static void _bc_system_init_rtc(void)
 {
-    // Set LSE oscillator drive capability to medium low drive
-    RCC->CSR |= RCC_CSR_LSEDRV_1;
 
-    // Enable LSE oscillator
-    RCC->CSR |= RCC_CSR_LSEON;
+        // Set LSE oscillator drive capability to medium low drive
+        RCC->CSR |= RCC_CSR_LSEDRV_1;
 
-    // Wait for LSE oscillator to be ready...
-    while ((RCC->CSR & RCC_CSR_LSERDY) == 0)
+        // Enable LSE oscillator
+        RCC->CSR |= RCC_CSR_LSEON;
+
+        // Wait for LSE oscillator to be ready...
+        while ((RCC->CSR & RCC_CSR_LSERDY) == 0)
+        {
+            continue;
+        }
+
+        // LSE oscillator clock used as RTC clock
+        RCC->CSR |= RCC_CSR_RTCSEL_LSE;
+
+        // Enable RTC clock
+        RCC->CSR |= RCC_CSR_RTCEN;
+
+        // Errata workaround
+        RCC->CSR;
+
+        // Disable write protection
+        RTC->WPR = 0xca;
+        RTC->WPR = 0x53;
+
+    // Initialize RTC only once
+    if ((RTC->ISR & RTC_ISR_INITS) == 0)
     {
-        continue;
+
+        // Enable initialization mode
+        RTC->ISR |= RTC_ISR_INIT;
+
+        // Wait for RTC to be in initialization mode...
+        while ((RTC->ISR & RTC_ISR_INITF) == 0)
+        {
+            continue;
+        }
+
+        // Set RTC prescaler
+        RTC->PRER = (127 << 16) | 255;
+
+        // Exit from initialization mode
+        RTC->ISR &= ~RTC_ISR_INIT;
+
     }
 
-    // LSE oscillator clock used as RTC clock
-    RCC->CSR |= RCC_CSR_RTCSEL_LSE;
+        // Disable timer
+        RTC->CR &= ~RTC_CR_WUTE;
 
-    // Enable RTC clock
-    RCC->CSR |= RCC_CSR_RTCEN;
+        // Wait until timer configuration update is allowed...
+        while ((RTC->ISR & RTC_ISR_WUTWF) == 0)
+        {
+            continue;
+        }
 
-    // Errata workaround
-    RCC->CSR;
+        // Set wake-up auto-reload value
+        RTC->WUTR = 20;
 
-    // Disable write protection
-    RTC->WPR = 0xca;
-    RTC->WPR = 0x53;
+        // Clear timer flag
+        RTC->ISR &= ~RTC_ISR_WUTF;
 
-    // Enable initialization mode
-    RTC->ISR |= RTC_ISR_INIT;
+        // Enable timer interrupts
+        RTC->CR |= RTC_CR_WUTIE;
 
-    // Wait for RTC to be in initialization mode...
-    while ((RTC->ISR & RTC_ISR_INITF) == 0)
-    {
-        continue;
-    }
+        // Enable timer
+        RTC->CR |= RTC_CR_WUTE;
 
-    // Set RTC prescaler
-    RTC->PRER = (127 << 16) | 255;
+        // Enable write protection
+        RTC->WPR = 0xff;
 
-    // Exit from initialization mode
-    RTC->ISR &= ~RTC_ISR_INIT;
 
-    // Enable RTC interrupt requests
-    NVIC_EnableIRQ(RTC_IRQn);
-
-    // Enable timer
-    RTC->CR &= ~RTC_CR_WUTE;
-
-    // Wait until timer configuration update is allowed...
-    while ((RTC->ISR & RTC_ISR_WUTWF) == 0)
-    {
-        continue;
-    }
-
-    // Set wake-up auto-reload value
-    RTC->WUTR = 20;
-
-    // Clear timer flag
-    RTC->ISR &= ~RTC_ISR_WUTF;
 
     // RTC IRQ needs to be configured through EXTI
     EXTI->IMR |= EXTI_IMR_IM20;
@@ -252,14 +267,8 @@ static void _bc_system_init_rtc(void)
     // Enable rising edge trigger
     EXTI->RTSR |= EXTI_IMR_IM20;
 
-    // Enable timer interrupts
-    RTC->CR |= RTC_CR_WUTIE;
-
-    // Enable timer
-    RTC->CR |= RTC_CR_WUTE;
-
-    // Enable write protection
-    RTC->WPR = 0xff;
+    // Enable RTC interrupt requests
+    NVIC_EnableIRQ(RTC_IRQn);
 }
 
 static void _bc_system_init_shutdown_tmp112(void)
