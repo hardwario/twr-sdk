@@ -43,6 +43,7 @@ void bc_module_infra_grid_init(bc_module_infra_grid_t *self)
 
     self->_i2c_channel = BC_I2C_I2C0;
     self->_i2c_address = _BC_AMG88xx_ADDR;
+    self->_cmd_sleep = true;
 
     self->_task_id_interval = bc_scheduler_register(_bc_module_infra_grid_task_interval, self, BC_TICK_INFINITY);
     self->_task_id_measure = bc_scheduler_register(_bc_module_infra_grid_task_measure, self, _BC_MODULE_INFRA_GRID_DELAY_RUN);
