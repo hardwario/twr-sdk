@@ -188,30 +188,30 @@ static void _bc_system_init_gpio(void)
 static void _bc_system_init_rtc(void)
 {
 
-        // Set LSE oscillator drive capability to medium low drive
-        RCC->CSR |= RCC_CSR_LSEDRV_1;
+    // Set LSE oscillator drive capability to medium low drive
+    RCC->CSR |= RCC_CSR_LSEDRV_1;
 
-        // Enable LSE oscillator
-        RCC->CSR |= RCC_CSR_LSEON;
+    // Enable LSE oscillator
+    RCC->CSR |= RCC_CSR_LSEON;
 
-        // Wait for LSE oscillator to be ready...
-        while ((RCC->CSR & RCC_CSR_LSERDY) == 0)
-        {
-            continue;
-        }
+    // Wait for LSE oscillator to be ready...
+    while ((RCC->CSR & RCC_CSR_LSERDY) == 0)
+    {
+        continue;
+    }
 
-        // LSE oscillator clock used as RTC clock
-        RCC->CSR |= RCC_CSR_RTCSEL_LSE;
+    // LSE oscillator clock used as RTC clock
+    RCC->CSR |= RCC_CSR_RTCSEL_LSE;
 
-        // Enable RTC clock
-        RCC->CSR |= RCC_CSR_RTCEN;
+    // Enable RTC clock
+    RCC->CSR |= RCC_CSR_RTCEN;
 
-        // Errata workaround
-        RCC->CSR;
+    // Errata workaround
+    RCC->CSR;
 
-        // Disable write protection
-        RTC->WPR = 0xca;
-        RTC->WPR = 0x53;
+    // Disable write protection
+    RTC->WPR = 0xca;
+    RTC->WPR = 0x53;
 
     // Initialize RTC only once
     if ((RTC->ISR & RTC_ISR_INITS) == 0)
@@ -234,30 +234,29 @@ static void _bc_system_init_rtc(void)
 
     }
 
-        // Disable timer
-        RTC->CR &= ~RTC_CR_WUTE;
+    // Disable timer
+    RTC->CR &= ~RTC_CR_WUTE;
 
-        // Wait until timer configuration update is allowed...
-        while ((RTC->ISR & RTC_ISR_WUTWF) == 0)
-        {
-            continue;
-        }
+    // Wait until timer configuration update is allowed...
+    while ((RTC->ISR & RTC_ISR_WUTWF) == 0)
+    {
+        continue;
+    }
 
-        // Set wake-up auto-reload value
-        RTC->WUTR = 20;
+    // Set wake-up auto-reload value
+    RTC->WUTR = 20;
 
-        // Clear timer flag
-        RTC->ISR &= ~RTC_ISR_WUTF;
+    // Clear timer flag
+    RTC->ISR &= ~RTC_ISR_WUTF;
 
-        // Enable timer interrupts
-        RTC->CR |= RTC_CR_WUTIE;
+    // Enable timer interrupts
+    RTC->CR |= RTC_CR_WUTIE;
 
-        // Enable timer
-        RTC->CR |= RTC_CR_WUTE;
+    // Enable timer
+    RTC->CR |= RTC_CR_WUTE;
 
-        // Enable write protection
-        RTC->WPR = 0xff;
-
+    // Enable write protection
+    RTC->WPR = 0xff;
 
 
     // RTC IRQ needs to be configured through EXTI
