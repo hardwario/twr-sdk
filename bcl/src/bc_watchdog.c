@@ -6,7 +6,8 @@
 #ifdef BC_WATCHDOG_ENABLED
 static IWDG_HandleTypeDef _bc_watchdog_hiwdg;
 
-static const uint32_t _bc_watchdog_prescaler[] = {
+static const uint32_t _bc_watchdog_prescaler[] =
+{
         IWDG_PRESCALER_256,
         IWDG_PRESCALER_128,
         IWDG_PRESCALER_64,
@@ -17,7 +18,9 @@ static const uint32_t _bc_watchdog_prescaler[] = {
 };
 #endif
 
-void bc_watchdog_init(bc_watchdog_time_t bc_watchdog_time) {
+void bc_watchdog_init(bc_watchdog_time_t bc_watchdog_time)
+{
+    (void) bc_watchdog_time;
 #ifdef BC_WATCHDOG_ENABLED
     // T = (IWDG_PRESCALER * 4096) / (38*10^3)
     _bc_watchdog_hiwdg.Instance = IWDG;
@@ -28,7 +31,8 @@ void bc_watchdog_init(bc_watchdog_time_t bc_watchdog_time) {
 #endif
 }
 
-void bc_watchdog_refresh() {
+void bc_watchdog_refresh()
+{
 #ifdef BC_WATCHDOG_ENABLED
     HAL_IWDG_Refresh(&_bc_watchdog_hiwdg);
 #endif
