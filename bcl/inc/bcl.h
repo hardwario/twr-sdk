@@ -80,6 +80,7 @@
 #include <bc_gfx.h>
 #include <bc_atci.h>
 #include <bc_base64.h>
+#include <bc_sha256.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
