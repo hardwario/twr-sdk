@@ -3,6 +3,10 @@
 
 #include "bc_common.h"
 
+//! @addtogroup bc_sha256 bc_sha256
+//! @brief Library for SHA256 hash
+//! @{
+
 //! @cond
 
 typedef struct
@@ -34,5 +38,7 @@ void bc_sha256_update(bc_sha256_t *self, const void *buffer, size_t length);
 //! @param[in] little_endian endian format
 
 void bc_sha256_final(bc_sha256_t *self, uint8_t *hash, bool little_endian);
+
+//! @}
 
 #endif
