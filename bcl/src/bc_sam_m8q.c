@@ -109,13 +109,13 @@ bool bc_sam_m8q_get_quality(bc_sam_m8q_t *self, bc_sam_m8q_quality_t *quality)
 {
     memset(quality, 0, sizeof(*quality));
 
-    if (!self->_gga.valid)
+    if (!self->_gga.valid || !self->_pubx.valid)
     {
         return false;
     }
 
     quality->fix_quality = self->_gga.fix_quality;
-    quality->satellites_tracked = self->_gga.satellites_tracked;
+    quality->satellites_tracked = self->_pubx.satellites;
 
     return true;
 }
@@ -124,7 +124,7 @@ bool bc_sam_m8q_get_accuracy(bc_sam_m8q_t *self, bc_sam_m8q_accuracy_t *accuracy
 {
     memset(accuracy, 0, sizeof(*accuracy));
 
-    if (!self->_pubx.valid)
+    if (!self->_pubx.valid || self->_gga.fix_quality < 1)
     {
         return false;
     }
@@ -317,7 +317,6 @@ static bool _bc_sam_m8q_parse(bc_sam_m8q_t *self, const char *line)
         if (minmea_parse_gga(&frame, line))
         {
             self->_gga.fix_quality = frame.fix_quality;
-            self->_gga.satellites_tracked = frame.satellites_tracked;
             self->_gga.altitude = minmea_tofloat(&frame.altitude);
             self->_gga.altitude_units = frame.altitude_units;
             self->_gga.valid = true;
@@ -331,16 +330,14 @@ static bool _bc_sam_m8q_parse(bc_sam_m8q_t *self, const char *line)
 
         if (minmea_parse_pubx(&frame, line))
         {
-            if (frame.status > 0)
-            {
-                self->_pubx.h_accuracy = minmea_tofloat(&frame.h_accuracy);
-                self->_pubx.v_accuracy = minmea_tofloat(&frame.v_accuracy);
-                self->_pubx.speed = minmea_tofloat(&frame.speed);
-                self->_pubx.course = minmea_tofloat(&frame.course);
-                self->_pubx.valid = true;
+            self->_pubx.h_accuracy = minmea_tofloat(&frame.h_accuracy);
+            self->_pubx.v_accuracy = minmea_tofloat(&frame.v_accuracy);
+            self->_pubx.speed = minmea_tofloat(&frame.speed);
+            self->_pubx.course = minmea_tofloat(&frame.course);
+            self->_pubx.satellites = frame.satellites;
+            self->_pubx.valid = true;
 
-                ret = true;
-            }
+            ret = true;
         }
     }
 
@@ -426,15 +423,84 @@ static bool _bc_sam_m8q_disable(bc_sam_m8q_t *self)
 static bool _bc_sam_m8q_send_config(bc_sam_m8q_t *self)
 {
     // Enable PUBX POSITION message
-    uint8_t config_msg[] = {
+    uint8_t config_msg_pubx[] = {
         0xb5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xf1, 0x00,
         0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x04, 0x3b
     };
     bc_i2c_transfer_t transfer;
 
     transfer.device_address = self->_i2c_address;
-    transfer.buffer = config_msg;
-    transfer.length = sizeof(config_msg);
+    transfer.buffer = config_msg_pubx;
+    transfer.length = sizeof(config_msg_pubx);
+
+    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    {
+        return false;
+    }
+
+    // Disable GSA message
+    uint8_t config_msg_gsa[] = {
+        0xb5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xf0, 0x02,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x31,
+    };
+
+    transfer.device_address = self->_i2c_address;
+    transfer.buffer = config_msg_gsa;
+    transfer.length = sizeof(config_msg_gsa);
+
+    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    {
+        return false;
+    }
+
+    // Disable GSV message
+    uint8_t config_msg_gsv[] = {
+        0xb5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xf0, 0x03,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x38,
+    };
+
+    transfer.device_address = self->_i2c_address;
+    transfer.buffer = config_msg_gsv;
+    transfer.length = sizeof(config_msg_gsv);
+
+    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    {
+        return false;
+    }
+
+    // Enable Galileo
+    uint8_t config_gnss[] = {
+        0xb5, 0x62, 0x06, 0x3e, 0x3c, 0x00, 0x00, 0x20,
+        0x20, 0x07, 0x00, 0x08, 0x10, 0x00, 0x01, 0x00,
+        0x01, 0x01, 0x01, 0x01, 0x03, 0x00, 0x01, 0x00,
+        0x01, 0x01, 0x02, 0x04, 0x08, 0x00, 0x01, 0x00,
+        0x01, 0x01, 0x03, 0x08, 0x10, 0x00, 0x00, 0x00,
+        0x01, 0x01, 0x04, 0x00, 0x08, 0x00, 0x00, 0x00,
+        0x01, 0x03, 0x05, 0x00, 0x03, 0x00, 0x00, 0x00,
+        0x01, 0x05, 0x06, 0x08, 0x0e, 0x00, 0x01, 0x00,
+        0x01, 0x01, 0x55, 0x47,
+    };
+
+    transfer.device_address = self->_i2c_address;
+    transfer.buffer = config_gnss;
+    transfer.length = sizeof(config_gnss);
+
+    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    {
+        return false;
+    }
+
+    // Set NMEA version to 4.1
+    uint8_t config_nmea[] = {
+        0xb5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41,
+        0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x75, 0x57,
+    };
+
+    transfer.device_address = self->_i2c_address;
+    transfer.buffer = config_nmea;
+    transfer.length = sizeof(config_nmea);
 
     if (!bc_i2c_write(self->_i2c_channel, &transfer))
     {

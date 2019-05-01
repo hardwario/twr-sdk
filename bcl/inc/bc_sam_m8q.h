@@ -166,7 +166,6 @@ struct bc_sam_m8q_t
     {
         bool valid;
         int fix_quality;
-        int satellites_tracked;
         float altitude;
         char altitude_units;
     } _gga;
@@ -177,6 +176,7 @@ struct bc_sam_m8q_t
         float v_accuracy;
         float speed;
         float course;
+        int satellites;
     } _pubx;
 };
 
