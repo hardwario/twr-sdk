@@ -91,6 +91,41 @@ typedef enum
 
 } bc_lp8_state_t;
 
+typedef enum
+{
+    BC_LP8_ERROR_INITIALIZE = 0,
+    BC_LP8_ERROR_PRECHARGE = 1,
+
+    BC_LP8_ERROR_CHARGE_CHARGE_ENABLE = 2,
+    BC_LP8_ERROR_CHARGE_DEVICE_ENABLE = 3,
+
+    BC_LP8_ERROR_BOOT_SIGNAL_READY = 4,
+    BC_LP8_ERROR_BOOT_TIMEOUT = 5,
+    BC_LP8_ERROR_BOOT_UART_ENABLE = 6,
+    BC_LP8_ERROR_BOOT_UART_WRITE = 7,
+
+    BC_LP8_ERROR_BOOT_READ_UART_ENABLE = 8,
+    BC_LP8_ERROR_BOOT_READ_DEVICE_ADDRESS = 9,
+    BC_LP8_ERROR_BOOT_READ_COMMAND = 10,
+    BC_LP8_ERROR_BOOT_READ_CRC = 11,
+    BC_LP8_ERROR_BOOT_READ_TIMEOUT = 12,
+
+    BC_LP8_ERROR_MEASURE_SIGNAL_RDY = 13,
+    BC_LP8_ERROR_MEASURE_SIGNAL_RDY_TIMEOUT = 14,
+    BC_LP8_ERROR_MEASURE_UART_ENABLE = 15,
+    BC_LP8_ERROR_MEASURE_UART_WRITE = 16,
+
+    BC_LP8_ERROR_MEASURE_READ_UART_ENABLE = 17,
+    BC_LP8_ERROR_MEASURE_READ_DEVICE_ENABLE = 18,
+    BC_LP8_ERROR_MEASURE_READ_DEVICE_ADDRESS = 19,
+    BC_LP8_ERROR_MEASURE_READ_COMMAND = 20,
+    BC_LP8_ERROR_MEASURE_READ_CRC = 21,
+    BC_LP8_ERROR_MEASURE_READ_CALIBRATION_RUN = 22,
+    BC_LP8_ERROR_MEASURE_READ_STATUS1 = 23,
+    BC_LP8_ERROR_MEASURE_READ_TIMEOUT = 24
+
+} bc_lp8_error_t;
+
 struct bc_lp8_t
 {
     const bc_lp8_driver_t *_driver;
@@ -112,6 +147,7 @@ struct bc_lp8_t
     bool _valid;
     int16_t _concentration;
     uint16_t _pressure;
+    bc_lp8_error_t _error;
 
 };
 
@@ -148,6 +184,14 @@ bool bc_lp8_measure(bc_lp8_t *self);
 //! @return false On failure
 
 bool bc_lp8_get_concentration_ppm(bc_lp8_t *self, float *ppm);
+
+//! @brief Get last error code
+//! @param[in] self Instance
+//! @param[out] pointer to the variable where error code will be stored
+//! @return true On success
+//! @return false On failure
+
+bool bc_lp8_get_error(bc_lp8_t *self, bc_lp8_error_t *error);
 
 //! @brief Request sensor calibration
 //! @param[in] self Instance

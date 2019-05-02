@@ -38,7 +38,7 @@ typedef struct
 } bc_atci_command_t;
 
 //! @brief Initialize
-//! @param[in] commands 
+//! @param[in] commands
 //! @param[in] length Number of commands
 
 void bc_atci_init(const bc_atci_command_t *commands, int length);
@@ -64,6 +64,37 @@ bool bc_atci_clac_action(void);
 //! @brief Helper for help action
 
 bool bc_atci_help_action(void);
+
+//! @brief Parse string to uint and move parsing cursor forward
+//! @param[in] param ATCI instance
+//! @param[in] value pointer to number
+//! @return true On success
+//! @return false On failure
+
+bool bc_atci_get_uint(bc_atci_param_t *param, uint32_t *value);
+
+//! @brief Copy string and move parsing cursor forward
+//! @param[in] param ATCI instance
+//! @param[in] value pointer to str destination
+//! @param[in] length maximum str length
+//! @return true On success
+//! @return false On failure
+
+bool bc_atci_get_string(bc_atci_param_t *param, char *str, size_t length);
+
+//! @brief Check if the character at cursor is comma
+//! @param[in] param ATCI instance
+//! @return true On success
+//! @return false On failure
+
+bool bc_atci_is_comma(bc_atci_param_t *param);
+
+//! @brief Check if the character at cursor is quotation mark (")
+//! @param[in] param ATCI instance
+//! @return true On success
+//! @return false On failure
+
+bool bc_atci_is_quotation_mark(bc_atci_param_t *param);
 
 //! @}
 

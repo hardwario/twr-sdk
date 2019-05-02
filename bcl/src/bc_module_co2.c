@@ -80,6 +80,11 @@ bool bc_module_co2_get_concentration_ppm(float *ppm)
     return bc_lp8_get_concentration_ppm(&_bc_module_co2.sensor, ppm);
 }
 
+bool bc_module_co2_get_error(bc_lp8_error_t *error)
+{
+    return bc_lp8_get_error(&_bc_module_co2.sensor, error);
+}
+
 void bc_module_co2_calibration(bc_lp8_calibration_t calibration)
 {
     bc_lp8_calibration(&_bc_module_co2.sensor, calibration);
