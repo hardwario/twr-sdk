@@ -16,6 +16,9 @@
 #define _BC_MODULE_BATTERY_MINI_VOLTAGE_ON_BATTERY_TO_PERCENTAGE(__VOLTAGE__)      ((100. * ((__VOLTAGE__) - _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_CRITICAL)) / ((_BC_MODULE_BATTERY_CELL_VOLTAGE * 2) - _BC_MODULE_BATTERY_MINI_DEFAULT_LEVEL_CRITICAL))
 #define _BC_MODULE_BATTERY_STANDARD_VOLTAGE_ON_BATTERY_TO_PERCENTAGE(__VOLTAGE__)  ((100. * ((__VOLTAGE__) - _BC_MODULE_BATTERY_DEFAULT_DEFAULT_LEVEL_CRITICAL)) / ((_BC_MODULE_BATTERY_CELL_VOLTAGE * 4) - _BC_MODULE_BATTERY_DEFAULT_DEFAULT_LEVEL_CRITICAL))
 
+#define _BC_MODULE_BATTERY_MINI_CALIBRATION(__VOLTAGE__) ((__VOLTAGE__) * 1.095f + 0.0069f)
+#define _BC_MODULE_BATTERY_STANDARD_CALIBRATION(__VOLTAGE__) ((__VOLTAGE__) * 1.1068f + 0.0212f)
+
 #define _BC_MODULE_BATTERY_MINI_RESULT_TO_VOLTAGE(__RESULT__)       ((__RESULT__) * (1 / (5.0 / (5.0 + 10.0))))
 #define _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(__RESULT__)   ((__RESULT__) * (1 / 0.13))
 
@@ -242,7 +245,7 @@ start:
         }
         case BC_MODULE_STATE_DETECT_FORMAT:
         {
-            float voltage = _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value);
+            float voltage = _BC_MODULE_BATTERY_STANDARD_CALIBRATION(_BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value));
 
             if ((voltage > 3.8) && (voltage < 7.0))
             {
@@ -299,11 +302,11 @@ start:
         {
             if (_bc_module_battery.format == BC_MODULE_BATTERY_FORMAT_MINI)
             {
-                _bc_module_battery.voltage = _BC_MODULE_BATTERY_MINI_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value);
+                _bc_module_battery.voltage = _BC_MODULE_BATTERY_MINI_CALIBRATION(_BC_MODULE_BATTERY_MINI_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value));
             }
             else
             {
-                _bc_module_battery.voltage = _BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value);
+                _bc_module_battery.voltage = _BC_MODULE_BATTERY_STANDARD_CALIBRATION(_BC_MODULE_BATTERY_STANDARD_RESULT_TO_VOLTAGE(_bc_module_battery.adc_value));
             }
 
             _bc_module_battery.measurement_active = false;

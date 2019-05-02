@@ -104,6 +104,7 @@ typedef enum
     BC_CMWX1ZZABZ_CONFIG_INDEX_MODE = 7,
     BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS = 8,
     BC_CMWX1ZZABZ_CONFIG_INDEX_RX2 = 9,
+    BC_CMWX1ZZABZ_CONFIG_INDEX_NWK = 10,
     BC_CMWX1ZZABZ_CONFIG_INDEX_LAST_ITEM
 
 } bc_cmwx1zzabz_config_index_t;
@@ -144,6 +145,7 @@ typedef struct
     char appkey[32 + 1];
     uint32_t rx2_frequency;
     uint8_t rx2_datarate;
+    uint8_t nwk_public;
 
 } bc_cmwx1zzabz_config;
 
@@ -373,6 +375,18 @@ void bc_cmwx1zzabz_set_rx2(bc_cmwx1zzabz_t *self, uint32_t frequency, uint8_t da
 //! @param[in] datarate Pointer to save datarate
 
 void bc_cmwx1zzabz_get_rx2(bc_cmwx1zzabz_t *self, uint32_t *frequency, uint8_t *datarate);
+
+//! @brief Set the configuration enabling public networks
+//! @param[in] self Instance
+//! @param[in] public enable public networks
+
+void bc_cmwx1zzabz_set_nwk_public(bc_cmwx1zzabz_t *self, uint8_t public);
+
+//! @brief Get the configuration if public networks are enabled
+//! @param[in] self Instance
+//! @return public networks enabled
+
+uint8_t bc_cmwx1zzabz_get_nwk_public(bc_cmwx1zzabz_t *self);
 
 //! @}
 

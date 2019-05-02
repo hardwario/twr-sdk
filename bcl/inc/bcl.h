@@ -28,6 +28,7 @@
 // Chip drivers
 
 #include <bc_sgp30.h>
+#include <bc_sgpc3.h>
 #include <bc_cp201t.h>
 #include <bc_hc_sr04.h>
 #include <bc_lis2dh12.h>
@@ -35,6 +36,7 @@
 #include <bc_spirit1.h>
 #include <bc_ls013b7dh03.h>
 #include <bc_cmwx1zzabz.h>
+#include <bc_sam_m8q.h>
 
 // BigClown tags
 
@@ -43,12 +45,15 @@
 #include <bc_tag_lux_meter.h>
 #include <bc_tag_temperature.h>
 #include <bc_tag_nfc.h>
+#include <bc_tag_voc.h>
+#include <bc_tag_voc_lp.h>
 
 // BigClown modules
 
 #include <bc_module_battery.h>
 #include <bc_module_climate.h>
 #include <bc_module_encoder.h>
+#include <bc_module_gps.h>
 #include <bc_module_pir.h>
 #include <bc_module_power.h>
 #include <bc_module_relay.h>
@@ -69,10 +74,12 @@
 #include <bc_image.h>
 #include <bc_system.h>
 #include <bc_switch.h>
+#include <bc_timer.h>
 #include <bc_error.h>
 #include <bc_dice.h>
 #include <bc_gfx.h>
 #include <bc_atci.h>
+#include <bc_base64.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 

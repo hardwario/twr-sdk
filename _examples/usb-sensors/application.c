@@ -7,7 +7,6 @@ Ctrl+P task dfu  to flash MCU with dfu-util
 */
 
 #include <application.h>
-#include <usb_talk.h>
 #include <bc_led.h>
 #include <bc_button.h>
 #include <bc_i2c.h>
@@ -89,16 +88,6 @@ void button_event_handler(bc_button_t *self, bc_button_event_t event, void *even
 
         bc_spirit1_set_tx_length(16);
         bc_spirit1_tx();
-
-        /*
-        static uint16_t event_count = 0;
-
-        bc_led_set_mode(&led, (event_count & 1) != 0 ? BC_LED_MODE_BLINK : BC_LED_MODE_OFF);
-
-        usb_talk_publish_push_button("", &event_count);
-
-        event_count++;
-        */
     }
 
     if (event == BC_BUTTON_EVENT_RELEASE)
@@ -143,8 +132,6 @@ bc_tag_humidity_t humidity_tag_r1;
 
 void application_init(void)
 {
-    usb_talk_init();
-
     bc_led_init(&led, BC_GPIO_LED, false, false);
     //bc_led_set_mode(&led, BC_LED_MODE_BLINK);
 

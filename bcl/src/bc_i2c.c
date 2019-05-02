@@ -112,7 +112,14 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
     {
         bc_module_sensor_init();
 
-        bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_UP_56R);
+        if (bc_module_sensor_get_revision() == BC_MODULE_SENSOR_REVISION_R1_1)
+        {
+            bc_module_sensor_set_vdd(1);
+        }
+        else
+        {
+            bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_UP_56R);
+        }
 
         bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_PULL_UP_4K7);
 
