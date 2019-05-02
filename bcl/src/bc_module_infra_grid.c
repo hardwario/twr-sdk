@@ -189,8 +189,14 @@ static void _bc_module_infra_grid_task_measure(void *param)
 
             if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_1)
             {
-                bc_tca9534a_set_pin_direction(&self->_tca9534, _BC_MODULE_INFRA_GRID_PIN_POWER, BC_TCA9534A_PIN_DIRECTION_OUTPUT);
-                bc_tca9534a_write_pin(&self->_tca9534, _BC_MODULE_INFRA_GRID_PIN_POWER, 1);
+                if (!bc_tca9534a_set_pin_direction(&self->_tca9534, _BC_MODULE_INFRA_GRID_PIN_POWER , BC_TCA9534A_PIN_DIRECTION_OUTPUT))
+                {
+                    goto start;
+                }
+                if (!bc_tca9534a_write_pin(&self->_tca9534, _BC_MODULE_INFRA_GRID_PIN_POWER , 1))
+                {
+                    goto start;
+                }
             }
 
             // Update sleep flag
