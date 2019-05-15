@@ -16,8 +16,17 @@
 
 typedef enum
 {
-    //! @brief Done event
-    BC_MODULE_LCD_EVENT_DONE = 0
+    BC_MODULE_LCD_EVENT_LEFT_PRESS = 0x10 | BC_BUTTON_EVENT_PRESS,
+    BC_MODULE_LCD_EVENT_LEFT_RELEASE = 0x10 | BC_BUTTON_EVENT_RELEASE,
+    BC_MODULE_LCD_EVENT_LEFT_CLICK = 0x10 | BC_BUTTON_EVENT_CLICK,
+    BC_MODULE_LCD_EVENT_LEFT_HOLD = 0x10 | BC_BUTTON_EVENT_HOLD,
+
+    BC_MODULE_LCD_EVENT_RIGHT_PRESS = 0x20 | BC_BUTTON_EVENT_PRESS,
+    BC_MODULE_LCD_EVENT_RIGHT_RELEASE = 0x20 | BC_BUTTON_EVENT_RELEASE,
+    BC_MODULE_LCD_EVENT_RIGHT_CLICK = 0x20 | BC_BUTTON_EVENT_CLICK,
+    BC_MODULE_LCD_EVENT_RIGHT_HOLD = 0x20 | BC_BUTTON_EVENT_HOLD,
+
+    BC_MODULE_LCD_EVENT_BOTH_HOLD = 0x30 | BC_BUTTON_EVENT_HOLD,
 
 } bc_module_lcd_event_t;
 
@@ -175,6 +184,12 @@ void bc_module_lcd_set_font(const bc_font_t *font);
 
 void bc_module_lcd_set_rotation(bc_module_lcd_rotation_t rotation);
 
+//! @brief Lcd set event handler for buttons
+//! @param[in] event_handler Event handler
+//! @param[in] event_param Event parameter
+
+void bc_module_lcd_set_event_handler(void (*event_handler)(bc_module_lcd_event_t, void *), void *event_param);
+
 //! @brief Lcd get rotation
 //! @return Rotation of display
 
@@ -189,6 +204,26 @@ const bc_led_driver_t *bc_module_lcd_get_led_driver(void);
 //! @return Driver for onboard button
 
 const bc_button_driver_t *bc_module_lcd_get_button_driver(void);
+
+//! @brief Set hold time (interval after which hold event is recognized when button is steadily pressed)
+//! @param[in] hold_time Desired hold time in ticks
+
+void bc_module_lcd_set_button_hold_time(bc_tick_t hold_time);
+
+//! @brief Set scan interval (period of button input sampling)
+//! @param[in] scan_interval Desired scan interval in ticks
+
+void bc_module_lcd_set_button_scan_interval(bc_tick_t scan_interval);
+
+//! @brief Set debounce time (minimum sampling interval during which input cannot change to toggle its state)
+//! @param[in] debounce_time Desired debounce time in ticks
+
+void bc_module_lcd_set_button_debounce_time(bc_tick_t debounce_time);
+
+//! @brief Set click timeout (maximum interval within which button has to be released to recognize click event)
+//! @param[in] click_timeout Desired click timeout in ticks
+
+void bc_module_lcd_set_button_click_timeout(bc_tick_t click_timeout);
 
 //! @}
 
