@@ -128,12 +128,12 @@ static void _bc_cmwx1zzabz_task(void *param)
         {
             case BC_CMWX1ZZABZ_STATE_READY:
             {
+                self->_state = BC_CMWX1ZZABZ_STATE_IDLE;
+
                 if (self->_event_handler != NULL)
                 {
                     self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_READY, self->_event_param);
                 }
-
-                self->_state = BC_CMWX1ZZABZ_STATE_IDLE;
 
                 continue;
             }
