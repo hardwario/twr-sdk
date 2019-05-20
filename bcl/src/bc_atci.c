@@ -35,6 +35,8 @@ void bc_atci_init(const bc_atci_command_t *commands, int length)
     bc_fifo_init(&_bc_atci.read_fifo, _bc_atci.read_fifo_buffer, sizeof(_bc_atci.read_fifo_buffer));
 
     _bc_atci.vbus_sense_test_task_id = bc_scheduler_register(_bc_atci_uart_vbus_sense_test_task, NULL, 0);
+
+    _bc_atci_uart_vbus_sense_test_task(NULL);
 }
 
 void bc_atci_printf(const char *format, ...)
