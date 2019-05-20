@@ -23,6 +23,7 @@ const char *_init_commands[] =
     "AT+CLASS?\r",
     "AT+RX2?\r",
     "AT+NWK?\r",
+    "AT+DR?\r",
     NULL
 };
 
@@ -375,6 +376,16 @@ static void _bc_cmwx1zzabz_task(void *param)
                     }
                     response_handled = 1;
                 }
+                else if (strcmp(last_command, "AT+DR?\r") == 0 && response_valid)
+                {
+                    self->_config.datarate = atoi(response_string_value);
+                    response_handled = 1;
+                }
+                else if (strcmp(last_command, "AT+DUTYCYCLE=0\r") == 0 && strcmp(self->_response, "+ERR=-17\r") == 0)
+                {
+                    // DUTYCYLE is unusable in some band configuration, ignore this err response
+                    response_handled = 1;
+                }
                 else if (   strcmp(last_command, "AT\r") == 0 &&
                             strcmp(self->_response, "+OK\r") == 0
                         )
@@ -566,6 +577,11 @@ static void _bc_cmwx1zzabz_task(void *param)
                     case BC_CMWX1ZZABZ_CONFIG_INDEX_NWK:
                     {
                         snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+NWK=%d\r", (int) self->_config.nwk_public);
+                        break;
+                    }
+                    case BC_CMWX1ZZABZ_CONFIG_INDEX_DATARATE:
+                    {
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DR=%d\r", (int) self->_config.datarate);
                         break;
                     }
                     default:
@@ -852,6 +868,18 @@ void bc_cmwx1zzabz_set_nwk_public(bc_cmwx1zzabz_t *self, uint8_t public)
 uint8_t bc_cmwx1zzabz_get_nwk_public(bc_cmwx1zzabz_t *self)
 {
     return self->_config.nwk_public;
+}
+
+void bc_cmwx1zzabz_set_datarate(bc_cmwx1zzabz_t *self, uint8_t datarate)
+{
+    self->_config.datarate = datarate;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_DATARATE);
+}
+
+uint8_t bc_cmwx1zzabz_get_datarate(bc_cmwx1zzabz_t *self)
+{
+    return self->_config.datarate;
 }
 
 static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)
