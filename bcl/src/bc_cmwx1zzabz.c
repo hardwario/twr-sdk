@@ -84,7 +84,7 @@ bool bc_cmwx1zzabz_is_ready(bc_cmwx1zzabz_t *self)
 
 bool bc_cmwx1zzabz_send_message(bc_cmwx1zzabz_t *self, const void *buffer, size_t length)
 {
-    if (!bc_cmwx1zzabz_is_ready(self) || length == 0 || length > 51)
+    if (!bc_cmwx1zzabz_is_ready(self) || length == 0 || length > BC_CMWX1ZZABZ_TX_MAX_PACKET_SIZE)
     {
         return false;
     }
@@ -102,7 +102,7 @@ bool bc_cmwx1zzabz_send_message(bc_cmwx1zzabz_t *self, const void *buffer, size_
 
 bool bc_cmwx1zzabz_send_message_confirmed(bc_cmwx1zzabz_t *self, const void *buffer, size_t length)
 {
-    if (!bc_cmwx1zzabz_is_ready(self) || length == 0 || length > 51)
+    if (!bc_cmwx1zzabz_is_ready(self) || length == 0 || length > BC_CMWX1ZZABZ_TX_MAX_PACKET_SIZE)
     {
         return false;
     }
