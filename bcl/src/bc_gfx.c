@@ -5,7 +5,6 @@ void bc_gfx_init(bc_gfx_t *self, void *display, const bc_gfx_driver_t *driver)
     memset(self, 0, sizeof(*self));
     self->_display = display;
     self->_driver = driver;
-    self->_font = &bc_font_ubuntu_15;
 
     self->_caps = driver->get_caps(self->_display);
 }
@@ -86,6 +85,11 @@ void bc_gfx_draw_pixel(bc_gfx_t *self, int x, int y, uint32_t color)
 
 int bc_gfx_draw_char(bc_gfx_t *self, int left, int top, uint8_t ch, uint32_t color)
 {
+    if (!self->_font)
+    {
+        return 0;
+    }
+
     const bc_font_t *font = self->_font;
 
     int w = 0;
@@ -127,6 +131,11 @@ int bc_gfx_draw_char(bc_gfx_t *self, int left, int top, uint8_t ch, uint32_t col
 
 int bc_gfx_calc_char_width(bc_gfx_t *self, uint8_t ch)
 {
+    if (!self->_font)
+    {
+        return 0;
+    }
+
     const bc_font_t *font = self->_font;
 
     for (int i = 0; i < font->length; i++)
