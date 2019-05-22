@@ -96,6 +96,12 @@ bool bc_atci_is_comma(bc_atci_param_t *param);
 
 bool bc_atci_is_quotation_mark(bc_atci_param_t *param);
 
+//! @brief @brief Set callback function for scan if uart is active. Used for low-power when USB is disconnected (default callback: bc_system_get_vbus_sense, scan_interval: 200)
+//! @param[in] callback Callback function address
+//! @param[in] scan_interval Desired scan interval in ticks
+
+void bc_atci_set_uart_active_callback(bool(*callback)(void), bc_tick_t scan_interval);
+
 //! @}
 
 #endif //_BC_ATCI_H
