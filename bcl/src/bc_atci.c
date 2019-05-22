@@ -2,10 +2,9 @@
 #include <bc_scheduler.h>
 #include <bc_system.h>
 
-#define _BC_ATCI_UART_VBUS_SCAN_TIME     200
-
 static void _bc_atci_uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void  *event_param);
-static void _bc_atci_uart_vbus_sense_test_task(void  *param);
+static void _bc_atci_uart_active_test(void);
+static void _bc_atci_uart_active_test_task(void  *param);
 
 static struct
 {
@@ -17,13 +16,17 @@ static struct
     bool rx_error;
     uint8_t read_fifo_buffer[128];
     bc_fifo_t read_fifo;
-    bc_tick_t vbus_sense_test_task_id;
+    bc_scheduler_task_id_t vbus_sense_test_task_id;
     bool ready;
+    bool (*uart_active_callback)(void);
+    bc_tick_t scan_interval;
 
 } _bc_atci;
 
 void bc_atci_init(const bc_atci_command_t *commands, int length)
 {
+    memset(&_bc_atci, 0, sizeof(_bc_atci));
+
     _bc_atci.commands = commands;
 
     _bc_atci.commands_length = length;
@@ -34,9 +37,7 @@ void bc_atci_init(const bc_atci_command_t *commands, int length)
 
     bc_fifo_init(&_bc_atci.read_fifo, _bc_atci.read_fifo_buffer, sizeof(_bc_atci.read_fifo_buffer));
 
-    _bc_atci.vbus_sense_test_task_id = bc_scheduler_register(_bc_atci_uart_vbus_sense_test_task, NULL, 0);
-
-    _bc_atci_uart_vbus_sense_test_task(NULL);
+    bc_atci_set_uart_active_callback(bc_system_get_vbus_sense, 200);
 }
 
 void bc_atci_printf(const char *format, ...)
@@ -242,40 +243,6 @@ static void _bc_atci_uart_event_handler(bc_uart_channel_t channel, bc_uart_event
     }
 }
 
-static void _bc_atci_uart_vbus_sense_test_task(void *param)
-{
-    (void) param;
-
-    if (bc_system_get_vbus_sense())
-    {
-        if (!_bc_atci.ready)
-        {
-            bc_uart_init(BC_ATCI_UART, BC_UART_BAUDRATE_115200, BC_UART_SETTING_8N1);
-
-            bc_uart_set_async_fifo(BC_ATCI_UART, NULL, &_bc_atci.read_fifo);
-
-            bc_uart_set_event_handler(BC_ATCI_UART, _bc_atci_uart_event_handler, NULL);
-
-            bc_uart_async_read_start(BC_ATCI_UART, 1000);
-
-            _bc_atci.ready = true;
-
-            bc_uart_write(BC_ATCI_UART, "\r\n", 2);
-        }
-    }
-    else
-    {
-        if (_bc_atci.ready)
-        {
-            _bc_atci.ready = false;
-
-            bc_uart_deinit(BC_ATCI_UART);
-        }
-    }
-
-    bc_scheduler_plan_current_relative(_BC_ATCI_UART_VBUS_SCAN_TIME);
-}
-
 bool bc_atci_get_uint(bc_atci_param_t *param, uint32_t *value)
 {
     char c;
@@ -350,5 +317,69 @@ bool bc_atci_is_comma(bc_atci_param_t *param)
 
 bool bc_atci_is_quotation_mark(bc_atci_param_t *param)
 {
-    return param->txt[param->offset++] == '\"';
+    return param->txt[param->offset++] == '"';
+}
+
+void bc_atci_set_uart_active_callback(bool(*callback)(void), bc_tick_t scan_interval)
+{
+    _bc_atci.uart_active_callback = callback;
+    _bc_atci.scan_interval = scan_interval;
+
+    if (callback == NULL)
+    {
+        if (_bc_atci.vbus_sense_test_task_id)
+        {
+            bc_scheduler_unregister(_bc_atci.vbus_sense_test_task_id);
+
+            _bc_atci.vbus_sense_test_task_id = 0;
+        }
+    }
+    else
+    {
+        if (_bc_atci.vbus_sense_test_task_id == 0)
+        {
+            _bc_atci.vbus_sense_test_task_id = bc_scheduler_register(_bc_atci_uart_active_test_task, NULL, scan_interval);
+        }
+    }
+
+    _bc_atci_uart_active_test();
+}
+
+static void _bc_atci_uart_active_test(void)
+{
+    if ((_bc_atci.uart_active_callback == NULL) || _bc_atci.uart_active_callback())
+    {
+        if (!_bc_atci.ready)
+        {
+            bc_uart_init(BC_ATCI_UART, BC_UART_BAUDRATE_115200, BC_UART_SETTING_8N1);
+
+            bc_uart_set_async_fifo(BC_ATCI_UART, NULL, &_bc_atci.read_fifo);
+
+            bc_uart_set_event_handler(BC_ATCI_UART, _bc_atci_uart_event_handler, NULL);
+
+            bc_uart_async_read_start(BC_ATCI_UART, 1000);
+
+            _bc_atci.ready = true;
+
+            bc_uart_write(BC_ATCI_UART, "\r\n", 2);
+        }
+    }
+    else
+    {
+        if (_bc_atci.ready)
+        {
+            _bc_atci.ready = false;
+
+            bc_uart_deinit(BC_ATCI_UART);
+        }
+    }
+}
+
+static void _bc_atci_uart_active_test_task(void *param)
+{
+    (void) param;
+
+    _bc_atci_uart_active_test();
+
+    bc_scheduler_plan_current_relative(_bc_atci.scan_interval);
 }
