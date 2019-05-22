@@ -11,7 +11,9 @@
 
 //! @cond
 
-#define BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE 64
+#define BC_CMWX1ZZABZ_TX_MAX_PACKET_SIZE 230
+
+#define BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE (BC_CMWX1ZZABZ_TX_MAX_PACKET_SIZE + 25)
 #define BC_CMWX1ZZABZ_RX_FIFO_BUFFER_SIZE 64
 
 //! @endcond
@@ -247,7 +249,7 @@ struct bc_cmwx1zzabz_t
     void *_event_param;
     char _command[BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE];
     char _response[BC_CMWX1ZZABZ_RX_FIFO_BUFFER_SIZE];
-    uint8_t _message_buffer[51];
+    uint8_t _message_buffer[BC_CMWX1ZZABZ_TX_MAX_PACKET_SIZE];
     size_t _message_length;
     uint8_t _message_port;
     uint8_t _init_command_index;
