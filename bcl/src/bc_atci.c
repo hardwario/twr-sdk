@@ -288,7 +288,7 @@ bool bc_atci_get_string(bc_atci_param_t *param, char *str, size_t length)
     char c;
     size_t i;
 
-    for (i = 0; i < length; i++)
+    for (i = 0; (i < length) && (param->offset < param->length); i++)
     {
         c = param->txt[param->offset++];
 
@@ -305,6 +305,70 @@ bool bc_atci_get_string(bc_atci_param_t *param, char *str, size_t length)
         }
 
         str[i] = c;
+    }
+
+    return false;
+}
+
+bool bc_atci_get_buffer_from_hex_string(bc_atci_param_t *param, void *buffer, size_t *length)
+{
+    if (((param->length - param->offset) < 2) || (*length < 1) || (buffer == NULL))
+    {
+        return false;
+    }
+
+    if (param->txt[param->offset++] != '"')
+    {
+        return false;
+    }
+
+    char c;
+    size_t i;
+    size_t max_i = *length * 2;
+    uint8_t temp;
+    size_t l = 0;
+
+    for (i = 0; (i < max_i) && (param->offset < param->length); i++)
+    {
+        c = param->txt[param->offset++];
+
+        if (c == '"')
+        {
+            *length = l;
+
+            return true;
+        }
+
+        if ((c >= '0') && (c <= '9'))
+        {
+            temp = c - '0';
+        }
+        else if ((c >= 'A') && (c <= 'F'))
+        {
+            temp = c - 'A' + 10;
+        }
+        else if ((c >= 'a') && (c <= 'f'))
+        {
+            temp = c - 'a' + 10;
+        }
+        else
+        {
+            return false;
+        }
+
+        if (i % 2 == 0)
+        {
+            if (l == *length)
+            {
+                return false;
+            }
+
+            ((uint8_t *) buffer)[l] = temp << 4;
+        }
+        else
+        {
+            ((uint8_t *) buffer)[l++] |= temp;
+        }
     }
 
     return false;

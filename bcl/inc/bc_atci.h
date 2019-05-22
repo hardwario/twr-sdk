@@ -82,6 +82,15 @@ bool bc_atci_get_uint(bc_atci_param_t *param, uint32_t *value);
 
 bool bc_atci_get_string(bc_atci_param_t *param, char *str, size_t length);
 
+//! @brief Decode HEX string to buffer and move parsing cursor forward
+//! @param[in] param ATCI instance
+//! @param[out] destination Pointer to destination buffer
+//! @param[in,out] length Number of bytes to be read, Number of bytes read
+//! @return true On success
+//! @return false On failure
+
+bool bc_atci_get_buffer_from_hex_string(bc_atci_param_t *param, void *buffer, size_t *length);
+
 //! @brief Check if the character at cursor is comma
 //! @param[in] param ATCI instance
 //! @return true On success
