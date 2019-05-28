@@ -57,6 +57,7 @@
 #include <bc_module_pir.h>
 #include <bc_module_power.h>
 #include <bc_module_relay.h>
+#include <bc_module_rs485.h>
 #include <bc_module_sigfox.h>
 #include <bc_module_lcd.h>
 #include <bc_module_co2.h>
