@@ -198,3 +198,38 @@ size_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, size_t length, b
 
     return read_length;
 }
+
+bool bc_sc16is740_set_baudrate(bc_sc16is740_t *self, bc_sc16is740_baudrate_t baudrate)
+{
+    uint8_t lcr_read;
+
+    // Copy LCR
+    if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, &lcr_read))
+    {
+        return false;
+    }
+
+    // Enable access to special registers
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, _BC_SC16IS740_LCR_SPECIAL_REGISTER))
+    {
+        return false;
+    }
+
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_SPECIAL_REG_DLL, baudrate))
+    {
+        return false;
+    }
+
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_SPECIAL_REG_DLH, 0x00))
+    {
+        return false;
+    }
+
+    // restore LCR
+    if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, lcr_read))
+    {
+        return false;
+    }
+
+    return true;
+}
