@@ -71,6 +71,11 @@ void *bc_spirit1_get_rx_buffer(void);
 
 size_t bc_spirit1_get_rx_length(void);
 
+//! @brief Get RSSI
+//! @return RSSI
+
+int bc_spirit1_get_rx_rssi(void);
+
 //! @brief Set TX timeout
 //! @param[in] timeout Maximum timeout for receiving
 
