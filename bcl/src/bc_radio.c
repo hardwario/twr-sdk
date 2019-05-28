@@ -25,15 +25,6 @@ typedef enum
 
 } bc_radio_state_t;
 
-typedef struct
-{
-    uint64_t id;
-    uint16_t message_id;
-    bool message_id_synced;
-    bc_radio_mode_t mode;
-
-} bc_radio_peer_t;
-
 static struct
 {
     bc_radio_mode_t mode;
@@ -91,7 +82,6 @@ static void _bc_radio_save_peer_devices(void);
 static void _bc_radio_atsha204_event_handler(bc_atsha204_t *self, bc_atsha204_event_t event, void *event_param);
 static bool _bc_radio_peer_device_add(uint64_t id);
 static bool _bc_radio_peer_device_remove(uint64_t id);
-static bc_radio_peer_t *_bc_radio_get_peer_device(uint64_t id);
 
 __attribute__((weak)) void bc_radio_on_info(uint64_t *id, char *firmware, char *version, bc_radio_mode_t mode) { (void) id; (void) firmware; (void) version; (void) mode;}
 __attribute__((weak)) void bc_radio_on_sub(uint64_t *id, uint8_t *order, bc_radio_sub_pt_t *pt, char *topic) { (void) id; (void) order; (void) pt; (void) topic; }
@@ -789,7 +779,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                     }
                 }
 
-                peer = _bc_radio_get_peer_device(_bc_radio.peer_id);
+                peer = bc_radio_get_peer_device(_bc_radio.peer_id);
 
                 if (peer != NULL)
                 {
@@ -853,7 +843,7 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                 return;
             }
 
-            peer = _bc_radio_get_peer_device(_bc_radio.peer_id);
+            peer = bc_radio_get_peer_device(_bc_radio.peer_id);
 
             if (peer != NULL)
             {
@@ -884,6 +874,8 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                         bc_scheduler_plan_now(_bc_radio.task_id);
 
                         peer->message_id_synced = true;
+
+                        peer->rssi = bc_spirit1_get_rx_rssi();
                     }
 
                     if (peer->message_id_synced)
@@ -1101,7 +1093,7 @@ static bool _bc_radio_peer_device_remove(uint64_t id)
     return false;
 }
 
-static bc_radio_peer_t *_bc_radio_get_peer_device(uint64_t id)
+bc_radio_peer_t *bc_radio_get_peer_device(uint64_t id)
 {
     for (int i = 0; i < _bc_radio.peer_devices_length; i++)
     {
