@@ -125,6 +125,16 @@ struct bc_radio_sub_t {
     void *param;
 };
 
+typedef struct
+{
+    uint64_t id;
+    uint16_t message_id;
+    bool message_id_synced;
+    bc_radio_mode_t mode;
+    int rssi;
+
+} bc_radio_peer_t;
+
 //! @brief Initialize radio
 //! @param[in] mode
 
@@ -169,6 +179,8 @@ void bc_radio_set_subs(bc_radio_sub_t *subs, int length);
 bool bc_radio_send_sub_data(uint64_t *id, uint8_t order, void *payload, size_t size);
 
 void bc_radio_set_rx_timeout_for_sleeping_node(bc_tick_t timeout);
+
+bc_radio_peer_t *bc_radio_get_peer_device(uint64_t id);
 
 uint8_t *bc_radio_id_to_buffer(uint64_t *id, uint8_t *buffer);
 uint8_t *bc_radio_bool_to_buffer(bool *value, uint8_t *buffer);
