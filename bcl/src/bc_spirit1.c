@@ -29,6 +29,7 @@ typedef struct
     size_t tx_length;
     uint8_t  rx_buffer[BC_SPIRIT1_MAX_PACKET_SIZE];
     size_t rx_length;
+    int rx_rssi;
     bc_tick_t rx_timeout;
     bc_tick_t rx_tick_timeout;
 
@@ -195,6 +196,11 @@ void *bc_spirit1_get_rx_buffer(void)
 size_t bc_spirit1_get_rx_length(void)
 {
     return _bc_spirit1.rx_length;
+}
+
+int bc_spirit1_get_rx_rssi(void)
+{
+    return _bc_spirit1.rx_rssi;
 }
 
 void bc_spirit1_set_rx_timeout(bc_tick_t timeout)
@@ -417,8 +423,8 @@ static void _bc_spirit1_check_state_rx(void)
     /* Check the SPIRIT RX_DATA_READY IRQ flag */
     if (xIrqStatus.IRQ_RX_DATA_READY)
     {
-      /* Get the RX FIFO size */
-      uint8_t cRxData = SpiritLinearFifoReadNumElementsRxFifo();
+        /* Get the RX FIFO size */
+        uint8_t cRxData = SpiritLinearFifoReadNumElementsRxFifo();
 
         if (cRxData <= BC_SPIRIT1_MAX_PACKET_SIZE)
         {
@@ -426,6 +432,12 @@ static void _bc_spirit1_check_state_rx(void)
             SpiritSpiReadLinearFifo(cRxData, _bc_spirit1.rx_buffer);
 
             _bc_spirit1.rx_length = cRxData;
+
+            uint8_t rssi_level;
+
+            bc_spirit1_read(RSSI_LEVEL_BASE, &rssi_level, 1);
+
+            _bc_spirit1.rx_rssi = ((int) rssi_level) / 2 - 130;
 
             if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
             {
