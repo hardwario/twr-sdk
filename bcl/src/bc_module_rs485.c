@@ -1,6 +1,5 @@
 #include <bc_module_rs485.h>
-#include "bc_sc16is740.h"
-#include "bc_scheduler.h"
+
 
 #define _BC_MODULE_RS485_I2C_UART_ADDRESS 0x4e
 #define _BC_MODULE_RS485_I2C_TLA2021_ADDRESS 0x48
@@ -13,6 +12,8 @@
 
 #define _BC_MODULE_RS485_DELAY_RUN 50
 #define _BC_MODULE_RS485_DELAY_MEASUREMENT 100
+
+#define _BC_MODULE_RS485_ASYNC_WRITE_TASK_PERIOD 10
 
 typedef enum
 {
@@ -29,8 +30,9 @@ static struct
     bool _initialized;
     bc_module_rs485_state_t _state;
     bc_sc16is740_t _sc16is750;
-    bc_scheduler_task_id_t _task_id_interval;
+
     bc_scheduler_task_id_t _task_id_measure;
+    bc_scheduler_task_id_t _task_id_interval;
     bc_tick_t _update_interval;
     bc_tick_t _tick_ready;
     uint16_t _reg_result;
@@ -39,7 +41,21 @@ static struct
     void (*_event_handler)(bc_module_rs485_event_t, void *);
     void *_event_param;
 
+    bc_fifo_t *_write_fifo;
+    bc_fifo_t *_read_fifo;
+    bc_scheduler_task_id_t _async_write_task_id;
+    bc_scheduler_task_id_t _async_read_task_id;
+
+    bool _async_write_in_progress;
+    bool _async_read_in_progress;
+
+    uint8_t _async_buffer[64];
+    bc_tick_t _async_read_timeout;
+
 } _bc_module_rs485;
+
+static void _bc_module_rs485_async_write_task(void *param);
+static void _bc_module_rs485_async_read_task(void *param);
 
 static void _bc_module_rs485_task_measure(void *param);
 static void _bc_module_rs485_task_interval(void *param);
@@ -69,6 +85,8 @@ bool bc_module_rs485_init(void)
 
     _bc_module_rs485._task_id_interval = bc_scheduler_register(_bc_module_rs485_task_interval, NULL, BC_TICK_INFINITY);
     _bc_module_rs485._task_id_measure = bc_scheduler_register(_bc_module_rs485_task_measure, NULL, _BC_MODULE_RS485_DELAY_RUN);
+
+    _bc_module_rs485._initialized = true;
 
     return true;
 }
@@ -124,12 +142,69 @@ bool bc_module_rs485_measure(void)
     return true;
 }
 
-static void _bc_module_rs485_task_interval(void *param)
+static void _bc_module_rs485_async_write_task(void *param)
 {
     (void) param;
 
-    bc_module_rs485_measure();
+    size_t space_available;
 
+    if (bc_fifo_is_empty(_bc_module_rs485._write_fifo))
+    {
+        bc_scheduler_unregister(_bc_module_rs485._async_write_task_id);
+        _bc_module_rs485._async_write_in_progress = false;
+
+        _bc_module_rs485._event_handler(BC_MODULE_RS485_EVENT_ASYNC_WRITE_DONE, _bc_module_rs485._event_param);
+        return;
+    }
+
+    if (!bc_sc16is740_get_spaces_available(&_bc_module_rs485._sc16is750, &space_available))
+    {
+        bc_scheduler_unregister(_bc_module_rs485._async_write_task_id);
+        _bc_module_rs485._async_write_in_progress = false;
+
+        _bc_module_rs485._event_handler(BC_MODULE_RS485_EVENT_ERROR, _bc_module_rs485._event_param);
+        return;
+    }
+
+    size_t bytes_read = bc_fifo_read(_bc_module_rs485._write_fifo, _bc_module_rs485._async_buffer, space_available);
+    bc_module_rs485_write(_bc_module_rs485._async_buffer, bytes_read);
+
+    bc_scheduler_plan_current_relative(_BC_MODULE_RS485_ASYNC_WRITE_TASK_PERIOD);
+}
+
+static void _bc_module_rs485_async_read_task(void *param)
+{
+    (void) param;
+
+    size_t available = 0;
+
+    if (!bc_sc16is740_available(&_bc_module_rs485._sc16is750, &available))
+    {
+        return;
+    }
+
+    if (available)
+    {
+        bc_sc16is740_read(&_bc_module_rs485._sc16is750, _bc_module_rs485._async_buffer, available, 0);
+        bc_fifo_write(_bc_module_rs485._read_fifo, _bc_module_rs485._async_buffer, available);
+    }
+
+    if (!bc_fifo_is_empty(_bc_module_rs485._read_fifo))
+    {
+        _bc_module_rs485._event_handler(BC_MODULE_RS485_EVENT_ASYNC_READ_DATA, _bc_module_rs485._event_param);
+    }
+    else
+    {
+        _bc_module_rs485._event_handler(BC_MODULE_RS485_EVENT_ASYNC_READ_TIMEOUT, _bc_module_rs485._event_param);
+    }
+
+    bc_scheduler_plan_current_relative(_bc_module_rs485._async_read_timeout);
+}
+
+static void _bc_module_rs485_task_interval(void *param)
+{
+    (void) param;
+    bc_module_rs485_measure();
     bc_scheduler_plan_current_relative(_bc_module_rs485._update_interval);
 }
 
@@ -236,6 +311,70 @@ static void _bc_module_rs485_task_measure(void *param)
     }
 }
 
+void bc_module_rs485_set_async_fifo(bc_fifo_t *write_fifo, bc_fifo_t *read_fifo)
+{
+    _bc_module_rs485._write_fifo = write_fifo;
+    _bc_module_rs485._read_fifo = read_fifo;
+}
+
+size_t bc_module_rs485_async_write(uint8_t *buffer, size_t length)
+{
+    if (!_bc_module_rs485._initialized || _bc_module_rs485._write_fifo == NULL)
+    {
+        return 0;
+    }
+
+    size_t bytes_written = bc_fifo_write(_bc_module_rs485._write_fifo, (uint8_t *)buffer, length);
+
+    if (bytes_written != 0)
+    {
+        if (!_bc_module_rs485._async_write_in_progress)
+        {
+            _bc_module_rs485._async_write_task_id = bc_scheduler_register(_bc_module_rs485_async_write_task, NULL, 10);
+            _bc_module_rs485._async_write_in_progress = true;
+        }
+    }
+
+    return bytes_written;
+}
+
+bool bc_module_rs485_async_read_start(bc_tick_t timeout)
+{
+    if (!_bc_module_rs485._initialized || _bc_module_rs485._read_fifo == NULL || _bc_module_rs485._async_read_in_progress)
+    {
+        return false;
+    }
+
+    _bc_module_rs485._async_read_timeout = timeout;
+    _bc_module_rs485._async_read_task_id = bc_scheduler_register(_bc_module_rs485_async_read_task, NULL, _bc_module_rs485._async_read_timeout);
+    _bc_module_rs485._async_read_in_progress = true;
+
+    return true;
+}
+
+bool bc_module_rs485_async_read_stop()
+{
+    if (!_bc_module_rs485._initialized || !_bc_module_rs485._async_read_in_progress)
+    {
+        return false;
+    }
+
+    _bc_module_rs485._async_read_in_progress = false;
+    bc_scheduler_unregister(_bc_module_rs485._async_read_task_id);
+
+    return true;
+}
+
+size_t bc_module_rs485_async_read(void *buffer, size_t length)
+{
+    if (!_bc_module_rs485._initialized || _bc_module_rs485._read_fifo == NULL || !_bc_module_rs485._async_read_in_progress)
+    {
+        return 0;
+    }
+
+    return bc_fifo_read(_bc_module_rs485._read_fifo, buffer, length);
+}
+
 void bc_module_rs485_set_event_handler(void (*event_handler)(bc_module_rs485_event_t, void *), void *event_param)
 {
     _bc_module_rs485._event_handler = event_handler;
@@ -256,3 +395,9 @@ size_t bc_module_rs485_read(uint8_t *buffer, size_t length, bc_tick_t timeout)
 {
     return bc_sc16is740_read(&_bc_module_rs485._sc16is750, buffer, length, timeout);
 }
+
+bool bc_module_rs485_set_baudrate(bc_module_rs485_baudrate_t baudrate)
+{
+    return bc_sc16is740_set_baudrate(&_bc_module_rs485._sc16is750, baudrate);
+}
+
