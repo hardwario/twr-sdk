@@ -674,6 +674,14 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
 
                 return;
             }
+            else
+            {
+                if (_bc_radio.event_handler)
+                {
+                    _bc_radio.event_handler(BC_RADIO_EVENT_TX_ERROR, _bc_radio.event_param);
+                }
+            }
+
         }
 
         _bc_radio_go_to_state_rx_or_sleep();
@@ -762,6 +770,11 @@ static void _bc_radio_spirit1_event_handler(bc_spirit1_event_t event, void *even
                         }
 
                         _bc_radio_go_to_state_rx_or_sleep();
+
+                        if (_bc_radio.event_handler)
+                        {
+                            _bc_radio.event_handler(BC_RADIO_EVENT_TX_DONE, _bc_radio.event_param);
+                        }
                     }
 
                 }
