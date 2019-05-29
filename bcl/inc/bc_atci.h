@@ -57,6 +57,10 @@ void bc_atci_write_error(void);
 
 void bc_atci_printf(const char *format, ...);
 
+//! @brief Skip response, use in callback in bc_atci_command_t
+
+bool bc_atci_skip_response(void);
+
 //! @brief Helper for clac action
 
 bool bc_atci_clac_action(void);
