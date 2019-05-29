@@ -60,6 +60,8 @@ typedef enum
     BC_RADIO_EVENT_SCAN_FIND_DEVICE = 5,
     BC_RADIO_EVENT_PAIRED = 6,
     BC_RADIO_EVENT_UNPAIRED = 7,
+    BC_RADIO_EVENT_TX_DONE = 8,
+    BC_RADIO_EVENT_TX_ERROR = 9
 
 } bc_radio_event_t;
 
