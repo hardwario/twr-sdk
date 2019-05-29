@@ -20,6 +20,7 @@ static struct
     bool ready;
     bool (*uart_active_callback)(void);
     bc_tick_t scan_interval;
+    bool write_response;
 
 } _bc_atci;
 
@@ -34,6 +35,8 @@ void bc_atci_init(const bc_atci_command_t *commands, int length)
     _bc_atci.rx_length = 0;
 
     _bc_atci.rx_error = false;
+
+    _bc_atci.write_response = true;
 
     bc_fifo_init(&_bc_atci.read_fifo, _bc_atci.read_fifo_buffer, sizeof(_bc_atci.read_fifo_buffer));
 
@@ -61,6 +64,13 @@ void bc_atci_printf(const char *format, ...)
     _bc_atci.tx_buffer[length++] = '\n';
 
     bc_uart_write(BC_ATCI_UART, _bc_atci.tx_buffer, length);
+}
+
+bool bc_atci_skip_response(void)
+{
+    _bc_atci.write_response = false;
+
+    return true;
 }
 
 void bc_atci_write_ok(void)
@@ -181,13 +191,22 @@ static void _bc_atci_process_character(char character)
     {
         if (!_bc_atci.rx_error && _bc_atci.rx_length > 0)
         {
-            if (_bc_atci_process_line())
+            bool response = _bc_atci_process_line();
+
+            if (_bc_atci.write_response)
             {
-                bc_atci_write_ok();
+                if (response)
+                {
+                    bc_atci_write_ok();
+                }
+                else
+                {
+                    bc_atci_write_error();
+                }
             }
             else
             {
-                bc_atci_write_error();
+                _bc_atci.write_response = true;
             }
         }
         else if (_bc_atci.rx_error)
