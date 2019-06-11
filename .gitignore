@@ -1,3 +1,4 @@
-/doc/html/
-tools/ozone/ozone.jdebug.user
+.DS_Store
 .vscode/
+doc/html/
+tools/ozone/ozone.jdebug.user
