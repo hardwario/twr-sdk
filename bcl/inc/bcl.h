@@ -77,6 +77,7 @@
 #include <bc_timer.h>
 #include <bc_error.h>
 #include <bc_dice.h>
+#include <bc_ramp.h>
 #include <bc_gfx.h>
 #include <bc_atci.h>
 #include <bc_base64.h>
