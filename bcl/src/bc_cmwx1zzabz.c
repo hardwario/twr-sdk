@@ -193,22 +193,31 @@ static void _bc_cmwx1zzabz_task(void *param)
                             continue;
                         }
 
-                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED, self->_event_param);
+                        if (self->_event_handler != NULL)
+                        {
+                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED, self->_event_param);
+                        }
                     }
-
-                    if (memcmp(self->_response, "+ACK", 4) == 0)
+                    else if (memcmp(self->_response, "+ACK", 4) == 0)
                     {
-                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_CONFIRMED, self->_event_param);
+                        if (self->_event_handler != NULL)
+                        {
+                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_CONFIRMED, self->_event_param);
+                        }
                     }
-
-                    if (memcmp(self->_response, "+NOACK", 4) == 0)
+                    else if (memcmp(self->_response, "+NOACK", 4) == 0)
                     {
-                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED, self->_event_param);
+                        if (self->_event_handler != NULL)
+                        {
+                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED, self->_event_param);
+                        }
                     }
-
-                    if (memcmp(self->_response, "+EVENT=2,2", 10) == 0)
+                    else if (memcmp(self->_response, "+EVENT=2,2", 10) == 0)
                     {
-                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RETRANSMISSION, self->_event_param);
+                        if (self->_event_handler != NULL)
+                        {
+                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RETRANSMISSION, self->_event_param);
+                        }
                     }
                 }
 
