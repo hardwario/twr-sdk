@@ -4,11 +4,11 @@
 #define _BC_MODULE_RS485_I2C_UART_ADDRESS 0x4e
 #define _BC_MODULE_RS485_I2C_TLA2021_ADDRESS 0x48
 
-#define _BC_SC16IS7x0_REG_IER       0x01 << 3
-#define _BC_SC16IS7X0_REG_IODIR     0x0A << 3
-#define _BC_SC16IS7X0_REG_IOSTATE   0x0B << 3
-#define _BC_SC16IS7X0_REG_IOINTENA  0x0C << 3
-#define _BC_SC16IS7X0_REG_EFCR      0x0F << 3
+#define _BC_SC16IS7x0_REG_IER       (0x01 << 3)
+#define _BC_SC16IS7X0_REG_IODIR     (0x0a << 3)
+#define _BC_SC16IS7X0_REG_IOSTATE   (0x0b << 3)
+#define _BC_SC16IS7X0_REG_IOINTENA  (0x0c << 3)
+#define _BC_SC16IS7X0_REG_EFCR      (0x0f << 3)
 
 #define _BC_MODULE_RS485_DELAY_RUN 50
 #define _BC_MODULE_RS485_DELAY_MEASUREMENT 100
@@ -154,6 +154,7 @@ static void _bc_module_rs485_async_write_task(void *param)
         _bc_module_rs485._async_write_in_progress = false;
 
         _bc_module_rs485._event_handler(BC_MODULE_RS485_EVENT_ASYNC_WRITE_DONE, _bc_module_rs485._event_param);
+
         return;
     }
 
@@ -204,6 +205,7 @@ static void _bc_module_rs485_async_read_task(void *param)
 static void _bc_module_rs485_task_interval(void *param)
 {
     (void) param;
+
     bc_module_rs485_measure();
     bc_scheduler_plan_current_relative(_bc_module_rs485._update_interval);
 }
@@ -324,7 +326,7 @@ size_t bc_module_rs485_async_write(uint8_t *buffer, size_t length)
         return 0;
     }
 
-    size_t bytes_written = bc_fifo_write(_bc_module_rs485._write_fifo, (uint8_t *)buffer, length);
+    size_t bytes_written = bc_fifo_write(_bc_module_rs485._write_fifo, (uint8_t *) buffer, length);
 
     if (bytes_written != 0)
     {

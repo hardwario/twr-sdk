@@ -23,10 +23,10 @@ typedef enum
     //! @brief Async write done
     BC_MODULE_RS485_EVENT_ASYNC_WRITE_DONE = 2,
 
-    //! @brief Event is reading done
+    //! @brief Reading done event
     BC_MODULE_RS485_EVENT_ASYNC_READ_DATA = 2,
 
-    //! @brief Event is timeout
+    //! @brief Timeout event
     BC_MODULE_RS485_EVENT_ASYNC_READ_TIMEOUT = 3
 
 } bc_module_rs485_event_t;
