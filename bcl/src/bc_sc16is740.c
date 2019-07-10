@@ -225,7 +225,7 @@ bool bc_sc16is740_set_baudrate(bc_sc16is740_t *self, bc_sc16is740_baudrate_t bau
         return false;
     }
 
-    // restore LCR
+    // Restore LCR
     if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, _BC_SC16IS740_REG_LCR, lcr_read))
     {
         return false;
