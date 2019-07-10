@@ -121,7 +121,7 @@ bool bc_module_rs485_async_read_start(bc_tick_t timeout);
 //! @return true On success
 //! @return false On failure
 
-bool bc_module_rs485_async_read_stop();
+bool bc_module_rs485_async_read_stop(void);
 
 //! @brief Get data that has been received in async mode
 //! @param[in] buffer Pointer to buffer
