@@ -352,7 +352,7 @@ bool bc_module_rs485_async_read_start(bc_tick_t timeout)
     return true;
 }
 
-bool bc_module_rs485_async_read_stop()
+bool bc_module_rs485_async_read_stop(void)
 {
     if (!_bc_module_rs485._initialized || !_bc_module_rs485._async_read_in_progress)
     {
