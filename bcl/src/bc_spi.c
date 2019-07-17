@@ -36,6 +36,7 @@ static struct
     bool in_progress;
     bool pending_event_done;
     bool initilized;
+    bool manual_cs_control;
     bc_scheduler_task_id_t task_id;
     uint16_t cs_delay;
     uint16_t delay;
@@ -178,6 +179,11 @@ bc_spi_mode_t bc_spi_get_mode(void)
     return _bc_spi.mode;
 }
 
+void bc_spi_set_manual_cs_control(bool manual_cs_control)
+{
+    _bc_spi.manual_cs_control = manual_cs_control;
+}
+
 bool bc_spi_is_ready(void)
 {
 	return (!_bc_spi.in_progress) && (_bc_spi.pending_event_done == _BC_SPI_EVENT_CLEAR);
@@ -199,7 +205,10 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
     bc_system_pll_enable();
 
     // Set CS to active level
-    GPIOB->BSRR = GPIO_BSRR_BR_12;
+    if (!_bc_spi.manual_cs_control)
+    {
+        GPIOB->BSRR = GPIO_BSRR_BR_12;
+    }
 
     if (_bc_spi.cs_delay > 0)
     {
@@ -241,7 +250,10 @@ bool bc_spi_transfer(const void *source, void *destination, size_t length)
     }
 
     // Set CS to inactive level
-    GPIOB->BSRR = GPIO_BSRR_BS_12;
+    if (!_bc_spi.manual_cs_control)
+    {
+        GPIOB->BSRR = GPIO_BSRR_BS_12;
+    }
 
     // Disable PLL and enable sleep
     bc_system_pll_disable();
