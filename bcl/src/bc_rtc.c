@@ -24,7 +24,6 @@ uint32_t bc_rtc_rtc_to_timestamp(bc_rtc_t *rtc)
 {
     uint32_t days = 0, seconds = 0;
     uint16_t i;
-    //uint16_t year = (uint16_t)(rtc->year + 2000);
     // Year is below offset year
     if (rtc->year < _BC_RTC_OFFSET_YEAR)
     {
