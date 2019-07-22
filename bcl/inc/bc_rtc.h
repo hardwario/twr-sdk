@@ -35,6 +35,13 @@ void bc_rtc_get_date_time(bc_rtc_t* rtc);
 
 void bc_rtc_set_date_time(bc_rtc_t* rtc);
 
+//! @brief Covert RTC to timestamp
+//! @param[in] rtc Pointer to the RTC date and time structure
+//! @return unix timestamp
+
+uint32_t bc_rtc_rtc_to_timestamp(bc_rtc_t *rtc);
+
+
 //! @}
 
 #endif // _BC_RTC_H

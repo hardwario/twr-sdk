@@ -20,7 +20,7 @@ void bc_rtc_init(void)
 {
 }
 
-uint32_t _rtc_get_timestamp(bc_rtc_t *rtc)
+uint32_t bc_rtc_rtc_to_timestamp(bc_rtc_t *rtc)
 {
     uint32_t days = 0, seconds = 0;
     uint16_t i;
@@ -71,7 +71,7 @@ void bc_rtc_get_date_time(bc_rtc_t *rtc)
     rtc->day = (dr & RTC_DR_WDU_Msk) >> RTC_DR_WDU_Pos;
 
     // Calculate unix offset
-    unix = _rtc_get_timestamp(rtc);
+    unix = bc_rtc_rtc_to_timestamp(rtc);
     rtc->timestamp = unix;
 }
 
