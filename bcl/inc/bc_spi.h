@@ -13,10 +13,10 @@ typedef enum
 {
     //! @brief SPI communication speed is 125 kHz
     BC_SPI_SPEED_125_KHZ = 0,
-    
+
     //! @brief SPI communication speed is 250 kHz
     BC_SPI_SPEED_250_KHZ = 1,
-    
+
     //! @brief SPI communication speed is 500 kHz
     BC_SPI_SPEED_500_KHZ = 2,
 
@@ -91,6 +91,11 @@ bc_spi_speed_t bc_spi_get_speed(void);
 //! @param[in] mode SPI mode of operation
 
 void bc_spi_set_mode(bc_spi_mode_t mode);
+
+//! @brief Enable manual control of CS pin
+//! @param[in] manual_cs_control enable manual control
+
+void bc_spi_set_manual_cs_control(bool manual_cs_control);
 
 //! @brief Get SPI mode of operation
 //! @return SPI mode of operation
