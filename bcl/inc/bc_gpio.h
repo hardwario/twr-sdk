@@ -69,7 +69,10 @@ typedef enum
     BC_GPIO_LED = 18,
 
     //! @brief GPIO channel BUTTON
-    BC_GPIO_BUTTON = 19
+    BC_GPIO_BUTTON = 19,
+
+    //! @brief GPIO channel BUTTON
+    BC_GPIO_INT = 20
 
 } bc_gpio_channel_t;
 
