@@ -67,6 +67,7 @@
 // Other
 
 #include <bc_analog_sensor.h>
+#include <bc_config.h>
 #include <bc_data_stream.h>
 #include <bc_flood_detector.h>
 #include <bc_pulse_counter.h>
