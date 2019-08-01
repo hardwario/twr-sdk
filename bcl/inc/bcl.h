@@ -37,6 +37,7 @@
 #include <bc_ls013b7dh03.h>
 #include <bc_cmwx1zzabz.h>
 #include <bc_sam_m8q.h>
+#include <bc_esp8266.h>
 
 // BigClown tags
 
