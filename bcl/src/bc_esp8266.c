@@ -1,15 +1,15 @@
 #include <bc_esp8266.h>
 #include <bc_rtc.h>
 
-#define BC_ESP8266_DELAY_INITIALIZATION_AT_COMMAND 100
-#define BC_ESP8266_DELAY_SEND_RESPONSE 100
-#define BC_ESP8266_DELAY_WIFI_CONNECT 1000
-#define BC_ESP8266_DELAY_SOCKET_CONNECT 300
-#define BC_ESP8266_TIMEOUT_WIFI_CONNECT 20
-#define BC_ESP8266_TIMEOUT_SOCKET_CONNECT 10
+#define _BC_ESP8266_DELAY_INITIALIZATION_AT_COMMAND 100
+#define _BC_ESP8266_DELAY_SEND_RESPONSE 100
+#define _BC_ESP8266_DELAY_WIFI_CONNECT 1000
+#define _BC_ESP8266_DELAY_SOCKET_CONNECT 300
+#define _BC_ESP8266_TIMEOUT_WIFI_CONNECT 20
+#define _BC_ESP8266_TIMEOUT_SOCKET_CONNECT 10
 
 // Apply changes to the factory configuration
-const char *_esp8266_init_commands[] =
+static const char *_esp8266_init_commands[] =
 {
     // Disable AT Commands Echoing
     "ATE0\r\n",
@@ -32,7 +32,7 @@ static void _bc_esp8266_task(void *param);
 static bool _bc_esp8266_read_response(bc_esp8266_t *self);
 static bool _bc_esp8266_read_socket_data(bc_esp8266_t *self);
 static void _uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void *param);
-void _bc_esp8266_set_rtc_time(char *str);
+static void _bc_esp8266_set_rtc_time(char *str);
 
 void bc_esp8266_init(bc_esp8266_t *self,  bc_uart_channel_t uart_channel)
 {
@@ -173,7 +173,7 @@ bool bc_esp8266_socket_connect(bc_esp8266_t *self, const char *type, const char 
         return false;
     }
 
-    char buffer[BC_ESP8266_TX_MAX_PACKET_SIZE];
+    static char buffer[BC_ESP8266_TX_MAX_PACKET_SIZE];
     sprintf(buffer, "\"%s\",\"%s\",%d", type, host, port);
 
     self->_message_length = strlen(buffer);
@@ -328,7 +328,7 @@ static void _bc_esp8266_task(void *param)
                 }
 
                 self->_state = BC_ESP8266_STATE_INITIALIZE_COMMAND_RESPONSE;
-                bc_scheduler_plan_current_from_now(BC_ESP8266_DELAY_INITIALIZATION_AT_COMMAND);
+                bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_INITIALIZATION_AT_COMMAND);
 
                 return;
             }
@@ -342,7 +342,8 @@ static void _bc_esp8266_task(void *param)
                 }
 
                 // repeated command, continue reading response
-                if (memcmp(self->_response, "AT", 2) == 0 && !_bc_esp8266_read_response(self)) {
+                if (memcmp(self->_response, "AT", 2) == 0 && !_bc_esp8266_read_response(self))
+                {
                     continue;
                 }
 
@@ -429,7 +430,7 @@ static void _bc_esp8266_task(void *param)
                 self->_state = response_state;
                 self->_timeout_cnt = 0;
 
-                bc_scheduler_plan_current_from_now(BC_ESP8266_DELAY_SEND_RESPONSE);
+                bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SEND_RESPONSE);
 
                 return;
             }
@@ -444,7 +445,7 @@ static void _bc_esp8266_task(void *param)
 
                 self->_state = BC_ESP8266_STATE_SOCKET_SEND_RESPONSE;
 
-                bc_scheduler_plan_current_from_now(BC_ESP8266_DELAY_SEND_RESPONSE);
+                bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SEND_RESPONSE);
 
                 return;
             }
@@ -460,7 +461,7 @@ static void _bc_esp8266_task(void *param)
                 */
 
                 self->_timeout_cnt++;
-                if (self->_timeout_cnt > BC_ESP8266_TIMEOUT_WIFI_CONNECT)
+                if (self->_timeout_cnt > _BC_ESP8266_TIMEOUT_WIFI_CONNECT)
                 {
                     self->_state = BC_ESP8266_STATE_WIFI_CONNECT_ERROR;
                     continue;
@@ -468,7 +469,7 @@ static void _bc_esp8266_task(void *param)
 
                 if (!_bc_esp8266_read_response(self))
                 {
-                    bc_scheduler_plan_current_from_now(BC_ESP8266_DELAY_WIFI_CONNECT);
+                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_WIFI_CONNECT);
                     return;
                 }
 
@@ -493,7 +494,7 @@ static void _bc_esp8266_task(void *param)
                 }
                 else
                 {
-                    bc_scheduler_plan_current_from_now(BC_ESP8266_DELAY_WIFI_CONNECT);
+                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_WIFI_CONNECT);
                     return;
                 }
 
@@ -537,7 +538,7 @@ static void _bc_esp8266_task(void *param)
                 */
 
                 self->_timeout_cnt++;
-                if (self->_timeout_cnt > BC_ESP8266_TIMEOUT_WIFI_CONNECT)
+                if (self->_timeout_cnt > _BC_ESP8266_TIMEOUT_WIFI_CONNECT)
                 {
                     self->_state = BC_ESP8266_STATE_WIFI_CONNECT_ERROR;
                     continue;
@@ -573,7 +574,7 @@ static void _bc_esp8266_task(void *param)
                 */
 
                 self->_timeout_cnt++;
-                if (self->_timeout_cnt > BC_ESP8266_TIMEOUT_SOCKET_CONNECT)
+                if (self->_timeout_cnt > _BC_ESP8266_TIMEOUT_SOCKET_CONNECT)
                 {
                     self->_state = BC_ESP8266_STATE_SOCKET_CONNECT_ERROR;
                     continue;
@@ -581,7 +582,7 @@ static void _bc_esp8266_task(void *param)
 
                 if (!_bc_esp8266_read_response(self))
                 {
-                    bc_scheduler_plan_current_from_now(BC_ESP8266_DELAY_SOCKET_CONNECT);
+                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SOCKET_CONNECT);
                     return;
                 }
 
@@ -599,7 +600,7 @@ static void _bc_esp8266_task(void *param)
                 }
                 else
                 {
-                    bc_scheduler_plan_current_from_now(BC_ESP8266_DELAY_SOCKET_CONNECT);
+                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SOCKET_CONNECT);
                     return;
                 }
 
@@ -756,7 +757,7 @@ static bool _bc_esp8266_read_socket_data(bc_esp8266_t *self)
     return true;
 }
 
-void _bc_esp8266_set_rtc_time(char *str)
+static void _bc_esp8266_set_rtc_time(char *str)
 {
     bc_rtc_t rtc;
     char token[5];
