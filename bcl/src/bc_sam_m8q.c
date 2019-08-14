@@ -34,6 +34,7 @@ void bc_sam_m8q_start(bc_sam_m8q_t *self)
     if (!self->_running)
     {
         self->_running = true;
+        self->_configured = false;
 
         bc_scheduler_plan_now(self->_task_id);
     }
