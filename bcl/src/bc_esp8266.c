@@ -79,6 +79,18 @@ static void _uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event
     }
 }
 
+void _bc_esp8266_enable()
+{
+    // Enable CH_PD
+    bc_gpio_set_output(BC_GPIO_P8, 1);
+}
+
+void _bc_esp8266_disable()
+{
+    // Disable CH_PD
+    bc_gpio_set_output(BC_GPIO_P8, 0);
+}
+
 void bc_esp8266_set_event_handler(bc_esp8266_t *self, void (*event_handler)(bc_esp8266_t *, bc_esp8266_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
@@ -145,10 +157,10 @@ bool bc_esp8266_connect(bc_esp8266_t *self)
         return false;
     }
 
-    // Enable CH_PD
-    bc_gpio_set_output(BC_GPIO_P8, 1);
+    _bc_esp8266_enable();
 
     self->_state = BC_ESP8266_STATE_INITIALIZE;
+    self->_state_after_init = BC_ESP8266_STATE_WIFI_CONNECT_COMMAND;
 
     bc_scheduler_plan_now(self->_task_id);
 
@@ -157,8 +169,7 @@ bool bc_esp8266_connect(bc_esp8266_t *self)
 
 bool bc_esp8266_disconnect(bc_esp8266_t *self)
 {
-    // Disable CH_PD
-    bc_gpio_set_output(BC_GPIO_P8, 0);
+    _bc_esp8266_disable();
 
     self->_state = BC_ESP8266_STATE_DISCONNECTED;
 
@@ -356,7 +367,7 @@ static void _bc_esp8266_task(void *param)
 
                 if (_esp8266_init_commands[self->_init_command_index] == NULL)
                 {
-                    self->_state = BC_ESP8266_STATE_WIFI_CONNECT_COMMAND;
+                    self->_state = self->_state_after_init;
                 }
                 else
                 {
@@ -366,6 +377,8 @@ static void _bc_esp8266_task(void *param)
                 continue;
             }
             case BC_ESP8266_STATE_WIFI_CONNECT_COMMAND:
+            case BC_ESP8266_STATE_AP_AVAILABILITY_OPT_COMMAND:
+            case BC_ESP8266_STATE_AP_AVAILABILITY_COMMAND:
             case BC_ESP8266_STATE_SNTP_CONFIG_COMMAND:
             case BC_ESP8266_STATE_SNTP_TIME_COMMAND:
             case BC_ESP8266_STATE_SOCKET_CONNECT_COMMAND:
@@ -377,6 +390,18 @@ static void _bc_esp8266_task(void *param)
                 {
                     sprintf(self->_command, "AT+CWJAP_CUR=\"%s\",\"%s\"\r\n", self->_config.ssid, self->_config.password);
                     response_state = BC_ESP8266_STATE_WIFI_CONNECT_RESPONSE;
+                }
+                else if (self->_state == BC_ESP8266_STATE_AP_AVAILABILITY_OPT_COMMAND)
+                {
+                    strcpy(self->_command, "AT+CWLAPOPT=1,6\r\n");
+                    response_state = BC_ESP8266_STATE_AP_AVAILABILITY_OPT_RESPONSE;
+                }
+                else if (self->_state == BC_ESP8266_STATE_AP_AVAILABILITY_COMMAND)
+                {
+                    strcpy(self->_command, "AT+CWLAP\r\n");
+                    self->_message_buffer[0] = '0';
+                    self->_message_length = 1;
+                    response_state = BC_ESP8266_STATE_AP_AVAILABILITY_RESPONSE;
                 }
                 else if (self->_state == BC_ESP8266_STATE_SNTP_CONFIG_COMMAND)
                 {
@@ -538,7 +563,7 @@ static void _bc_esp8266_task(void *param)
                 */
 
                 self->_timeout_cnt++;
-                if (self->_timeout_cnt > _BC_ESP8266_TIMEOUT_WIFI_CONNECT)
+                if (self->_timeout_cnt > _BC_ESP8266_TIMEOUT_SOCKET_CONNECT)
                 {
                     self->_state = BC_ESP8266_STATE_WIFI_CONNECT_ERROR;
                     continue;
@@ -546,7 +571,8 @@ static void _bc_esp8266_task(void *param)
 
                 if (!_bc_esp8266_read_response(self))
                 {
-                    continue;
+                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SOCKET_CONNECT);
+                    return;
                 }
 
                 if (strcmp(self->_response, "OK\r") == 0)
@@ -560,6 +586,11 @@ static void _bc_esp8266_task(void *param)
                 else if (memcmp(self->_response, "+CIPSNTPTIME:", 13) == 0)
                 {
                     _bc_esp8266_set_rtc_time(self->_response + 13);
+                }
+                else
+                {
+                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SOCKET_CONNECT);
+                    return;
                 }
 
                 continue;
@@ -663,6 +694,80 @@ static void _bc_esp8266_task(void *param)
                 if (self->_event_handler != NULL)
                 {
                     self->_event_handler(self, BC_ESP8266_EVENT_DATA_RECEIVED, self->_event_param);
+                }
+
+                continue;
+            }
+            case BC_ESP8266_STATE_AP_AVAILABILITY_OPT_RESPONSE:
+            {
+                if (!_bc_esp8266_read_response(self) || memcmp(self->_response, "OK", 2) != 0)
+                {
+                    bc_esp8266_disconnect(self);
+                    return;
+                }
+
+                self->_state = BC_ESP8266_STATE_AP_AVAILABILITY_COMMAND;
+
+                continue;
+            }
+            case BC_ESP8266_STATE_AP_AVAILABILITY_RESPONSE:
+            {
+                /*
+                Success response:
+                +CWLAP:("Internet_7E",-74)
+                +CWLAP:("WLAN1-R87LDH",-77)
+                OK
+                */
+
+                self->_timeout_cnt++;
+                if (self->_timeout_cnt > _BC_ESP8266_TIMEOUT_WIFI_CONNECT)
+                {
+                    bc_esp8266_disconnect(self);
+                    return;
+                }
+
+                if (!_bc_esp8266_read_response(self))
+                {
+                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_WIFI_CONNECT);
+                    return;
+                }
+
+                if (strcmp(self->_response, "OK\r") == 0)
+                {
+                    if (self->_event_handler != NULL)
+                    {
+                        self->_event_handler(self, BC_ESP8266_EVENT_AP_AVAILABILITY_RESULT, self->_event_param);
+                    }
+
+                    bc_esp8266_disconnect(self);
+                    return;
+                }
+                else if (strcmp(self->_response, "ERROR\r") == 0)
+                {
+                    bc_esp8266_disconnect(self);
+                    return;
+                }
+                else
+                {
+                    char text[76];
+                    sprintf(text, "+CWLAP:(\"%s\",", self->_config.ssid);
+                    size_t text_len = strlen(text);
+                    char *p = strstr(self->_response, text);
+                    if (p != NULL)
+                    {
+                        char *p2 = strchr(p + text_len, ')');
+                        if (p2 != NULL)
+                        {
+                            uint8_t rssi_len = p2 - (p + text_len);
+                            self->_message_buffer[0] = '1';
+                            self->_message_length = 1 + rssi_len;
+                            memcpy(self->_message_buffer + 1, p + text_len, rssi_len);
+                            self->_message_buffer[self->_message_length] = '\0';
+                        }
+                    }
+
+                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_WIFI_CONNECT);
+                    return;
                 }
 
                 continue;
@@ -862,4 +967,41 @@ static void _bc_esp8266_set_rtc_time(char *str)
         }
     }
     bc_rtc_set_date_time(&rtc);
+}
+
+bool bc_esp8266_check_ap_availability(bc_esp8266_t *self)
+{
+    if (self->_state != BC_ESP8266_STATE_DISCONNECTED || self->_config.ssid[0] == '\0')
+    {
+        return false;
+    }
+
+    _bc_esp8266_enable();
+
+    self->_state = BC_ESP8266_STATE_INITIALIZE;
+    self->_state_after_init = BC_ESP8266_STATE_AP_AVAILABILITY_OPT_COMMAND;
+
+    bc_scheduler_plan_now(self->_task_id);
+
+    return true;
+}
+
+bool bc_esp8266_get_ap_availability_result(bc_esp8266_t *self, bool *available, int *rssi)
+{
+    if (self->_state != BC_ESP8266_STATE_AP_AVAILABILITY_RESPONSE)
+    {
+        return false;
+    }
+
+    if (self->_message_buffer[0] == '1')
+    {
+        *available = true;
+        *rssi = atoi(((char *)self->_message_buffer) + 1);
+    }
+    else
+    {
+        *available = false;
+    }
+
+    return true;
 }
