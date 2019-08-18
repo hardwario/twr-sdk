@@ -34,7 +34,8 @@ typedef enum
     BC_ESP8266_EVENT_SOCKET_CONNECT_ERROR = 5,
     BC_ESP8266_EVENT_SOCKET_SEND_SUCCESS = 6,
     BC_ESP8266_EVENT_SOCKET_SEND_ERROR = 7,
-    BC_ESP8266_EVENT_DATA_RECEIVED = 8
+    BC_ESP8266_EVENT_DATA_RECEIVED = 8,
+    BC_ESP8266_EVENT_AP_AVAILABILITY_RESULT = 9
 
 } bc_esp8266_event_t;
 
@@ -66,7 +67,12 @@ typedef enum
     BC_ESP8266_STATE_SNTP_CONFIG_COMMAND = 19,
     BC_ESP8266_STATE_SNTP_CONFIG_RESPONSE = 20,
     BC_ESP8266_STATE_SNTP_TIME_COMMAND = 21,
-    BC_ESP8266_STATE_SNTP_TIME_RESPONSE = 22
+    BC_ESP8266_STATE_SNTP_TIME_RESPONSE = 22,
+    BC_ESP8266_STATE_AP_AVAILABILITY_OPT_COMMAND = 23,
+    BC_ESP8266_STATE_AP_AVAILABILITY_OPT_RESPONSE = 24,
+    BC_ESP8266_STATE_AP_AVAILABILITY_COMMAND = 25,
+    BC_ESP8266_STATE_AP_AVAILABILITY_RESPONSE = 26
+
 } bc_esp8266_state_t;
 
 typedef enum
@@ -92,6 +98,7 @@ struct bc_esp8266_t
     bc_scheduler_task_id_t _task_id;
     bc_uart_channel_t _uart_channel;
     bc_esp8266_state_t _state;
+    bc_esp8266_state_t _state_after_init;
     bc_fifo_t _tx_fifo;
     bc_fifo_t _rx_fifo;
     uint8_t _tx_fifo_buffer[BC_ESP8266_TX_FIFO_BUFFER_SIZE];
@@ -215,6 +222,21 @@ uint32_t bc_esp8266_get_received_message_length(bc_esp8266_t *self);
 //! @return Length of the received message. Zero if the destination buffer is not big enough.
 
 uint32_t bc_esp8266_get_received_message_data(bc_esp8266_t *self, uint8_t *buffer, uint32_t buffer_size);
+
+//! @brief Check AP availability
+//! @param[in] self Instance
+//! @return true If command was accepted for processing
+//! @return false If command was denied for processing
+
+bool bc_esp8266_check_ap_availability(bc_esp8266_t *self);
+
+//! @brief Get AP availability result
+//! @param[in] self Instance
+//! @param[in] available If AP is available
+//! @param[in] rssi RSSI
+//! @return If result is valid
+
+bool bc_esp8266_get_ap_availability_result(bc_esp8266_t *self, bool *available, int *rssi);
 
 //! @}
 
