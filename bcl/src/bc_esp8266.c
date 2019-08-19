@@ -173,6 +173,11 @@ bool bc_esp8266_disconnect(bc_esp8266_t *self)
 
     self->_state = BC_ESP8266_STATE_DISCONNECTED;
 
+    if (self->_event_handler != NULL)
+    {
+        self->_event_handler(self, BC_ESP8266_EVENT_DISCONNECTED, self->_event_param);
+    }
+
     return true;
 }
 
