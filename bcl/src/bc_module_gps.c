@@ -51,7 +51,6 @@ bool bc_module_gps_init(void)
         return false;
     }
 
-
     bc_sam_m8q_init(&_bc_module_gps.sam_m8q, BC_I2C_I2C0, 0x42, &_bc_module_gps.sam_m8q_driver);
     bc_sam_m8q_set_event_handler(&_bc_module_gps.sam_m8q, _bc_module_gps_sam_m8q_event_handler, NULL);
 
