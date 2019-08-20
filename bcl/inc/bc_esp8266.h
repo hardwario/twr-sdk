@@ -114,6 +114,8 @@ struct bc_esp8266_t
     uint8_t _init_command_index;
     uint8_t _timeout_cnt;
     bc_esp8266_config _config;
+    bool _ap_available;
+    int _rssi;
 };
 
 //! @endcond
@@ -235,9 +237,8 @@ bool bc_esp8266_check_ap_availability(bc_esp8266_t *self);
 //! @param[in] self Instance
 //! @param[in] available If AP is available
 //! @param[in] rssi RSSI
-//! @return If result is valid
 
-bool bc_esp8266_get_ap_availability_result(bc_esp8266_t *self, bool *available, int *rssi);
+void bc_esp8266_get_ap_availability(bc_esp8266_t *self, bool *available, int *rssi);
 
 //! @}
 

@@ -79,13 +79,13 @@ static void _uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event
     }
 }
 
-void _bc_esp8266_enable()
+void _bc_esp8266_enable(void)
 {
     // Enable CH_PD
     bc_gpio_set_output(BC_GPIO_P8, 1);
 }
 
-void _bc_esp8266_disable()
+void _bc_esp8266_disable(void)
 {
     // Disable CH_PD
     bc_gpio_set_output(BC_GPIO_P8, 0);
@@ -404,8 +404,8 @@ static void _bc_esp8266_task(void *param)
                 else if (self->_state == BC_ESP8266_STATE_AP_AVAILABILITY_COMMAND)
                 {
                     strcpy(self->_command, "AT+CWLAP\r\n");
-                    self->_message_buffer[0] = '0';
-                    self->_message_length = 1;
+                    self->_rssi = 0;
+                    self->_ap_available = false;
                     response_state = BC_ESP8266_STATE_AP_AVAILABILITY_RESPONSE;
                 }
                 else if (self->_state == BC_ESP8266_STATE_SNTP_CONFIG_COMMAND)
@@ -739,12 +739,12 @@ static void _bc_esp8266_task(void *param)
 
                 if (strcmp(self->_response, "OK\r") == 0)
                 {
+                    bc_esp8266_disconnect(self);
+
                     if (self->_event_handler != NULL)
                     {
                         self->_event_handler(self, BC_ESP8266_EVENT_AP_AVAILABILITY_RESULT, self->_event_param);
                     }
-
-                    bc_esp8266_disconnect(self);
                     return;
                 }
                 else if (strcmp(self->_response, "ERROR\r") == 0)
@@ -757,17 +757,15 @@ static void _bc_esp8266_task(void *param)
                     char text[76];
                     sprintf(text, "+CWLAP:(\"%s\",", self->_config.ssid);
                     size_t text_len = strlen(text);
-                    char *p = strstr(self->_response, text);
-                    if (p != NULL)
+                    if (strncmp(self->_response, text, text_len) == 0)
                     {
-                        char *p2 = strchr(p + text_len, ')');
-                        if (p2 != NULL)
+                        char *rssi = self->_response + text_len;
+                        char *end = strchr(rssi, ')');
+                        if (end != NULL)
                         {
-                            uint8_t rssi_len = p2 - (p + text_len);
-                            self->_message_buffer[0] = '1';
-                            self->_message_length = 1 + rssi_len;
-                            memcpy(self->_message_buffer + 1, p + text_len, rssi_len);
-                            self->_message_buffer[self->_message_length] = '\0';
+                            end[0] = '\0';
+                            self->_rssi = atoi(rssi);
+                            self->_ap_available = true;
                         }
                     }
 
@@ -991,22 +989,8 @@ bool bc_esp8266_check_ap_availability(bc_esp8266_t *self)
     return true;
 }
 
-bool bc_esp8266_get_ap_availability_result(bc_esp8266_t *self, bool *available, int *rssi)
+void bc_esp8266_get_ap_availability(bc_esp8266_t *self, bool *available, int *rssi)
 {
-    if (self->_state != BC_ESP8266_STATE_AP_AVAILABILITY_RESPONSE)
-    {
-        return false;
-    }
-
-    if (self->_message_buffer[0] == '1')
-    {
-        *available = true;
-        *rssi = atoi(((char *)self->_message_buffer) + 1);
-    }
-    else
-    {
-        *available = false;
-    }
-
-    return true;
+    *available = self->_ap_available;
+    *rssi = self->_rssi;
 }
