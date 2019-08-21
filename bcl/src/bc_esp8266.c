@@ -994,3 +994,23 @@ void bc_esp8266_get_ap_availability(bc_esp8266_t *self, bool *available, int *rs
     *available = self->_ap_available;
     *rssi = self->_rssi;
 }
+
+void bc_esp8266_get_ssid(bc_esp8266_t *self, char *ssid)
+{
+    strncpy(ssid, self->_config.ssid, 64);
+}
+
+void bc_esp8266_set_ssid(bc_esp8266_t *self, char *ssid)
+{
+    strncpy(self->_config.ssid, ssid, 64);
+}
+
+void bc_esp8266_get_password(bc_esp8266_t *self, char *password)
+{
+    strncpy(password, self->_config.password, 64);
+}
+
+void bc_esp8266_set_password(bc_esp8266_t *self, char *password)
+{
+    strncpy(self->_config.password, password, 64);
+}

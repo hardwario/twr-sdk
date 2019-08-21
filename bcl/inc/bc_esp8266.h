@@ -240,6 +240,30 @@ bool bc_esp8266_check_ap_availability(bc_esp8266_t *self);
 
 void bc_esp8266_get_ap_availability(bc_esp8266_t *self, bool *available, int *rssi);
 
+//! @brief Get SSID
+//! @param[in] self Instance
+//! @param[in] ssid Pointer to at least 64 character string
+
+void bc_esp8266_get_ssid(bc_esp8266_t *self, char *ssid);
+
+//! @brief Set SSID
+//! @param[in] self Instance
+//! @param[in] ssid Pointer to 64 character string
+
+void bc_esp8266_set_ssid(bc_esp8266_t *self, char *ssid);
+
+//! @brief Get password
+//! @param[in] self Instance
+//! @param[in] password Pointer to at least 64 character string
+
+void bc_esp8266_get_password(bc_esp8266_t *self, char *password);
+
+//! @brief Set password
+//! @param[in] self Instance
+//! @param[in] password Pointer to 64 character string
+
+void bc_esp8266_set_password(bc_esp8266_t *self, char *password);
+
 //! @}
 
 #endif // _BC_ESP8266_H
