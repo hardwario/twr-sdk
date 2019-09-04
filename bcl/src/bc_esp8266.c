@@ -53,7 +53,7 @@ void bc_esp8266_init(bc_esp8266_t *self,  bc_uart_channel_t uart_channel)
     // RESET of ESP8266
     bc_gpio_init(BC_GPIO_P6);
     bc_gpio_set_mode(BC_GPIO_P6, BC_GPIO_MODE_OUTPUT);
-    bc_gpio_set_output(BC_GPIO_P6, 0);
+    bc_gpio_set_output(BC_GPIO_P6, 1);
 
     bc_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
     bc_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
@@ -82,8 +82,6 @@ void _bc_esp8266_enable(bc_esp8266_t *self)
     bc_uart_async_read_start(self->_uart_channel, BC_TICK_INFINITY);
     bc_uart_set_event_handler(self->_uart_channel, _uart_event_handler, self);
 
-    // RESET to HIGH
-    bc_gpio_set_output(BC_GPIO_P6, 1);
     // Enable CH_PD
     bc_gpio_set_output(BC_GPIO_P8, 1);
 }
@@ -92,8 +90,6 @@ void _bc_esp8266_disable(bc_esp8266_t *self)
 {
     // Disable CH_PD
     bc_gpio_set_output(BC_GPIO_P8, 0);
-    // RESET to LOW
-    bc_gpio_set_output(BC_GPIO_P6, 0);
 
     // Deinitialize UART
     bc_uart_deinit(self->_uart_channel);
