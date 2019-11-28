@@ -33,6 +33,11 @@ bc_led_strip_type_t bc_led_strip_get_strip_type(bc_led_strip_t *self)
 
 void bc_led_strip_set_pixel(bc_led_strip_t *self, int position, uint32_t color)
 {
+    if (position < 0 || position >= self->_buffer->count)
+    {
+        return;
+    }
+
     if (self->_brightness != 255)
     {
         bc_led_strip_set_pixel_rgbw(self, position, color >> 24, color >> 16, color >> 8, color);
@@ -45,6 +50,11 @@ void bc_led_strip_set_pixel(bc_led_strip_t *self, int position, uint32_t color)
 
 void bc_led_strip_set_pixel_rgbw(bc_led_strip_t *self, int position, uint8_t r, uint8_t g, uint8_t b, uint8_t w)
 {
+    if (position < 0 || position >= self->_buffer->count)
+    {
+        return;
+    }
+
     if (self->_brightness != 255)
     {
         r = ((uint16_t) r * self->_brightness) >> 8;
