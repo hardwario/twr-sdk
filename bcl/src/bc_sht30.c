@@ -8,6 +8,8 @@ static void _bc_sht30_task_interval(void *param);
 
 static void _bc_sht30_task_measure(void *param);
 
+static bool _bc_sht30_write(bc_sht30_t *self, const uint16_t data);
+
 void bc_sht30_init(bc_sht30_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
     memset(self, 0, sizeof(*self));
@@ -21,6 +23,13 @@ void bc_sht30_init(bc_sht30_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_a
     self->_tick_ready = _BC_SHT30_DELAY_RUN;
 
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+}
+
+void bc_sht30_deinit(bc_sht30_t *self)
+{
+    _bc_sht30_write(self, 0xa230);
+    bc_scheduler_unregister(self->_task_id_interval);
+    bc_scheduler_unregister(self->_task_id_measure);
 }
 
 void bc_sht30_set_event_handler(bc_sht30_t *self, void (*event_handler)(bc_sht30_t *, bc_sht30_event_t, void *), void *event_param)
@@ -120,6 +129,39 @@ bool bc_sht30_get_temperature_celsius(bc_sht30_t *self, float *celsius)
     return true;
 }
 
+bool bc_sht30_get_temperature_fahrenheit(bc_sht30_t *self, float *fahrenheit)
+{
+    float celsius;
+
+    if (!bc_sht30_get_temperature_celsius(self, &celsius))
+    {
+        return false;
+    }
+
+    *fahrenheit = celsius * 1.8f + 32.f;
+
+    return true;
+}
+
+bool bc_sht30_get_temperature_kelvin(bc_sht30_t *self, float *kelvin)
+{
+    float celsius;
+
+    if (!bc_sht30_get_temperature_celsius(self, &celsius))
+    {
+        return false;
+    }
+
+    *kelvin = celsius + 273.15f;
+
+    if (*kelvin < 0.f)
+    {
+        *kelvin = 0.f;
+    }
+
+    return true;
+}
+
 static void _bc_sht30_task_interval(void *param)
 {
     bc_sht30_t *self = param;
@@ -157,18 +199,7 @@ start:
         {
             self->_state = BC_SHT30_STATE_ERROR;
 
-            uint8_t buffer[2];
-
-            buffer[0] = 0x30;
-            buffer[1] = 0xa2;
-
-            bc_i2c_transfer_t transfer;
-
-            transfer.device_address = self->_i2c_address;
-            transfer.buffer = buffer;
-            transfer.length = sizeof(buffer);
-
-            if (!bc_i2c_write(self->_i2c_channel, &transfer))
+            if (!_bc_sht30_write(self, 0xa230))
             {
                 goto start;
             }
@@ -188,18 +219,7 @@ start:
         {
             self->_state = BC_SHT30_STATE_ERROR;
 
-            uint8_t buffer[2];
-
-            buffer[0] = 0x2c;
-            buffer[1] = 0x0d;
-
-            bc_i2c_transfer_t transfer;
-
-            transfer.device_address = self->_i2c_address;
-            transfer.buffer = buffer;
-            transfer.length = sizeof(buffer);
-
-            if (!bc_i2c_write(self->_i2c_channel, &transfer))
+            if (!_bc_sht30_write(self, 0x0d2c))
             {
                 goto start;
             }
@@ -257,4 +277,15 @@ start:
             goto start;
         }
     }
+}
+
+static bool _bc_sht30_write(bc_sht30_t *self, const uint16_t data)
+{
+    bc_i2c_transfer_t transfer;
+
+    transfer.device_address = self->_i2c_address;
+    transfer.buffer = (void *) &data;
+    transfer.length = sizeof(data);
+
+    return bc_i2c_write(self->_i2c_channel, &transfer);
 }
