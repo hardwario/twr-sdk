@@ -5,8 +5,6 @@
 #include <bc_mpl3115a2.h>
 #include <bc_sht30.h>
 
-#include <bc_log.h>
-
 static struct
 {
     void (*event_handler)(bc_module_climate_event_t, void *);
@@ -245,8 +243,6 @@ static void _bc_module_climate_sht20_event_handler(bc_sht20_t *self, bc_sht20_ev
     }
     else if (event == BC_SHT20_EVENT_ERROR)
     {
-        bc_log_debug("_update_interval %d", _bc_module_climate.sht._20._update_interval);
-
         bc_tmp112_deinit(&_bc_module_climate.tmp112);
         bc_sht20_deinit(&_bc_module_climate.sht._20);
 
