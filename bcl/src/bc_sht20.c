@@ -9,6 +9,8 @@ static void _bc_sht20_task_interval(void *param);
 
 static void _bc_sht20_task_measure(void *param);
 
+static bool _bc_sht20_write(bc_sht20_t *self, const uint8_t data);
+
 // TODO SHT20 has only one fixed address so it is no necessary to pass it as parameter
 
 void bc_sht20_init(bc_sht20_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
@@ -24,6 +26,13 @@ void bc_sht20_init(bc_sht20_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_a
     self->_tick_ready = _BC_SHT20_DELAY_RUN;
 
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+}
+
+void bc_sht20_deinit(bc_sht20_t *self)
+{
+    _bc_sht20_write(self, 0xfe);
+    bc_scheduler_unregister(self->_task_id_interval);
+    bc_scheduler_unregister(self->_task_id_measure);
 }
 
 void bc_sht20_set_event_handler(bc_sht20_t *self, void (*event_handler)(bc_sht20_t *, bc_sht20_event_t, void *), void *event_param)
@@ -123,6 +132,39 @@ bool bc_sht20_get_temperature_celsius(bc_sht20_t *self, float *celsius)
     return true;
 }
 
+bool bc_sht20_get_temperature_fahrenheit(bc_sht20_t *self, float *fahrenheit)
+{
+    float celsius;
+
+    if (!bc_sht20_get_temperature_celsius(self, &celsius))
+    {
+        return false;
+    }
+
+    *fahrenheit = celsius * 1.8f + 32.f;
+
+    return true;
+}
+
+bool bc_sht20_get_temperature_kelvin(bc_sht20_t *self, float *kelvin)
+{
+    float celsius;
+
+    if (!bc_sht20_get_temperature_celsius(self, &celsius))
+    {
+        return false;
+    }
+
+    *kelvin = celsius + 273.15f;
+
+    if (*kelvin < 0.f)
+    {
+        *kelvin = 0.f;
+    }
+
+    return true;
+}
+
 static void _bc_sht20_task_interval(void *param)
 {
     bc_sht20_t *self = param;
@@ -160,17 +202,7 @@ start:
         {
             self->_state = BC_SHT20_STATE_ERROR;
 
-            uint8_t buffer[1];
-
-            buffer[0] = 0xfe;
-
-            bc_i2c_transfer_t transfer;
-
-            transfer.device_address = self->_i2c_address;
-            transfer.buffer = buffer;
-            transfer.length = sizeof(buffer);
-
-            if (!bc_i2c_write(self->_i2c_channel, &transfer))
+            if (!_bc_sht20_write(self, 0xfe))
             {
                 goto start;
             }
@@ -190,17 +222,7 @@ start:
         {
             self->_state = BC_SHT20_STATE_ERROR;
 
-            uint8_t buffer[1];
-
-            buffer[0] = 0xf5;
-
-            bc_i2c_transfer_t transfer;
-
-            transfer.device_address = self->_i2c_address;
-            transfer.buffer = buffer;
-            transfer.length = sizeof(buffer);
-
-            if (!bc_i2c_write(self->_i2c_channel, &transfer))
+            if (!_bc_sht20_write(self, 0xf5))
             {
                 goto start;
             }
@@ -240,17 +262,7 @@ start:
         {
             self->_state = BC_SHT20_STATE_ERROR;
 
-            uint8_t buffer[1];
-
-            buffer[0] = 0xf3;
-
-            bc_i2c_transfer_t transfer;
-
-            transfer.device_address = self->_i2c_address;
-            transfer.buffer = buffer;
-            transfer.length = sizeof(buffer);
-
-            if (!bc_i2c_write(self->_i2c_channel, &transfer))
+            if (!_bc_sht20_write(self, 0xf3))
             {
                 goto start;
             }
@@ -306,4 +318,15 @@ start:
             goto start;
         }
     }
+}
+
+static bool _bc_sht20_write(bc_sht20_t *self, const uint8_t data)
+{
+    bc_i2c_transfer_t transfer;
+
+    transfer.device_address = self->_i2c_address;
+    transfer.buffer = (void *) &data;
+    transfer.length = sizeof(data);
+
+    return bc_i2c_write(self->_i2c_channel, &transfer);
 }
