@@ -40,8 +40,9 @@ __attribute__((weak)) void application_task(void *param)
 
 __attribute__((weak)) void application_error(bc_error_t code)
 {
-
 #ifdef RELEASE
+
+    (void) code;
 
     bc_system_reset();
 
