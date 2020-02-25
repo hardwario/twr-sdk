@@ -34,6 +34,7 @@ void bc_sam_m8q_start(bc_sam_m8q_t *self)
     if (!self->_running)
     {
         self->_running = true;
+        self->_configured = false;
 
         bc_scheduler_plan_now(self->_task_id);
     }
@@ -65,7 +66,7 @@ bool bc_sam_m8q_get_time(bc_sam_m8q_t *self, bc_sam_m8q_time_t *time)
         return false;
     }
 
-    time->year = self->_rmc.date.year;
+    time->year = self->_rmc.date.year + 2000;
     time->month = self->_rmc.date.month;
     time->day = self->_rmc.date.day;
     time->hours = self->_rmc.time.hours;

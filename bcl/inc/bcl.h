@@ -37,6 +37,7 @@
 #include <bc_ls013b7dh03.h>
 #include <bc_cmwx1zzabz.h>
 #include <bc_sam_m8q.h>
+#include <bc_esp8266.h>
 
 // BigClown tags
 
@@ -67,6 +68,7 @@
 // Other
 
 #include <bc_analog_sensor.h>
+#include <bc_config.h>
 #include <bc_data_stream.h>
 #include <bc_flood_detector.h>
 #include <bc_pulse_counter.h>
