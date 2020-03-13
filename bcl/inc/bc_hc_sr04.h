@@ -49,12 +49,17 @@ struct bc_hc_sr04_t
 
 //! @endcond
 
+//! @brief Initialize HC-SR04 for sensor module
+//! @param[in] self Instance
+
+void bc_hc_sr04_init_sensor_module(bc_hc_sr04_t *self);
+
 //! @brief Initialize HC-SR04
 //! @param[in] self Instance
 //! @param[in] echo Pin
 //! @param[in] trig Pin
 
-void bc_hc_sr04_init(bc_hc_sr04_t *self, bc_hc_sr04_echo_t echo, bc_gpio_channel_t trig);
+void bc_hc_sr04_init(bc_hc_sr04_t *self, bc_gpio_channel_t trig, bc_hc_sr04_echo_t echo);
 
 //! @brief Set callback function
 //! @param[in] self Instance
