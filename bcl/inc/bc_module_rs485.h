@@ -49,6 +49,12 @@ typedef enum
 
 bool bc_module_rs485_init(void);
 
+//! @brief Deinitialize RS-485 Module
+//! @return true On success
+//! @return false When module is not detected
+
+bool bc_module_rs485_deinit(void);
+
 //! @brief Start single voltage measurement
 //! @return true On success
 //! @return false When other measurement is in progress
