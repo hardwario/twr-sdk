@@ -33,12 +33,22 @@ enum
     BC_RADIO_PUB_CHANNEL_R3_I2C1_ADDRESS_DEFAULT   = 0x84,
     //! @brief channel 1:5
     BC_RADIO_PUB_CHANNEL_R3_I2C1_ADDRESS_ALTERNATE = 0x85,
+    //! @brief channel 0:6
+    BC_RADIO_PUB_CHANNEL_R4_I2C0_ADDRESS_DEFAULT   = 0x06,
+    //! @brief channel 0:7
+    BC_RADIO_PUB_CHANNEL_R4_I2C0_ADDRESS_ALTERNATE = 0x07,
+    //! @brief channel 1:6
+    BC_RADIO_PUB_CHANNEL_R4_I2C1_ADDRESS_DEFAULT   = 0x86,
+    //! @brief channel 1:7
+    BC_RADIO_PUB_CHANNEL_R4_I2C1_ADDRESS_ALTERNATE = 0x87,
     //! @brief channel a
     BC_RADIO_PUB_CHANNEL_A                         = 0xf0,
     //! @brief channel b
     BC_RADIO_PUB_CHANNEL_B                         = 0xf1,
     //! @brief channel set-point
-    BC_RADIO_PUB_CHANNEL_SET_POINT                 = 0xf2
+    BC_RADIO_PUB_CHANNEL_SET_POINT                 = 0xf2,
+    //! @brief channel -
+    BC_RADIO_PUB_CHANNEL_NONE                      = 0xff
 };
 
 enum

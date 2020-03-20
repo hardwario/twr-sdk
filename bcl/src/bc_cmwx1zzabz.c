@@ -23,6 +23,7 @@ const char *_init_commands[] =
     "AT+CLASS?\r",
     "AT+RX2?\r",
     "AT+NWK?\r",
+    "AT+DR?\r",
     NULL
 };
 
@@ -83,7 +84,7 @@ bool bc_cmwx1zzabz_is_ready(bc_cmwx1zzabz_t *self)
 
 bool bc_cmwx1zzabz_send_message(bc_cmwx1zzabz_t *self, const void *buffer, size_t length)
 {
-    if (!bc_cmwx1zzabz_is_ready(self) || length == 0 || length > 51)
+    if (!bc_cmwx1zzabz_is_ready(self) || length == 0 || length > BC_CMWX1ZZABZ_TX_MAX_PACKET_SIZE)
     {
         return false;
     }
@@ -101,7 +102,7 @@ bool bc_cmwx1zzabz_send_message(bc_cmwx1zzabz_t *self, const void *buffer, size_
 
 bool bc_cmwx1zzabz_send_message_confirmed(bc_cmwx1zzabz_t *self, const void *buffer, size_t length)
 {
-    if (!bc_cmwx1zzabz_is_ready(self) || length == 0 || length > 51)
+    if (!bc_cmwx1zzabz_is_ready(self) || length == 0 || length > BC_CMWX1ZZABZ_TX_MAX_PACKET_SIZE)
     {
         return false;
     }
@@ -127,12 +128,12 @@ static void _bc_cmwx1zzabz_task(void *param)
         {
             case BC_CMWX1ZZABZ_STATE_READY:
             {
+                self->_state = BC_CMWX1ZZABZ_STATE_IDLE;
+
                 if (self->_event_handler != NULL)
                 {
                     self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_READY, self->_event_param);
                 }
-
-                self->_state = BC_CMWX1ZZABZ_STATE_IDLE;
 
                 continue;
             }
@@ -192,22 +193,31 @@ static void _bc_cmwx1zzabz_task(void *param)
                             continue;
                         }
 
-                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED, self->_event_param);
+                        if (self->_event_handler != NULL)
+                        {
+                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED, self->_event_param);
+                        }
                     }
-
-                    if (memcmp(self->_response, "+ACK", 4) == 0)
+                    else if (memcmp(self->_response, "+ACK", 4) == 0)
                     {
-                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_CONFIRMED, self->_event_param);
+                        if (self->_event_handler != NULL)
+                        {
+                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_CONFIRMED, self->_event_param);
+                        }
                     }
-
-                    if (memcmp(self->_response, "+NOACK", 4) == 0)
+                    else if (memcmp(self->_response, "+NOACK", 4) == 0)
                     {
-                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED, self->_event_param);
+                        if (self->_event_handler != NULL)
+                        {
+                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED, self->_event_param);
+                        }
                     }
-
-                    if (memcmp(self->_response, "+EVENT=2,2", 10) == 0)
+                    else if (memcmp(self->_response, "+EVENT=2,2", 10) == 0)
                     {
-                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RETRANSMISSION, self->_event_param);
+                        if (self->_event_handler != NULL)
+                        {
+                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RETRANSMISSION, self->_event_param);
+                        }
                     }
                 }
 
@@ -373,6 +383,19 @@ static void _bc_cmwx1zzabz_task(void *param)
                     {
                         self->_config.nwk_public = response_string_value[0] - '0';
                     }
+                    response_handled = 1;
+                }
+                else if (strcmp(last_command, "AT+DR?\r") == 0 && response_valid)
+                {
+                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DATARATE) == 0)
+                    {
+                        self->_config.datarate = atoi(response_string_value);
+                    }
+                    response_handled = 1;
+                }
+                else if (strcmp(last_command, "AT+DUTYCYCLE=0\r") == 0 && strcmp(self->_response, "+ERR=-17\r") == 0)
+                {
+                    // DUTYCYLE is unusable in some band configuration, ignore this err response
                     response_handled = 1;
                 }
                 else if (   strcmp(last_command, "AT\r") == 0 &&
@@ -566,6 +589,11 @@ static void _bc_cmwx1zzabz_task(void *param)
                     case BC_CMWX1ZZABZ_CONFIG_INDEX_NWK:
                     {
                         snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+NWK=%d\r", (int) self->_config.nwk_public);
+                        break;
+                    }
+                    case BC_CMWX1ZZABZ_CONFIG_INDEX_DATARATE:
+                    {
+                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DR=%d\r", (int) self->_config.datarate);
                         break;
                     }
                     default:
@@ -852,6 +880,18 @@ void bc_cmwx1zzabz_set_nwk_public(bc_cmwx1zzabz_t *self, uint8_t public)
 uint8_t bc_cmwx1zzabz_get_nwk_public(bc_cmwx1zzabz_t *self)
 {
     return self->_config.nwk_public;
+}
+
+void bc_cmwx1zzabz_set_datarate(bc_cmwx1zzabz_t *self, uint8_t datarate)
+{
+    self->_config.datarate = datarate;
+
+    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_DATARATE);
+}
+
+uint8_t bc_cmwx1zzabz_get_datarate(bc_cmwx1zzabz_t *self)
+{
+    return self->_config.datarate;
 }
 
 static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)

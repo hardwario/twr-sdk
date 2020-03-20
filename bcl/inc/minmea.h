@@ -23,7 +23,7 @@ extern "C" {
 #include <minmea_compat.h>
 #endif
 
-#define MINMEA_MAX_LENGTH 80
+#define MINMEA_MAX_LENGTH 128
 
 enum minmea_sentence_id {
     MINMEA_INVALID = -1,
@@ -36,6 +36,7 @@ enum minmea_sentence_id {
     MINMEA_SENTENCE_GSV,
     MINMEA_SENTENCE_VTG,
     MINMEA_SENTENCE_ZDA,
+    MINMEA_SENTENCE_PUBX,
 };
 
 struct minmea_float {
@@ -163,6 +164,27 @@ struct minmea_sentence_zda {
     int minute_offset;
 };
 
+struct minmea_sentence_pubx {
+    int msg_id;
+    struct minmea_time time;
+    struct minmea_float latitude;
+    struct minmea_float longitude;
+    struct minmea_float altitude;
+    int status;
+    struct minmea_float h_accuracy;
+    struct minmea_float v_accuracy;
+    struct minmea_float speed;
+    struct minmea_float course;
+    struct minmea_float velocity;
+    int age;
+    struct minmea_float hdop;
+    struct minmea_float vdop;
+    struct minmea_float tdop;
+    int satellites;
+    int reserved;
+    int dr;
+};
+
 /**
  * Calculate raw sentence checksum. Does not check sentence integrity.
  */
@@ -207,6 +229,7 @@ bool minmea_parse_gst(struct minmea_sentence_gst *frame, const char *sentence);
 bool minmea_parse_gsv(struct minmea_sentence_gsv *frame, const char *sentence);
 bool minmea_parse_vtg(struct minmea_sentence_vtg *frame, const char *sentence);
 bool minmea_parse_zda(struct minmea_sentence_zda *frame, const char *sentence);
+bool minmea_parse_pubx(struct minmea_sentence_pubx *frame, const char *sentence);
 
 /**
  * Rescale a fixed-point value to a different scale. Rounds towards zero.

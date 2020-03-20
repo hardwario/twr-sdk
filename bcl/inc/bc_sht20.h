@@ -65,6 +65,10 @@ struct bc_sht20_t
 
 void bc_sht20_init(bc_sht20_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
+//! @brief Deinitialize SHT20
+//! @param[in] self Instance
+void bc_sht20_deinit(bc_sht20_t *self);
+
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address
@@ -116,6 +120,22 @@ bool bc_sht20_get_temperature_raw(bc_sht20_t *self, uint16_t *raw);
 //! @return false When value is invalid
 
 bool bc_sht20_get_temperature_celsius(bc_sht20_t *self, float *celsius);
+
+//! @brief Get measured temperature in degrees of Fahrenheit
+//! @param[in] self Instance
+//! @param[out] fahrenheit Pointer to variable where result will be stored
+//! @return true When value is valid
+//! @return false When value is invalid
+
+bool bc_sht20_get_temperature_fahrenheit(bc_sht20_t *self, float *fahrenheit);
+
+//! @brief Get measured temperature in kelvin
+//! @param[in] self Instance
+//! @param[out] kelvin Pointer to variable where result will be stored
+//! @return true When value is valid
+//! @return false When value is invalid
+
+bool bc_sht20_get_temperature_kelvin(bc_sht20_t *self, float *kelvin);
 
 //! @}
 

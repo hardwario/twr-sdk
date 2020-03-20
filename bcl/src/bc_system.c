@@ -188,6 +188,7 @@ static void _bc_system_init_gpio(void)
 
 static void _bc_system_init_rtc(void)
 {
+
     // Set LSE oscillator drive capability to medium low drive
     RCC->CSR |= RCC_CSR_LSEDRV_1;
 
@@ -213,25 +214,28 @@ static void _bc_system_init_rtc(void)
     RTC->WPR = 0xca;
     RTC->WPR = 0x53;
 
-    // Enable initialization mode
-    RTC->ISR |= RTC_ISR_INIT;
-
-    // Wait for RTC to be in initialization mode...
-    while ((RTC->ISR & RTC_ISR_INITF) == 0)
+    // Initialize RTC only once
+    if ((RTC->ISR & RTC_ISR_INITS) == 0)
     {
-        continue;
+
+        // Enable initialization mode
+        RTC->ISR |= RTC_ISR_INIT;
+
+        // Wait for RTC to be in initialization mode...
+        while ((RTC->ISR & RTC_ISR_INITF) == 0)
+        {
+            continue;
+        }
+
+        // Set RTC prescaler
+        RTC->PRER = (127 << 16) | 255;
+
+        // Exit from initialization mode
+        RTC->ISR &= ~RTC_ISR_INIT;
+
     }
 
-    // Set RTC prescaler
-    RTC->PRER = (127 << 16) | 255;
-
-    // Exit from initialization mode
-    RTC->ISR &= ~RTC_ISR_INIT;
-
-    // Enable RTC interrupt requests
-    NVIC_EnableIRQ(RTC_IRQn);
-
-    // Enable timer
+    // Disable timer
     RTC->CR &= ~RTC_CR_WUTE;
 
     // Wait until timer configuration update is allowed...
@@ -246,12 +250,6 @@ static void _bc_system_init_rtc(void)
     // Clear timer flag
     RTC->ISR &= ~RTC_ISR_WUTF;
 
-    // RTC IRQ needs to be configured through EXTI
-    EXTI->IMR |= EXTI_IMR_IM20;
-
-    // Enable rising edge trigger
-    EXTI->RTSR |= EXTI_IMR_IM20;
-
     // Enable timer interrupts
     RTC->CR |= RTC_CR_WUTIE;
 
@@ -260,6 +258,16 @@ static void _bc_system_init_rtc(void)
 
     // Enable write protection
     RTC->WPR = 0xff;
+
+
+    // RTC IRQ needs to be configured through EXTI
+    EXTI->IMR |= EXTI_IMR_IM20;
+
+    // Enable rising edge trigger
+    EXTI->RTSR |= EXTI_IMR_IM20;
+
+    // Enable RTC interrupt requests
+    NVIC_EnableIRQ(RTC_IRQn);
 }
 
 static void _bc_system_init_shutdown_tmp112(void)

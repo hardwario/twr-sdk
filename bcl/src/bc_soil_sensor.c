@@ -8,9 +8,9 @@
 #define _BC_SOIL_SENSOR_TMP112_ADDRESS   0x48
 #define _BC_SOIL_SENSOR_ZSSC3123_ADDRESS 0x28
 #define _BC_SOIL_SENSOR_EEPROM_ADDRESS   0x51
-#define _BC_SOIL_SENSOR_EEPROM_BANK_A    0
-#define _BC_SOIL_SENSOR_EEPROM_BANK_B    170
-#define _BC_SOIL_SENSOR_EEPROM_BANK_C    340
+#define _BC_SOIL_SENSOR_EEPROM_BANK_A    0x000
+#define _BC_SOIL_SENSOR_EEPROM_BANK_B    0x080
+#define _BC_SOIL_SENSOR_EEPROM_BANK_C    0x100
 
 static void _bc_soil_sensor_task_interval(void *param);
 static void _bc_soil_sensor_error(bc_soil_sensor_t *self, bc_soil_sensor_error_t error);

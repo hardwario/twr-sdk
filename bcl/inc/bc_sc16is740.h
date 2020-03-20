@@ -17,6 +17,18 @@ typedef enum
 
 } bc_sc16is740_fifo_t;
 
+//! @brief Baudrates
+
+typedef enum
+{
+    BC_SC16IS740_BAUDRATE_9600 = 88,
+    BC_SC16IS740_BAUDRATE_19200 = 44,
+    BC_SC16IS740_BAUDRATE_38400 = 22,
+    BC_SC16IS740_BAUDRATE_57600 = 15,
+    BC_SC16IS740_BAUDRATE_115200 = 7
+
+} bc_sc16is740_baudrate_t;
+
 //! @brief SC16IS740 instance
 
 //! @cond
@@ -79,6 +91,14 @@ bool bc_sc16is740_available(bc_sc16is740_t *self, size_t *available);
 //! @return Number of bytes read
 
 size_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, size_t length, bc_tick_t timeout);
+
+//! @brief Set baudrate
+//! @param[in] self Instance
+//! @param[in] baudrate
+//! @return true On success
+//! @return false On failure
+
+bool bc_sc16is740_set_baudrate(bc_sc16is740_t *self, bc_sc16is740_baudrate_t baudrate);
 
 //! @}
 

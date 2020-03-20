@@ -2,7 +2,7 @@
 #include <bc_irq.h>
 #include <stm32l0xx.h>
 
-#define BC_GPIO_CHANNEL_COUNT 20
+#define BC_GPIO_CHANNEL_COUNT 21
 
 #define BC_GPIO_PORT_P0 GPIOA
 #define BC_GPIO_PORT_P1 GPIOA
@@ -24,6 +24,7 @@
 #define BC_GPIO_PORT_P17 GPIOB
 #define BC_GPIO_PORT_LED GPIOH
 #define BC_GPIO_PORT_BUTTON GPIOA
+#define BC_GPIO_PORT_INT GPIOC
 
 #define BC_GPIO_POS_P0 0
 #define BC_GPIO_POS_P1 1
@@ -45,6 +46,7 @@
 #define BC_GPIO_POS_P17 9
 #define BC_GPIO_POS_LED 1
 #define BC_GPIO_POS_BUTTON 8
+#define BC_GPIO_POS_INT 13
 
 #define _BC_GPIO_MODE_MASK 0xf
 #define _BC_GPIO_MODE_AF_POS 4
@@ -71,7 +73,8 @@ GPIO_TypeDef * const bc_gpio_port[BC_GPIO_CHANNEL_COUNT] =
     BC_GPIO_PORT_P16,
     BC_GPIO_PORT_P17,
     BC_GPIO_PORT_LED,
-    BC_GPIO_PORT_BUTTON
+    BC_GPIO_PORT_BUTTON,
+    BC_GPIO_PORT_INT
 };
 
 static const uint8_t _bc_gpio_iopenr_mask[BC_GPIO_CHANNEL_COUNT] =
@@ -95,7 +98,8 @@ static const uint8_t _bc_gpio_iopenr_mask[BC_GPIO_CHANNEL_COUNT] =
     RCC_IOPENR_GPIOBEN, // P16
     RCC_IOPENR_GPIOBEN, // P17
     RCC_IOPENR_GPIOHEN, // LED
-    RCC_IOPENR_GPIOAEN  // BUTTON
+    RCC_IOPENR_GPIOAEN, // BUTTON
+    RCC_IOPENR_GPIOCEN  // INT
 };
 
 static const uint16_t _bc_gpio_16_bit_pos[BC_GPIO_CHANNEL_COUNT] =
@@ -119,7 +123,8 @@ static const uint16_t _bc_gpio_16_bit_pos[BC_GPIO_CHANNEL_COUNT] =
     BC_GPIO_POS_P16,
     BC_GPIO_POS_P17,
     BC_GPIO_POS_LED,
-    BC_GPIO_POS_BUTTON
+    BC_GPIO_POS_BUTTON,
+    BC_GPIO_POS_INT
 };
 
 static const uint16_t _bc_gpio_32_bit_pos[BC_GPIO_CHANNEL_COUNT] =
@@ -143,7 +148,8 @@ static const uint16_t _bc_gpio_32_bit_pos[BC_GPIO_CHANNEL_COUNT] =
     2 * BC_GPIO_POS_P16,
     2 * BC_GPIO_POS_P17,
     2 * BC_GPIO_POS_LED,
-    2 * BC_GPIO_POS_BUTTON
+    2 * BC_GPIO_POS_BUTTON,
+    2 * BC_GPIO_POS_INT
 };
 
 const uint16_t bc_gpio_16_bit_mask[BC_GPIO_CHANNEL_COUNT] =
@@ -167,12 +173,14 @@ const uint16_t bc_gpio_16_bit_mask[BC_GPIO_CHANNEL_COUNT] =
     1 << BC_GPIO_POS_P16,
     1 << BC_GPIO_POS_P17,
     1 << BC_GPIO_POS_LED,
-    1 << BC_GPIO_POS_BUTTON
+    1 << BC_GPIO_POS_BUTTON,
+    1 << BC_GPIO_POS_INT
 };
 
 static const uint32_t _bc_gpio_32_bit_mask[4][BC_GPIO_CHANNEL_COUNT] =
 {
     {
+        0UL,
         0UL,
         0UL,
         0UL,
@@ -214,7 +222,8 @@ static const uint32_t _bc_gpio_32_bit_mask[4][BC_GPIO_CHANNEL_COUNT] =
         1UL << (2 * BC_GPIO_POS_P16),
         1UL << (2 * BC_GPIO_POS_P17),
         1UL << (2 * BC_GPIO_POS_LED),
-        1UL << (2 * BC_GPIO_POS_BUTTON)
+        1UL << (2 * BC_GPIO_POS_BUTTON),
+        1UL << (2 * BC_GPIO_POS_INT)
     },
     {
         2UL << (2 * BC_GPIO_POS_P0),
@@ -236,7 +245,8 @@ static const uint32_t _bc_gpio_32_bit_mask[4][BC_GPIO_CHANNEL_COUNT] =
         2UL << (2 * BC_GPIO_POS_P16),
         2UL << (2 * BC_GPIO_POS_P17),
         2UL << (2 * BC_GPIO_POS_LED),
-        2UL << (2 * BC_GPIO_POS_BUTTON)
+        2UL << (2 * BC_GPIO_POS_BUTTON),
+        2UL << (2 * BC_GPIO_POS_INT)
     },
     {
         3UL << (2 * BC_GPIO_POS_P0),
@@ -258,7 +268,8 @@ static const uint32_t _bc_gpio_32_bit_mask[4][BC_GPIO_CHANNEL_COUNT] =
         3UL << (2 * BC_GPIO_POS_P16),
         3UL << (2 * BC_GPIO_POS_P17),
         3UL << (2 * BC_GPIO_POS_LED),
-        3UL << (2 * BC_GPIO_POS_BUTTON)
+        3UL << (2 * BC_GPIO_POS_BUTTON),
+        3UL << (2 * BC_GPIO_POS_INT)
     }
 };
 
@@ -283,7 +294,8 @@ const uint32_t bc_gpio_32_bit_upper_mask[BC_GPIO_CHANNEL_COUNT] =
     (1UL << 16) << BC_GPIO_POS_P16,
     (1UL << 16) << BC_GPIO_POS_P17,
     (1UL << 16) << BC_GPIO_POS_LED,
-    (1UL << 16) << BC_GPIO_POS_BUTTON
+    (1UL << 16) << BC_GPIO_POS_BUTTON,
+    (1UL << 16) << BC_GPIO_POS_INT
 };
 
 void bc_gpio_init(bc_gpio_channel_t channel)

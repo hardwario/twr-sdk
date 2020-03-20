@@ -46,6 +46,11 @@ bool bc_module_gps_init(void)
         return false;
     }
 
+    if (!bc_tca9534a_write_pin(&_bc_module_gps.tca9534, BC_TCA9534A_PIN_P7, 1))
+    {
+        return false;
+    }
+
     bc_sam_m8q_init(&_bc_module_gps.sam_m8q, BC_I2C_I2C0, 0x42, &_bc_module_gps.sam_m8q_driver);
     bc_sam_m8q_set_event_handler(&_bc_module_gps.sam_m8q, _bc_module_gps_sam_m8q_event_handler, NULL);
 
@@ -91,6 +96,11 @@ bool bc_module_gps_get_altitude(bc_module_gps_altitude_t *altitude)
 bool bc_module_gps_get_quality(bc_module_gps_quality_t *quality)
 {
     return bc_sam_m8q_get_quality(&_bc_module_gps.sam_m8q, quality);
+}
+
+bool bc_module_gps_get_accuracy(bc_module_gps_accuracy_t *accuracy)
+{
+    return bc_sam_m8q_get_accuracy(&_bc_module_gps.sam_m8q, accuracy);
 }
 
 const bc_led_driver_t *bc_module_gps_get_led_driver(void)

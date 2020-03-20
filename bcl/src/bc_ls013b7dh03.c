@@ -91,7 +91,7 @@ uint32_t bc_ls013b7dh03_get_pixel(bc_ls013b7dh03_t *self, int x, int y)
     // Select column byte
     byteIndex += x / 8;
 
-    return (self->_framebuffer[byteIndex] >> (7 - (x % 8))) & 1;
+    return (self->_framebuffer[byteIndex] >> (7 - (x % 8))) & 1 ? 0 : 1;
 }
 
 /*

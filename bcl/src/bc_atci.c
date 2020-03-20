@@ -2,10 +2,9 @@
 #include <bc_scheduler.h>
 #include <bc_system.h>
 
-#define _BC_ATCI_UART_VBUS_SCAN_TIME     200
-
 static void _bc_atci_uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void  *event_param);
-static void _bc_atci_uart_vbus_sense_test_task(void  *param);
+static void _bc_atci_uart_active_test(void);
+static void _bc_atci_uart_active_test_task(void  *param);
 
 static struct
 {
@@ -17,13 +16,18 @@ static struct
     bool rx_error;
     uint8_t read_fifo_buffer[128];
     bc_fifo_t read_fifo;
-    bc_tick_t vbus_sense_test_task_id;
+    bc_scheduler_task_id_t vbus_sense_test_task_id;
     bool ready;
+    bool (*uart_active_callback)(void);
+    bc_tick_t scan_interval;
+    bool write_response;
 
 } _bc_atci;
 
 void bc_atci_init(const bc_atci_command_t *commands, int length)
 {
+    memset(&_bc_atci, 0, sizeof(_bc_atci));
+
     _bc_atci.commands = commands;
 
     _bc_atci.commands_length = length;
@@ -32,9 +36,11 @@ void bc_atci_init(const bc_atci_command_t *commands, int length)
 
     _bc_atci.rx_error = false;
 
+    _bc_atci.write_response = true;
+
     bc_fifo_init(&_bc_atci.read_fifo, _bc_atci.read_fifo_buffer, sizeof(_bc_atci.read_fifo_buffer));
 
-    _bc_atci.vbus_sense_test_task_id = bc_scheduler_register(_bc_atci_uart_vbus_sense_test_task, NULL, 0);
+    bc_atci_set_uart_active_callback(bc_system_get_vbus_sense, 200);
 }
 
 void bc_atci_printf(const char *format, ...)
@@ -58,6 +64,13 @@ void bc_atci_printf(const char *format, ...)
     _bc_atci.tx_buffer[length++] = '\n';
 
     bc_uart_write(BC_ATCI_UART, _bc_atci.tx_buffer, length);
+}
+
+bool bc_atci_skip_response(void)
+{
+    _bc_atci.write_response = false;
+
+    return true;
 }
 
 void bc_atci_write_ok(void)
@@ -178,15 +191,24 @@ static void _bc_atci_process_character(char character)
     {
         if (!_bc_atci.rx_error && _bc_atci.rx_length > 0)
         {
-            if (_bc_atci_process_line())
+            bool response = _bc_atci_process_line();
+
+            if (_bc_atci.write_response)
             {
-                bc_atci_write_ok();
+                if (response)
+                {
+                    bc_atci_write_ok();
+                }
+                else
+                {
+                    bc_atci_write_error();
+                }
             }
             else
             {
-                bc_atci_write_error();
+                _bc_atci.write_response = true;
             }
-        } 
+        }
         else if (_bc_atci.rx_error)
         {
             bc_atci_write_error();
@@ -240,11 +262,175 @@ static void _bc_atci_uart_event_handler(bc_uart_channel_t channel, bc_uart_event
     }
 }
 
-static void _bc_atci_uart_vbus_sense_test_task(void *param)
+bool bc_atci_get_uint(bc_atci_param_t *param, uint32_t *value)
 {
-    (void) param;
+    char c;
 
-    if (bc_system_get_vbus_sense())
+    *value = 0;
+
+    while (param->offset < param->length)
+    {
+        c = param->txt[param->offset];
+
+        if (isdigit(c))
+        {
+            *value *= 10;
+            *value += c - '0';
+        }
+        else
+        {
+            if (c == ',')
+            {
+                return true;
+            }
+            return false;
+        }
+
+        param->offset++;
+    }
+
+    return true;
+}
+
+bool bc_atci_get_string(bc_atci_param_t *param, char *str, size_t length)
+{
+    if (((param->length - param->offset) < 2) || (length < 1) || (str == NULL))
+    {
+        return false;
+    }
+
+    if (param->txt[param->offset++] != '"')
+    {
+        return false;
+    }
+
+    char c;
+    size_t i;
+
+    for (i = 0; (i < length) && (param->offset < param->length); i++)
+    {
+        c = param->txt[param->offset++];
+
+        if (c == '"')
+        {
+            str[i] = 0;
+
+            return true;
+        }
+
+        if ((c < ' ') || (c == ',') || (c > '~'))
+        {
+            return false;
+        }
+
+        str[i] = c;
+    }
+
+    return false;
+}
+
+bool bc_atci_get_buffer_from_hex_string(bc_atci_param_t *param, void *buffer, size_t *length)
+{
+    if (((param->length - param->offset) < 2) || (*length < 1) || (buffer == NULL))
+    {
+        return false;
+    }
+
+    if (param->txt[param->offset++] != '"')
+    {
+        return false;
+    }
+
+    char c;
+    size_t i;
+    size_t max_i = *length * 2;
+    uint8_t temp;
+    size_t l = 0;
+
+    for (i = 0; (i < max_i) && (param->offset < param->length); i++)
+    {
+        c = param->txt[param->offset++];
+
+        if (c == '"')
+        {
+            *length = l;
+
+            return true;
+        }
+
+        if ((c >= '0') && (c <= '9'))
+        {
+            temp = c - '0';
+        }
+        else if ((c >= 'A') && (c <= 'F'))
+        {
+            temp = c - 'A' + 10;
+        }
+        else if ((c >= 'a') && (c <= 'f'))
+        {
+            temp = c - 'a' + 10;
+        }
+        else
+        {
+            return false;
+        }
+
+        if (i % 2 == 0)
+        {
+            if (l == *length)
+            {
+                return false;
+            }
+
+            ((uint8_t *) buffer)[l] = temp << 4;
+        }
+        else
+        {
+            ((uint8_t *) buffer)[l++] |= temp;
+        }
+    }
+
+    return false;
+}
+
+bool bc_atci_is_comma(bc_atci_param_t *param)
+{
+    return param->txt[param->offset++] == ',';
+}
+
+bool bc_atci_is_quotation_mark(bc_atci_param_t *param)
+{
+    return param->txt[param->offset++] == '"';
+}
+
+void bc_atci_set_uart_active_callback(bool(*callback)(void), bc_tick_t scan_interval)
+{
+    _bc_atci.uart_active_callback = callback;
+    _bc_atci.scan_interval = scan_interval;
+
+    if (callback == NULL)
+    {
+        if (_bc_atci.vbus_sense_test_task_id)
+        {
+            bc_scheduler_unregister(_bc_atci.vbus_sense_test_task_id);
+
+            _bc_atci.vbus_sense_test_task_id = 0;
+        }
+    }
+    else
+    {
+        if (_bc_atci.vbus_sense_test_task_id == 0)
+        {
+            _bc_atci.vbus_sense_test_task_id = bc_scheduler_register(_bc_atci_uart_active_test_task, NULL, scan_interval);
+        }
+    }
+
+    _bc_atci_uart_active_test();
+}
+
+static void _bc_atci_uart_active_test(void)
+{
+    if ((_bc_atci.uart_active_callback == NULL) || _bc_atci.uart_active_callback())
     {
         if (!_bc_atci.ready)
         {
@@ -270,6 +456,13 @@ static void _bc_atci_uart_vbus_sense_test_task(void *param)
             bc_uart_deinit(BC_ATCI_UART);
         }
     }
+}
 
-    bc_scheduler_plan_current_relative(_BC_ATCI_UART_VBUS_SCAN_TIME);
+static void _bc_atci_uart_active_test_task(void *param)
+{
+    (void) param;
+
+    _bc_atci_uart_active_test();
+
+    bc_scheduler_plan_current_relative(_bc_atci.scan_interval);
 }

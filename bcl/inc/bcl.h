@@ -37,6 +37,7 @@
 #include <bc_ls013b7dh03.h>
 #include <bc_cmwx1zzabz.h>
 #include <bc_sam_m8q.h>
+#include <bc_esp8266.h>
 
 // BigClown tags
 
@@ -57,6 +58,7 @@
 #include <bc_module_pir.h>
 #include <bc_module_power.h>
 #include <bc_module_relay.h>
+#include <bc_module_rs485.h>
 #include <bc_module_sigfox.h>
 #include <bc_module_lcd.h>
 #include <bc_module_co2.h>
@@ -66,6 +68,7 @@
 // Other
 
 #include <bc_analog_sensor.h>
+#include <bc_config.h>
 #include <bc_data_stream.h>
 #include <bc_flood_detector.h>
 #include <bc_pulse_counter.h>
@@ -77,9 +80,11 @@
 #include <bc_timer.h>
 #include <bc_error.h>
 #include <bc_dice.h>
+#include <bc_ramp.h>
 #include <bc_gfx.h>
 #include <bc_atci.h>
 #include <bc_base64.h>
+#include <bc_sha256.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 

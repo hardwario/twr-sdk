@@ -27,6 +27,8 @@ typedef struct bc_module_lcd_t
     bc_ls013b7dh03_t ls013b7dh03;
     bc_gfx_t gfx;
 
+    bc_button_t button_left;
+    bc_button_t button_right;
 
 } bc_module_lcd_t;
 
@@ -172,6 +174,107 @@ bool bc_module_lcd_update(void)
 void bc_module_lcd_set_font(const bc_font_t *font)
 {
     bc_gfx_set_font(&_bc_module_lcd.gfx, font);
+}
+
+static void _bc_module_lcd_button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param)
+{
+    (void) event_param;
+
+    if (self == &_bc_module_lcd.button_left)
+    {
+        if (event == BC_BUTTON_EVENT_PRESS)
+        {
+            _bc_module_lcd.event_handler(BC_MODULE_LCD_EVENT_LEFT_PRESS, _bc_module_lcd.event_param);
+        }
+        if (event == BC_BUTTON_EVENT_RELEASE)
+        {
+            _bc_module_lcd.event_handler(BC_MODULE_LCD_EVENT_LEFT_RELEASE, _bc_module_lcd.event_param);
+        }
+        if (event == BC_BUTTON_EVENT_CLICK)
+        {
+            _bc_module_lcd.event_handler(BC_MODULE_LCD_EVENT_LEFT_CLICK, _bc_module_lcd.event_param);
+        }
+        if (event == BC_BUTTON_EVENT_HOLD)
+        {
+            if (_bc_module_lcd.button_right._state)
+            {
+                _bc_module_lcd.event_handler(BC_MODULE_LCD_EVENT_BOTH_HOLD, _bc_module_lcd.event_param);
+                // Force _hold_signalized to true, so the hold event of the second button won't trigger which would cause event duplication
+                _bc_module_lcd.button_right._hold_signalized = true;
+            }
+            else
+            {
+                _bc_module_lcd.event_handler(BC_MODULE_LCD_EVENT_LEFT_HOLD, _bc_module_lcd.event_param);
+            }
+        }
+    }
+
+    if (self == &_bc_module_lcd.button_right)
+    {
+        if (event == BC_BUTTON_EVENT_PRESS)
+        {
+            _bc_module_lcd.event_handler(BC_MODULE_LCD_EVENT_RIGHT_PRESS, _bc_module_lcd.event_param);
+        }
+        if (event == BC_BUTTON_EVENT_RELEASE)
+        {
+            _bc_module_lcd.event_handler(BC_MODULE_LCD_EVENT_RIGHT_RELEASE, _bc_module_lcd.event_param);
+        }
+        if (event == BC_BUTTON_EVENT_CLICK)
+        {
+            _bc_module_lcd.event_handler(BC_MODULE_LCD_EVENT_RIGHT_CLICK, _bc_module_lcd.event_param);
+        }
+        if (event == BC_BUTTON_EVENT_HOLD)
+        {
+            if (_bc_module_lcd.button_left._state)
+            {
+                _bc_module_lcd.event_handler(BC_MODULE_LCD_EVENT_BOTH_HOLD, _bc_module_lcd.event_param);
+                // Force _hold_signalized to true, so the hold event of the second button won't trigger which would cause event duplication
+                _bc_module_lcd.button_left._hold_signalized = true;
+            }
+            else
+            {
+                _bc_module_lcd.event_handler(BC_MODULE_LCD_EVENT_RIGHT_HOLD, _bc_module_lcd.event_param);
+            }
+        }
+    }
+}
+
+void bc_module_lcd_set_event_handler(void (*event_handler)(bc_module_lcd_event_t, void *), void *event_param)
+{
+    _bc_module_lcd.event_handler = event_handler;
+    _bc_module_lcd.event_param = event_param;
+
+    const bc_button_driver_t* lcdButtonDriver =  bc_module_lcd_get_button_driver();
+
+    bc_button_init_virtual(&_bc_module_lcd.button_left, 0, lcdButtonDriver, 0);
+    bc_button_init_virtual(&_bc_module_lcd.button_right, 1, lcdButtonDriver, 0);
+
+    bc_button_set_event_handler(&_bc_module_lcd.button_left, _bc_module_lcd_button_event_handler, (int*)0);
+    bc_button_set_event_handler(&_bc_module_lcd.button_right, _bc_module_lcd_button_event_handler, (int*)1);
+}
+
+void bc_module_lcd_set_button_hold_time(bc_tick_t hold_time)
+{
+    bc_button_set_hold_time(&_bc_module_lcd.button_left, hold_time);
+    bc_button_set_hold_time(&_bc_module_lcd.button_right, hold_time);
+}
+
+void bc_module_lcd_set_button_scan_interval(bc_tick_t scan_interval)
+{
+    bc_button_set_scan_interval(&_bc_module_lcd.button_left, scan_interval);
+    bc_button_set_scan_interval(&_bc_module_lcd.button_right, scan_interval);
+}
+
+void bc_module_lcd_set_button_debounce_time(bc_tick_t debounce_time)
+{
+    bc_button_set_debounce_time(&_bc_module_lcd.button_left, debounce_time);
+    bc_button_set_debounce_time(&_bc_module_lcd.button_right, debounce_time);
+}
+
+void bc_module_lcd_set_button_click_timeout(bc_tick_t click_timeout)
+{
+    bc_button_set_click_timeout(&_bc_module_lcd.button_left, click_timeout);
+    bc_button_set_click_timeout(&_bc_module_lcd.button_right, click_timeout);
 }
 
 void bc_module_lcd_set_rotation(bc_module_lcd_rotation_t rotation)
