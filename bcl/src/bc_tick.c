@@ -20,6 +20,16 @@ bc_tick_t bc_tick_get(void)
     return tick;
 }
 
+void bc_tick_wait(bc_tick_t delay)
+{
+    bc_tick_t timeout = bc_tick_get() + delay;
+
+    while (bc_tick_get() < timeout)
+    {
+        continue;
+    }
+}
+
 void bc_tick_inrement_irq(bc_tick_t delta)
 {
     _bc_tick_counter += delta;
