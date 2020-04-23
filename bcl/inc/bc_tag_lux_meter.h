@@ -4,7 +4,7 @@
 #include <bc_opt3001.h>
 
 //! @addtogroup bc_tag_lux_meter bc_tag_lux_meter
-//! @brief Driver for BigClown Lux Meter Tag
+//! @brief Driver for HARDWARIO Lux Meter Module
 //! @{
 
 //! @brief I2C address
@@ -31,11 +31,11 @@ typedef enum
 
 } bc_tag_lux_meter_event_t;
 
-//! @brief BigClown Lux Meter Tag instance
+//! @brief HARDWARIO Lux Meter Module instance
 
 typedef bc_opt3001_t bc_tag_lux_meter_t;
 
-//! @brief Initialize BigClown Lux Meter Tag
+//! @brief Initialize HARDWARIO Lux Meter Module
 //! @param[in] self Instance
 //! @param[in] i2c_channel I2C channel
 //! @param[in] i2c_address I2C device address

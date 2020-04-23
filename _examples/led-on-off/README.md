@@ -7,7 +7,7 @@ This example demonstrates simple use of bc_led and bc_button API.
 ## Requirements
 
 
-* BigClown Core Module
+* HARDWARIO Core Module
 
 
 ## Principle

@@ -4,7 +4,7 @@
 #include <bc_tick.h>
 
 //! @addtogroup bc_module_climate bc_module_climate
-//! @brief Driver for BigClown Climate Module
+//! @brief Driver for HARDWARIO Climate Module
 //! @{
 
 //! @brief Callback events
@@ -49,7 +49,7 @@ typedef enum
 
 } bc_module_climate_revision_t;
 
-//! @brief Initialize BigClown Climate Module
+//! @brief Initialize HARDWARIO Climate Module
 
 void bc_module_climate_init(void);
 

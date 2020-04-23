@@ -4,7 +4,7 @@
 #include <bc_mpl3115a2.h>
 
 //! @addtogroup bc_tag_barometer bc_tag_barometer
-//! @brief Driver for BigClown Barometer Tag
+//! @brief Driver for HARDWARIO Barometer Module
 //! @{
 
 //! @brief Callback events
@@ -19,11 +19,11 @@ typedef enum
 
 } bc_tag_barometer_event_t;
 
-//! @brief BigClown Barometer Tag instance
+//! @brief HARDWARIO Barometer Module instance
 
 typedef bc_mpl3115a2_t bc_tag_barometer_t;
 
-//! @brief Initialize BigClown Barometer Tag
+//! @brief Initialize HARDWARIO Barometer Module
 //! @param[in] self Instance
 //! @param[in] i2c_channel I2C channel
 

@@ -7,7 +7,7 @@
 #include <bc_sht30.h>
 
 //! @addtogroup bc_tag_humidity bc_tag_humidity
-//! @brief Driver for BigClown Humidity Tag
+//! @brief Driver for HARDWARIO Humidity Module
 //! @{
 
 //! @brief Humidity Tag hardware revision
@@ -53,7 +53,7 @@ typedef enum
 
 } bc_tag_humidity_event_t;
 
-//! @brief BigClown Humidity Tag instance
+//! @brief HARDWARIO Humidity Module instance
 
 typedef struct bc_tag_humidity_t bc_tag_humidity_t;
 
@@ -75,7 +75,7 @@ struct bc_tag_humidity_t
 
 //! @endcond
 
-//! @brief Initialize BigClown Humidity Tag
+//! @brief Initialize HARDWARIO Humidity Module
 //! @param[in] self Instance
 //! @param[in] revision Hardware revision of connected Humidity Tag
 //! @param[in] i2c_channel I2C channel

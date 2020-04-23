@@ -7,11 +7,11 @@ This example demonstrates implementation of simple motion sensor based on PIR - 
 ## Requirements
 
 
-* BigClown Core Module
+* HARDWARIO Core Module
 
-* BigClown PIR Module
+* HARDWARIO PIR Module
 
-* BigClown Mini Battery Module
+* HARDWARIO Mini Battery Module
 
 
 ## Principle

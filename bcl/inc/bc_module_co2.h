@@ -5,7 +5,7 @@
 #include <bc_lp8.h>
 
 //! @addtogroup bc_module_co2 bc_module_co2
-//! @brief Driver for BigClown CO2 Module
+//! @brief Driver for HARDWARIO CO2 Module
 //! @{
 
 //! @brief Callback events
@@ -20,7 +20,7 @@ typedef enum
 
 } bc_module_co2_event_t;
 
-//! @brief Initialize BigClown CO2 Module
+//! @brief Initialize HARDWARIO CO2 Module
 
 void bc_module_co2_init(void);
 

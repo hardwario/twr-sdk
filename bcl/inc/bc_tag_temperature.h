@@ -4,7 +4,7 @@
 #include <bc_tmp112.h>
 
 //! @addtogroup bc_tag_temperature bc_tag_temperature
-//! @brief Driver for BigClown Temperature Tag
+//! @brief Driver for HARDWARIO Temperature Module
 //! @{
 
 //! @brief I2C address
@@ -31,11 +31,11 @@ typedef enum
 
 } bc_tag_temperature_event_t;
 
-//! @brief BigClown Temperature Tag instance
+//! @brief HARDWARIO Temperature Module instance
 
 typedef bc_tmp112_t bc_tag_temperature_t;
 
-//! @brief Initialize BigClown Temperature Tag
+//! @brief Initialize HARDWARIO Temperature Module
 //! @param[in] self Instance
 //! @param[in] i2c_channel I2C channel
 //! @param[in] i2c_address I2C device address

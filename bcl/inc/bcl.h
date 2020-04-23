@@ -39,7 +39,7 @@
 #include <bc_sam_m8q.h>
 #include <bc_esp8266.h>
 
-// BigClown tags
+// HARDWARIO tags
 
 #include <bc_tag_barometer.h>
 #include <bc_tag_humidity.h>
@@ -49,7 +49,7 @@
 #include <bc_tag_voc.h>
 #include <bc_tag_voc_lp.h>
 
-// BigClown modules
+// HARDWARIO modules
 
 #include <bc_module_battery.h>
 #include <bc_module_climate.h>
@@ -92,9 +92,9 @@
 //! Here you will find all the documented firmware SDK APIs.
 //!
 //! The SDK currently supports the following hardware platforms:
-//! \li BigClown Core Module
-//! \li BigClown USB Dongle
-//! \li BigClown Cloony
+//! \li HARDWARIO Core Module
+//! \li HARDWARIO USB Dongle
+//! \li HARDWARIO Cloony
 //!
 //! Go to the <a href="modules.html"><b>Modules</b></a> page for complete listing.
 //!

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <preset>
-  <name>Bigclown LCD Module</name>
+  <name>HARDWARIO LCD Module</name>
   <prepare>
     <convType>0</convType>
     <monoType>1</monoType>
