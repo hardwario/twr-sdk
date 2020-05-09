@@ -15,7 +15,10 @@ typedef enum
     BC_MODULE_SENSOR_CHANNEL_A = 0,
 
     //! @brief Channel B
-    BC_MODULE_SENSOR_CHANNEL_B = 1
+    BC_MODULE_SENSOR_CHANNEL_B = 1,
+
+    //! @brief Channel C
+    BC_MODULE_SENSOR_CHANNEL_C = 2
 
 } bc_module_sensor_channel_t;
 
@@ -24,19 +27,19 @@ typedef enum
 typedef enum
 {
     //! @brief Channel has no pull
-    BC_MODULE_SENSOR_PULL_NONE = 0,
-
-    //! @brief Channel has pull-up 4k7
-    BC_MODULE_SENSOR_PULL_UP_4K7 = 1,
-
-    //! @brief Channel has pull-up 56R
-    BC_MODULE_SENSOR_PULL_UP_56R = 2,
+    BC_MODULE_SENSOR_PULL_NONE = BC_GPIO_PULL_NONE,
 
     //! @brief Channel has internal pull-up
-    BC_MODULE_SENSOR_PULL_UP_INTERNAL = 3,
+    BC_MODULE_SENSOR_PULL_UP_INTERNAL = BC_GPIO_PULL_UP,
 
     //! @brief Channel has internal pull-down
-    BC_MODULE_SENSOR_PULL_DOWN_INTERNAL = 4
+    BC_MODULE_SENSOR_PULL_DOWN_INTERNAL = BC_GPIO_PULL_DOWN,
+
+    //! @brief Channel has pull-up 4k7
+    BC_MODULE_SENSOR_PULL_UP_4K7 = 3,
+
+    //! @brief Channel has pull-up 56R
+    BC_MODULE_SENSOR_PULL_UP_56R = 4,
 
 } bc_module_sensor_pull_t;
 
