@@ -9,8 +9,8 @@
 
 This repository contains firmware SDK for:
 
-* HARDWARIO Nuclear Module
-* HARDWARIO USB Dongle
+* HARDWARIO Core Module
+* HARDWARIO Radio Dongle
 * HARDWARIO Cloony
 
 ## Introduction
