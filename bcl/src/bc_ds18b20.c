@@ -234,6 +234,7 @@ static bool _bc_ds18b20_power_down(bc_ds18b20_t *self)
 
 static bool _bc_ds18b20_is_scratchpad_valid(uint8_t *scratchpad)
 {
+    #ifdef BC_DS18B20_STRICT_VALIDATION
     if (scratchpad[5] != 0xff)
     {
         return false;
@@ -243,6 +244,7 @@ static bool _bc_ds18b20_is_scratchpad_valid(uint8_t *scratchpad)
     {
         return false;
     }
+    #endif
 
     if (bc_onewire_crc8(scratchpad, _BC_DS18B20_SCRATCHPAD_SIZE, 0) != 0)
     {
