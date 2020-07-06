@@ -1,6 +1,4 @@
 #include <application.h>
-#include <bc_ds18b20.h>
-
 /*
 
  SENSOR MODULE CONNECTION

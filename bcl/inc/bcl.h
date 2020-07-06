@@ -85,6 +85,8 @@
 #include <bc_atci.h>
 #include <bc_base64.h>
 #include <bc_sha256.h>
+#include <bc_ds18b20.h>
+
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 

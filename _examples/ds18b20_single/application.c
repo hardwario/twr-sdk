@@ -1,5 +1,4 @@
 #include <application.h>
-#include <bc_ds18b20.h>
 
 /*
 
@@ -34,7 +33,7 @@ void ds18b20_event_handler(bc_ds18b20_t *self, uint64_t device_address, bc_ds18b
     {
         bc_ds18b20_get_temperature_celsius(self, device_address, &temperature);
 
-        bc_log_debug("UPDATE %" PRIx64 " (%d) = %0.2f", device_address, temperature);
+        bc_log_debug("UPDATE %" PRIx64 " = %0.2f", device_address, temperature);
     }
     else
     {
