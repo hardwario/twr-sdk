@@ -7,6 +7,7 @@ typedef struct bc_timer_irq_t
 } bc_timer_irq_t;
 
 bc_timer_irq_t bc_timer_tim3_irq;
+bc_timer_irq_t bc_timer_tim6_irq;
 
 const uint16_t _bc_timer_prescaler_lut[3] =
 {
@@ -63,17 +64,29 @@ void bc_timer_clear_irq_handler(TIM_TypeDef *tim)
     {
         bc_timer_tim3_irq.irq_handler = NULL;
     }
+    if (tim == TIM6)
+    {
+        bc_timer_tim6_irq.irq_handler = NULL;
+    }
 }
 
 bool bc_timer_set_irq_handler(TIM_TypeDef *tim, void (*irq_handler)(void *), void *irq_param)
 {
-    //application_error
     if (tim == TIM3)
     {
         if (bc_timer_tim3_irq.irq_handler == NULL)
         {
             bc_timer_tim3_irq.irq_handler = irq_handler;
             bc_timer_tim3_irq.irq_param = irq_param;
+            return true;
+        }
+    }
+    if (tim == TIM6)
+    {
+        if (bc_timer_tim6_irq.irq_handler == NULL)
+        {
+            bc_timer_tim6_irq.irq_handler = irq_handler;
+            bc_timer_tim6_irq.irq_param = irq_param;
             return true;
         }
     }
@@ -86,5 +99,13 @@ void TIM3_IRQHandler(void)
     if (bc_timer_tim3_irq.irq_handler)
     {
         bc_timer_tim3_irq.irq_handler(bc_timer_tim3_irq.irq_param);
+    }
+}
+
+void TIM6_IRQHandler()
+{
+    if (bc_timer_tim6_irq.irq_handler)
+    {
+        bc_timer_tim6_irq.irq_handler(bc_timer_tim6_irq.irq_param);
     }
 }
