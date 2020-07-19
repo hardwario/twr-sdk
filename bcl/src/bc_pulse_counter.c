@@ -9,6 +9,7 @@ typedef struct
     bc_tick_t update_interval;
     void (*event_handler)(bc_module_sensor_channel_t, bc_pulse_counter_event_t, void *);
     void *event_param;
+    bool pending_event_flag;
     bc_pulse_counter_event_t pending_event;
     bc_scheduler_task_id_t task_id;
 
@@ -80,16 +81,23 @@ static void _bc_pulse_counter_channel_task_update(void *param)
 {
     bc_pulse_counter_t *self = param;
 
-    if (self->event_handler != NULL)
+    if (self->pending_event_flag)
     {
-        if (self->pending_event == BC_PULSE_COUNTER_EVENT_OVERFLOW)
+        self->pending_event_flag = false;
+
+        if (self->event_handler != NULL)
         {
-            self->event_handler(self->channel, BC_PULSE_COUNTER_EVENT_OVERFLOW, self->event_param);
-            self->pending_event = BC_PULSE_COUNTER_EVENT_UPDATE;
-        }
-        else
-        {
-            self->event_handler(self->channel, BC_PULSE_COUNTER_EVENT_UPDATE, self->event_param);
+            if (self->pending_event == BC_PULSE_COUNTER_EVENT_OVERFLOW)
+            {
+                self->event_handler(self->channel, BC_PULSE_COUNTER_EVENT_OVERFLOW, self->event_param);
+
+                self->pending_event_flag = true;
+                self->pending_event = BC_PULSE_COUNTER_EVENT_UPDATE;
+            }
+            else if (self->pending_event == BC_PULSE_COUNTER_EVENT_UPDATE)
+            {
+                self->event_handler(self->channel, BC_PULSE_COUNTER_EVENT_UPDATE, self->event_param);
+            }
         }
     }
 
@@ -102,9 +110,14 @@ static void _bc_pulse_counter_channel_exti(bc_exti_line_t line, void *param)
     bc_module_sensor_channel_t channel = *(bc_module_sensor_channel_t *) param;
 
     _bc_module_pulse_counter[channel].count++;
+
+    _bc_module_pulse_counter[channel].pending_event_flag = true;
+    _bc_module_pulse_counter[channel].pending_event = BC_PULSE_COUNTER_EVENT_UPDATE;
+
     if (_bc_module_pulse_counter[channel].count == 0)
     {
         _bc_module_pulse_counter[channel].pending_event = BC_PULSE_COUNTER_EVENT_OVERFLOW;
-        bc_scheduler_plan_now(_bc_module_pulse_counter[channel].task_id);
     }
+
+    bc_scheduler_plan_now(_bc_module_pulse_counter[channel].task_id);
 }
