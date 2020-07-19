@@ -387,7 +387,10 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+DR?\r") == 0 && response_valid)
                 {
-                    self->_config.datarate = atoi(response_string_value);
+                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DATARATE) == 0)
+                    {
+                        self->_config.datarate = atoi(response_string_value);
+                    }
                     response_handled = 1;
                 }
                 else if (strcmp(last_command, "AT+DUTYCYCLE=0\r") == 0 && strcmp(self->_response, "+ERR=-17\r") == 0)

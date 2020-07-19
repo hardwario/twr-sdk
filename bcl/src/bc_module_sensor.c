@@ -19,22 +19,11 @@ static struct
 
 } _bc_module_sensor;
 
-static const bc_gpio_channel_t _bc_module_sensor_channel_gpio_lut[2] =
+static const bc_gpio_channel_t _bc_module_sensor_channel_gpio_lut[3] =
 {
     [BC_MODULE_SENSOR_CHANNEL_A] = BC_GPIO_P4,
-    [BC_MODULE_SENSOR_CHANNEL_B] = BC_GPIO_P5
-};
-
-static const bc_tca9534a_pin_t _bc_module_sensor_channel_virtual_4k7_lut[2] =
-{
-    [BC_MODULE_SENSOR_CHANNEL_A] = _BC_MODULE_SENSOR_CH_A_4K7,
-    [BC_MODULE_SENSOR_CHANNEL_B] = _BC_MODULE_SENSOR_CH_B_4K7
-};
-
-static const bc_tca9534a_pin_t _bc_module_sensor_channel_virtual_56r_lut[2] =
-{
-    [BC_MODULE_SENSOR_CHANNEL_A] = _BC_MODULE_SENSOR_CH_A_56R,
-    [BC_MODULE_SENSOR_CHANNEL_B] = _BC_MODULE_SENSOR_CH_B_56R
+    [BC_MODULE_SENSOR_CHANNEL_B] = BC_GPIO_P5,
+    [BC_MODULE_SENSOR_CHANNEL_C] = BC_GPIO_P7,
 };
 
 bool bc_module_sensor_init(void)
@@ -58,6 +47,7 @@ bool bc_module_sensor_init(void)
 
         bc_gpio_init(_bc_module_sensor_channel_gpio_lut[BC_MODULE_SENSOR_CHANNEL_A]);
         bc_gpio_init(_bc_module_sensor_channel_gpio_lut[BC_MODULE_SENSOR_CHANNEL_B]);
+        bc_gpio_init(_bc_module_sensor_channel_gpio_lut[BC_MODULE_SENSOR_CHANNEL_C]);
 
         _bc_module_sensor.initialized = true;
     }
@@ -76,10 +66,28 @@ bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sen
     uint8_t port_new;
 
     port_actual = _bc_module_sensor.tca9534a._output_port;
-
 //    bc_tca9534a_read_port(&_bc_module_sensor.tca9534a, &port_actual);
 
-    port_new = port_actual | _bc_module_sensor_channel_virtual_4k7_lut[channel] | _bc_module_sensor_channel_virtual_56r_lut[channel];
+    port_new = port_actual;
+
+    switch (channel)
+    {
+        case BC_MODULE_SENSOR_CHANNEL_A:
+        {
+            port_new |= _BC_MODULE_SENSOR_CH_A_4K7 | _BC_MODULE_SENSOR_CH_A_56R;
+            break;
+        }
+        case BC_MODULE_SENSOR_CHANNEL_B:
+        {
+            port_new |= _BC_MODULE_SENSOR_CH_B_4K7 | _BC_MODULE_SENSOR_CH_B_56R;
+            break;
+        }
+        case BC_MODULE_SENSOR_CHANNEL_C:
+        default:
+        {
+            break;
+        }
+    }
 
     switch (pull)
     {
@@ -93,16 +101,46 @@ bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sen
         }
         case BC_MODULE_SENSOR_PULL_UP_4K7:
         {
-            port_new &= ~_bc_module_sensor_channel_virtual_4k7_lut[channel];
-            bc_gpio_set_pull(_bc_module_sensor_channel_gpio_lut[channel], BC_GPIO_PULL_NONE);
-
+            switch (channel)
+            {
+                case BC_MODULE_SENSOR_CHANNEL_A:
+                {
+                    port_new &= ~_BC_MODULE_SENSOR_CH_A_4K7;
+                    break;
+                }
+                case BC_MODULE_SENSOR_CHANNEL_B:
+                {
+                    port_new &= ~_BC_MODULE_SENSOR_CH_B_4K7;
+                    break;
+                }
+                case BC_MODULE_SENSOR_CHANNEL_C:
+                default:
+                {
+                    return false;
+                }
+            }
             break;
         }
         case BC_MODULE_SENSOR_PULL_UP_56R:
         {
-            port_new &= ~_bc_module_sensor_channel_virtual_56r_lut[channel];
-            bc_gpio_set_pull(_bc_module_sensor_channel_gpio_lut[channel], BC_GPIO_PULL_NONE);
-
+            switch (channel)
+            {
+                case BC_MODULE_SENSOR_CHANNEL_A:
+                {
+                    port_new &= ~_BC_MODULE_SENSOR_CH_A_56R;
+                    break;
+                }
+                case BC_MODULE_SENSOR_CHANNEL_B:
+                {
+                    port_new &= ~_BC_MODULE_SENSOR_CH_B_56R;
+                    break;
+                }
+                case BC_MODULE_SENSOR_CHANNEL_C:
+                default:
+                {
+                    return false;
+                }
+            }
             break;
         }
         case BC_MODULE_SENSOR_PULL_UP_INTERNAL:
@@ -123,6 +161,7 @@ bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sen
 
     if (port_actual != port_new)
     {
+        bc_gpio_set_pull(_bc_module_sensor_channel_gpio_lut[channel], BC_GPIO_PULL_NONE);
         return bc_tca9534a_write_port(&_bc_module_sensor.tca9534a, port_new);
     }
 
@@ -131,36 +170,36 @@ bool bc_module_sensor_set_pull(bc_module_sensor_channel_t channel, bc_module_sen
 
 bc_module_sensor_pull_t bc_module_sensor_get_pull(bc_module_sensor_channel_t channel)
 {
-    // TODO Implement better
+    if (channel == BC_MODULE_SENSOR_CHANNEL_A)
+    {
+        uint8_t port_actual = _bc_module_sensor.tca9534a._output_port;
 
-    int weak;
-    int strong;
-    bc_gpio_pull_t internal;
+        if ((port_actual & _BC_MODULE_SENSOR_CH_A_4K7) == 0)
+        {
+            return BC_MODULE_SENSOR_PULL_UP_4K7;
+        }
 
-    bc_tca9534a_read_pin(&_bc_module_sensor.tca9534a, _bc_module_sensor_channel_virtual_56r_lut[channel], &weak);
-    bc_tca9534a_read_pin(&_bc_module_sensor.tca9534a, _bc_module_sensor_channel_virtual_4k7_lut[channel], &strong);
-    internal = bc_gpio_get_pull(_bc_module_sensor_channel_gpio_lut[channel]);
+        if ((port_actual & _BC_MODULE_SENSOR_CH_A_56R) == 0)
+        {
+            return BC_MODULE_SENSOR_PULL_UP_56R;
+        }
+    }
+    if (channel == BC_MODULE_SENSOR_CHANNEL_B)
+    {
+        uint8_t port_actual = _bc_module_sensor.tca9534a._output_port;
 
-    if (!weak)
-    {
-        return BC_MODULE_SENSOR_PULL_UP_4K7;
+        if ((port_actual & _BC_MODULE_SENSOR_CH_B_4K7) == 0)
+        {
+            return BC_MODULE_SENSOR_PULL_UP_4K7;
+        }
+
+        if ((port_actual & _BC_MODULE_SENSOR_CH_B_56R) == 0)
+        {
+            return BC_MODULE_SENSOR_PULL_UP_56R;
+        }
     }
-    else if (!strong)
-    {
-        return BC_MODULE_SENSOR_PULL_UP_56R;
-    }
-    else if (internal == BC_GPIO_PULL_UP)
-    {
-        return BC_MODULE_SENSOR_PULL_UP_INTERNAL;
-    }
-    else if (internal == BC_GPIO_PULL_DOWN)
-    {
-        return BC_GPIO_PULL_DOWN;
-    }
-    else
-    {
-        return BC_GPIO_PULL_NONE;
-    }
+
+    return bc_gpio_get_pull(_bc_module_sensor_channel_gpio_lut[channel]);
 }
 
 void bc_module_sensor_set_mode(bc_module_sensor_channel_t channel, bc_module_sensor_mode_t mode)

@@ -194,7 +194,7 @@ start:
                 goto start;
             }
 
-            if (buffer[0] != 0x00 || buffer[1] != 0x20)
+            if (buffer[0] != 0x00 || (buffer[1] != 0x20 && buffer[1] != 0x22))
             {
                 goto start;
             }

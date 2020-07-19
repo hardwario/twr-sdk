@@ -7,11 +7,11 @@ This example demonstrates simple SigFox node powered from batteries.
 ## Requirements
 
 
-* BigClown Core Module
+* HARDWARIO Core Module
 
-* BigClown SigFox Module
+* HARDWARIO SigFox Module
 
-* BigClown Mini Battery Module
+* HARDWARIO Mini Battery Module
 
 
 ## Principle

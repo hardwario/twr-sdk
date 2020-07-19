@@ -264,7 +264,7 @@ static void _bc_module_infra_grid_task_measure(void *param)
 
             if (self->_revision == BC_MODULE_INFRA_GRID_REVISION_R1_0)
             {
-                // The module is already powered up
+                // Revision 1.0 - The module is already powered up
                 self->_state = BC_MODULE_INFRA_GRID_STATE_POWER_UP;
                 goto start;
             }

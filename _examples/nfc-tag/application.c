@@ -25,13 +25,13 @@ void application_init(void)
 
     bc_tag_nfc_ndef_init(&ndef);
 
-    bc_tag_nfc_ndef_add_text(&ndef, "BigClown home page", "en");
+    bc_tag_nfc_ndef_add_text(&ndef, "HARDWARIO home page", "en");
 
-    bc_tag_nfc_ndef_add_uri(&ndef, "https://www.bigclown.com/");
+    bc_tag_nfc_ndef_add_uri(&ndef, "https://www.hardwario.com/");
 
     bc_tag_nfc_ndef_add_text(&ndef, "Documentation", "en");
 
-    bc_tag_nfc_ndef_add_uri(&ndef, "https://doc.bigclown.com/");
+    bc_tag_nfc_ndef_add_uri(&ndef, "https://developers.hardwario.com/");
 
     bc_log_info("bc_tag_nfc_memory_write_ndef");
 

@@ -5,12 +5,12 @@ This example shows how to use Climate module and send measured data over USB.
 
 
 ## Requirements
-  - BigClown Core module
-  - BigClown Climate module
+  - HARDWARIO Core module
+  - HARDWARIO Climate module
 
 
 ## Principle
-  - Climate module is set to work asynchonous (using the BigClown SDK)
+  - Climate module is set to work asynchonous (using the HARDWARIO SDK)
   - update interval is 2500 milliseconds
   - when update is triggered, measured data are send over USB as float values
   separated with comma and space (for better readability)

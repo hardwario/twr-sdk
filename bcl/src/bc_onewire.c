@@ -266,9 +266,26 @@ static bool _bc_onewire_reset(bc_gpio_channel_t channel)
     bc_timer_delay(480);
 
     bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
-    bc_timer_delay(70);
 
-    i = bc_gpio_get_input(channel);
+    // Some devices responds little bit later than expected 70us, be less strict in timing...
+    // Low state of data line (presence detect) should be definitely low between 60us and 75us from now
+    // According to datasheet: t_PDHIGH=15..60us ; t_PDLOW=60..240us
+    //
+    //     t_PDHIGH    t_PDLOW
+    //      /----\ ... \      / ... /-----
+    //  ___/      \ ... \____/ ... /
+    //     ^     ^     ^      ^     ^
+    //     now   15    60     75    300  us
+    //
+    bc_timer_delay(60);
+    retries = 4;
+    do {
+        i = bc_gpio_get_input(channel);
+        bc_timer_delay(4);
+    }
+    while (i && --retries);
+    bc_timer_delay(retries * 4);
+    //bc_log_debug("retries=%d",retries);
 
     bc_timer_delay(410);
 

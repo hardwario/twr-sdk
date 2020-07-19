@@ -4,7 +4,7 @@ sudo: false
 
 env:
   global:
-    - GH_PAGES_CNAME: sdk.bigclown.com
+    - GH_PAGES_CNAME: sdk.hardwario.com
     - DOXYFILE: $TRAVIS_BUILD_DIR/Doxyfile
     - HTML_DIR: $TRAVIS_BUILD_DIR/doc/html
 
@@ -27,6 +27,6 @@ deploy:
   local_dir: $HTML_DIR
   github_token: $GH_REPO_TOKEN
   target_branch: gh-pages
-  fqdn: sdk.bigclown.com
+  fqdn: sdk.hardwario.com
   on:
     branch: master

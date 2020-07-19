@@ -12,7 +12,7 @@
 * encoding: ISO-8859-2
 * unicode bom: no
 *
-* preset name: Bigclown LCD Module
+* preset name: HARDWARIO LCD Module
 * data block size: 8 bit(s), uint8_t
 * RLE compression enabled: no
 * conversion type: Monochrome, Diffuse Dither 128

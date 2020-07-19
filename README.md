@@ -1,17 +1,17 @@
-<a href="https://www.bigclown.com/"><img src="https://bigclown.sirv.com/logo.png" width="200" alt="BigClown Logo" align="right"></a>
+<a href="https://www.hardwario.com/"><img src="https://www.hardwario.com/ci/assets/hw-logo.svg" width="200" alt="HARDWARIO Logo" align="right"></a>
 
-# BigClown Firmware SDK
+# HARDWARIO Firmware SDK
 
 [![Travis](https://img.shields.io/travis/bigclownlabs/bcf-sdk/master.svg)](https://travis-ci.org/bigclownlabs/bcf-sdk)
 [![Release](https://img.shields.io/github/release/bigclownlabs/bcf-sdk.svg)](https://github.com/bigclownlabs/bcf-sdk/releases)
 [![License](https://img.shields.io/github/license/bigclownlabs/bcf-sdk.svg)](https://github.com/bigclownlabs/bcf-sdk/blob/master/LICENSE)
-[![Twitter](https://img.shields.io/twitter/follow/BigClownLabs.svg?style=social&label=Follow)](https://twitter.com/BigClownLabs)
+[![Twitter](https://img.shields.io/twitter/follow/hardwario_en.svg?style=social&label=Follow)](https://twitter.com/hardwario_en)
 
 This repository contains firmware SDK for:
 
-* BigClown Core Module
-* BigClown USB Dongle
-* BigClown Cloony
+* HARDWARIO Core Module
+* HARDWARIO Radio Dongle
+* HARDWARIO Cloony
 
 ## Introduction
 
@@ -22,7 +22,7 @@ In short it is a set of libraries and APIs which simplify embedded firmware deve
 
 All the drivers provide high-level abstraction of the underlying hardware and follow event-driven approach.
 
-The whole library is documented using Doxygen and automatically generated at [sdk.bigclown.com](http://sdk.bigclown.com) with every commit/merge to master branch using Travis CI.
+The whole library is documented using Doxygen and automatically generated at [sdk.hardwario.com](http://sdk.hardwario.com) with every commit/merge to master branch using Travis CI.
 
 Firmware SDK also comes with Makefile recipe to build the firmware projects.
 

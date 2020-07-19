@@ -6,6 +6,7 @@
 #include <bc_scheduler.h>
 #include <bc_system.h>
 #include "bc_ir_rx.h"
+#include <bc_timer.h>
 
 //#define _BC_IR_RX_DEBUG
 
@@ -30,6 +31,7 @@ static struct
     #endif
 } _bc_ir_rx;
 
+static void TIM6_handler(void *param);
 
 void bc_ir_rx_get_code(uint32_t *nec_code)
 {
@@ -152,7 +154,7 @@ void bc_ir_rx_init()
     bc_gpio_set_mode(BC_GPIO_P11, BC_GPIO_MODE_OUTPUT);
     #endif
 
-    // Used TIM7 so we don't have collision of IRQ handlers functions
+    // Used TIM6 so we don't have collision of IRQ handlers functions
     __TIM6_CLK_ENABLE();
     _bc_ir_rx.ir_timer.Instance = TIM6;
     // Running @ 32MHz, set timer to 1us resolution
@@ -164,13 +166,17 @@ void bc_ir_rx_init()
     HAL_TIM_Base_Init(&_bc_ir_rx.ir_timer);
     HAL_NVIC_EnableIRQ(TIM6_IRQn);
 
+    bc_timer_set_irq_handler(TIM6, TIM6_handler, NULL);
+
+
     _bc_ir_rx.task_id_notify = bc_scheduler_register(_bc_ir_rx_task_notify, NULL, BC_TICK_INFINITY);
 
 }
 
-
-void TIM6_IRQHandler()
+static void TIM6_handler(void *param)
 {
+    (void) param;
+
     #ifdef _BC_IR_RX_DEBUG
     bc_gpio_toggle_output(BC_GPIO_P11);
     bc_gpio_toggle_output(BC_GPIO_P11);

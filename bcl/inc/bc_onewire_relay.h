@@ -6,7 +6,7 @@
 #define BC_ONEWIRE_RELAY_FAMILY_CODE 0x29
 
 //! @addtogroup bc_onewire_relay bc_onewire_relay
-//! @brief Driver for BigClown 1-wire relay, chipset: DS2408
+//! @brief Driver for HARDWARIO 1-wire relay, chipset: DS2408
 //! @{
 
 typedef enum
@@ -22,7 +22,7 @@ typedef enum
 
 } bc_onewire_relay_channel_t;
 
-//! @brief BigClown 1-wire relay instance
+//! @brief HARDWARIO 1-wire relay instance
 
 typedef struct
 {

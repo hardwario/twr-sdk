@@ -8,7 +8,7 @@
 #define BC_MODULE_RELAY_I2C_ADDRESS_ALTERNATE 0x3F
 
 //! @addtogroup bc_module_relay bc_module_relay
-//! @brief Driver for BigClown Relay Module
+//! @brief Driver for HARDWARIO Relay Module
 //! @section example How to use this driver
 //! @code
 //! #include <bc_module_relay.h>
@@ -46,7 +46,7 @@ typedef enum
 
 } bc_module_relay_state_t;
 
-//! @brief BigClown Relay Module instance
+//! @brief HARDWARIO Relay Module instance
 
 typedef struct bc_module_relay_t bc_module_relay_t;
 
@@ -89,7 +89,7 @@ struct bc_module_relay_t
 
 //! @endcond
 
-//! @brief Initialize BigClown Relay Module
+//! @brief Initialize HARDWARIO Relay Module
 //! @param[in] self Instance
 
 bool bc_module_relay_init(bc_module_relay_t *self, uint8_t i2c_address);

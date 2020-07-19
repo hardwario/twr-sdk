@@ -4,7 +4,7 @@
 #include <bc_i2c.h>
 
 //! @addtogroup bc_tag_nfc bc_tag_nfc
-//! @brief Driver for BigClown NFC Tag
+//! @brief Driver for HARDWARIO NFC Module
 //! @{
 
 //! @brief Default I2C address

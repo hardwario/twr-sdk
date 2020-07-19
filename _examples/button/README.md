@@ -5,7 +5,7 @@ This example demonstrates simple use of integrated button.
 
 ## Requirements
 
-- BigClown Core Module
+- HARDWARIO Core Module
 
 
 ## Principle

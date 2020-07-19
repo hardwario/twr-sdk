@@ -4,7 +4,7 @@
 #include <bc_tick.h>
 
 //! @addtogroup bc_module_climate bc_module_climate
-//! @brief Driver for BigClown Climate Module
+//! @brief Driver for HARDWARIO Climate Module
 //! @{
 
 //! @brief Callback events
@@ -37,7 +37,19 @@ typedef enum
 
 } bc_module_climate_event_t;
 
-//! @brief Initialize BigClown Climate Module
+//! @brief Climate Module hardware revision
+
+typedef enum
+{
+    //! @brief Hardware revision R1
+    BC_MODULE_CLIMATE_REVISION_R1 = 0,
+
+    //! @brief Hardware revision R2
+    BC_MODULE_CLIMATE_REVISION_R2 = 1
+
+} bc_module_climate_revision_t;
+
+//! @brief Initialize HARDWARIO Climate Module
 
 void bc_module_climate_init(void);
 
@@ -150,6 +162,9 @@ bool bc_module_climate_get_altitude_meter(float *meter);
 //! @return false When value is invalid
 
 bool bc_module_climate_get_pressure_pascal(float *pascal);
+
+//! @brief Get hardware revision
+bc_module_climate_revision_t bc_module_climate_get_revision(void);
 
 //! @}
 

@@ -15,17 +15,18 @@ typedef struct
 
 } bc_pulse_counter_t;
 
-static bc_pulse_counter_t _bc_module_pulse_counter[2];
+static bc_pulse_counter_t _bc_module_pulse_counter[3];
 
 static void _bc_pulse_counter_channel_task_update(void *param);
 static void _bc_pulse_counter_channel_exti(bc_exti_line_t line, void *param);
 
 void bc_pulse_counter_init(bc_module_sensor_channel_t channel, bc_pulse_counter_edge_t edge)
 {
-    static const bc_exti_line_t bc_pulse_counter_exti_line[2] =
+    static const bc_exti_line_t bc_pulse_counter_exti_line[3] =
     {
         BC_EXTI_LINE_PA4,
-        BC_EXTI_LINE_PA5
+        BC_EXTI_LINE_PA5,
+        BC_EXTI_LINE_PA6
     };
 
     memset(&_bc_module_pulse_counter[channel], 0, sizeof(_bc_module_pulse_counter[channel]));
