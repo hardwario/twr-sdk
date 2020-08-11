@@ -20,6 +20,11 @@ typedef uint64_t bc_tick_t;
 
 bc_tick_t bc_tick_get(void);
 
+//! @brief Delay execution for specified amount of ticks
+//! @param[in] delay Number of ticks to wait
+
+void bc_tick_wait(bc_tick_t delay);
+
 void bc_tick_inrement_irq(bc_tick_t delta);
 
 //! @}

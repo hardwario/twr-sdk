@@ -37,7 +37,7 @@ typedef enum
 
 } bc_module_pir_event_t;
 
-//! @brief BigClown PIR Module instance
+//! @brief HARDWARIO PIR Module instance
 
 typedef struct bc_pyq1648_t bc_module_pir_t;
 

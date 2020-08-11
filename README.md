@@ -10,7 +10,7 @@
 This repository contains firmware SDK for:
 
 * HARDWARIO Core Module
-* HARDWARIO USB Dongle
+* HARDWARIO Radio Dongle
 * HARDWARIO Cloony
 
 ## Introduction
@@ -22,7 +22,7 @@ In short it is a set of libraries and APIs which simplify embedded firmware deve
 
 All the drivers provide high-level abstraction of the underlying hardware and follow event-driven approach.
 
-The whole library is documented using Doxygen and automatically generated at [sdk.bigclown.com](http://sdk.bigclown.com) with every commit/merge to master branch using Travis CI.
+The whole library is documented using Doxygen and automatically generated at [sdk.hardwario.com](http://sdk.hardwario.com) with every commit/merge to master branch using Travis CI.
 
 Firmware SDK also comes with Makefile recipe to build the firmware projects.
 

@@ -69,19 +69,34 @@ bool bc_module_rs485_init(void)
         return false;
     }
 
-    bc_sc16is740_reset_fifo(&_bc_module_rs485._sc16is750, BC_SC16IS740_FIFO_RX);
+    if (!bc_sc16is740_reset_fifo(&_bc_module_rs485._sc16is750, BC_SC16IS740_FIFO_RX))
+    {
+        return false;
+    }
 
     // Disable sleep
-    bc_i2c_memory_write_8b(BC_I2C_I2C0, _BC_MODULE_RS485_I2C_UART_ADDRESS, _BC_SC16IS7x0_REG_IER, 0x01);
+    if (!bc_i2c_memory_write_8b(BC_I2C_I2C0, _BC_MODULE_RS485_I2C_UART_ADDRESS, _BC_SC16IS7x0_REG_IER, 0x01))
+    {
+        return false;
+    }
 
     // Enable Auto RS-485 RTS output and RTS output inversion
-    bc_i2c_memory_write_8b(BC_I2C_I2C0, _BC_MODULE_RS485_I2C_UART_ADDRESS, _BC_SC16IS7X0_REG_EFCR, 0x30);
+    if (!bc_i2c_memory_write_8b(BC_I2C_I2C0, _BC_MODULE_RS485_I2C_UART_ADDRESS, _BC_SC16IS7X0_REG_EFCR, 0x30))
+    {
+        return false;
+    }
 
     // GPIO0 set ouput (/RE)
-    bc_i2c_memory_write_8b(BC_I2C_I2C0, _BC_MODULE_RS485_I2C_UART_ADDRESS, _BC_SC16IS7X0_REG_IODIR, 0x01);
+    if (!bc_i2c_memory_write_8b(BC_I2C_I2C0, _BC_MODULE_RS485_I2C_UART_ADDRESS, _BC_SC16IS7X0_REG_IODIR, 0x01))
+    {
+        return false;
+    }
 
     // Set GPIO0 and all other to 0 (/RE)
-    bc_i2c_memory_write_8b(BC_I2C_I2C0, _BC_MODULE_RS485_I2C_UART_ADDRESS, _BC_SC16IS7X0_REG_IOSTATE, 0x00);
+    if (!bc_i2c_memory_write_8b(BC_I2C_I2C0, _BC_MODULE_RS485_I2C_UART_ADDRESS, _BC_SC16IS7X0_REG_IOSTATE, 0x00))
+    {
+        return false;
+    }
 
     _bc_module_rs485._task_id_interval = bc_scheduler_register(_bc_module_rs485_task_interval, NULL, BC_TICK_INFINITY);
     _bc_module_rs485._task_id_measure = bc_scheduler_register(_bc_module_rs485_task_measure, NULL, _BC_MODULE_RS485_DELAY_RUN);
@@ -90,6 +105,27 @@ bool bc_module_rs485_init(void)
 
     return true;
 }
+
+
+bool bc_module_rs485_deinit(void)
+{
+    if (_bc_module_rs485._initialized)
+    {
+        bc_scheduler_unregister(_bc_module_rs485._task_id_interval);
+        bc_scheduler_unregister(_bc_module_rs485._task_id_measure);
+    }
+
+    _bc_module_rs485._initialized = false;
+
+    // Enable sleep
+    bc_i2c_memory_write_8b(BC_I2C_I2C0, _BC_MODULE_RS485_I2C_UART_ADDRESS, _BC_SC16IS7x0_REG_IER, 0x00);
+    {
+        return false;
+    }
+
+    return true;
+}
+
 
 void bc_module_rs485_set_update_interval(bc_tick_t interval)
 {
@@ -123,7 +159,7 @@ bool bc_module_rs485_get_voltage(float *volt)
 
     reg_result >>= 4;
 
-    *volt = 23.33f * reg_result / 2047.f;
+    *volt = 39.62f * reg_result / 2047.f;
 
     return true;
 }

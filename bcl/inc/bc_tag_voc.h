@@ -4,7 +4,7 @@
 #include <bc_sgp30.h>
 
 //! @addtogroup bc_tag_voc bc_tag_voc
-//! @brief Driver for BigClown VOC Tag
+//! @brief Driver for HARDWARIO VOC Module
 //! @{
 
 //! @brief Callback events
@@ -19,11 +19,11 @@ typedef enum
 
 } bc_tag_voc_event_t;
 
-//! @brief BigClown VOC Tag instance
+//! @brief HARDWARIO VOC Module instance
 
 typedef bc_sgp30_t bc_tag_voc_t;
 
-//! @brief Initialize BigClown VOC Tag
+//! @brief Initialize HARDWARIO VOC Module
 //! @param[in] self Instance
 //! @param[in] i2c_channel I2C channel
 

@@ -5,7 +5,7 @@
 #include <bc_wssfm10r1at.h>
 
 //! @addtogroup bc_module_sigfox bc_module_sigfox
-//! @brief Driver for BigClown SigFox Module
+//! @brief Driver for HARDWARIO SigFox Module
 //! @{
 
 //! @brief SigFox Module hardware revision
@@ -62,7 +62,7 @@ struct bc_module_sigfox_t
 
 //! @endcond
 
-//! @brief Initialize BigClown SigFox Module
+//! @brief Initialize HARDWARIO SigFox Module
 //! @param[in] self Instance
 
 void bc_module_sigfox_init(bc_module_sigfox_t *self, bc_module_sigfox_revision_t revision);

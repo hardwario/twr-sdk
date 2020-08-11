@@ -5,7 +5,7 @@
 #include <bc_sam_m8q.h>
 
 //! @addtogroup bc_module_gps bc_module_gps
-//! @brief Driver for BigClown GPS Module
+//! @brief Driver for HARDWARIO GPS Module
 //! @{
 
 //! @brief Callback events
@@ -64,7 +64,7 @@ typedef void (bc_module_gps_event_handler_t)(bc_module_gps_event_t, void *);
 
 //! @endcond
 
-//! @brief Initialize BigClown GPS Module
+//! @brief Initialize HARDWARIO GPS Module
 //! @return true On success
 //! @return false On failure
 
