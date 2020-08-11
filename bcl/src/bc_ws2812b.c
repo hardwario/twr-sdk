@@ -3,6 +3,7 @@
 #include <bc_scheduler.h>
 #include <bc_dma.h>
 #include <bc_system.h>
+#include <bc_timer.h>
 
 #define _BC_WS2812_TIMER_PERIOD 40               // 32000000 / 800000 = 20; 0,125us period (10 times lower the 1,25us period to have fixed math below)
 #define _BC_WS2812_TIMER_RESET_PULSE_PERIOD 1666 // 60us just to be sure = (32000000 / (320 * 60))
@@ -60,7 +61,7 @@ const uint32_t _bc_ws2812b_pulse_tab[] =
 };
 
 static void _bc_ws2812b_dma_event_handler(bc_dma_channel_t channel, bc_dma_event_t event, void *event_param);
-
+static void _bc_ws2812b_TIM2_interrupt_handler(void *param);
 static void _bc_ws2812b_task(void *param);
 
 bool bc_ws2812b_init(const bc_led_strip_buffer_t *led_strip)
@@ -98,6 +99,8 @@ bool bc_ws2812b_init(const bc_led_strip_buffer_t *led_strip)
     _bc_ws2812b_timer2_handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     _bc_ws2812b_timer2_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
     HAL_TIM_PWM_Init(&_bc_ws2812b_timer2_handle);
+
+    bc_timer_set_irq_handler(TIM2, _bc_ws2812b_TIM2_interrupt_handler, NULL);
 
     HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(TIM2_IRQn);
@@ -293,11 +296,6 @@ static void _bc_ws2812b_dma_event_handler(bc_dma_channel_t channel, bc_dma_event
     }
 }
 
-void TIM2_IRQHandler(void)
-{
-    HAL_TIM_IRQHandler(&_bc_ws2812b_timer2_handle);
-}
-
 // TIM2 Interrupt Handler gets executed on every TIM2 Update if enabled
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -316,6 +314,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     __HAL_TIM_CLEAR_FLAG(&_bc_ws2812b_timer2_handle, TIM_FLAG_UPDATE);
 
     bc_scheduler_plan_now(_bc_ws2812b.task_id);
+}
+
+static void _bc_ws2812b_TIM2_interrupt_handler(void *param)
+{
+    (void) param;
+
+    HAL_TIM_IRQHandler(&_bc_ws2812b_timer2_handle);
 }
 
 static void _bc_ws2812b_task(void *param)

@@ -6,6 +6,7 @@ typedef struct bc_timer_irq_t
     void *irq_param;
 } bc_timer_irq_t;
 
+bc_timer_irq_t bc_timer_tim2_irq;
 bc_timer_irq_t bc_timer_tim3_irq;
 bc_timer_irq_t bc_timer_tim6_irq;
 
@@ -91,6 +92,16 @@ bool bc_timer_set_irq_handler(TIM_TypeDef *tim, void (*irq_handler)(void *), voi
         }
     }
 
+    if (tim == TIM2)
+    {
+        if (bc_timer_tim2_irq.irq_handler == NULL)
+        {
+            bc_timer_tim2_irq.irq_handler = irq_handler;
+            bc_timer_tim2_irq.irq_param = irq_param;
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -99,6 +110,14 @@ void TIM3_IRQHandler(void)
     if (bc_timer_tim3_irq.irq_handler)
     {
         bc_timer_tim3_irq.irq_handler(bc_timer_tim3_irq.irq_param);
+    }
+}
+
+void TIM2_IRQHandler(void)
+{
+    if (bc_timer_tim2_irq.irq_handler)
+    {
+        bc_timer_tim2_irq.irq_handler(bc_timer_tim2_irq.irq_param);
     }
 }
 

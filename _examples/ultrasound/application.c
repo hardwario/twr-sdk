@@ -12,15 +12,18 @@ bc_button_t button;
 // Led strip instance;
 bc_led_strip_t led_strip;
 
+// HC-SR04 instance
+bc_hc_sr04_t hc_sr04;
+
 float distance;
 
-void hc_sr04_event_handler(bc_hc_sr04_event_t event, void *event_param)
+void hc_sr04_event_handler(bc_hc_sr04_t *self, bc_hc_sr04_event_t event, void *event_param)
 {
     (void) event_param;
 
     if (event == BC_HC_SR04_EVENT_UPDATE)
     {
-        bc_hc_sr04_get_distance_millimeter(&distance);
+        bc_hc_sr04_get_distance_millimeter(self, &distance);
 
         int centimeters = round(distance / 10.);
 
@@ -58,9 +61,12 @@ void application_init(void)
     bc_button_init(&button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN, false);
     bc_button_set_event_handler(&button, button_event_handler, NULL);
 
-    bc_hc_sr04_init();
-    bc_hc_sr04_set_event_handler(hc_sr04_event_handler, NULL);
-    bc_hc_sr04_set_update_interval(100);
+    // Sensor modul:
+    // Echo channel B
+    // Trig channel A
+    bc_hc_sr04_init(&hc_sr04, BC_HC_SR04_ECHO_P5, BC_GPIO_P4);
+    bc_hc_sr04_set_event_handler(&hc_sr04, hc_sr04_event_handler, NULL);
+    bc_hc_sr04_set_update_interval(&hc_sr04, 100);
 }
 
 void button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param)
@@ -71,6 +77,6 @@ void button_event_handler(bc_button_t *self, bc_button_event_t event, void *even
     if (event == BC_BUTTON_EVENT_PRESS)
     {
         bc_led_pulse(&led, 100);
-        bc_hc_sr04_measure();
+        bc_hc_sr04_measure(&hc_sr04);
     }
 }
