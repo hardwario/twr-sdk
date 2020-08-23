@@ -251,6 +251,7 @@ start:
             }
 
             self->_reg_humidity = buffer[0] << 8 | buffer[1];
+            self->_reg_humidity &= ~0x3;
 
             self->_humidity_valid = true;
 
@@ -291,6 +292,7 @@ start:
             }
 
             self->_reg_temperature = buffer[0] << 8 | buffer[1];
+            self->_reg_temperature &= ~0x3;
 
             self->_temperature_valid = true;
 
