@@ -259,6 +259,7 @@ struct bc_cmwx1zzabz_t
     bc_cmwx1zzabz_config _config;
     bool _join_command;
     uint8_t _tx_port;
+    bool _debug;
 };
 
 //! @endcond
@@ -485,6 +486,25 @@ void bc_cmwx1zzabz_set_datarate(bc_cmwx1zzabz_t *self, uint8_t datarate);
 //! @return datarate Datarate (see the enums)
 
 uint8_t bc_cmwx1zzabz_get_datarate(bc_cmwx1zzabz_t *self);
+
+//! @brief Set debugging flag which prints modem communication to bc_log
+//! @param[in] self Instance
+//! @param[in] debug Boolean value
+
+void bc_cmwx1zzabz_set_debug(bc_cmwx1zzabz_t *self, bool debug);
+
+//! @brief Get pointer to string containg last sent command
+//! @param[in] self Instance
+//! @return Buffer char* containing last modem response
+
+char *bc_cmwx1zzabz_get_error_command(bc_cmwx1zzabz_t *self);
+
+//! @brief Get pointer to string containg response on last sent command
+//! @param[in] self Instance
+//! @return Buffer char* containing last modem response
+
+char *bc_cmwx1zzabz_get_error_response(bc_cmwx1zzabz_t *self);
+
 
 //! @}
 

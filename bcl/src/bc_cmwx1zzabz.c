@@ -1,4 +1,5 @@
 #include <bc_cmwx1zzabz.h>
+#include <bc_log.h>
 
 #define BC_CMWX1ZZABZ_DELAY_RUN 100
 #define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_RESET_H 100
@@ -118,6 +119,23 @@ bool bc_cmwx1zzabz_send_message_confirmed(bc_cmwx1zzabz_t *self, const void *buf
     bc_scheduler_plan_now(self->_task_id);
 
     return true;
+}
+
+void bc_cmwx1zzabz_set_debug(bc_cmwx1zzabz_t *self, bool debug)
+{
+    self->_debug = debug;
+}
+
+static size_t _bc_cmwx1zzabz_async_write(bc_cmwx1zzabz_t *self, bc_uart_channel_t channel, const void *buffer, size_t length)
+{
+    size_t ret = bc_uart_async_write(channel, buffer, length);
+
+    if (self->_debug)
+    {
+        bc_log_debug("LoRa TX: %s", (const char*)buffer);
+    }
+
+    return ret;
 }
 
 static void _bc_cmwx1zzabz_task(void *param)
@@ -257,7 +275,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 strcpy(self->_command, _init_commands[self->_init_command_index]);
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (_bc_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -465,7 +483,7 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 size_t length = command_length + self->_message_length + 1; // 1 for \n
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (_bc_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -606,7 +624,7 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (_bc_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -653,7 +671,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 strcpy(self->_command, "AT+JOIN\r");
 
                 size_t length = strlen(self->_command);
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (_bc_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -896,6 +914,16 @@ uint8_t bc_cmwx1zzabz_get_datarate(bc_cmwx1zzabz_t *self)
     return self->_config.datarate;
 }
 
+char *bc_cmwx1zzabz_get_error_command(bc_cmwx1zzabz_t *self)
+{
+    return self->_command;
+}
+
+char *bc_cmwx1zzabz_get_error_response(bc_cmwx1zzabz_t *self)
+{
+    return self->_response;
+}
+
 static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)
 {
     size_t length = 0;
@@ -934,6 +962,11 @@ static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)
         {
             return false;
         }
+    }
+
+    if (self->_debug)
+    {
+        bc_log_debug("LoRa RX: %s", (const char*)self->_response);
     }
 
     return true;
