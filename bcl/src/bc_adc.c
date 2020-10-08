@@ -7,9 +7,9 @@
 
 #define VREFINT_CAL_ADDR 0x1ff80078
 
-#define BC_ADC_CHANNEL_INTERNAL_REFERENCE 6
+#define BC_ADC_CHANNEL_INTERNAL_REFERENCE 7
 #define BC_ADC_CHANNEL_NONE ((bc_adc_channel_t) (-1))
-#define BC_ADC_CHANNEL_COUNT ((bc_adc_channel_t) 7)
+#define BC_ADC_CHANNEL_COUNT ((bc_adc_channel_t) 8)
 
 typedef enum
 {
@@ -39,7 +39,7 @@ static struct
     float real_vdda_voltage;
     bc_adc_state_t state;
     bc_scheduler_task_id_t task_id;
-    bc_adc_channel_config_t channel_table[7];
+    bc_adc_channel_config_t channel_table[8];
 }
 _bc_adc =
 {
@@ -53,6 +53,7 @@ _bc_adc =
         [BC_ADC_CHANNEL_A3].chselr = ADC_CHSELR_CHSEL3,
         [BC_ADC_CHANNEL_A4].chselr = ADC_CHSELR_CHSEL4,
         [BC_ADC_CHANNEL_A5].chselr = ADC_CHSELR_CHSEL5,
+        [BC_ADC_CHANNEL_A6].chselr = ADC_CHSELR_CHSEL6,
         [BC_ADC_CHANNEL_INTERNAL_REFERENCE] = { NULL, NULL, false, BC_ADC_RESOLUTION_12_BIT, BC_ADC_OVERSAMPLING_256, 0, ADC_CHSELR_CHSEL17 }
     }
 };

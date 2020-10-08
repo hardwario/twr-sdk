@@ -28,7 +28,10 @@ typedef enum
     BC_ADC_CHANNEL_A4 = 4,
 
     //! @brief ADC channel A5
-    BC_ADC_CHANNEL_A5 = 5
+    BC_ADC_CHANNEL_A5 = 5,
+
+    //! @brief ADC channel A6
+    BC_ADC_CHANNEL_A6 = 6
 
 } bc_adc_channel_t;
 
