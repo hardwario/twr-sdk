@@ -11,6 +11,8 @@
 const char *_init_commands[] =
 {
     "\rAT\r",
+    "AT+VER?\r",
+    "AT+DFORMAT=0\r",
     "AT+DUTYCYCLE=0\r",
     "AT+DEVADDR?\r",
     "AT+DEVEUI?\r",
