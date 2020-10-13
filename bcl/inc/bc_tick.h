@@ -25,7 +25,7 @@ bc_tick_t bc_tick_get(void);
 
 void bc_tick_wait(bc_tick_t delay);
 
-void bc_tick_inrement_irq(bc_tick_t delta);
+void bc_tick_increment_irq(bc_tick_t delta);
 
 //! @}
 

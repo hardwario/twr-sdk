@@ -522,7 +522,7 @@ void RTC_IRQHandler(void)
         // Clear wake-up timer flag
         RTC->ISR &= ~RTC_ISR_WUTF;
 
-        bc_tick_inrement_irq(10);
+        bc_tick_increment_irq(10);
     }
 
     // Clear EXTI interrupt flag
