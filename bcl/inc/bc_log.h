@@ -67,31 +67,31 @@ void bc_log_init(bc_log_level_t level, bc_log_timestamp_t timestamp);
 //! @param[in] format Format string (printf style)
 //! @param[in] ... Optional format arguments
 
-void bc_log_dump(const void *buffer, size_t length, const char *format, ...);
+void bc_log_dump(const void *buffer, size_t length, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
 
 //! @brief Log DEBUG message (annotated in log as <D>)
 //! @param[in] format Format string (printf style)
 //! @param[in] ... Optional format arguments
 
-void bc_log_debug(const char *format, ...);
+void bc_log_debug(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 
 //! @brief Log INFO message (annotated in log as <I>)
 //! @param[in] format Format string (printf style)
 //! @param[in] ... Optional format arguments
 
-void bc_log_info(const char *format, ...);
+void bc_log_info(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 
 //! @brief Log WARNING message (annotated in log as <W>)
 //! @param[in] format Format string (printf style)
 //! @param[in] ... Optional format arguments
 
-void bc_log_warning(const char *format, ...);
+void bc_log_warning(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 
 //! @brief Log ERROR message (annotated in log as <E>)
 //! @param[in] format Format string (printf style)
 //! @param[in] ... Optional format arguments
 
-void bc_log_error(const char *format, ...);
+void bc_log_error(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 
 #else
 
