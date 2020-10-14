@@ -2,7 +2,7 @@
 #include <bc_irq.h>
 #include <stm32l0xx.h>
 
-static bc_tick_t _bc_tick_counter = 0;
+static volatile bc_tick_t _bc_tick_counter = 0;
 
 bc_tick_t bc_tick_get(void)
 {
