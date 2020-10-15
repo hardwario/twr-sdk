@@ -120,6 +120,11 @@ CFLAGS_RELEASE += -D'RELEASE'
 BAND ?= 868
 CFLAGS += -D'BAND=$(BAND)'
 
+SCHEDULER_INTERVAL ?=
+ifneq ($(SCHEDULER_INTERVAL),)
+  CFLAGS += -D'BC_SCHEDULER_INTERVAL_MS=$(SCHEDULER_INTERVAL)'
+endif
+
 ################################################################################
 # Compiler flags for "s" files                                                 #
 ################################################################################
