@@ -13,6 +13,10 @@
 #define BC_SCHEDULER_MAX_TASKS 32
 #endif
 
+#ifndef BC_SCHEDULER_INTERVAL_MS
+#define BC_SCHEDULER_INTERVAL_MS 10
+#endif
+
 //! @brief Task ID assigned by scheduler
 
 typedef size_t bc_scheduler_task_id_t;

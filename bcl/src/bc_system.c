@@ -4,6 +4,7 @@
 #include <bc_i2c.h>
 #include <bc_timer.h>
 #include <stm32l0xx.h>
+#include <stm32l0xx_hal_conf.h>
 
 #define _BC_SYSTEM_DEBUG_ENABLE 0
 
@@ -244,8 +245,8 @@ static void _bc_system_init_rtc(void)
         continue;
     }
 
-    // Set wake-up auto-reload value
-    RTC->WUTR = 20;
+    // Set wake-up auto-reload value based on the configured scheduler interval.
+    RTC->WUTR = LSE_VALUE / 16 * BC_SCHEDULER_INTERVAL_MS / 1000;
 
     // Clear timer flag
     RTC->ISR &= ~RTC_ISR_WUTF;
@@ -522,7 +523,7 @@ void RTC_IRQHandler(void)
         // Clear wake-up timer flag
         RTC->ISR &= ~RTC_ISR_WUTF;
 
-        bc_tick_increment_irq(10);
+        bc_tick_increment_irq(BC_SCHEDULER_INTERVAL_MS);
     }
 
     // Clear EXTI interrupt flag
