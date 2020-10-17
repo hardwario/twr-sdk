@@ -5,6 +5,7 @@
 #include <bc_timer.h>
 #include <stm32l0xx.h>
 #include <stm32l0xx_hal_conf.h>
+#include <bc_rtc.h>
 
 #define _BC_SYSTEM_DEBUG_ENABLE 0
 
@@ -211,9 +212,7 @@ static void _bc_system_init_rtc(void)
     // Errata workaround
     RCC->CSR;
 
-    // Disable write protection
-    RTC->WPR = 0xca;
-    RTC->WPR = 0x53;
+    bc_rtc_enable_write();
 
     // Initialize RTC only once
     if ((RTC->ISR & RTC_ISR_INITS) == 0)
@@ -257,9 +256,7 @@ static void _bc_system_init_rtc(void)
     // Enable timer
     RTC->CR |= RTC_CR_WUTE;
 
-    // Enable write protection
-    RTC->WPR = 0xff;
-
+    bc_rtc_disable_write();
 
     // RTC IRQ needs to be configured through EXTI
     EXTI->IMR |= EXTI_IMR_IM20;

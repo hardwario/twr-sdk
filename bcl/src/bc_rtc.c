@@ -9,6 +9,8 @@
 #define _BC_RTC_SECONDS_PER_HOUR 3600
 #define _BC_RTC_SECONDS_PER_MINUTE 60
 
+int _bc_rtc_writable_semaphore = 0;
+
 // Days in a month
 uint8_t _bc_rtc_months[2][12] =
     {
@@ -81,9 +83,7 @@ bool bc_rtc_set_date_time(bc_rtc_t *rtc)
         return false;
     }
 
-    // Disable write protection
-    RTC->WPR = 0xca;
-    RTC->WPR = 0x53;
+    bc_rtc_enable_write();
 
     // Enable Init Mode
     RTC->ISR |= RTC_ISR_INIT;
@@ -119,8 +119,7 @@ bool bc_rtc_set_date_time(bc_rtc_t *rtc)
     // Disable Init Mode
     RTC->ISR &= ~RTC_ISR_INIT;
 
-    // Enable Write Protection
-    RTC->WPR = 0xff;
+    bc_rtc_disable_write();
 
     return true;
 }

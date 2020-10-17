@@ -1,6 +1,7 @@
 #ifndef _BC_RTC_H
 #define _BC_RTC_H
 
+#include <stm32l0xx.h>
 #include "bc_common.h"
 
 //! @addtogroup bc_rtc bc_rtc
@@ -8,6 +9,8 @@
 //! @{
 
 //! @brief Initialize real-time clock
+
+extern int _bc_rtc_writable_semaphore;
 
 void bc_rtc_init(void);
 
@@ -43,6 +46,28 @@ bool bc_rtc_set_date_time(bc_rtc_t* rtc);
 
 uint32_t bc_rtc_rtc_to_timestamp(bc_rtc_t *rtc);
 
+//! @brief Enable RTC write protection
+//
+// This function supports nested invocations. If bc_rtc_enable_write has been
+// called repeatedly, calling this function repeatedly will only lock the RTC
+// again after all calls to bc_rtc_enable_write have been unrolled.
+
+static inline void bc_rtc_disable_write()
+{
+	if (--_bc_rtc_writable_semaphore <= 0) {
+		_bc_rtc_writable_semaphore = 0;
+		RTC->WPR = 0xff;
+	}
+}
+
+//! @brief Disable RTC write protection
+
+static inline void bc_rtc_enable_write()
+{
+	++_bc_rtc_writable_semaphore;
+	RTC->WPR = 0xca;
+	RTC->WPR = 0x53;
+}
 
 //! @}
 
