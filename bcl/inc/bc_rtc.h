@@ -69,6 +69,11 @@ static inline void bc_rtc_enable_write()
 	RTC->WPR = 0x53;
 }
 
+//! @brief Enable or disable RTC initialization mode
+//! @param[in] state Enable when true, disable when false
+
+void bc_rtc_set_init(bool state);
+
 //! @}
 
 #endif // _BC_RTC_H

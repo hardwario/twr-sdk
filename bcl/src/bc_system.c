@@ -217,22 +217,12 @@ static void _bc_system_init_rtc(void)
     // Initialize RTC only once
     if ((RTC->ISR & RTC_ISR_INITS) == 0)
     {
-
-        // Enable initialization mode
-        RTC->ISR |= RTC_ISR_INIT;
-
-        // Wait for RTC to be in initialization mode...
-        while ((RTC->ISR & RTC_ISR_INITF) == 0)
-        {
-            continue;
-        }
+        bc_rtc_set_init(true);
 
         // Set RTC prescaler
         RTC->PRER = (127 << 16) | 255;
 
-        // Exit from initialization mode
-        RTC->ISR &= ~RTC_ISR_INIT;
-
+        bc_rtc_set_init(false);
     }
 
     // Disable timer

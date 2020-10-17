@@ -85,13 +85,7 @@ bool bc_rtc_set_date_time(bc_rtc_t *rtc)
 
     bc_rtc_enable_write();
 
-    // Enable Init Mode
-    RTC->ISR |= RTC_ISR_INIT;
-
-    while ((RTC->ISR & RTC_ISR_INITF) == 0)
-    {
-        continue;
-    }
+    bc_rtc_set_init(true);
 
     // Format hours
     uint32_t tr;
@@ -116,10 +110,26 @@ bool bc_rtc_set_date_time(bc_rtc_t *rtc)
 
     RTC->DR = dr;
 
-    // Disable Init Mode
-    RTC->ISR &= ~RTC_ISR_INIT;
+    bc_rtc_set_init(false);
 
     bc_rtc_disable_write();
 
     return true;
+}
+
+void bc_rtc_set_init(bool state)
+{
+    if (state) {
+        // Enable initialization mode
+        RTC->ISR |= RTC_ISR_INIT;
+
+        // Wait for RTC to be in initialization mode...
+        while ((RTC->ISR & RTC_ISR_INITF) == 0)
+        {
+            continue;
+        }
+    } else {
+        // Exit from initialization mode
+        RTC->ISR &= ~RTC_ISR_INIT;
+    }
 }
