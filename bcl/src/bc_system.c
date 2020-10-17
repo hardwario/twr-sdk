@@ -220,7 +220,8 @@ static void _bc_system_init_rtc(void)
         bc_rtc_set_init(true);
 
         // Set RTC prescaler
-        RTC->PRER = (127 << 16) | 255;
+        RTC->PRER = 255;
+        RTC->PRER |= 127 << 16;
 
         bc_rtc_set_init(false);
     }
