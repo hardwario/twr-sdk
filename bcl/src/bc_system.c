@@ -268,11 +268,6 @@ static void _bc_system_init_shutdown_tmp112(void)
     bc_i2c_deinit(BC_I2C_I2C0);
 }
 
-void bc_system_sleep(void)
-{
-    __WFI();
-}
-
 void bc_system_deep_sleep_enable(void)
 {
     _bc_system_deep_sleep_disable_semaphore--;
@@ -328,7 +323,7 @@ void bc_system_enter_standby_mode(void)
 
     PWR->CR |= PWR_CR_CWUF;
 
-    __WFI();
+    bc_system_sleep();
 }
 
 bc_system_clock_t bc_system_clock_get(void)
