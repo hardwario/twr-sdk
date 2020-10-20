@@ -107,6 +107,22 @@ static inline void bc_rtc_enable_write()
 	RTC->WPR = 0x53;
 }
 
+/**
+ * Wait for RTC shadow registers to initialize
+ *
+ * This function blocks until the RTC shadow registers have been initialized,
+ * i.e., until the RSF bit in RTC->ISR is set. This function needs to be called
+ * after waking up from Stop or Standby modes, before other functions that read
+ * the shadow registers such as bc_rt_get_datetime.
+ *
+ * It takes up to two RTCClk cycles for the shadow registers to initialize.
+ */
+static inline void bc_rtc_wait()
+{
+	while(!(RTC->ISR & RTC_ISR_RSF));
+}
+
+
 //! @brief Enable or disable RTC initialization mode
 //! @param[in] state Enable when true, disable when false
 
