@@ -871,7 +871,7 @@ static bool _bc_esp8266_read_socket_data(bc_esp8266_t *self)
 
 static void _bc_esp8266_set_rtc_time(char *str)
 {
-    bc_rtc_t rtc;
+    struct tm tm;
     char token[5];
     uint8_t j = 0;
     uint8_t state = 0;
@@ -888,72 +888,72 @@ static void _bc_esp8266_set_rtc_time(char *str)
             {
                 if (strcmp(token, "Jan") == 0)
                 {
-                    rtc.month = 1;
+                    tm.tm_mon = 0;
                 }
                 else if (strcmp(token, "Feb") == 0)
                 {
-                    rtc.month = 2;
+                    tm.tm_mon = 1;
                 }
                 else if (strcmp(token, "Mar") == 0)
                 {
-                    rtc.month = 3;
+                    tm.tm_mon = 2;
                 }
                 else if (strcmp(token, "Apr") == 0)
                 {
-                    rtc.month = 4;
+                    tm.tm_mon = 3;
                 }
                 else if (strcmp(token, "May") == 0)
                 {
-                    rtc.month = 5;
+                    tm.tm_mon = 4;
                 }
                 else if (strcmp(token, "Jun") == 0)
                 {
-                    rtc.month = 6;
+                    tm.tm_mon = 5;
                 }
                 else if (strcmp(token, "Jul") == 0)
                 {
-                    rtc.month = 7;
+                    tm.tm_mon = 6;
                 }
                 else if (strcmp(token, "Aug") == 0)
                 {
-                    rtc.month = 8;
+                    tm.tm_mon = 7;
                 }
                 else if (strcmp(token, "Sep") == 0)
                 {
-                    rtc.month = 9;
+                    tm.tm_mon = 8;
                 }
                 else if (strcmp(token, "Oct") == 0)
                 {
-                    rtc.month = 10;
+                    tm.tm_mon = 9;
                 }
                 else if (strcmp(token, "Nov") == 0)
                 {
-                    rtc.month = 11;
+                    tm.tm_mon = 10;
                 }
                 else if (strcmp(token, "Dec") == 0)
                 {
-                    rtc.month = 12;
+                    tm.tm_mon = 11;
                 }
             }
             // Day
             else if (state == 2)
             {
-                rtc.date = atoi(token);
+                tm.tm_mday = atoi(token);
             }
             // Hours
             else if (state == 3)
             {
-                rtc.hours = atoi(token);
+                tm.tm_hour = atoi(token);
             }
             // Minutes
             else if (state == 4)
             {
-                rtc.minutes = atoi(token);
+                tm.tm_min = atoi(token);
             }
             // Seconds
             else if (state == 5)
             {
-                rtc.seconds = atoi(token);
+                tm.tm_sec = atoi(token);
             }
             // Year
             else if (state == 6)
@@ -962,7 +962,7 @@ static void _bc_esp8266_set_rtc_time(char *str)
                 {
                     return;
                 }
-                rtc.year = atoi(token);
+                tm.tm_year = atoi(token) - 1900;
             }
 
             j = 0;
@@ -973,7 +973,7 @@ static void _bc_esp8266_set_rtc_time(char *str)
             token[j++] = c;
         }
     }
-    bc_rtc_set_date_time(&rtc);
+    bc_rtc_set_datetime(&tm, 0);
 }
 
 bool bc_esp8266_check_ap_availability(bc_esp8266_t *self)

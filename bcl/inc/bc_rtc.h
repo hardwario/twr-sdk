@@ -1,12 +1,18 @@
 #ifndef _BC_RTC_H
 #define _BC_RTC_H
 
+#include <time.h>
 #include <stm32l0xx.h>
 #include "bc_common.h"
 
 //! @addtogroup bc_rtc bc_rtc
 //! @brief Driver for real-time clock
 //! @{
+
+// Note: For performance reasons, the BC_RTC_PREDIV_S value should be a power of
+// two.
+#define BC_RTC_PREDIV_S 256
+#define BC_RTC_PREDIV_A 128
 
 //! @brief Initialize real-time clock
 
@@ -28,17 +34,49 @@ typedef struct
 	uint32_t timestamp;  //!< Seconds from 01.01.1970 00:00:00
 } bc_rtc_t;
 
-//! @brief Get date and time from RTC
-//! @param[in] rtc Pointer to the RTC date and time structure
+/**
+ * Obtain current date and time from RTC
+ *
+ * This function retrieves the current date and time from the RTC peripheral and
+ * stores the result broken down in the given struct tm.
+ *
+ * The function has been optimized for speed. It uses most recent value
+ * memoization to amortize run time across successive invocations. Pre-computed
+ * tables are used to speed up leap year and year-of-day conversions. Run times
+ * measured with 2.1 MHz system clock are as follows:
+ *
+ *   - 88 us on first use or date register (RTC_DR) change
+ *   - 55 us on time register (RTC_TR) change
+ *   - 33 us on sub-second register (RTC_SSR) change only
+ *
+ * Thus, when called repeatedly within a one second interval, the first
+ * invocation will complete in 55 us and any subsequent invocations will only
+ * take 33 us until the RTC_TR register changes.
+ *
+ * Warning: The function does not check whether the RTC's shadow registers have
+ * been initialized. If invoked in a state where they might not be, e.g., after
+ * RTC initialization, system reset, or wake up from deep sleep, you need to
+ * perform the check yourself beforehand.
+ *
+ * Both 12-hour and 24-hour RTC modes are supported.
+ *
+ * @param[out] tm A pointer to target struct tm variable to hold the result
+ */
+void bc_rtc_get_datetime(struct tm *tm);
 
-void bc_rtc_get_date_time(bc_rtc_t* rtc);
-
-//! @brief Set gate and time to RTC
-//! @param[in] rtc Pointer to the RTC date and time structure
-//! @return true On success
-//! @return false On failure
-
-bool bc_rtc_set_date_time(bc_rtc_t* rtc);
+/**
+ * Set date and time in RTC
+ *
+ * This function configures the current date and time in the RTC peripheral.
+ * Date and time is passed broken down (struct tm) in the first parameter. A
+ * sub-second component is passed as the number of milliseconds in the second
+ * parameter.
+ *
+ * @param[in] tm Struct tm with calendar date and time to set in the RTC
+ * @param[in] ms Sub-second time (number of milliseconds, 0 if unknown)
+ * @return 0 on success, a negative number on error
+ */
+int bc_rtc_set_datetime(struct tm *tm, int ms);
 
 //! @brief Convert RTC to timestamp
 //! @param[in] rtc Pointer to the RTC date and time structure
