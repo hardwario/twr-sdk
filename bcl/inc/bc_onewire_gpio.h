@@ -13,6 +13,8 @@
 //! @param[in] gpio_channel GPIO channel
 void bc_onewire_gpio_init(bc_onewire_t *onewire, bc_gpio_channel_t channel);
 
+const bc_onewire_driver_t *bc_onewire_gpio_det_driver(void);
+
 //! @}
 
 #endif // _BC_ONEWIRE_GPIO_H

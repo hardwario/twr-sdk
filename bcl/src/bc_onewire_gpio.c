@@ -4,40 +4,40 @@
 #include <bc_irq.h>
 #include <stm32l0xx.h>
 
-static bool _bc_onewire_driver_init(void *ctx);
-static bool _bc_onewire_driver_enable(void *ctx);
-static bool _bc_onewire_driver_disable(void *ctx);
-static bool _bc_onewire_driver_reset(void *ctx);
-static void _bc_onewire_driver_write_bit(void *ctx, uint8_t bit);
-static uint8_t _bc_onewire_driver_read_bit(void *ctx);
-static void _bc_onewire_driver_write_byte(void *ctx, uint8_t byte);
-static uint8_t _bc_onewire_driver_read_byte(void *ctx);
-static bool _bc_onewire_driver_search_next(void *ctx, bc_onewire_t *onewire, uint64_t *device_number);
+static bool _bc_onewire_gpio_init(void *ctx);
+static bool _bc_onewire_gpio_enable(void *ctx);
+static bool _bc_onewire_gpio_disable(void *ctx);
+static bool _bc_onewire_gpio_reset(void *ctx);
+static void _bc_onewire_gpio_write_bit(void *ctx, uint8_t bit);
+static uint8_t _bc_onewire_gpio_read_bit(void *ctx);
+static void _bc_onewire_gpio_write_byte(void *ctx, uint8_t byte);
+static uint8_t _bc_onewire_gpio_read_byte(void *ctx);
+static bool _bc_onewire_gpio_search_next(void *ctx, bc_onewire_t *onewire, uint64_t *device_number);
 
-static const bc_onewire_driver_t _bc_onewire_driver =
+static const bc_onewire_driver_t _bc_onewire_gpio_driver =
 {
-    .init = _bc_onewire_driver_init,
-    .enable = _bc_onewire_driver_enable,
-    .disable = _bc_onewire_driver_disable,
-    .reset = _bc_onewire_driver_reset,
-    .write_bit = _bc_onewire_driver_write_bit,
-    .read_bit = _bc_onewire_driver_read_bit,
-    .write_byte = _bc_onewire_driver_write_byte,
-    .read_byte = _bc_onewire_driver_read_byte,
-    .search_next = _bc_onewire_driver_search_next
+    .init = _bc_onewire_gpio_init,
+    .enable = _bc_onewire_gpio_enable,
+    .disable = _bc_onewire_gpio_disable,
+    .reset = _bc_onewire_gpio_reset,
+    .write_bit = _bc_onewire_gpio_write_bit,
+    .read_bit = _bc_onewire_gpio_read_bit,
+    .write_byte = _bc_onewire_gpio_write_byte,
+    .read_byte = _bc_onewire_gpio_read_byte,
+    .search_next = _bc_onewire_gpio_search_next
 };
 
 void bc_onewire_gpio_init(bc_onewire_t *onewire, bc_gpio_channel_t channel)
 {
-    bc_onewire_init(onewire, &_bc_onewire_driver, (void *) channel);
+    bc_onewire_init(onewire, &_bc_onewire_gpio_driver, (void *) channel);
 }
 
-const bc_onewire_driver_t *bc_onewire_det_driver(void)
+const bc_onewire_driver_t *bc_onewire_gpio_det_driver(void)
 {
-    return &_bc_onewire_driver;
+    return &_bc_onewire_gpio_driver;
 }
 
-static bool _bc_onewire_driver_init(void *ctx)
+static bool _bc_onewire_gpio_init(void *ctx)
 {
     bc_gpio_channel_t channel = (bc_gpio_channel_t) ctx;
 
@@ -50,7 +50,7 @@ static bool _bc_onewire_driver_init(void *ctx)
     return true;
 }
 
-static bool _bc_onewire_driver_enable(void *ctx)
+static bool _bc_onewire_gpio_enable(void *ctx)
 {
     (void) ctx;
     bc_system_pll_enable();
@@ -59,7 +59,7 @@ static bool _bc_onewire_driver_enable(void *ctx)
     return true;
 }
 
-static bool _bc_onewire_driver_disable(void *ctx)
+static bool _bc_onewire_gpio_disable(void *ctx)
 {
     (void) ctx;
     bc_timer_stop();
@@ -67,7 +67,7 @@ static bool _bc_onewire_driver_disable(void *ctx)
     return true;
 }
 
-static bool _bc_onewire_driver_reset(void *ctx)
+static bool _bc_onewire_gpio_reset(void *ctx)
 {
     bc_gpio_channel_t channel = (bc_gpio_channel_t) ctx;
 
@@ -118,7 +118,7 @@ static bool _bc_onewire_driver_reset(void *ctx)
     return i == 0;
 }
 
-static void _bc_onewire_driver_write_bit(void *ctx, uint8_t bit)
+static void _bc_onewire_gpio_write_bit(void *ctx, uint8_t bit)
 {
     bc_gpio_channel_t channel = (bc_gpio_channel_t) ctx;
 
@@ -147,7 +147,7 @@ static void _bc_onewire_driver_write_bit(void *ctx, uint8_t bit)
     }
 }
 
-static uint8_t _bc_onewire_driver_read_bit(void *ctx)
+static uint8_t _bc_onewire_gpio_read_bit(void *ctx)
 {
     bc_gpio_channel_t channel = (bc_gpio_channel_t) ctx;
 
@@ -178,26 +178,26 @@ static uint8_t _bc_onewire_driver_read_bit(void *ctx)
     return bit;
 }
 
-static void _bc_onewire_driver_write_byte(void *ctx, uint8_t byte)
+static void _bc_onewire_gpio_write_byte(void *ctx, uint8_t byte)
 {
     for (uint8_t i = 0; i < 8; i++)
     {
-        _bc_onewire_driver_write_bit(ctx, byte & 0x01);
+        _bc_onewire_gpio_write_bit(ctx, byte & 0x01);
         byte >>= 1;
     }
 }
 
-static uint8_t _bc_onewire_driver_read_byte(void *ctx)
+static uint8_t _bc_onewire_gpio_read_byte(void *ctx)
 {
     uint8_t byte = 0;
     for (uint8_t i = 0; i < 8; i++)
     {
-        byte |= (_bc_onewire_driver_read_bit(ctx) << i);
+        byte |= (_bc_onewire_gpio_read_bit(ctx) << i);
     }
     return byte;
 }
 
-static bool _bc_onewire_driver_search_next(void *ctx, bc_onewire_t *onewire, uint64_t *device_number)
+static bool _bc_onewire_gpio_search_next(void *ctx, bc_onewire_t *onewire, uint64_t *device_number)
 {
     bool search_result = false;
     uint8_t id_bit_number;
@@ -211,19 +211,19 @@ static bool _bc_onewire_driver_search_next(void *ctx, bc_onewire_t *onewire, uin
     rom_byte_number = 0;
     rom_byte_mask = 1;
 
-    if (!_bc_onewire_driver_reset(ctx))
+    if (!_bc_onewire_gpio_reset(ctx))
     {
         return false;
     }
 
     // issue the search command
-    _bc_onewire_driver_write_byte(ctx, 0xf0);
+    _bc_onewire_gpio_write_byte(ctx, 0xf0);
 
     // loop to do the search
     do
     {
-        id_bit = _bc_onewire_driver_read_bit(ctx);
-        cmp_id_bit = _bc_onewire_driver_read_bit(ctx);
+        id_bit = _bc_onewire_gpio_read_bit(ctx);
+        cmp_id_bit = _bc_onewire_gpio_read_bit(ctx);
 
         // check for no devices on 1-wire
         if ((id_bit == 1) && (cmp_id_bit == 1))
@@ -275,7 +275,7 @@ static bool _bc_onewire_driver_search_next(void *ctx, bc_onewire_t *onewire, uin
             }
 
             /* Serial number search direction write bit */
-            _bc_onewire_driver_write_bit(ctx, search_direction);
+            _bc_onewire_gpio_write_bit(ctx, search_direction);
 
             /* Increment the byte counter id_bit_number and shift the mask rom_byte_mask */
             id_bit_number++;
@@ -317,7 +317,7 @@ static bool _bc_onewire_driver_search_next(void *ctx, bc_onewire_t *onewire, uin
     }
     else
     {
-        _bc_onewire_driver_reset(ctx);
+        _bc_onewire_gpio_reset(ctx);
     }
 
     return search_result;
