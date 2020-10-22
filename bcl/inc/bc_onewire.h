@@ -15,24 +15,45 @@ typedef struct bc_onewire_t bc_onewire_t;
 
 //! @cond
 
+typedef struct
+{
+    bool (*init)(void *ctx);
+    bool (*enable)(void *ctx);
+    bool (*disable)(void *ctx);
+    bool (*reset)(void *ctx);
+    void (*write_bit)(void *ctx, uint8_t bit);
+    uint8_t (*read_bit)(void *ctx);
+    void (*write_byte)(void *ctx, uint8_t byte);
+    uint8_t (*read_byte)(void *ctx);
+    bool (*search_next)(void *ctx, bc_onewire_t *onewire, uint64_t *device_number);
+
+} bc_onewire_driver_t;
+
 struct bc_onewire_t
 {
     uint8_t _last_discrepancy;
     uint8_t _last_family_discrepancy;
     bool _last_device_flag;
     uint8_t _last_rom_no[8];
+
     int _lock_count;
-    bc_gpio_channel_t _channel;
+    void *_driver_ctx;
+    const bc_onewire_driver_t *_driver;
     bool _auto_ds28e17_sleep_mode;
 };
 
 //! @endcond
 
-//! @brief Initialize 1-Wire
-//! @param[in] self Instance
-//! @param[in] gpio_channel GPIO channel
+
 
 void bc_onewire_init_gpio(bc_onewire_t *self, bc_gpio_channel_t channel);
+
+//! @brief Initialize 1-Wire
+//! @param[in] self Instance
+//! @param[in] driver Driver
+//! @param[in] driver_ctx Driver context
+
+bool bc_onewire_init(bc_onewire_t *self, const bc_onewire_driver_t *driver, void *driver_ctx);
 
 //! @brief Start transaction, enable pll and run timer
 //! @param[in] self Instance
