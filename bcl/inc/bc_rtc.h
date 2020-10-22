@@ -32,19 +32,19 @@ void bc_rtc_init(void);
  * measured with 2.1 MHz system clock are as follows:
  *
  *   - 88 us on first use or date register (RTC_DR) change
- *   - 55 us on time register (RTC_TR) change
- *   - 33 us on sub-second register (RTC_SSR) change only
+ *   - 50 us on time register (RTC_TR) change
+ *   - 34 us on sub-second register (RTC_SSR) change only
  *
  * Thus, when called repeatedly within a one second interval, the first
- * invocation will complete in 55 us and any subsequent invocations will only
- * take 33 us until the RTC_TR register changes.
+ * invocation will complete in 50 us and any subsequent invocations will only
+ * take 34 us until the RTC_TR register changes.
  *
  * Warning: The function does not check whether the RTC's shadow registers have
  * been initialized. If invoked in a state where they might not be, e.g., after
  * RTC initialization, system reset, or wake up from deep sleep, you need to
  * perform the check yourself beforehand.
  *
- * Both 12-hour and 24-hour RTC modes are supported.
+ * The RTC peripheral must be configured in 24-hour mode.
  *
  * @param[out] tm A pointer to target struct tm variable to hold the result
  */

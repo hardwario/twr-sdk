@@ -223,6 +223,9 @@ static void _bc_system_init_rtc(void)
         RTC->PRER = BC_RTC_PREDIV_S - 1;
         RTC->PRER |= (BC_RTC_PREDIV_A - 1) << 16;
 
+        // Make sure RTC runs in 24-hour mode
+        RTC->CR &= ~RTC_CR_FMT;
+
         bc_rtc_set_init(false);
     }
 

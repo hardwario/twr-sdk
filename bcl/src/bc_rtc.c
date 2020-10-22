@@ -194,9 +194,6 @@ void bc_rtc_get_datetime(struct tm *tm)
         mem.tm.tm_sec = 10 * tr.ST + tr.SU;
         mem.tm.tm_min = 10 * tr.MNT + tr.MNU;
         mem.tm.tm_hour = 10 * tr.HT + tr.HU;
-        // If the RTC is configured in AM/PM mode and the PM bit is set, convert the
-        // PM value to a 24-hour value.
-        if ((RTC->CR & RTC_CR_FMT) && tr.PM) mem.tm.tm_hour += 12;
         mem.tr = tr;
     }
 
@@ -277,15 +274,6 @@ int bc_rtc_set_datetime(struct tm *tm, int ms)
 
     int month = tm->tm_mon + 1;
 
-    int hour, pm;
-    if ((RTC->CR & RTC_CR_FMT) && (tm->tm_hour > 12)) {
-        hour = tm->tm_hour - 12;
-        pm = 1;
-    } else {
-        hour = tm->tm_hour;
-        pm = 0;
-    }
-
     if (ms < 0 || ms > 999) return -2;
     RTC_SSR ssr = {
         .SS = BC_RTC_PREDIV_S - ms * (BC_RTC_PREDIV_S + 1) / 1000
@@ -304,9 +292,9 @@ int bc_rtc_set_datetime(struct tm *tm, int ms)
         .MNU  = tm->tm_min % 10,
         .MNT  = tm->tm_min / 10,
         .res2 = old_tr.res2,
-        .HU   = hour % 10,
-        .HT   = hour / 10,
-        .PM   = pm
+        .HU   = tm->tm_hour % 10,
+        .HT   = tm->tm_hour / 10,
+        .PM   = 0
     };
 
     // Struct tm counts week days from Sunday starting at 0.
