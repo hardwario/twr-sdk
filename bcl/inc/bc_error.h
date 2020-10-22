@@ -7,7 +7,8 @@ typedef enum
 {
     BC_ERROR_NOT_ENOUGH_TASKS = 0,
     BC_ERROR_LOG_NOT_INITIALIZED = 1,
-    BC_ERROR_ERROR_UNLOCK = 2
+    BC_ERROR_ERROR_UNLOCK = 2,
+    BC_ERROR_CALLBACK = 3,
 
 } bc_error_t;
 
