@@ -1,6 +1,5 @@
 #include <bc_module_sensor.h>
 #include <bc_tca9534a.h>
-#include <bc_onewire.h>
 
 #define _BC_MODULE_SENSOR_INITIALIZED_STATE 0xff
 #define _BC_MODULE_SENSOR_INITIALIZED_DIRECTION 0x00
@@ -15,9 +14,14 @@ static struct
     bool initialized;
     bc_tca9534a_t tca9534a;
     bc_module_sensor_revision_t revision;
-    int onewire_init_semaphore;
+    int onewire_power_semaphore;
+    bool onewire_initialized;
+    bc_onewire_t onewire;
 
-} _bc_module_sensor;
+} _bc_module_sensor = {
+    .initialized = false,
+    .onewire_initialized = false
+};
 
 static const bc_gpio_channel_t _bc_module_sensor_channel_gpio_lut[3] =
 {
@@ -302,14 +306,21 @@ bc_module_sensor_revision_t bc_module_sensor_get_revision(void)
     return _bc_module_sensor.revision;
 }
 
-void bc_module_sensor_onewire_init(void)
+bc_onewire_t *bc_module_sensor_get_onewire(void)
 {
-    bc_onewire_init(_bc_module_sensor_channel_gpio_lut[BC_MODULE_SENSOR_CHANNEL_B]);
+    if (!_bc_module_sensor.onewire_initialized)
+    {
+        bc_onewire_init_gpio(&_bc_module_sensor.onewire, BC_GPIO_P5);
+
+        _bc_module_sensor.onewire_initialized = true;
+    }
+
+    return &_bc_module_sensor.onewire;
 }
 
 bool bc_module_sensor_onewire_power_up(void)
 {
-    if (_bc_module_sensor.onewire_init_semaphore == 0)
+    if (_bc_module_sensor.onewire_power_semaphore == 0)
     {
         if (bc_module_sensor_get_revision() == BC_MODULE_SENSOR_REVISION_R1_1)
         {
@@ -332,16 +343,16 @@ bool bc_module_sensor_onewire_power_up(void)
         }
     }
 
-    _bc_module_sensor.onewire_init_semaphore++;
+    _bc_module_sensor.onewire_power_semaphore++;
 
     return true;
 }
 
 bool bc_module_sensor_onewire_power_down(void)
 {
-    _bc_module_sensor.onewire_init_semaphore--;
+    _bc_module_sensor.onewire_power_semaphore--;
 
-    if (_bc_module_sensor.onewire_init_semaphore == 0)
+    if (_bc_module_sensor.onewire_power_semaphore == 0)
     {
         if (bc_module_sensor_get_revision() == BC_MODULE_SENSOR_REVISION_R1_1)
         {

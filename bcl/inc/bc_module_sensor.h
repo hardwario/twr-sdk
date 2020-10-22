@@ -2,6 +2,7 @@
 #define _BC_MODULE_SENSOR_H
 
 #include <bc_gpio.h>
+#include <bc_onewire.h>
 
 //! @addtogroup bc_module_sensor bc_module_sensor
 //! @brief Driver for Sensor Module
@@ -140,9 +141,10 @@ bool bc_module_sensor_set_vdd(bool on);
 
 bc_module_sensor_revision_t bc_module_sensor_get_revision(void);
 
-//! @brief Initialize 1-Wire on channel B
+//! @brief Initialize and get Instance 1-Wire for channel B
+//! @return pointer on Instance 1-Wire
 
-void bc_module_sensor_onewire_init(void);
+bc_onewire_t *bc_module_sensor_get_onewire(void);
 
 //! @brief Semaphore for 1Wire Power up: for R1.1 set VDD On, for R1.0 pull up 56R on channel A
 //! @return true On success
