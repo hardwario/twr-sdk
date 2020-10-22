@@ -95,6 +95,12 @@ void bc_rtc_get_timestamp(struct timespec *tv);
  */
 int bc_rtc_set_datetime(struct tm *tm, int ms);
 
+//! @brief Convert date and time to UNIX timestamp
+//! @param[in] tm Pointer to the date and time structure
+//! @return unix timestamp
+
+uint32_t bc_rtc_datetime_to_timestamp(struct tm *tm);
+
 //! @brief Enable RTC write protection
 //
 // This function supports nested invocations. If bc_rtc_enable_write has been

@@ -141,6 +141,35 @@ void bc_rtc_init(void)
 {
 }
 
+uint32_t bc_rtc_datetime_to_timestamp(struct tm *tm)
+{
+    uint32_t days = 0, seconds = 0;
+    uint16_t i;
+    int year = tm->tm_year + 1900;
+
+    // Year is below offset year
+    if (year < _BC_RTC_OFFSET_YEAR)
+    {
+        return 0;
+    }
+    // Days in back years
+    for (i = _BC_RTC_OFFSET_YEAR; i < year; i++)
+    {
+        days += _BC_RTC_DAYS_IN_YEAR(i);
+    }
+    // Days in current year
+    days += days_since_new_year[_BC_RTC_LEAP_YEAR(year)][tm->tm_mon];
+
+    // Day starts with 1
+    days += tm->tm_mday - 1;
+    seconds = days * _BC_RTC_SECONDS_PER_DAY;
+    seconds += tm->tm_hour * _BC_RTC_SECONDS_PER_HOUR;
+    seconds += tm->tm_min * _BC_RTC_SECONDS_PER_MINUTE;
+    seconds += tm->tm_sec;
+
+    return seconds;
+}
+
 void bc_rtc_get_datetime(struct tm *tm)
 {
     // The value 0xFFFFFFFF is a value that the RTC_DR and RTC_TR registers
