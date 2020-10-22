@@ -1,5 +1,6 @@
 #include <bc_module_sensor.h>
 #include <bc_tca9534a.h>
+#include <bc_onewire_gpio.h>
 
 #define _BC_MODULE_SENSOR_INITIALIZED_STATE 0xff
 #define _BC_MODULE_SENSOR_INITIALIZED_DIRECTION 0x00
@@ -310,7 +311,7 @@ bc_onewire_t *bc_module_sensor_get_onewire(void)
 {
     if (!_bc_module_sensor.onewire_initialized)
     {
-        bc_onewire_init_gpio(&_bc_module_sensor.onewire, BC_GPIO_P5);
+        bc_onewire_gpio_init(&_bc_module_sensor.onewire, BC_GPIO_P5);
 
         _bc_module_sensor.onewire_initialized = true;
     }
