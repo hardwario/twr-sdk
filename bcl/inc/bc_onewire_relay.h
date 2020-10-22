@@ -27,7 +27,7 @@ typedef enum
 typedef struct
 {
     uint64_t _device_number;
-    bc_gpio_channel_t _channel;
+    bc_onewire_t *_onewire;
     uint8_t _state;
     bool _state_valid;
 
@@ -35,10 +35,11 @@ typedef struct
 
 //! @brief Initialize relay
 //! @param[in] self Instance
+//! @param[in] Pointer on instance 1-Wire
 //! @return true On success
 //! @return false On failure
 
-bool bc_onewire_relay_init(bc_onewire_relay_t *self, bc_gpio_channel_t channel, uint64_t device_number);
+bool bc_onewire_relay_init(bc_onewire_relay_t *self, bc_onewire_t *onewire, uint64_t device_number);
 
 //! @brief Set relay to specified state
 //! @param[in] self Instance
