@@ -86,7 +86,8 @@
 #include <bc_base64.h>
 #include <bc_sha256.h>
 #include <bc_ds18b20.h>
-
+#include <bc_onewire.h>
+#include <bc_onewire_gpio.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
