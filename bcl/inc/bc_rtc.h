@@ -65,6 +65,37 @@ typedef struct
 void bc_rtc_get_datetime(struct tm *tm);
 
 /**
+ * Obtain current UNIX time from RTC
+ *
+ * Retrieve the current date and time from the RTC peripheral and return it in
+ * the form of a UNIX timestamp. The timestamp is stored in a struct timespec.
+ * The attribute tv_sec contains the number of seconds since the Epoch (January
+ * 1st, 1970). The attribute tv_nsec contains an additional number of
+ * nanoseconds since tv_sec.
+ *
+ * The resolution of this function depends on the value of the synchronous RTC
+ * prescaler. With the default value (256), the resolution is about 4
+ * milliseconds.
+ *
+ * In order for this function to work correctly, the RTC must be configured in
+ * the 24-hour mode, must be configured with UTC date and time, and the year
+ * must be between 2000 and 2099 (inclusive).
+ *
+ * The run time of this function depends on the value of the synchronous RTC
+ * prescaler register. For optimum performance, the register's value should be a
+ * power of two minus one. The run times are as follows with the system clock
+ * running at 2.1 MHz:
+ *
+ *   - 87 us on first use or date register (RTC_DR) change
+ *   - 58 us on time register (RTC_TR) change
+ *   - 38 us on sub-second register (RTC_SSR) change only
+ *
+ * The function uses most recent value memoization and pre-computed conversion
+ * tables to amortize the run time across successive invocations.
+ */
+void bc_rtc_get_timestamp(struct timespec *tv);
+
+/**
  * Set date and time in RTC
  *
  * This function configures the current date and time in the RTC peripheral.
