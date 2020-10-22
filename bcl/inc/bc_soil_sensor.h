@@ -3,6 +3,7 @@
 
 #include <bc_ds28e17.h>
 #include <bc_scheduler.h>
+#include <bc_onewire.h>
 
 //! @addtogroup bc_soil_sensor bc_soil_sensor
 //! @brief Driver for soil sensor
@@ -137,7 +138,7 @@ struct bc_soil_sensor_t
     void (*_event_handler)(bc_soil_sensor_t *, uint64_t, bc_soil_sensor_event_t, void *);
     void *_event_param;
 
-    bc_gpio_channel_t _channel;
+    bc_onewire_t *_onewire;
     bc_soil_sensor_sensor_t *_sensor;
     int _sensor_count;
     int _sensor_found;
