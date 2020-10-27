@@ -47,6 +47,11 @@ bool bc_onewire_transaction_stop(bc_onewire_t *self)
 	return true;
 }
 
+bool bc_onewire_is_transaction(bc_onewire_t *self)
+{
+    return self->_lock_count != 0;
+}
+
 bool bc_onewire_reset(bc_onewire_t *self)
 {
     bool state;

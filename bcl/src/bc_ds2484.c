@@ -30,7 +30,7 @@
 #define _BC_DS2484_CFG_1WS (1<<3) // 1-Wire Speed(0==standard, 1==overdrive)
 
 #define _BC_DS2484_CFG_DEFAULT (_BC_DS2484_CFG_APU)
-#define _BC_DS2484_PIN_SLPZ (BC_GPIO_P2)
+// #define _BC_DS2484_PIN_SLPZ (BC_GPIO_P2)
 
 static bool _bc_ds2484_i2c_read_byte(bc_ds2484_t *self, uint8_t *b);
 static bool _bc_ds2484_i2c_write_byte(bc_ds2484_t *self, const uint8_t b);
@@ -46,9 +46,9 @@ bool bc_ds2484_init(bc_ds2484_t *self, bc_i2c_channel_t i2c_channel)
 
     self->_ready = false;
 
-    bc_gpio_init(_BC_DS2484_PIN_SLPZ);
-    bc_gpio_set_output(_BC_DS2484_PIN_SLPZ, 0);
-    bc_gpio_set_mode(_BC_DS2484_PIN_SLPZ, BC_GPIO_MODE_OUTPUT);
+    // bc_gpio_init(_BC_DS2484_PIN_SLPZ);
+    // bc_gpio_set_output(_BC_DS2484_PIN_SLPZ, 0);
+    // bc_gpio_set_mode(_BC_DS2484_PIN_SLPZ, BC_GPIO_MODE_OUTPUT);
 
     bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
 
@@ -59,7 +59,7 @@ void bc_ds2484_enable(bc_ds2484_t *self)
 {
     self->_ready = false;
 
-    bc_gpio_set_output(_BC_DS2484_PIN_SLPZ, 1);
+    // bc_gpio_set_output(_BC_DS2484_PIN_SLPZ, 1);
 
     if (!_bc_ds2484_device_reset(self))
     {
@@ -84,7 +84,7 @@ void bc_ds2484_disable(bc_ds2484_t *self)
 {
     bc_ds2484_busy_wait(self);
 
-    bc_gpio_set_output(_BC_DS2484_PIN_SLPZ, 0);
+    // bc_gpio_set_output(_BC_DS2484_PIN_SLPZ, 0);
 
     self->_ready = false;
 }

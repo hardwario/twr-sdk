@@ -69,6 +69,13 @@ bool bc_onewire_transaction_start(bc_onewire_t *self);
 
 bool bc_onewire_transaction_stop(bc_onewire_t *self);
 
+//! @brief Is transaction run
+//! @param[in] self Instance
+//! @return true Transaction is run
+//! @return false Transaction is stop
+
+bool bc_onewire_is_transaction(bc_onewire_t *self);
+
 //! @brief Reset the 1-Wire bus and return the presence of any device
 //! @param[in] self Instance
 //! @return true Device present
