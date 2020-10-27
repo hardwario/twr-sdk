@@ -2,8 +2,10 @@
 #include <bc_onewire.h>
 #include <bc_gpio.h>
 #include <bc_i2c.h>
+#include <bc_module_sensor.h>
 
 #define _BC_DS18B20_SCRATCHPAD_SIZE 9
+#define _BC_DS18B20_DELAY_RUN 5000
 
 static bc_tick_t _bc_ds18b20_lut_delay[] = {
     [BC_DS18B20_RESOLUTION_BITS_9] = 100,
@@ -20,29 +22,31 @@ static int _bc_ds18b20_power_semaphore = 0;
 
 void bc_ds18b20_init_single(bc_ds18b20_t *self, bc_ds18b20_resolution_bits_t resolution)
 {
-    static bc_ds18b20_sensor_t sensor;
-    bc_ds18b20_init_multiple(self, &sensor, 1, resolution);
+    static bc_ds18b20_sensor_t sensors[1];
+    bc_module_sensor_onewire_power_up();
+    bc_ds18b20_init(self, bc_module_sensor_get_onewire(), sensors, 1, resolution);
+    self->_power = true;
 }
 
 void bc_ds18b20_init_multiple(bc_ds18b20_t *self, bc_ds18b20_sensor_t *sensors, int sensor_count, bc_ds18b20_resolution_bits_t resolution)
 {
-    bc_ds18b20_init(self, BC_GPIO_P5, sensors, sensor_count, resolution);
+    bc_module_sensor_onewire_power_up();
+    bc_ds18b20_init(self, bc_module_sensor_get_onewire(), sensors, sensor_count, resolution);
+    self->_power = true;
 }
 
-void bc_ds18b20_init(bc_ds18b20_t *self, bc_gpio_channel_t onewire_channel, bc_ds18b20_sensor_t *sensors, int sensor_count, bc_ds18b20_resolution_bits_t resolution)
+void bc_ds18b20_init(bc_ds18b20_t *self, bc_onewire_t *onewire, bc_ds18b20_sensor_t *sensors, int sensor_count, bc_ds18b20_resolution_bits_t resolution)
 {
     memset(self, 0, sizeof(*self));
 
-    self->_onewire_channel = onewire_channel;
-
-    bc_onewire_init(self->_onewire_channel);
+    self->_onewire = onewire;
 
     self->_resolution = resolution;
     self->_sensor = sensors;
     self->_sensor_count = sensor_count;
 
     self->_task_id_interval = bc_scheduler_register(_bc_ds18b20_task_interval, self, BC_TICK_INFINITY);
-    self->_task_id_measure = bc_scheduler_register(_bc_ds18b20_task_measure, self, 10);
+    self->_task_id_measure = bc_scheduler_register(_bc_ds18b20_task_measure, self, _BC_DS18B20_DELAY_RUN);
 }
 
 void bc_ds18b20_set_event_handler(bc_ds18b20_t *self,
@@ -77,7 +81,7 @@ bool bc_ds18b20_measure(bc_ds18b20_t *self)
 
     self->_measurement_active = true;
 
-    bc_scheduler_plan_now(self->_task_id_measure);
+    bc_scheduler_plan_absolute(self->_task_id_measure, _BC_DS18B20_DELAY_RUN);
 
     return true;
 }
@@ -93,6 +97,20 @@ int bc_ds18b20_get_index_by_device_address(bc_ds18b20_t *self, uint64_t device_a
     }
 
     return -1;
+}
+
+uint64_t bc_ds182b0_get_short_address(bc_ds18b20_t *self, uint8_t index)
+{
+    if (index >= self->_sensor_found)
+    {
+        return 0;
+    }
+
+    uint64_t short_address = self->_sensor[index]._device_address;
+    short_address &= ~(((uint64_t) 0xff) << 56);
+    short_address >>= 8;
+
+    return short_address;
 }
 
 int bc_ds18b20_get_sensor_found(bc_ds18b20_t *self)
@@ -162,6 +180,11 @@ static void _bc_ds18b20_task_interval(void *param)
 
 static bool _bc_ds18b20_power_up(bc_ds18b20_t *self)
 {
+    if (!self->_power_dynamic) // If power dynamic equal False, can't power down
+    {
+        return true;
+    }
+
     if (self->_power)
     {
         return true;
@@ -169,7 +192,6 @@ static bool _bc_ds18b20_power_up(bc_ds18b20_t *self)
 
     if (_bc_ds18b20_power_semaphore == 0)
     {
-
         bc_module_sensor_init();
 
         if (bc_module_sensor_get_revision() == BC_MODULE_SENSOR_REVISION_R1_1)
@@ -286,16 +308,14 @@ static void _bc_ds18b20_task_measure(void *param)
         {
             self->_state = BC_DS18B20_STATE_ERROR;
 
-            if (!bc_module_sensor_init())
+            if (self->_power_dynamic)
             {
-                goto start;
-            }
+                bc_module_sensor_set_mode(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_MODE_INPUT);
 
-            bc_module_sensor_set_mode(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_MODE_INPUT);
-
-            if (!_bc_ds18b20_power_up(self))
-            {
-                goto start;
+                if (!_bc_ds18b20_power_up(self))
+                {
+                    goto start;
+                }
             }
 
             self->_state = BC_DS18B20_STATE_INITIALIZE;
@@ -311,8 +331,9 @@ static void _bc_ds18b20_task_measure(void *param)
             uint64_t _device_address = 0;
             self->_sensor_found = 0;
 
-            bc_onewire_search_start(0);
-            while ((self->_sensor_found < self->_sensor_count) && bc_onewire_search_next(self->_onewire_channel, &_device_address))
+
+            bc_onewire_search_start(self->_onewire, 0);
+            while ((self->_sensor_found < self->_sensor_count) && bc_onewire_search_next(self->_onewire, &_device_address))
             {
                 self->_sensor[self->_sensor_found]._device_address = _device_address;
 
@@ -322,26 +343,27 @@ static void _bc_ds18b20_task_measure(void *param)
 
             if (self->_sensor_found == 0)
             {
+                // bc_onewire_transaction_stop(self->_onewire);
                 goto start;
             }
 
-            bc_onewire_transaction_start(self->_onewire_channel);
+            bc_onewire_transaction_start(self->_onewire);
 
             // Write Scratchpad
-            if (!bc_onewire_reset(self->_onewire_channel))
+            if (!bc_onewire_reset(self->_onewire))
             {
-                bc_onewire_transaction_stop(self->_onewire_channel);
+                bc_onewire_transaction_stop(self->_onewire);
 
                 goto start;
             }
 
-            bc_onewire_skip_rom(self->_onewire_channel);
+            bc_onewire_skip_rom(self->_onewire);
 
             uint8_t buffer[] = {0x4e, 0x75, 0x70, self->_resolution << 5 | 0x1f};
 
-            bc_onewire_write(self->_onewire_channel, buffer, sizeof(buffer));
+            bc_onewire_write(self->_onewire, buffer, sizeof(buffer));
 
-            bc_onewire_transaction_stop(self->_onewire_channel);
+            bc_onewire_transaction_stop(self->_onewire);
 
             if (self->_measurement_active)
             {
@@ -378,20 +400,20 @@ static void _bc_ds18b20_task_measure(void *param)
         {
             self->_state = BC_DS18B20_STATE_ERROR;
 
-            bc_onewire_transaction_start(self->_onewire_channel);
+            bc_onewire_transaction_start(self->_onewire);
 
-            if (!bc_onewire_reset(self->_onewire_channel))
+            if (!bc_onewire_reset(self->_onewire))
             {
-            	bc_onewire_transaction_stop(self->_onewire_channel);
+            	bc_onewire_transaction_stop(self->_onewire);
                 goto start;
             }
 
-            //bc_onewire_select(self->_onewire_channel, &self->_device_address);
-            bc_onewire_skip_rom(self->_onewire_channel);
+            //bc_onewire_select(self->_onewire, &self->_device_address);
+            bc_onewire_skip_rom(self->_onewire);
 
-            bc_onewire_write_8b(self->_onewire_channel, 0x44);
+            bc_onewire_write_byte(self->_onewire, 0x44);
 
-            bc_onewire_transaction_stop(self->_onewire_channel);
+            bc_onewire_transaction_stop(self->_onewire);
 
             self->_state = BC_DS18B20_STATE_READ;
 
@@ -407,22 +429,22 @@ static void _bc_ds18b20_task_measure(void *param)
 
             for (int i = 0; i < self->_sensor_found; i++)
             {
-                bc_onewire_transaction_start(self->_onewire_channel);
+                bc_onewire_transaction_start(self->_onewire);
 
-                if (!bc_onewire_reset(self->_onewire_channel))
+                if (!bc_onewire_reset(self->_onewire))
                 {
-                    bc_onewire_transaction_stop(self->_onewire_channel);
+                    bc_onewire_transaction_stop(self->_onewire);
 
                     goto start;
                 }
 
-                bc_onewire_select(self->_onewire_channel, &self->_sensor[i]._device_address);
+                bc_onewire_select(self->_onewire, &self->_sensor[i]._device_address);
 
-                bc_onewire_write_8b(self->_onewire_channel, 0xBE);
+                bc_onewire_write_byte(self->_onewire, 0xBE);
 
-                bc_onewire_read(self->_onewire_channel, scratchpad, sizeof(scratchpad));
+                bc_onewire_read(self->_onewire, scratchpad, sizeof(scratchpad));
 
-                bc_onewire_transaction_stop(self->_onewire_channel);
+                bc_onewire_transaction_stop(self->_onewire);
 
 
                 if (!_bc_ds18b20_is_scratchpad_valid(scratchpad))

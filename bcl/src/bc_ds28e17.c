@@ -11,17 +11,15 @@ static const bc_gpio_channel_t _bc_ds28e17_set_speed_lut[2] =
 static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_length, void *buffer, size_t length);
 static bool _bc_ds28e17_read(bc_ds28e17_t *self, uint8_t *head, size_t head_length, void *buffer, size_t length);
 
-void bc_ds28e17_init(bc_ds28e17_t *self, bc_gpio_channel_t channel, uint64_t device_number)
+void bc_ds28e17_init(bc_ds28e17_t *self, bc_onewire_t *onewire, uint64_t device_number)
 {
     memset(self, 0, sizeof(*self));
 
     self->_device_number = device_number;
 
-    self->_channel = channel;
+    self->_onewire = onewire;
 
-    bc_onewire_init(self->_channel);
-
-    bc_onewire_auto_ds28e17_sleep_mode(true);
+    bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
 }
 
 void bc_ds28e17_deinit(bc_ds28e17_t *self)
@@ -36,25 +34,25 @@ uint64_t bc_ds28e17_get_device_number(bc_ds28e17_t *self)
 
 bool bc_ds28e17_set_speed(bc_ds28e17_t *self, bc_i2c_speed_t speed)
 {
-    bc_onewire_transaction_start(self->_channel);
+    bc_onewire_transaction_start(self->_onewire);
 
-    if (!bc_onewire_reset(self->_channel))
+    if (!bc_onewire_reset(self->_onewire))
     {
-        bc_onewire_transaction_stop(self->_channel);
+        bc_onewire_transaction_stop(self->_onewire);
 
         return false;
     }
 
-    bc_onewire_select(self->_channel, &self->_device_number);
+    bc_onewire_select(self->_onewire, &self->_device_number);
 
     uint8_t buffer[2];
 
     buffer[0] = 0xD2;
     buffer[1] = _bc_ds28e17_set_speed_lut[speed];
 
-    bc_onewire_write(self->_channel, buffer, sizeof(buffer));
+    bc_onewire_write(self->_onewire, buffer, sizeof(buffer));
 
-    bc_onewire_transaction_stop(self->_channel);
+    bc_onewire_transaction_stop(self->_onewire);
 
     return true;
 }
@@ -135,13 +133,13 @@ bool bc_ds28e17_memory_read(bc_ds28e17_t *self, const bc_i2c_memory_transfer_t *
 
 static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_length, void *buffer, size_t length)
 {
-    bc_onewire_transaction_start(self->_channel);
+    bc_onewire_transaction_start(self->_onewire);
 
-    bc_onewire_reset(self->_channel);
+    bc_onewire_reset(self->_onewire);
 
-    if (!bc_onewire_reset(self->_channel))
+    if (!bc_onewire_reset(self->_onewire))
     {
-        bc_onewire_transaction_stop(self->_channel);
+        bc_onewire_transaction_stop(self->_onewire);
 
         return false;
     }
@@ -150,23 +148,23 @@ static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_len
 
     crc16 = bc_onewire_crc16(buffer, length, crc16);
 
-    bc_onewire_select(self->_channel, &self->_device_number);
+    bc_onewire_select(self->_onewire, &self->_device_number);
 
-    bc_onewire_write(self->_channel, head, head_length);
+    bc_onewire_write(self->_onewire, head, head_length);
 
-    bc_onewire_write(self->_channel, buffer, length);
+    bc_onewire_write(self->_onewire, buffer, length);
 
     crc16 = ~crc16;
 
-    bc_onewire_write(self->_channel, &crc16, sizeof(crc16));
+    bc_onewire_write(self->_onewire, &crc16, sizeof(crc16));
 
     bc_tick_t timeout = bc_tick_get() + 50;
 
-    while (bc_onewire_read_bit(self->_channel) != 0)
+    while (bc_onewire_read_bit(self->_onewire) != 0)
     {
         if (timeout < bc_tick_get())
         {
-            bc_onewire_transaction_stop(self->_channel);
+            bc_onewire_transaction_stop(self->_onewire);
 
             return false;
         }
@@ -174,45 +172,45 @@ static bool _bc_ds28e17_write(bc_ds28e17_t *self, uint8_t *head, size_t head_len
         continue;
     }
 
-    uint8_t status = bc_onewire_read_8b(self->_channel);
+    uint8_t status = bc_onewire_read_byte(self->_onewire);
 
-    uint8_t write_status = bc_onewire_read_8b(self->_channel);
+    uint8_t write_status = bc_onewire_read_byte(self->_onewire);
 
-    bc_onewire_transaction_stop(self->_channel);
+    bc_onewire_transaction_stop(self->_onewire);
 
     return (status == 0x00) && (write_status == 0x00);
 }
 
 static bool _bc_ds28e17_read(bc_ds28e17_t *self, uint8_t *head, size_t head_length, void *buffer, size_t length)
 {
-    bc_onewire_transaction_start(self->_channel);
+    bc_onewire_transaction_start(self->_onewire);
 
-    bc_onewire_reset(self->_channel);
+    bc_onewire_reset(self->_onewire);
 
-    if (!bc_onewire_reset(self->_channel))
+    if (!bc_onewire_reset(self->_onewire))
     {
-        bc_onewire_transaction_stop(self->_channel);
+        bc_onewire_transaction_stop(self->_onewire);
 
         return false;
     }
 
     uint16_t crc16 = bc_onewire_crc16(head, head_length, 0x00);
 
-    bc_onewire_select(self->_channel, &self->_device_number);
+    bc_onewire_select(self->_onewire, &self->_device_number);
 
-    bc_onewire_write(self->_channel, head, head_length);
+    bc_onewire_write(self->_onewire, head, head_length);
 
     crc16 = ~crc16;
 
-    bc_onewire_write(self->_channel, &crc16, sizeof(crc16));
+    bc_onewire_write(self->_onewire, &crc16, sizeof(crc16));
 
     bc_tick_t timeout = bc_tick_get() + 50;
 
-    while (bc_onewire_read_bit(self->_channel) != 0)
+    while (bc_onewire_read_bit(self->_onewire) != 0)
     {
         if (timeout < bc_tick_get())
         {
-            bc_onewire_transaction_stop(self->_channel);
+            bc_onewire_transaction_stop(self->_onewire);
 
             return false;
         }
@@ -220,20 +218,20 @@ static bool _bc_ds28e17_read(bc_ds28e17_t *self, uint8_t *head, size_t head_leng
         continue;
     }
 
-    uint8_t status = bc_onewire_read_8b(self->_channel);
+    uint8_t status = bc_onewire_read_byte(self->_onewire);
 
-    uint8_t write_status = head[0] == 0x87 ? 0 : bc_onewire_read_8b(self->_channel);
+    uint8_t write_status = head[0] == 0x87 ? 0 : bc_onewire_read_byte(self->_onewire);
 
     if ((status != 0x00) || (write_status != 0x00))
     {
-        bc_onewire_transaction_stop(self->_channel);
+        bc_onewire_transaction_stop(self->_onewire);
 
         return false;
     }
 
-    bc_onewire_read(self->_channel, buffer, length);
+    bc_onewire_read(self->_onewire, buffer, length);
 
-    bc_onewire_transaction_stop(self->_channel);
+    bc_onewire_transaction_stop(self->_onewire);
 
     return true;
 }

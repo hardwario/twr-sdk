@@ -1,4 +1,5 @@
 #include <bc_timer.h>
+#include <bc_error.h>
 
 typedef struct bc_timer_irq_t
 {
@@ -17,21 +18,37 @@ const uint16_t _bc_timer_prescaler_lut[3] =
     31,
 };
 
+static int _bc_timer_lock_count = 0;
+
 inline void bc_timer_init(void)
 {
-    // Enable clock for TIM22
     RCC->APB2ENR |= RCC_APB2ENR_TIM22EN;
 }
 
 inline void bc_timer_start(void)
 {
-    TIM22->PSC = _bc_timer_prescaler_lut[bc_system_clock_get()]; // 7 instructions
+    if (_bc_timer_lock_count++ == 0)
+    {
+        TIM22->PSC = _bc_timer_prescaler_lut[bc_system_clock_get()]; // 7 instructions
 
-    TIM22->CNT = 0;
+        TIM22->CNT = 0;
 
-    TIM22->EGR = TIM_EGR_UG;
+        TIM22->EGR = TIM_EGR_UG;
 
-    TIM22->CR1 |= TIM_CR1_CEN;
+        TIM22->CR1 |= TIM_CR1_CEN;
+    }
+}
+
+inline void bc_timer_stop(void)
+{
+    if (_bc_timer_lock_count < 1) bc_error(BC_ERROR_ERROR_UNLOCK);
+
+    if (_bc_timer_lock_count == 1)
+    {
+        TIM22->CR1 &= ~TIM_CR1_CEN;
+    }
+
+    _bc_timer_lock_count--;
 }
 
 inline uint16_t bc_timer_get_microseconds(void)
@@ -52,11 +69,6 @@ inline void bc_timer_delay(uint16_t microseconds)
 inline void bc_timer_clear(void)
 {
     TIM22->CNT = 0;
-}
-
-inline void bc_timer_stop(void)
-{
-    TIM22->CR1 &= ~TIM_CR1_CEN;
 }
 
 void bc_timer_clear_irq_handler(TIM_TypeDef *tim)

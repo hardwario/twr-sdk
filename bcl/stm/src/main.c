@@ -74,6 +74,16 @@ __attribute__((weak)) void application_error(bc_error_t code)
                     bc_log_error("BC_ERROR_LOG_NOT_INITIALIZED");
                     break;
                 }
+                case BC_ERROR_ERROR_UNLOCK:
+                {
+                    bc_log_error("BC_ERROR_ERROR_UNLOCK");
+                    break;
+                }
+                case BC_ERROR_CALLBACK:
+                {
+                    bc_log_error("BC_ERROR_CALLBACK");
+                    break;
+                }
                 default:
                 {
                     break;

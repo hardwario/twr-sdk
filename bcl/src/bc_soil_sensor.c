@@ -37,16 +37,14 @@ void bc_soil_sensor_init_multiple(bc_soil_sensor_t *self, bc_soil_sensor_sensor_
 {
     memset(self, 0, sizeof(*self));
 
-    self->_channel = BC_GPIO_P5;
+    self->_onewire = bc_module_sensor_get_onewire();
+    bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
+
     self->_sensor = sensors;
     self->_sensor_count = sensor_count;
 
     self->_task_id_interval = bc_scheduler_register(_bc_soil_sensor_task_interval, self, BC_TICK_INFINITY);
     self->_task_id_measure = bc_scheduler_register(_bc_soil_sensor_task_measure, self, 10);
-
-    bc_onewire_init(self->_channel);
-
-    bc_onewire_auto_ds28e17_sleep_mode(true);
 }
 
 void bc_soil_sensor_set_event_handler(bc_soil_sensor_t *self, void (*event_handler)(bc_soil_sensor_t *, uint64_t device_address, bc_soil_sensor_event_t, void *), void *event_param)
@@ -328,7 +326,7 @@ static void _bc_soil_sensor_task_measure(void *param)
     {
         case BC_SOIL_SENSOR_STATE_ERROR:
         {
-            bc_onewire_auto_ds28e17_sleep_mode(true);
+            bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
 
             for (int i = 0; i < self->_sensor_found; i++)
             {
@@ -377,20 +375,20 @@ static void _bc_soil_sensor_task_measure(void *param)
 
             self->_sensor_found = 0;
 
-            bc_onewire_transaction_start(self->_channel);
+            bc_onewire_transaction_start(self->_onewire);
 
-            bc_onewire_reset(self->_channel);
+            bc_onewire_reset(self->_onewire);
 
-            bc_onewire_search_start(0x19);
+            bc_onewire_search_start(self->_onewire, 0x19);
 
-            while ((self->_sensor_found < self->_sensor_count) && bc_onewire_search_next(self->_channel, &device_address))
+            while ((self->_sensor_found < self->_sensor_count) && bc_onewire_search_next(self->_onewire, &device_address))
             {
-                bc_ds28e17_init(&self->_sensor[self->_sensor_found]._ds28e17, self->_channel, device_address);
+                bc_ds28e17_init(&self->_sensor[self->_sensor_found]._ds28e17, self->_onewire, device_address);
 
                 self->_sensor_found++;
             }
 
-            bc_onewire_transaction_stop(self->_channel);
+            bc_onewire_transaction_stop(self->_onewire);
 
             if (self->_sensor_found == 0)
             {
@@ -399,7 +397,7 @@ static void _bc_soil_sensor_task_measure(void *param)
                 return;
             }
 
-            bc_onewire_auto_ds28e17_sleep_mode(false);
+            bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, false);
 
             for (int i = 0; i < self->_sensor_found; i++)
             {
@@ -434,7 +432,7 @@ static void _bc_soil_sensor_task_measure(void *param)
             {
                 if (i + 1 == self->_sensor_found) // last sensor
                 {
-                    bc_onewire_auto_ds28e17_sleep_mode(true);
+                    bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
                 }
 
                 _bc_soil_sensor_zssc3123_data_fetch(&self->_sensor[i]);
@@ -461,7 +459,7 @@ static void _bc_soil_sensor_task_measure(void *param)
         }
         case BC_SOIL_SENSOR_STATE_MEASURE:
         {
-            bc_onewire_auto_ds28e17_sleep_mode(false);
+            bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, false);
 
             for (int i = 0; i < self->_sensor_found; i++)
             {
@@ -474,7 +472,7 @@ static void _bc_soil_sensor_task_measure(void *param)
 
                 if (i + 1 == self->_sensor_found) // last sensor
                 {
-                    bc_onewire_auto_ds28e17_sleep_mode(true);
+                    bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
                 }
 
                 if (!_bc_soil_sensor_tmp112_measurement_request(&self->_sensor[i]._ds28e17))
@@ -494,7 +492,7 @@ static void _bc_soil_sensor_task_measure(void *param)
         }
         case BC_SOIL_SENSOR_STATE_READ:
         {
-            bc_onewire_auto_ds28e17_sleep_mode(false);
+            bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, false);
 
             for (int i = 0; i < self->_sensor_found; i++)
             {
@@ -507,7 +505,7 @@ static void _bc_soil_sensor_task_measure(void *param)
 
                 if (i + 1 == self->_sensor_found) // last sensor
                 {
-                    bc_onewire_auto_ds28e17_sleep_mode(true);
+                    bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
                 }
 
                 if (!_bc_soil_sensor_zssc3123_data_fetch(&self->_sensor[i]))

@@ -4,7 +4,7 @@
 #include <bc_tick.h>
 #include <bc_module_sensor.h>
 #include <bc_scheduler.h>
-#include <bc_gpio.h>
+#include <bc_onewire.h>
 
 //! @addtogroup bc_ds18b20 bc_ds18b20
 //! @brief Driver for 1wire ds18b20
@@ -75,7 +75,7 @@ struct bc_ds18b20_t
 
     bool _power;
     bool _power_dynamic;
-    bc_gpio_channel_t _onewire_channel;
+    bc_onewire_t *_onewire;
 };
 
 //! @endcond
@@ -97,12 +97,12 @@ void bc_ds18b20_init_multiple(bc_ds18b20_t *self, bc_ds18b20_sensor_t *sensors, 
 
 //! @brief Initialize ds18b20
 //! @param[in] self Instance
-//! @param[in] onewire_channel GPIO channel
+//! @param[in] onewire Pointer on instance 1-Wire
 //! @param[in] sensors Sensor array
 //! @param[in] sensor_count Max count sensors
 //! @param[in] resolution Resolution
 
-void bc_ds18b20_init(bc_ds18b20_t *self, bc_gpio_channel_t onewire_channel, bc_ds18b20_sensor_t *sensors, int sensor_count, bc_ds18b20_resolution_bits_t resolution);
+void bc_ds18b20_init(bc_ds18b20_t *self, bc_onewire_t *onewire, bc_ds18b20_sensor_t *sensors, int sensor_count, bc_ds18b20_resolution_bits_t resolution);
 
 //! @brief Set callback function
 //! @param[in] self Instance
@@ -147,6 +147,13 @@ bool bc_ds18b20_get_temperature_celsius(bc_ds18b20_t *self, uint64_t _device_add
 //! @param[in] device_address 64b device address
 
 int bc_ds18b20_get_index_by_device_address(bc_ds18b20_t *self, uint64_t device_address);
+
+//! @brief Get device index by its device address
+//! @param[in] self Instance
+//! @param[in] index Index
+//! @return short addres or 0
+
+uint64_t bc_ds182b0_get_short_address(bc_ds18b20_t *self, uint8_t index);
 
 //! @brief Get number of found sensor
 //! @param[in] self Instance

@@ -23,9 +23,9 @@ void application_init(void)
 {
     bc_module_sensor_init();
 
-    bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_UP_4K7);
+    bc_module_sensor_onewire_power_up();
 
-    bc_onewire_relay_init(&relay, BC_GPIO_P4, 0x00);
+    bc_onewire_relay_init(&relay, bc_module_sensor_get_onewire(), 0x00);
 }
 
 void application_task()

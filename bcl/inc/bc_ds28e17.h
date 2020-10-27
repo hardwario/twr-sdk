@@ -2,7 +2,6 @@
 #define _BC_DS28E17_H
 
 #include <bc_onewire.h>
-#include <bc_gpio.h>
 #include <bc_i2c.h>
 
 //! @addtogroup bc_ds28e17 bc_ds28e17
@@ -14,16 +13,16 @@
 typedef struct
 {
     uint64_t _device_number;
-    bc_gpio_channel_t _channel;
+    bc_onewire_t *_onewire;
 
 } bc_ds28e17_t;
 
 //! @brief Initialize DS28E17
 //! @param[in] self Instance
-//! @param[in] channel GPIO channel
+//! @param[in] Pointer on instance 1-Wire
 //! @param[in] device_number Device number
 
-void bc_ds28e17_init(bc_ds28e17_t *self, bc_gpio_channel_t channel, uint64_t device_number);
+void bc_ds28e17_init(bc_ds28e17_t *self, bc_onewire_t *onewire, uint64_t device_number);
 
 //! @brief Deinitialize DS28E17
 //! @param[in] self Instance
