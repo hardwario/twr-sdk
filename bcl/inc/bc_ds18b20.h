@@ -148,6 +148,13 @@ bool bc_ds18b20_get_temperature_celsius(bc_ds18b20_t *self, uint64_t _device_add
 
 int bc_ds18b20_get_index_by_device_address(bc_ds18b20_t *self, uint64_t device_address);
 
+//! @brief Get device index by its device address
+//! @param[in] self Instance
+//! @param[in] index Index
+//! @return short addres or 0
+
+uint64_t bc_ds182b0_get_short_address(bc_ds18b20_t *self, uint8_t index);
+
 //! @brief Get number of found sensor
 //! @param[in] self Instance
 
