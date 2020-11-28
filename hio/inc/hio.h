@@ -1,5 +1,5 @@
-#ifndef _BCL_H
-#define _BCL_H
+#ifndef _HIO_H
+#define _HIO_H
 
 // Miscellaneous
 
@@ -106,4 +106,4 @@
 //!
 //! For more information visit the <a href="https://www.bigclown.com/doc/firmware/basic-overview/" target="_blank"><b>Basic Overview</b></a> document in BigClown Documentation.
 
-#endif // _BCL_H
+#endif // _HIO_H
