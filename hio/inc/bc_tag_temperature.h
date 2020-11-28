@@ -1,9 +1,9 @@
-#ifndef _BC_TAG_TEMPERATURE_H
-#define _BC_TAG_TEMPERATURE_H
+#ifndef _HIO_TAG_TEMPERATURE_H
+#define _HIO_TAG_TEMPERATURE_H
 
-#include <bc_tmp112.h>
+#include <hio_tmp112.h>
 
-//! @addtogroup bc_tag_temperature bc_tag_temperature
+//! @addtogroup hio_tag_temperature hio_tag_temperature
 //! @brief Driver for HARDWARIO Temperature Module
 //! @{
 
@@ -12,55 +12,55 @@
 typedef enum
 {
     //! @brief Default I2C address
-    BC_TAG_TEMPERATURE_I2C_ADDRESS_DEFAULT = 0x48,
+    HIO_TAG_TEMPERATURE_I2C_ADDRESS_DEFAULT = 0x48,
 
     //! @brief Alternate I2C address
-    BC_TAG_TEMPERATURE_I2C_ADDRESS_ALTERNATE = 0x49
+    HIO_TAG_TEMPERATURE_I2C_ADDRESS_ALTERNATE = 0x49
 
-} bc_tag_temperature_i2c_address_t;
+} hio_tag_temperature_i2c_address_t;
 
 //! @brief Callback events
 
 typedef enum
 {
     //! @brief Error event
-    BC_TAG_TEMPERATURE_EVENT_ERROR = BC_TMP112_EVENT_ERROR,
+    HIO_TAG_TEMPERATURE_EVENT_ERROR = HIO_TMP112_EVENT_ERROR,
 
     //! @brief Update event
-    BC_TAG_TEMPERATURE_EVENT_UPDATE = BC_TMP112_EVENT_UPDATE
+    HIO_TAG_TEMPERATURE_EVENT_UPDATE = HIO_TMP112_EVENT_UPDATE
 
-} bc_tag_temperature_event_t;
+} hio_tag_temperature_event_t;
 
 //! @brief HARDWARIO Temperature Module instance
 
-typedef bc_tmp112_t bc_tag_temperature_t;
+typedef hio_tmp112_t hio_tag_temperature_t;
 
 //! @brief Initialize HARDWARIO Temperature Module
 //! @param[in] self Instance
 //! @param[in] i2c_channel I2C channel
 //! @param[in] i2c_address I2C device address
 
-void bc_tag_temperature_init(bc_tag_temperature_t *self, bc_i2c_channel_t i2c_channel, bc_tag_temperature_i2c_address_t i2c_address);
+void hio_tag_temperature_init(hio_tag_temperature_t *self, hio_i2c_channel_t i2c_channel, hio_tag_temperature_i2c_address_t i2c_address);
 
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address
 //! @param[in] event_param Optional event parameter (can be NULL)
 
-void bc_tag_temperature_set_event_handler(bc_tag_temperature_t *self, void (*event_handler)(bc_tag_temperature_t *, bc_tag_temperature_event_t, void *), void *event_param);
+void hio_tag_temperature_set_event_handler(hio_tag_temperature_t *self, void (*event_handler)(hio_tag_temperature_t *, hio_tag_temperature_event_t, void *), void *event_param);
 
 //! @brief Set measurement interval
 //! @param[in] self Instance
 //! @param[in] interval Measurement interval
 
-void bc_tag_temperature_set_update_interval(bc_tag_temperature_t *self, bc_tick_t interval);
+void hio_tag_temperature_set_update_interval(hio_tag_temperature_t *self, hio_tick_t interval);
 
 //! @brief Start measurement manually
 //! @param[in] self Instance
 //! @return true On success
 //! @return false When other measurement is in progress
 
-bool bc_tag_temperature_measure(bc_tag_temperature_t *self);
+bool hio_tag_temperature_measure(hio_tag_temperature_t *self);
 
 //! @brief Get measured temperature as raw value
 //! @param[in] self Instance
@@ -68,7 +68,7 @@ bool bc_tag_temperature_measure(bc_tag_temperature_t *self);
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_tag_temperature_get_temperature_raw(bc_tag_temperature_t *self, int16_t *raw);
+bool hio_tag_temperature_get_temperature_raw(hio_tag_temperature_t *self, int16_t *raw);
 
 //! @brief Get measured temperature in degrees of Celsius
 //! @param[in] self Instance
@@ -76,7 +76,7 @@ bool bc_tag_temperature_get_temperature_raw(bc_tag_temperature_t *self, int16_t 
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_tag_temperature_get_temperature_celsius(bc_tag_temperature_t *self, float *celsius);
+bool hio_tag_temperature_get_temperature_celsius(hio_tag_temperature_t *self, float *celsius);
 
 //! @brief Get measured temperature in degrees of Fahrenheit
 //! @param[in] self Instance
@@ -84,7 +84,7 @@ bool bc_tag_temperature_get_temperature_celsius(bc_tag_temperature_t *self, floa
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_tag_temperature_get_temperature_fahrenheit(bc_tag_temperature_t *self, float *fahrenheit);
+bool hio_tag_temperature_get_temperature_fahrenheit(hio_tag_temperature_t *self, float *fahrenheit);
 
 //! @brief Get measured temperature in kelvin
 //! @param[in] self Instance
@@ -92,8 +92,8 @@ bool bc_tag_temperature_get_temperature_fahrenheit(bc_tag_temperature_t *self, f
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_tag_temperature_get_temperature_kelvin(bc_tag_temperature_t *self, float *kelvin);
+bool hio_tag_temperature_get_temperature_kelvin(hio_tag_temperature_t *self, float *kelvin);
 
 //! @}
 
-#endif // _BC_TAG_TEMPERATURE_H
+#endif // _HIO_TAG_TEMPERATURE_H

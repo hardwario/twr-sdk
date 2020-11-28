@@ -1,7 +1,7 @@
 
-#include <bc_config.h>
-#include <bc_sha256.h>
-#include <bc_eeprom.h>
+#include <hio_config.h>
+#include <hio_sha256.h>
+#include <hio_eeprom.h>
 
 #define _CONFIG_SIZEOF_HEADER sizeof(config_header_t)
 #define _CONFIG_SIZEOF_CONFIG sizeof(config_t)
@@ -16,9 +16,9 @@ typedef struct
     size_t size;
     void *init_config;
 
-} bc_config_t;
+} hio_config_t;
 
-bc_config_t _bc_config;
+hio_config_t _hio_config;
 
 #pragma pack(push, 1)
 
@@ -36,53 +36,53 @@ typedef struct
 static void _config_eeprom_read(uint32_t address, void *buffer, size_t length);
 static void _config_eeprom_write(uint32_t address, const void *buffer, size_t length);
 
-void bc_config_init(uint64_t signature, void *config, size_t size, void *init_config)
+void hio_config_init(uint64_t signature, void *config, size_t size, void *init_config)
 {
-    _bc_config.signature = signature;
-    _bc_config.config = config;
-    _bc_config.size = size;
-    _bc_config.init_config = init_config;
+    _hio_config.signature = signature;
+    _hio_config.config = config;
+    _hio_config.size = size;
+    _hio_config.init_config = init_config;
 
-    if (!bc_config_load())
+    if (!hio_config_load())
     {
-        bc_config_reset();
-        bc_config_save();
+        hio_config_reset();
+        hio_config_save();
     }
 }
 
-void bc_config_reset(void)
+void hio_config_reset(void)
 {
-    if (!_bc_config.init_config)
+    if (!_hio_config.init_config)
     {
         // Initialize to zero if init_config is not set
-        memset(_bc_config.config, 0, _bc_config.size);
+        memset(_hio_config.config, 0, _hio_config.size);
     }
     else
     {
-        memcpy(_bc_config.config, _bc_config.init_config, _bc_config.size);
+        memcpy(_hio_config.config, _hio_config.init_config, _hio_config.size);
     }
 }
 
-bool bc_config_load(void)
+bool hio_config_load(void)
 {
     config_header_t header;
 
     _config_eeprom_read(_CONFIG_ADDRESS_HEADER, &header, _CONFIG_SIZEOF_HEADER);
 
-    if (header.signature != _bc_config.signature ||
-        header.length != _bc_config.size)
+    if (header.signature != _hio_config.signature ||
+        header.length != _hio_config.size)
     {
         return false;
     }
 
-    _config_eeprom_read(_CONFIG_ADDRESS_CONFIG, _bc_config.config, _bc_config.size);
+    _config_eeprom_read(_CONFIG_ADDRESS_CONFIG, _hio_config.config, _hio_config.size);
 
-    static bc_sha256_t sha256;
+    static hio_sha256_t sha256;
     static uint8_t hash[32];
 
-    bc_sha256_init(&sha256);
-    bc_sha256_update(&sha256, _bc_config.config, _bc_config.size);
-    bc_sha256_final(&sha256, hash, false);
+    hio_sha256_init(&sha256);
+    hio_sha256_update(&sha256, _hio_config.config, _hio_config.size);
+    hio_sha256_final(&sha256, hash, false);
 
     if (memcmp(header.hash, hash, sizeof(header.hash)) != 0)
     {
@@ -92,24 +92,24 @@ bool bc_config_load(void)
     return true;
 }
 
-bool bc_config_save(void)
+bool hio_config_save(void)
 {
-    static bc_sha256_t sha256;
+    static hio_sha256_t sha256;
     static uint8_t hash[32];
 
-    bc_sha256_init(&sha256);
-    bc_sha256_update(&sha256, _bc_config.config, _bc_config.size);
-    bc_sha256_final(&sha256, hash, false);
+    hio_sha256_init(&sha256);
+    hio_sha256_update(&sha256, _hio_config.config, _hio_config.size);
+    hio_sha256_final(&sha256, hash, false);
 
     config_header_t header;
 
-    header.signature = _bc_config.signature;
-    header.length = _bc_config.size;
+    header.signature = _hio_config.signature;
+    header.length = _hio_config.size;
 
     memcpy(header.hash, hash, sizeof(header.hash));
 
     _config_eeprom_write(_CONFIG_ADDRESS_HEADER, &header, _CONFIG_SIZEOF_HEADER);
-    _config_eeprom_write(_CONFIG_ADDRESS_CONFIG, _bc_config.config, _bc_config.size);
+    _config_eeprom_write(_CONFIG_ADDRESS_CONFIG, _hio_config.config, _hio_config.size);
 
     return true;
 }
@@ -123,12 +123,12 @@ static void _config_eeprom_read(uint32_t address, void *buffer, size_t length)
         uint8_t a, b, c;
 
         uint32_t offset_bank_a = 0;
-        uint32_t offset_bank_b = offset_bank_a + _CONFIG_SIZEOF_HEADER + _bc_config.size;
-        uint32_t offset_bank_c = offset_bank_b + _CONFIG_SIZEOF_HEADER + _bc_config.size;
+        uint32_t offset_bank_b = offset_bank_a + _CONFIG_SIZEOF_HEADER + _hio_config.size;
+        uint32_t offset_bank_c = offset_bank_b + _CONFIG_SIZEOF_HEADER + _hio_config.size;
 
-        if (!bc_eeprom_read(offset_bank_a + address + i, &a, 1) ||
-            !bc_eeprom_read(offset_bank_b + address + i, &b, 1) ||
-            !bc_eeprom_read(offset_bank_c + address + i, &c, 1))
+        if (!hio_eeprom_read(offset_bank_a + address + i, &a, 1) ||
+            !hio_eeprom_read(offset_bank_b + address + i, &b, 1) ||
+            !hio_eeprom_read(offset_bank_c + address + i, &c, 1))
         {
             //app_error(APP_ERROR);
         }
@@ -140,12 +140,12 @@ static void _config_eeprom_read(uint32_t address, void *buffer, size_t length)
 static void _config_eeprom_write(uint32_t address, const void *buffer, size_t length)
 {
     uint32_t offset_bank_a = 0;
-    uint32_t offset_bank_b = offset_bank_a + _CONFIG_SIZEOF_HEADER + _bc_config.size;
-    uint32_t offset_bank_c = offset_bank_b + _CONFIG_SIZEOF_HEADER + _bc_config.size;
+    uint32_t offset_bank_b = offset_bank_a + _CONFIG_SIZEOF_HEADER + _hio_config.size;
+    uint32_t offset_bank_c = offset_bank_b + _CONFIG_SIZEOF_HEADER + _hio_config.size;
 
-    if (!bc_eeprom_write(offset_bank_a + address, buffer, length) ||
-        !bc_eeprom_write(offset_bank_b + address, buffer, length) ||
-        !bc_eeprom_write(offset_bank_c + address, buffer, length))
+    if (!hio_eeprom_write(offset_bank_a + address, buffer, length) ||
+        !hio_eeprom_write(offset_bank_b + address, buffer, length) ||
+        !hio_eeprom_write(offset_bank_c + address, buffer, length))
     {
         //app_error(APP_ERROR_EEPROM);
     }

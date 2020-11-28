@@ -1,52 +1,52 @@
-#include <bc_td1207r.h>
+#include <hio_td1207r.h>
 
-#define BC_TD1207R_DELAY_RUN 100
-#define BC_TD1207R_DELAY_INITIALIZATION_RESET_H 100
-#define BC_TD1207R_DELAY_INITIALIZATION_AT_COMMAND 3000
-#define BC_TD1207R_DELAY_INITIALIZATION_AT_RESPONSE 100
-#define BC_TD1207R_DELAY_SEND_RF_FRAME_RESPONSE 8000
+#define HIO_TD1207R_DELAY_RUN 100
+#define HIO_TD1207R_DELAY_INITIALIZATION_RESET_H 100
+#define HIO_TD1207R_DELAY_INITIALIZATION_AT_COMMAND 3000
+#define HIO_TD1207R_DELAY_INITIALIZATION_AT_RESPONSE 100
+#define HIO_TD1207R_DELAY_SEND_RF_FRAME_RESPONSE 8000
 
-static void _bc_td1207r_task(void *param);
+static void _hio_td1207r_task(void *param);
 
-static bool _bc_td1207r_read_response(bc_td1207r_t *self);
+static bool _hio_td1207r_read_response(hio_td1207r_t *self);
 
-void bc_td1207r_init(bc_td1207r_t *self, bc_gpio_channel_t reset_signal, bc_uart_channel_t uart_channel)
+void hio_td1207r_init(hio_td1207r_t *self, hio_gpio_channel_t reset_signal, hio_uart_channel_t uart_channel)
 {
     memset(self, 0, sizeof(*self));
 
     self->_reset_signal = reset_signal;
     self->_uart_channel = uart_channel;
 
-    bc_gpio_init(self->_reset_signal);
-    bc_gpio_set_output(self->_reset_signal, 1);
-    bc_gpio_set_mode(self->_reset_signal, BC_GPIO_MODE_OUTPUT);
+    hio_gpio_init(self->_reset_signal);
+    hio_gpio_set_output(self->_reset_signal, 1);
+    hio_gpio_set_mode(self->_reset_signal, HIO_GPIO_MODE_OUTPUT);
 
-    bc_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
-    bc_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
+    hio_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
+    hio_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
 
-    bc_uart_init(self->_uart_channel, BC_UART_BAUDRATE_9600, BC_UART_SETTING_8N1);
-    bc_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
-    bc_uart_async_read_start(self->_uart_channel, BC_TICK_INFINITY);
+    hio_uart_init(self->_uart_channel, HIO_UART_BAUDRATE_9600, HIO_UART_SETTING_8N1);
+    hio_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
+    hio_uart_async_read_start(self->_uart_channel, HIO_TICK_INFINITY);
 
-    self->_task_id = bc_scheduler_register(_bc_td1207r_task, self, BC_TD1207R_DELAY_RUN);
+    self->_task_id = hio_scheduler_register(_hio_td1207r_task, self, HIO_TD1207R_DELAY_RUN);
 
-    self->_state = BC_TD1207R_STATE_INITIALIZE;
+    self->_state = HIO_TD1207R_STATE_INITIALIZE;
 }
 
-void bc_td1207r_set_event_handler(bc_td1207r_t *self, void (*event_handler)(bc_td1207r_t *, bc_td1207r_event_t, void *), void *event_param)
+void hio_td1207r_set_event_handler(hio_td1207r_t *self, void (*event_handler)(hio_td1207r_t *, hio_td1207r_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
     self->_event_param = event_param;
 }
 
-bool bc_td1207r_is_ready(bc_td1207r_t *self)
+bool hio_td1207r_is_ready(hio_td1207r_t *self)
 {
-    return self->_state == BC_TD1207R_STATE_READY ? true : false;
+    return self->_state == HIO_TD1207R_STATE_READY ? true : false;
 }
 
-bool bc_td1207r_send_rf_frame(bc_td1207r_t *self, const void *buffer, size_t length)
+bool hio_td1207r_send_rf_frame(hio_td1207r_t *self, const void *buffer, size_t length)
 {
-    if (!bc_td1207r_is_ready(self) || length == 0 || length > 12)
+    if (!hio_td1207r_is_ready(self) || length == 0 || length > 12)
     {
         return false;
     }
@@ -55,70 +55,70 @@ bool bc_td1207r_send_rf_frame(bc_td1207r_t *self, const void *buffer, size_t len
 
     memcpy(self->_message_buffer, buffer, self->_message_length);
 
-    self->_state = BC_TD1207R_STATE_SEND_RF_FRAME_COMMAND;
+    self->_state = HIO_TD1207R_STATE_SEND_RF_FRAME_COMMAND;
 
-    bc_scheduler_plan_now(self->_task_id);
+    hio_scheduler_plan_now(self->_task_id);
 
     return true;
 }
 
-static void _bc_td1207r_task(void *param)
+static void _hio_td1207r_task(void *param)
 {
-    bc_td1207r_t *self = param;
+    hio_td1207r_t *self = param;
 
     while (true)
     {
         switch (self->_state)
         {
-            case BC_TD1207R_STATE_READY:
+            case HIO_TD1207R_STATE_READY:
             {
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_TD1207R_EVENT_READY, self->_event_param);
+                    self->_event_handler(self, HIO_TD1207R_EVENT_READY, self->_event_param);
                 }
 
                 return;
             }
-            case BC_TD1207R_STATE_ERROR:
+            case HIO_TD1207R_STATE_ERROR:
             {
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_TD1207R_EVENT_ERROR, self->_event_param);
+                    self->_event_handler(self, HIO_TD1207R_EVENT_ERROR, self->_event_param);
                 }
 
-                self->_state = BC_TD1207R_STATE_INITIALIZE;
+                self->_state = HIO_TD1207R_STATE_INITIALIZE;
 
                 continue;
             }
-            case BC_TD1207R_STATE_INITIALIZE:
+            case HIO_TD1207R_STATE_INITIALIZE:
             {
-                self->_state = BC_TD1207R_STATE_INITIALIZE_RESET_L;
+                self->_state = HIO_TD1207R_STATE_INITIALIZE_RESET_L;
 
                 continue;
             }
-            case BC_TD1207R_STATE_INITIALIZE_RESET_L:
+            case HIO_TD1207R_STATE_INITIALIZE_RESET_L:
             {
-                bc_gpio_set_output(self->_reset_signal, 0);
+                hio_gpio_set_output(self->_reset_signal, 0);
 
-                self->_state = BC_TD1207R_STATE_INITIALIZE_RESET_H;
+                self->_state = HIO_TD1207R_STATE_INITIALIZE_RESET_H;
 
-                bc_scheduler_plan_current_from_now(BC_TD1207R_DELAY_INITIALIZATION_RESET_H);
+                hio_scheduler_plan_current_from_now(HIO_TD1207R_DELAY_INITIALIZATION_RESET_H);
 
                 return;
             }
-            case BC_TD1207R_STATE_INITIALIZE_RESET_H:
+            case HIO_TD1207R_STATE_INITIALIZE_RESET_H:
             {
-                bc_gpio_set_output(self->_reset_signal, 1);
+                hio_gpio_set_output(self->_reset_signal, 1);
 
-                self->_state = BC_TD1207R_STATE_INITIALIZE_AT_COMMAND;
+                self->_state = HIO_TD1207R_STATE_INITIALIZE_AT_COMMAND;
 
-                bc_scheduler_plan_current_from_now(BC_TD1207R_DELAY_INITIALIZATION_AT_COMMAND);
+                hio_scheduler_plan_current_from_now(HIO_TD1207R_DELAY_INITIALIZATION_AT_COMMAND);
 
                 return;
             }
-            case BC_TD1207R_STATE_INITIALIZE_AT_COMMAND:
+            case HIO_TD1207R_STATE_INITIALIZE_AT_COMMAND:
             {
-                self->_state = BC_TD1207R_STATE_ERROR;
+                self->_state = HIO_TD1207R_STATE_ERROR;
 
                 // TODO Purge RX FIFO
 
@@ -126,22 +126,22 @@ static void _bc_td1207r_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (hio_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_TD1207R_STATE_INITIALIZE_AT_RESPONSE;
+                self->_state = HIO_TD1207R_STATE_INITIALIZE_AT_RESPONSE;
 
-                bc_scheduler_plan_current_from_now(BC_TD1207R_DELAY_INITIALIZATION_AT_RESPONSE);
+                hio_scheduler_plan_current_from_now(HIO_TD1207R_DELAY_INITIALIZATION_AT_RESPONSE);
 
                 return;
             }
-            case BC_TD1207R_STATE_INITIALIZE_AT_RESPONSE:
+            case HIO_TD1207R_STATE_INITIALIZE_AT_RESPONSE:
             {
-                self->_state = BC_TD1207R_STATE_ERROR;
+                self->_state = HIO_TD1207R_STATE_ERROR;
 
-                if (!_bc_td1207r_read_response(self))
+                if (!_hio_td1207r_read_response(self))
                 {
                     continue;
                 }
@@ -151,7 +151,7 @@ static void _bc_td1207r_task(void *param)
                     continue;
                 }
 
-                if (!_bc_td1207r_read_response(self))
+                if (!_hio_td1207r_read_response(self))
                 {
                     continue;
                 }
@@ -161,13 +161,13 @@ static void _bc_td1207r_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_TD1207R_STATE_READY;
+                self->_state = HIO_TD1207R_STATE_READY;
 
                 continue;
             }
-            case BC_TD1207R_STATE_SEND_RF_FRAME_COMMAND:
+            case HIO_TD1207R_STATE_SEND_RF_FRAME_COMMAND:
             {
-                self->_state = BC_TD1207R_STATE_ERROR;
+                self->_state = HIO_TD1207R_STATE_ERROR;
 
                 static const char *hex_lookup_table[] =
                 {
@@ -200,27 +200,27 @@ static void _bc_td1207r_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (hio_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_TD1207R_STATE_SEND_RF_FRAME_RESPONSE;
+                self->_state = HIO_TD1207R_STATE_SEND_RF_FRAME_RESPONSE;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_TD1207R_EVENT_SEND_RF_FRAME_START, self->_event_param);
+                    self->_event_handler(self, HIO_TD1207R_EVENT_SEND_RF_FRAME_START, self->_event_param);
                 }
 
-                bc_scheduler_plan_current_from_now(BC_TD1207R_DELAY_SEND_RF_FRAME_RESPONSE);
+                hio_scheduler_plan_current_from_now(HIO_TD1207R_DELAY_SEND_RF_FRAME_RESPONSE);
 
                 return;
             }
-            case BC_TD1207R_STATE_SEND_RF_FRAME_RESPONSE:
+            case HIO_TD1207R_STATE_SEND_RF_FRAME_RESPONSE:
             {
-                self->_state = BC_TD1207R_STATE_ERROR;
+                self->_state = HIO_TD1207R_STATE_ERROR;
 
-                if (!_bc_td1207r_read_response(self))
+                if (!_hio_td1207r_read_response(self))
                 {
                     continue;
                 }
@@ -230,7 +230,7 @@ static void _bc_td1207r_task(void *param)
                     continue;
                 }
 
-                if (!_bc_td1207r_read_response(self))
+                if (!_hio_td1207r_read_response(self))
                 {
                     continue;
                 }
@@ -240,11 +240,11 @@ static void _bc_td1207r_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_TD1207R_STATE_READY;
+                self->_state = HIO_TD1207R_STATE_READY;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_TD1207R_EVENT_SEND_RF_FRAME_DONE, self->_event_param);
+                    self->_event_handler(self, HIO_TD1207R_EVENT_SEND_RF_FRAME_DONE, self->_event_param);
                 }
 
                 continue;
@@ -257,7 +257,7 @@ static void _bc_td1207r_task(void *param)
     }
 }
 
-static bool _bc_td1207r_read_response(bc_td1207r_t *self)
+static bool _hio_td1207r_read_response(hio_td1207r_t *self)
 {
     size_t length = 0;
 
@@ -265,7 +265,7 @@ static bool _bc_td1207r_read_response(bc_td1207r_t *self)
     {
         char rx_character;
 
-        if (bc_uart_async_read(self->_uart_channel, &rx_character, 1) == 0)
+        if (hio_uart_async_read(self->_uart_channel, &rx_character, 1) == 0)
         {
             return false;
         }

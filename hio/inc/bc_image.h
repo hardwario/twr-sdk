@@ -1,14 +1,14 @@
 
-#ifndef _BC_IMAGE
-#define _BC_IMAGE
+#ifndef _HIO_IMAGE
+#define _HIO_IMAGE
 
-#include <bc_common.h>
+#include <hio_common.h>
 
  typedef struct {
      const uint8_t *data;
      uint16_t width;
      uint16_t height;
      uint8_t dataSize;
-} bc_image_t;
+} hio_image_t;
 
-#endif // _BC_IMAGE
+#endif // _HIO_IMAGE

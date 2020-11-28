@@ -1,26 +1,26 @@
-#include <bc_onewire.h>
-#include <bc_error.h>
+#include <hio_onewire.h>
+#include <hio_error.h>
 
-static void _bc_onewire_lock(bc_onewire_t *self);
-static void _bc_onewire_unlock(bc_onewire_t *self);
-static void _bc_onewire_search_reset(bc_onewire_t *self);
-static void _bc_onewire_search_target_setup(bc_onewire_t *self, uint8_t family_code);
-static int _bc_onewire_search_devices(bc_onewire_t *self, uint64_t *device_list, size_t device_list_size);
+static void _hio_onewire_lock(hio_onewire_t *self);
+static void _hio_onewire_unlock(hio_onewire_t *self);
+static void _hio_onewire_search_reset(hio_onewire_t *self);
+static void _hio_onewire_search_target_setup(hio_onewire_t *self, uint8_t family_code);
+static int _hio_onewire_search_devices(hio_onewire_t *self, uint64_t *device_list, size_t device_list_size);
 
-#define _BC_ONEWIRE_CHECK_CALLBACK(X) if (X == NULL) bc_error(BC_ERROR_CALLBACK)
+#define _HIO_ONEWIRE_CHECK_CALLBACK(X) if (X == NULL) hio_error(HIO_ERROR_CALLBACK)
 
-bool bc_onewire_init(bc_onewire_t *self, const bc_onewire_driver_t *driver, void *driver_ctx)
+bool hio_onewire_init(hio_onewire_t *self, const hio_onewire_driver_t *driver, void *driver_ctx)
 {
     memset(self, 0, sizeof(*self));
 
-    _BC_ONEWIRE_CHECK_CALLBACK(driver->init);
-    _BC_ONEWIRE_CHECK_CALLBACK(driver->enable);
-    _BC_ONEWIRE_CHECK_CALLBACK(driver->disable);
-    _BC_ONEWIRE_CHECK_CALLBACK(driver->reset);
-    _BC_ONEWIRE_CHECK_CALLBACK(driver->write_bit);
-    _BC_ONEWIRE_CHECK_CALLBACK(driver->read_bit);
-    _BC_ONEWIRE_CHECK_CALLBACK(driver->write_byte);
-    _BC_ONEWIRE_CHECK_CALLBACK(driver->read_byte);
+    _HIO_ONEWIRE_CHECK_CALLBACK(driver->init);
+    _HIO_ONEWIRE_CHECK_CALLBACK(driver->enable);
+    _HIO_ONEWIRE_CHECK_CALLBACK(driver->disable);
+    _HIO_ONEWIRE_CHECK_CALLBACK(driver->reset);
+    _HIO_ONEWIRE_CHECK_CALLBACK(driver->write_bit);
+    _HIO_ONEWIRE_CHECK_CALLBACK(driver->read_bit);
+    _HIO_ONEWIRE_CHECK_CALLBACK(driver->write_byte);
+    _HIO_ONEWIRE_CHECK_CALLBACK(driver->read_byte);
 
     self->_driver = driver;
     self->_driver_ctx = driver_ctx;
@@ -28,48 +28,48 @@ bool bc_onewire_init(bc_onewire_t *self, const bc_onewire_driver_t *driver, void
     return self->_driver->init(self->_driver_ctx);
 }
 
-bool bc_onewire_transaction_start(bc_onewire_t *self)
+bool hio_onewire_transaction_start(hio_onewire_t *self)
 {
 	if (self->_lock_count != 0)
 	{
         return false;
 	}
 
-    _bc_onewire_lock(self);
+    _hio_onewire_lock(self);
 
 	return true;
 }
 
-bool bc_onewire_transaction_stop(bc_onewire_t *self)
+bool hio_onewire_transaction_stop(hio_onewire_t *self)
 {
-	_bc_onewire_unlock(self);
+	_hio_onewire_unlock(self);
 
 	return true;
 }
 
-bool bc_onewire_is_transaction(bc_onewire_t *self)
+bool hio_onewire_is_transaction(hio_onewire_t *self)
 {
     return self->_lock_count != 0;
 }
 
-bool bc_onewire_reset(bc_onewire_t *self)
+bool hio_onewire_reset(hio_onewire_t *self)
 {
     bool state;
 
-    _bc_onewire_lock(self);
+    _hio_onewire_lock(self);
 
     state = self->_driver->reset(self->_driver_ctx);
 
-    _bc_onewire_unlock(self);
+    _hio_onewire_unlock(self);
 
     return state;
 }
 
-void bc_onewire_select(bc_onewire_t *self, uint64_t *device_number)
+void hio_onewire_select(hio_onewire_t *self, uint64_t *device_number)
 {
-    _bc_onewire_lock(self);
+    _hio_onewire_lock(self);
 
-    if (*device_number == BC_ONEWIRE_DEVICE_NUMBER_SKIP_ROM)
+    if (*device_number == HIO_ONEWIRE_DEVICE_NUMBER_SKIP_ROM)
     {
         self->_driver->write_byte(self->_driver_ctx, 0xCC);
     }
@@ -83,86 +83,86 @@ void bc_onewire_select(bc_onewire_t *self, uint64_t *device_number)
         }
     }
 
-    _bc_onewire_unlock(self);
+    _hio_onewire_unlock(self);
 }
 
-void bc_onewire_skip_rom(bc_onewire_t *self)
+void hio_onewire_skip_rom(hio_onewire_t *self)
 {
-    _bc_onewire_lock(self);
+    _hio_onewire_lock(self);
     self->_driver->write_byte(self->_driver_ctx, 0xCC);
-    _bc_onewire_unlock(self);
+    _hio_onewire_unlock(self);
 }
 
-void bc_onewire_write(bc_onewire_t *self, const void *buffer, size_t length)
+void hio_onewire_write(hio_onewire_t *self, const void *buffer, size_t length)
 {
-    _bc_onewire_lock(self);
+    _hio_onewire_lock(self);
     for (size_t i = 0; i < length; i++)
     {
         self->_driver->write_byte(self->_driver_ctx, ((uint8_t *) buffer)[i]);
     }
-    _bc_onewire_unlock(self);
+    _hio_onewire_unlock(self);
 }
 
-void bc_onewire_read(bc_onewire_t *self, void *buffer, size_t length)
+void hio_onewire_read(hio_onewire_t *self, void *buffer, size_t length)
 {
-    _bc_onewire_lock(self);
+    _hio_onewire_lock(self);
     for (size_t i = 0; i < length; i++)
     {
         ((uint8_t *) buffer)[i] = self->_driver->read_byte(self->_driver_ctx);
     }
-    _bc_onewire_unlock(self);
+    _hio_onewire_unlock(self);
 }
 
-void bc_onewire_write_byte(bc_onewire_t *self, uint8_t byte)
+void hio_onewire_write_byte(hio_onewire_t *self, uint8_t byte)
 {
-    _bc_onewire_lock(self);
+    _hio_onewire_lock(self);
     self->_driver->write_byte(self->_driver_ctx, byte);
-    _bc_onewire_unlock(self);
+    _hio_onewire_unlock(self);
 }
 
-uint8_t bc_onewire_read_byte(bc_onewire_t *self)
+uint8_t hio_onewire_read_byte(hio_onewire_t *self)
 {
-    _bc_onewire_lock(self);
+    _hio_onewire_lock(self);
     uint8_t data = self->_driver->read_byte(self->_driver_ctx);
-    _bc_onewire_unlock(self);
+    _hio_onewire_unlock(self);
     return data;
 }
 
-void bc_onewire_write_bit(bc_onewire_t *self, int bit)
+void hio_onewire_write_bit(hio_onewire_t *self, int bit)
 {
-    _bc_onewire_lock(self);
+    _hio_onewire_lock(self);
     self->_driver->write_bit(self->_driver_ctx, bit & 0x01);
-    _bc_onewire_unlock(self);
+    _hio_onewire_unlock(self);
 }
 
-int bc_onewire_read_bit(bc_onewire_t *self)
+int hio_onewire_read_bit(hio_onewire_t *self)
 {
-    _bc_onewire_lock(self);
+    _hio_onewire_lock(self);
     int bit = self->_driver->read_bit(self->_driver_ctx);
-    _bc_onewire_unlock(self);
+    _hio_onewire_unlock(self);
     return bit;
 }
 
-int bc_onewire_search_all(bc_onewire_t *self, uint64_t *device_list, size_t device_list_size)
+int hio_onewire_search_all(hio_onewire_t *self, uint64_t *device_list, size_t device_list_size)
 {
-    _bc_onewire_search_reset(self);
+    _hio_onewire_search_reset(self);
 
-    return _bc_onewire_search_devices(self, device_list, device_list_size);
+    return _hio_onewire_search_devices(self, device_list, device_list_size);
 }
 
-int bc_onewire_search_family(bc_onewire_t *self, uint8_t family_code, uint64_t *device_list, size_t device_list_size)
+int hio_onewire_search_family(hio_onewire_t *self, uint8_t family_code, uint64_t *device_list, size_t device_list_size)
 {
-    _bc_onewire_search_target_setup(self, family_code);
+    _hio_onewire_search_target_setup(self, family_code);
 
-    return _bc_onewire_search_devices(self, device_list, device_list_size);
+    return _hio_onewire_search_devices(self, device_list, device_list_size);
 }
 
-void bc_onewire_auto_ds28e17_sleep_mode(bc_onewire_t *self, bool on)
+void hio_onewire_auto_ds28e17_sleep_mode(hio_onewire_t *self, bool on)
 {
     self->_auto_ds28e17_sleep_mode = on;
 }
 
-uint8_t bc_onewire_crc8(const void *buffer, size_t length, uint8_t crc)
+uint8_t hio_onewire_crc8(const void *buffer, size_t length, uint8_t crc)
 {
     uint8_t *_buffer = (uint8_t *) buffer;
     uint8_t inbyte;
@@ -189,7 +189,7 @@ uint8_t bc_onewire_crc8(const void *buffer, size_t length, uint8_t crc)
     return crc;
 }
 
-uint16_t bc_onewire_crc16(const void *buffer, size_t length, uint16_t crc)
+uint16_t hio_onewire_crc16(const void *buffer, size_t length, uint16_t crc)
 {
     static const uint8_t oddparity[16] =
     { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
@@ -211,32 +211,32 @@ uint16_t bc_onewire_crc16(const void *buffer, size_t length, uint16_t crc)
     return crc;
 }
 
-void bc_onewire_search_start(bc_onewire_t *self, uint8_t family_code)
+void hio_onewire_search_start(hio_onewire_t *self, uint8_t family_code)
 {
     if (family_code != 0)
     {
-        _bc_onewire_search_target_setup(self, family_code);
+        _hio_onewire_search_target_setup(self, family_code);
     }
     else
     {
-        _bc_onewire_search_reset(self);
+        _hio_onewire_search_reset(self);
     }
 }
 
-bool bc_onewire_search_next(bc_onewire_t *self, uint64_t *device_number)
+bool hio_onewire_search_next(hio_onewire_t *self, uint64_t *device_number)
 {
     if (self->_last_device_flag)
     {
         return false;
     }
 
-    _bc_onewire_lock(self);
+    _hio_onewire_lock(self);
     bool search_result = self->_driver->search_next(self->_driver_ctx, self, device_number);
-    _bc_onewire_unlock(self);
+    _hio_onewire_unlock(self);
     return search_result;
 }
 
-static void _bc_onewire_lock(bc_onewire_t *self)
+static void _hio_onewire_lock(hio_onewire_t *self)
 {
     if ((self->_lock_count)++ == 0)
     {
@@ -244,9 +244,9 @@ static void _bc_onewire_lock(bc_onewire_t *self)
     }
 }
 
-static void _bc_onewire_unlock(bc_onewire_t *self)
+static void _hio_onewire_unlock(hio_onewire_t *self)
 {
-    if (self->_lock_count < 1) bc_error(BC_ERROR_ERROR_UNLOCK);
+    if (self->_lock_count < 1) hio_error(HIO_ERROR_ERROR_UNLOCK);
 
     if (self->_lock_count == 1)
     {
@@ -265,14 +265,14 @@ static void _bc_onewire_unlock(bc_onewire_t *self)
     self->_lock_count--;
 }
 
-static void _bc_onewire_search_reset(bc_onewire_t *self)
+static void _hio_onewire_search_reset(hio_onewire_t *self)
 {
     self->_last_discrepancy = 0;
     self->_last_device_flag = false;
     self->_last_family_discrepancy = 0;
 }
 
-static void _bc_onewire_search_target_setup(bc_onewire_t *self, uint8_t family_code)
+static void _hio_onewire_search_target_setup(hio_onewire_t *self, uint8_t family_code)
 {
     memset(self->_last_rom_no, 0, sizeof(self->_last_rom_no));
     self->_last_rom_no[0] = family_code;
@@ -281,12 +281,12 @@ static void _bc_onewire_search_target_setup(bc_onewire_t *self, uint8_t family_c
     self->_last_device_flag = false;
 }
 
-static int _bc_onewire_search_devices(bc_onewire_t *self, uint64_t *device_list, size_t device_list_size)
+static int _hio_onewire_search_devices(hio_onewire_t *self, uint64_t *device_list, size_t device_list_size)
 {
     int devices = 0;
     int max_devices = device_list_size / sizeof(uint64_t);
 
-    while ((devices < max_devices) && bc_onewire_search_next(self, device_list))
+    while ((devices < max_devices) && hio_onewire_search_next(self, device_list))
     {
         device_list++;
         devices++;

@@ -1,15 +1,15 @@
-#include "bc_sha256.h"
+#include "hio_sha256.h"
 
-#define _BC_SHA256_RL(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
-#define _BC_SHA256_RR(a, b) (((a) >> (b)) | ((a) << (32 - (b))))
-#define _BC_SHA256_CH(x, y, z) (((x) & (y)) ^ (~(x) & (z)))
-#define _BC_SHA256_MAJ(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
-#define _BC_SHA256_EP0(x) (_BC_SHA256_RR(x, 2) ^ _BC_SHA256_RR(x, 13) ^ _BC_SHA256_RR(x, 22))
-#define _BC_SHA256_EP1(x) (_BC_SHA256_RR(x, 6) ^ _BC_SHA256_RR(x, 11) ^ _BC_SHA256_RR(x, 25))
-#define _BC_SHA256_SIG0(x) (_BC_SHA256_RR(x, 7) ^ _BC_SHA256_RR(x, 18) ^ ((x) >> 3))
-#define _BC_SHA256_SIG1(x) (_BC_SHA256_RR(x, 17) ^ _BC_SHA256_RR(x, 19) ^ ((x) >> 10))
+#define _HIO_SHA256_RL(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
+#define _HIO_SHA256_RR(a, b) (((a) >> (b)) | ((a) << (32 - (b))))
+#define _HIO_SHA256_CH(x, y, z) (((x) & (y)) ^ (~(x) & (z)))
+#define _HIO_SHA256_MAJ(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+#define _HIO_SHA256_EP0(x) (_HIO_SHA256_RR(x, 2) ^ _HIO_SHA256_RR(x, 13) ^ _HIO_SHA256_RR(x, 22))
+#define _HIO_SHA256_EP1(x) (_HIO_SHA256_RR(x, 6) ^ _HIO_SHA256_RR(x, 11) ^ _HIO_SHA256_RR(x, 25))
+#define _HIO_SHA256_SIG0(x) (_HIO_SHA256_RR(x, 7) ^ _HIO_SHA256_RR(x, 18) ^ ((x) >> 3))
+#define _HIO_SHA256_SIG1(x) (_HIO_SHA256_RR(x, 17) ^ _HIO_SHA256_RR(x, 19) ^ ((x) >> 10))
 
-static const uint32_t _bc_sha256_k[64] =
+static const uint32_t _hio_sha256_k[64] =
 {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -21,9 +21,9 @@ static const uint32_t _bc_sha256_k[64] =
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-static void _bc_sha256_transform(bc_sha256_t *self, const uint8_t *buffer);
+static void _hio_sha256_transform(hio_sha256_t *self, const uint8_t *buffer);
 
-void bc_sha256_init(bc_sha256_t *self)
+void hio_sha256_init(hio_sha256_t *self)
 {
     memset(self, 0, sizeof(*self));
 
@@ -37,7 +37,7 @@ void bc_sha256_init(bc_sha256_t *self)
     self->_state[7] = 0x5be0cd19;
 }
 
-void bc_sha256_update(bc_sha256_t *self, const void *buffer, size_t length)
+void hio_sha256_update(hio_sha256_t *self, const void *buffer, size_t length)
 {
     const uint8_t *p = buffer;
 
@@ -47,7 +47,7 @@ void bc_sha256_update(bc_sha256_t *self, const void *buffer, size_t length)
 
         if (self->_length == 64)
         {
-            _bc_sha256_transform(self, self->_buffer);
+            _hio_sha256_transform(self, self->_buffer);
 
             self->_bit_length += 512;
             self->_length = 0;
@@ -55,7 +55,7 @@ void bc_sha256_update(bc_sha256_t *self, const void *buffer, size_t length)
     }
 }
 
-void bc_sha256_final(bc_sha256_t *self, uint8_t *hash, bool little_endian)
+void hio_sha256_final(hio_sha256_t *self, uint8_t *hash, bool little_endian)
 {
     size_t i = self->_length;
 
@@ -77,7 +77,7 @@ void bc_sha256_final(bc_sha256_t *self, uint8_t *hash, bool little_endian)
             self->_buffer[i++] = 0;
         }
 
-        _bc_sha256_transform(self, self->_buffer);
+        _hio_sha256_transform(self, self->_buffer);
 
         memset(self->_buffer, 0, 56);
     }
@@ -93,7 +93,7 @@ void bc_sha256_final(bc_sha256_t *self, uint8_t *hash, bool little_endian)
     self->_buffer[57] = self->_bit_length >> 48;
     self->_buffer[56] = self->_bit_length >> 56;
 
-    _bc_sha256_transform(self, self->_buffer);
+    _hio_sha256_transform(self, self->_buffer);
 
     if (little_endian)
     {
@@ -125,7 +125,7 @@ void bc_sha256_final(bc_sha256_t *self, uint8_t *hash, bool little_endian)
     }
 }
 
-static void _bc_sha256_transform(bc_sha256_t *self, const uint8_t *buffer)
+static void _hio_sha256_transform(hio_sha256_t *self, const uint8_t *buffer)
 {
     uint32_t a, b, c, d, e, f, g, h, t1, t2, m[64];
 
@@ -138,7 +138,7 @@ static void _bc_sha256_transform(bc_sha256_t *self, const uint8_t *buffer)
 
     for (; i < 64; i++)
     {
-        m[i] = _BC_SHA256_SIG1(m[i - 2]) + m[i - 7] + _BC_SHA256_SIG0(m[i - 15]) + m[i - 16];
+        m[i] = _HIO_SHA256_SIG1(m[i - 2]) + m[i - 7] + _HIO_SHA256_SIG0(m[i - 15]) + m[i - 16];
     }
 
     a = self->_state[0];
@@ -152,8 +152,8 @@ static void _bc_sha256_transform(bc_sha256_t *self, const uint8_t *buffer)
 
     for (i = 0; i < 64; i++)
     {
-        t1 = h + _BC_SHA256_EP1(e) + _BC_SHA256_CH(e, f, g) + _bc_sha256_k[i] + m[i];
-        t2 = _BC_SHA256_EP0(a) + _BC_SHA256_MAJ(a, b, c);
+        t1 = h + _HIO_SHA256_EP1(e) + _HIO_SHA256_CH(e, f, g) + _hio_sha256_k[i] + m[i];
+        t2 = _HIO_SHA256_EP0(a) + _HIO_SHA256_MAJ(a, b, c);
         h = g;
         g = f;
         f = e;

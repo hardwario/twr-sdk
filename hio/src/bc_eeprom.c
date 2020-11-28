@@ -1,13 +1,13 @@
-#include <bc_eeprom.h>
-#include <bc_irq.h>
+#include <hio_eeprom.h>
+#include <hio_irq.h>
 #include <stm32l0xx.h>
-#include <bc_tick.h>
-#include <bc_timer.h>
-#include <bc_scheduler.h>
+#include <hio_tick.h>
+#include <hio_timer.h>
+#include <hio_scheduler.h>
 
-#define _BC_EEPROM_BASE DATA_EEPROM_BASE
-#define _BC_EEPROM_END  DATA_EEPROM_BANK2_END
-#define _BC_EEPROM_IS_BUSY() ((FLASH->SR & FLASH_SR_BSY) != 0UL)
+#define _HIO_EEPROM_BASE DATA_EEPROM_BASE
+#define _HIO_EEPROM_END  DATA_EEPROM_BANK2_END
+#define _HIO_EEPROM_IS_BUSY() ((FLASH->SR & FLASH_SR_BSY) != 0UL)
 
 static struct
 {
@@ -15,46 +15,46 @@ static struct
     uint32_t address;
     uint8_t *buffer;
     size_t length;
-    void (*event_handler)(bc_eepromc_event_t, void *);
+    void (*event_handler)(hio_eepromc_event_t, void *);
     void *event_param;
     size_t i;
-    bc_scheduler_task_id_t task_id;
+    hio_scheduler_task_id_t task_id;
 
-} _bc_eeprom;
+} _hio_eeprom;
 
-static bool _bc_eeprom_is_busy(bc_tick_t timeout);
-static void _bc_eeprom_unlock(void);
-static void _bc_eeprom_lock(void);
-static bool _bc_eeprom_write(uint32_t address, size_t *i, uint8_t *buffer, size_t length);
-static void _bc_eeprom_async_write_task(void *param);
+static bool _hio_eeprom_is_busy(hio_tick_t timeout);
+static void _hio_eeprom_unlock(void);
+static void _hio_eeprom_lock(void);
+static bool _hio_eeprom_write(uint32_t address, size_t *i, uint8_t *buffer, size_t length);
+static void _hio_eeprom_async_write_task(void *param);
 
-bool bc_eeprom_write(uint32_t address, const void *buffer, size_t length)
+bool hio_eeprom_write(uint32_t address, const void *buffer, size_t length)
 {
     // Add EEPROM base offset to address
-    address += _BC_EEPROM_BASE;
+    address += _HIO_EEPROM_BASE;
 
     // If user attempts to write outside EEPROM area...
-    if ((address + length) > (_BC_EEPROM_END + 1))
+    if ((address + length) > (_HIO_EEPROM_END + 1))
     {
         // Indicate failure
         return false;
     }
 
-    if (_bc_eeprom_is_busy(50))
+    if (_hio_eeprom_is_busy(50))
     {
         return false;
     }
 
-    _bc_eeprom_unlock();
+    _hio_eeprom_unlock();
 
     size_t i = 0;
 
     while (i < length)
     {
-        _bc_eeprom_write(address, &i, (uint8_t *) buffer, length);
+        _hio_eeprom_write(address, &i, (uint8_t *) buffer, length);
     }
 
-    _bc_eeprom_lock();
+    _hio_eeprom_lock();
 
     // If we do not read what we wrote...
     if (memcmp(buffer, (void *) address, length) != 0UL)
@@ -67,56 +67,56 @@ bool bc_eeprom_write(uint32_t address, const void *buffer, size_t length)
     return true;
 }
 
-bool bc_eeprom_async_write(uint32_t address, const void *buffer, size_t length, void (*event_handler)(bc_eepromc_event_t, void *), void *event_param)
+bool hio_eeprom_async_write(uint32_t address, const void *buffer, size_t length, void (*event_handler)(hio_eepromc_event_t, void *), void *event_param)
 {
-    if (_bc_eeprom.running)
+    if (_hio_eeprom.running)
     {
         return false;
     }
 
-    _bc_eeprom.address = address += _BC_EEPROM_BASE;
+    _hio_eeprom.address = address += _HIO_EEPROM_BASE;
 
     // If user attempts to write outside EEPROM area...
-    if ((_bc_eeprom.address + length) > (_BC_EEPROM_END + 1))
+    if ((_hio_eeprom.address + length) > (_HIO_EEPROM_END + 1))
     {
         // Indicate failure
         return false;
     }
 
-    _bc_eeprom.buffer = (uint8_t *) buffer;
+    _hio_eeprom.buffer = (uint8_t *) buffer;
 
-    _bc_eeprom.length = length;
+    _hio_eeprom.length = length;
 
-    _bc_eeprom.event_handler = event_handler;
+    _hio_eeprom.event_handler = event_handler;
 
-    _bc_eeprom.event_param = event_param;
+    _hio_eeprom.event_param = event_param;
 
-    _bc_eeprom.i = 0;
+    _hio_eeprom.i = 0;
 
-    _bc_eeprom.task_id = bc_scheduler_register(_bc_eeprom_async_write_task, NULL, 0);
+    _hio_eeprom.task_id = hio_scheduler_register(_hio_eeprom_async_write_task, NULL, 0);
 
-    _bc_eeprom.running = true;
+    _hio_eeprom.running = true;
 
     return true;
 }
 
-void bc_eeprom_async_cancel(void)
+void hio_eeprom_async_cancel(void)
 {
-    if (_bc_eeprom.running)
+    if (_hio_eeprom.running)
     {
-        bc_scheduler_unregister(_bc_eeprom.task_id);
+        hio_scheduler_unregister(_hio_eeprom.task_id);
 
-        _bc_eeprom.running = false;
+        _hio_eeprom.running = false;
     }
 }
 
-bool bc_eeprom_read(uint32_t address, void *buffer, size_t length)
+bool hio_eeprom_read(uint32_t address, void *buffer, size_t length)
 {
     // Add EEPROM base offset to address
-    address += _BC_EEPROM_BASE;
+    address += _HIO_EEPROM_BASE;
 
     // If user attempts to read outside of EEPROM boundary...
-    if ((address + length) > (_BC_EEPROM_END + 1))
+    if ((address + length) > (_HIO_EEPROM_END + 1))
     {
         // Indicate failure
         return false;
@@ -129,19 +129,19 @@ bool bc_eeprom_read(uint32_t address, void *buffer, size_t length)
     return true;
 }
 
-size_t bc_eeprom_get_size(void)
+size_t hio_eeprom_get_size(void)
 {
     // Return EEPROM memory size
-    return _BC_EEPROM_END - _BC_EEPROM_BASE + 1;
+    return _HIO_EEPROM_END - _HIO_EEPROM_BASE + 1;
 }
 
-static bool _bc_eeprom_is_busy(bc_tick_t timeout)
+static bool _hio_eeprom_is_busy(hio_tick_t timeout)
 {
-    timeout += bc_tick_get();
+    timeout += hio_tick_get();
 
-    while (_BC_EEPROM_IS_BUSY())
+    while (_HIO_EEPROM_IS_BUSY())
     {
-        if (timeout > bc_tick_get())
+        if (timeout > hio_tick_get())
         {
             return true;
         }
@@ -150,9 +150,9 @@ static bool _bc_eeprom_is_busy(bc_tick_t timeout)
     return false;
 }
 
-static void _bc_eeprom_unlock(void)
+static void _hio_eeprom_unlock(void)
 {
-    bc_irq_disable();
+    hio_irq_disable();
 
     // Unlock FLASH_PECR register
     if ((FLASH->PECR & FLASH_PECR_PELOCK) != 0)
@@ -161,20 +161,20 @@ static void _bc_eeprom_unlock(void)
         FLASH->PEKEYR = FLASH_PEKEY2;
     }
 
-    bc_irq_enable();
+    hio_irq_enable();
 }
 
-static void _bc_eeprom_lock(void)
+static void _hio_eeprom_lock(void)
 {
-    bc_irq_disable();
+    hio_irq_disable();
 
     // Lock FLASH_PECR register
     FLASH->PECR |= FLASH_PECR_PELOCK;
 
-    bc_irq_enable();
+    hio_irq_enable();
 }
 
-static bool _bc_eeprom_write(uint32_t address, size_t *i, uint8_t *buffer, size_t length)
+static bool _hio_eeprom_write(uint32_t address, size_t *i, uint8_t *buffer, size_t length)
 {
     uint32_t addr = address + *i;
 
@@ -238,7 +238,7 @@ static bool _bc_eeprom_write(uint32_t address, size_t *i, uint8_t *buffer, size_
         *i += 1;
     }
 
-    while (_BC_EEPROM_IS_BUSY())
+    while (_HIO_EEPROM_IS_BUSY())
     {
         continue;
     }
@@ -247,52 +247,52 @@ static bool _bc_eeprom_write(uint32_t address, size_t *i, uint8_t *buffer, size_
 }
 
 
-static void _bc_eeprom_async_write_task(void *param)
+static void _hio_eeprom_async_write_task(void *param)
 {
     (void) param;
 
-    if (_BC_EEPROM_IS_BUSY())
+    if (_HIO_EEPROM_IS_BUSY())
     {
-        bc_scheduler_plan_current_now();
+        hio_scheduler_plan_current_now();
 
         return;
     }
 
-    _bc_eeprom_unlock();
+    _hio_eeprom_unlock();
 
-    while(_bc_eeprom.i < _bc_eeprom.length)
+    while(_hio_eeprom.i < _hio_eeprom.length)
     {
-        if(_bc_eeprom_write(_bc_eeprom.address, &_bc_eeprom.i, _bc_eeprom.buffer, _bc_eeprom.length))
+        if(_hio_eeprom_write(_hio_eeprom.address, &_hio_eeprom.i, _hio_eeprom.buffer, _hio_eeprom.length))
         {
             break;
         }
     };
 
-    _bc_eeprom_lock();
+    _hio_eeprom_lock();
 
-    if(_bc_eeprom.i < _bc_eeprom.length)
+    if(_hio_eeprom.i < _hio_eeprom.length)
     {
-        bc_scheduler_plan_current_now();
+        hio_scheduler_plan_current_now();
 
         return;
     }
 
-    _bc_eeprom.running = false;
+    _hio_eeprom.running = false;
 
-    bc_scheduler_unregister(_bc_eeprom.task_id);
+    hio_scheduler_unregister(_hio_eeprom.task_id);
 
-    if (memcmp(_bc_eeprom.buffer, (void *) _bc_eeprom.address, _bc_eeprom.length) != 0UL)
+    if (memcmp(_hio_eeprom.buffer, (void *) _hio_eeprom.address, _hio_eeprom.length) != 0UL)
     {
-        if (_bc_eeprom.event_handler != NULL)
+        if (_hio_eeprom.event_handler != NULL)
         {
-            _bc_eeprom.event_handler(BC_EEPROM_EVENT_ASYNC_WRITE_ERROR, _bc_eeprom.event_param);
+            _hio_eeprom.event_handler(HIO_EEPROM_EVENT_ASYNC_WRITE_ERROR, _hio_eeprom.event_param);
         }
     }
     else
     {
-        if (_bc_eeprom.event_handler != NULL)
+        if (_hio_eeprom.event_handler != NULL)
         {
-            _bc_eeprom.event_handler(BC_EEPROM_EVENT_ASYNC_WRITE_DONE, _bc_eeprom.event_param);
+            _hio_eeprom.event_handler(HIO_EEPROM_EVENT_ASYNC_WRITE_DONE, _hio_eeprom.event_param);
         }
     }
 }

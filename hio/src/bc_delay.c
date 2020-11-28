@@ -1,11 +1,11 @@
-#include <bc_delay.h>
-#include <bc_timer.h>
-#include <bc_gpio.h>
+#include <hio_delay.h>
+#include <hio_timer.h>
+#include <hio_gpio.h>
 
-void bc_delay_us(uint16_t microseconds)
+void hio_delay_us(uint16_t microseconds)
 {
-    bc_timer_init();
-    bc_timer_start();
-    bc_timer_delay(microseconds);
-    bc_timer_stop();
+    hio_timer_init();
+    hio_timer_start();
+    hio_timer_delay(microseconds);
+    hio_timer_stop();
 }

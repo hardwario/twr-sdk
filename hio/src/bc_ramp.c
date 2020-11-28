@@ -1,8 +1,8 @@
-#include <bc_ramp.h>
+#include <hio_ramp.h>
 
-static float _bc_ramp_interpolate(bc_tick_t x, bc_tick_t x_min, bc_tick_t x_max, float y_min, float y_max);
+static float _hio_ramp_interpolate(hio_tick_t x, hio_tick_t x_min, hio_tick_t x_max, float y_min, float y_max);
 
-void bc_ramp_init(bc_ramp_t *self, float start, float stop, bc_tick_t duration)
+void hio_ramp_init(hio_ramp_t *self, float start, float stop, hio_tick_t duration)
 {
     memset(self, 0, sizeof(*self));
 
@@ -13,17 +13,17 @@ void bc_ramp_init(bc_ramp_t *self, float start, float stop, bc_tick_t duration)
     self->_duration = duration;
 }
 
-void bc_ramp_start(bc_ramp_t *self)
+void hio_ramp_start(hio_ramp_t *self)
 {
-    self->_tick_start = bc_tick_get();
+    self->_tick_start = hio_tick_get();
     self->_tick_end = self->_tick_start + self->_duration;
 
     self->_active = true;
 }
 
-float bc_ramp_get(bc_ramp_t *self)
+float hio_ramp_get(hio_ramp_t *self)
 {
-    if (bc_tick_get() >= self->_tick_end)
+    if (hio_tick_get() >= self->_tick_end)
     {
         self->_active = false;
     }
@@ -33,10 +33,10 @@ float bc_ramp_get(bc_ramp_t *self)
         return self->_stop;
     }
 
-    return _bc_ramp_interpolate(bc_tick_get(), self->_tick_start, self->_tick_end, self->_start, self->_stop);
+    return _hio_ramp_interpolate(hio_tick_get(), self->_tick_start, self->_tick_end, self->_start, self->_stop);
 }
 
-static float _bc_ramp_interpolate(bc_tick_t x, bc_tick_t x_min, bc_tick_t x_max, float y_min, float y_max)
+static float _hio_ramp_interpolate(hio_tick_t x, hio_tick_t x_min, hio_tick_t x_max, float y_min, float y_max)
 {
     if (x < x_min) { x = x_min; }
     if (x > x_max) { x = x_max; }

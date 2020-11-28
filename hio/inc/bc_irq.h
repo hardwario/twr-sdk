@@ -1,20 +1,20 @@
-#ifndef _BC_IRQ_H
-#define _BC_IRQ_H
+#ifndef _HIO_IRQ_H
+#define _HIO_IRQ_H
 
-#include <bc_common.h>
+#include <hio_common.h>
 
-//! @addtogroup bc_irq bc_irq
+//! @addtogroup hio_irq hio_irq
 //! @brief Functions for interrupt request manipulation
 //! @{
 
 //! @brief Disable interrupt requests globally (call can be nested)
 
-void bc_irq_disable(void);
+void hio_irq_disable(void);
 
 //! @brief Enable interrupt requests globally (call can be nested)
 
-void bc_irq_enable(void);
+void hio_irq_enable(void);
 
 //! @}
 
-#endif // _BC_IRQ_H
+#endif // _HIO_IRQ_H

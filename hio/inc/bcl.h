@@ -3,94 +3,94 @@
 
 // Miscellaneous
 
-#include <bc_ir_rx.h>
-#include <bc_irq.h>
-#include <bc_led_strip.h>
-#include <bc_radio.h>
-#include <bc_radio_pub.h>
-#include <bc_radio_node.h>
-#include <bc_log.h>
+#include <hio_ir_rx.h>
+#include <hio_irq.h>
+#include <hio_led_strip.h>
+#include <hio_radio.h>
+#include <hio_radio_pub.h>
+#include <hio_radio_node.h>
+#include <hio_log.h>
 
 // Peripheral drivers
 
-#include <bc_adc.h>
-#include <bc_button.h>
-#include <bc_dac.h>
-#include <bc_eeprom.h>
-#include <bc_gpio.h>
-#include <bc_i2c.h>
-#include <bc_led.h>
-#include <bc_rtc.h>
-#include <bc_uart.h>
-#include <bc_spi.h>
-#include <bc_pwm.h>
+#include <hio_adc.h>
+#include <hio_button.h>
+#include <hio_dac.h>
+#include <hio_eeprom.h>
+#include <hio_gpio.h>
+#include <hio_i2c.h>
+#include <hio_led.h>
+#include <hio_rtc.h>
+#include <hio_uart.h>
+#include <hio_spi.h>
+#include <hio_pwm.h>
 
 // Chip drivers
 
-#include <bc_sgp30.h>
-#include <bc_sgpc3.h>
-#include <bc_cp201t.h>
-#include <bc_hc_sr04.h>
-#include <bc_lis2dh12.h>
-#include <bc_lp8.h>
-#include <bc_spirit1.h>
-#include <bc_ls013b7dh03.h>
-#include <bc_cmwx1zzabz.h>
-#include <bc_sam_m8q.h>
-#include <bc_esp8266.h>
-#include <bc_ds2484.h>
+#include <hio_sgp30.h>
+#include <hio_sgpc3.h>
+#include <hio_cp201t.h>
+#include <hio_hc_sr04.h>
+#include <hio_lis2dh12.h>
+#include <hio_lp8.h>
+#include <hio_spirit1.h>
+#include <hio_ls013b7dh03.h>
+#include <hio_cmwx1zzabz.h>
+#include <hio_sam_m8q.h>
+#include <hio_esp8266.h>
+#include <hio_ds2484.h>
 
 // HARDWARIO tags
 
-#include <bc_tag_barometer.h>
-#include <bc_tag_humidity.h>
-#include <bc_tag_lux_meter.h>
-#include <bc_tag_temperature.h>
-#include <bc_tag_nfc.h>
-#include <bc_tag_voc.h>
-#include <bc_tag_voc_lp.h>
+#include <hio_tag_barometer.h>
+#include <hio_tag_humidity.h>
+#include <hio_tag_lux_meter.h>
+#include <hio_tag_temperature.h>
+#include <hio_tag_nfc.h>
+#include <hio_tag_voc.h>
+#include <hio_tag_voc_lp.h>
 
 // HARDWARIO modules
 
-#include <bc_module_battery.h>
-#include <bc_module_climate.h>
-#include <bc_module_encoder.h>
-#include <bc_module_gps.h>
-#include <bc_module_pir.h>
-#include <bc_module_power.h>
-#include <bc_module_relay.h>
-#include <bc_module_rs485.h>
-#include <bc_module_sigfox.h>
-#include <bc_module_lcd.h>
-#include <bc_module_co2.h>
-#include <bc_module_sensor.h>
-#include <bc_module_infra_grid.h>
+#include <hio_module_battery.h>
+#include <hio_module_climate.h>
+#include <hio_module_encoder.h>
+#include <hio_module_gps.h>
+#include <hio_module_pir.h>
+#include <hio_module_power.h>
+#include <hio_module_relay.h>
+#include <hio_module_rs485.h>
+#include <hio_module_sigfox.h>
+#include <hio_module_lcd.h>
+#include <hio_module_co2.h>
+#include <hio_module_sensor.h>
+#include <hio_module_infra_grid.h>
 
 // Other
 
-#include <bc_analog_sensor.h>
-#include <bc_config.h>
-#include <bc_data_stream.h>
-#include <bc_flood_detector.h>
-#include <bc_pulse_counter.h>
-#include <bc_soil_sensor.h>
-#include <bc_font_common.h>
-#include <bc_image.h>
-#include <bc_system.h>
-#include <bc_switch.h>
-#include <bc_timer.h>
-#include <bc_error.h>
-#include <bc_dice.h>
-#include <bc_ramp.h>
-#include <bc_gfx.h>
-#include <bc_atci.h>
-#include <bc_base64.h>
-#include <bc_sha256.h>
-#include <bc_ds18b20.h>
-#include <bc_onewire.h>
-#include <bc_onewire_gpio.h>
-#include <bc_onewire_ds2484.h>
-#include <bc_delay.h>
+#include <hio_analog_sensor.h>
+#include <hio_config.h>
+#include <hio_data_stream.h>
+#include <hio_flood_detector.h>
+#include <hio_pulse_counter.h>
+#include <hio_soil_sensor.h>
+#include <hio_font_common.h>
+#include <hio_image.h>
+#include <hio_system.h>
+#include <hio_switch.h>
+#include <hio_timer.h>
+#include <hio_error.h>
+#include <hio_dice.h>
+#include <hio_ramp.h>
+#include <hio_gfx.h>
+#include <hio_atci.h>
+#include <hio_base64.h>
+#include <hio_sha256.h>
+#include <hio_ds18b20.h>
+#include <hio_onewire.h>
+#include <hio_onewire_gpio.h>
+#include <hio_onewire_ds2484.h>
+#include <hio_delay.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 

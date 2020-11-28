@@ -1,7 +1,7 @@
-#include <bc_rf_ook.h>
-#include <bc_timer.h>
+#include <hio_rf_ook.h>
+#include <hio_timer.h>
 
-void _bc_rf_ook_irq_TIM3_handler(void *param);
+void _hio_rf_ook_irq_TIM3_handler(void *param);
 
 static struct
 {
@@ -10,10 +10,10 @@ static struct
     uint8_t packet_data[128];
     volatile bool is_busy;
     uint32_t bit_length_us;
-    bc_gpio_channel_t gpio;
-} _bc_rf_ook;
+    hio_gpio_channel_t gpio;
+} _hio_rf_ook;
 
-static int _bc_rf_ook_char_to_int(char input)
+static int _hio_rf_ook_char_to_int(char input)
 {
     if(input >= '0' && input <= '9')
     {
@@ -33,24 +33,24 @@ static int _bc_rf_ook_char_to_int(char input)
     }
 }
 
-static uint8_t _bc_rf_ook_string_to_array(char *str, uint8_t *array)
+static uint8_t _hio_rf_ook_string_to_array(char *str, uint8_t *array)
 {
     uint8_t array_length = (strlen(str) + 1) / 2;
 
     for(int i = 0; i < array_length; i++)
     {
-        array[i] = _bc_rf_ook_char_to_int(str[i*2]) * 16;
+        array[i] = _hio_rf_ook_char_to_int(str[i*2]) * 16;
 
         if(!(i == array_length - 1 && strlen(str) % 2 == 1))
         {
-           array[i] += _bc_rf_ook_char_to_int(str[i*2 + 1]);
+           array[i] += _hio_rf_ook_char_to_int(str[i*2 + 1]);
         }
     }
 
     return array_length;
 }
 
-static void _bc_rf_ook_tim3_configure(uint32_t resolution_us, uint32_t period_cycles)
+static void _hio_rf_ook_tim3_configure(uint32_t resolution_us, uint32_t period_cycles)
 {
     // Enable TIM3 clock
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
@@ -70,33 +70,33 @@ static void _bc_rf_ook_tim3_configure(uint32_t resolution_us, uint32_t period_cy
     NVIC_EnableIRQ(TIM3_IRQn);
 }
 
-void bc_rf_ook_init(bc_gpio_channel_t gpio)
+void hio_rf_ook_init(hio_gpio_channel_t gpio)
 {
-    memset(&_bc_rf_ook, 0, sizeof(_bc_rf_ook));
+    memset(&_hio_rf_ook, 0, sizeof(_hio_rf_ook));
 
-    _bc_rf_ook.gpio = gpio;
+    _hio_rf_ook.gpio = gpio;
 
-    bc_gpio_init(_bc_rf_ook.gpio);
-    bc_gpio_set_mode(_bc_rf_ook.gpio, BC_GPIO_MODE_OUTPUT);
+    hio_gpio_init(_hio_rf_ook.gpio);
+    hio_gpio_set_mode(_hio_rf_ook.gpio, HIO_GPIO_MODE_OUTPUT);
 
     // TIM3 counter stopped when core is halted
     //DBGMCU->APB1FZ |= DBGMCU_APB1_FZ_DBG_TIM3_STOP;
 
     // Set default bitrate
-    bc_rf_ook_set_bitrate(4800);
+    hio_rf_ook_set_bitrate(4800);
 }
 
-void bc_rf_ook_set_bitrate(uint32_t bitrate)
+void hio_rf_ook_set_bitrate(uint32_t bitrate)
 {
-    _bc_rf_ook.bit_length_us = 1e6 / bitrate;
+    _hio_rf_ook.bit_length_us = 1e6 / bitrate;
 }
 
-void bc_rf_ook_set_bitlength(uint32_t bit_length_us)
+void hio_rf_ook_set_bitlength(uint32_t bit_length_us)
 {
-    _bc_rf_ook.bit_length_us = bit_length_us;
+    _hio_rf_ook.bit_length_us = bit_length_us;
 }
 
-bool bc_rf_ook_send(uint8_t *packet, uint8_t length)
+bool hio_rf_ook_send(uint8_t *packet, uint8_t length)
 {
     if ((TIM3->CR1 & TIM_CR1_CEN) != 0)
     {
@@ -104,43 +104,43 @@ bool bc_rf_ook_send(uint8_t *packet, uint8_t length)
         return false;
     }
 
-    if (length > sizeof(_bc_rf_ook.packet_data))
+    if (length > sizeof(_hio_rf_ook.packet_data))
     {
         // Packet is too long for library's buffer
         return false;
     }
 
-    bc_system_pll_enable();
+    hio_system_pll_enable();
 
-    _bc_rf_ook_tim3_configure(1, _bc_rf_ook.bit_length_us);
+    _hio_rf_ook_tim3_configure(1, _hio_rf_ook.bit_length_us);
 
-    _bc_rf_ook.packet_length = length;
-    _bc_rf_ook.packet_bit_position = 0;
+    _hio_rf_ook.packet_length = length;
+    _hio_rf_ook.packet_bit_position = 0;
 
-    memcpy(_bc_rf_ook.packet_data, packet, _bc_rf_ook.packet_length);
+    memcpy(_hio_rf_ook.packet_data, packet, _hio_rf_ook.packet_length);
 
-    bc_timer_set_irq_handler(TIM3, _bc_rf_ook_irq_TIM3_handler, NULL);
+    hio_timer_set_irq_handler(TIM3, _hio_rf_ook_irq_TIM3_handler, NULL);
 
-    _bc_rf_ook.is_busy = true;
+    _hio_rf_ook.is_busy = true;
 
     TIM3->CR1 |= TIM_CR1_CEN;
 
     return true;
 }
 
-bool bc_rf_ook_send_hex_string(char *hex_string)
+bool hio_rf_ook_send_hex_string(char *hex_string)
 {
-    uint8_t packet_length = _bc_rf_ook_string_to_array(hex_string, _bc_rf_ook.packet_data);
+    uint8_t packet_length = _hio_rf_ook_string_to_array(hex_string, _hio_rf_ook.packet_data);
 
-    return bc_rf_ook_send(_bc_rf_ook.packet_data, packet_length);
+    return hio_rf_ook_send(_hio_rf_ook.packet_data, packet_length);
 }
 
-bool bc_rf_ook_is_busy()
+bool hio_rf_ook_is_busy()
 {
-    return _bc_rf_ook.is_busy;
+    return _hio_rf_ook.is_busy;
 }
 
-bool bc_rf_ook_is_ready()
+bool hio_rf_ook_is_ready()
 {
     if ((TIM3->CR1 & TIM_CR1_CEN) != 0)
     {
@@ -148,33 +148,33 @@ bool bc_rf_ook_is_ready()
         return false;
     }
 
-    return _bc_rf_ook.is_busy;
+    return _hio_rf_ook.is_busy;
 }
 
-void _bc_rf_ook_irq_TIM3_handler(void *param)
+void _hio_rf_ook_irq_TIM3_handler(void *param)
 {
     (void) param;
     TIM3->SR = ~TIM_DIER_UIE;
 
-    uint8_t byte_index = _bc_rf_ook.packet_bit_position / 8;
-    uint8_t bit_index = _bc_rf_ook.packet_bit_position % 8;
+    uint8_t byte_index = _hio_rf_ook.packet_bit_position / 8;
+    uint8_t bit_index = _hio_rf_ook.packet_bit_position % 8;
 
-    if(_bc_rf_ook.packet_bit_position / 8 == _bc_rf_ook.packet_length)
+    if(_hio_rf_ook.packet_bit_position / 8 == _hio_rf_ook.packet_length)
     {
         // Disable output after last bit is sent
-        bc_gpio_set_output(_bc_rf_ook.gpio, 0);
+        hio_gpio_set_output(_hio_rf_ook.gpio, 0);
 
         // end of transmission
         TIM3->CR1 &= ~TIM_CR1_CEN;
-        _bc_rf_ook.is_busy = false;
+        _hio_rf_ook.is_busy = false;
 
-        bc_system_pll_disable();
+        hio_system_pll_disable();
 
         return;
     }
 
-    bc_gpio_set_output(_bc_rf_ook.gpio, _bc_rf_ook.packet_data[byte_index] & (1 << (7 - bit_index)));
+    hio_gpio_set_output(_hio_rf_ook.gpio, _hio_rf_ook.packet_data[byte_index] & (1 << (7 - bit_index)));
 
-    _bc_rf_ook.packet_bit_position++;
+    _hio_rf_ook.packet_bit_position++;
 }
 

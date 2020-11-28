@@ -1,60 +1,60 @@
-#include <bc_system.h>
-#include <bc_scheduler.h>
-#include <bc_irq.h>
-#include <bc_i2c.h>
-#include <bc_timer.h>
+#include <hio_system.h>
+#include <hio_scheduler.h>
+#include <hio_irq.h>
+#include <hio_i2c.h>
+#include <hio_timer.h>
 #include <stm32l0xx.h>
 #include <stm32l0xx_hal_conf.h>
 
-#define _BC_SYSTEM_DEBUG_ENABLE 0
+#define _HIO_SYSTEM_DEBUG_ENABLE 0
 
-static const uint32_t bc_system_clock_table[3] =
+static const uint32_t hio_system_clock_table[3] =
 {
     RCC_CFGR_SW_MSI,
     RCC_CFGR_SW_HSI,
     RCC_CFGR_SW_PLL
 };
 
-static int _bc_system_hsi16_enable_semaphore;
+static int _hio_system_hsi16_enable_semaphore;
 
-static int _bc_system_pll_enable_semaphore;
+static int _hio_system_pll_enable_semaphore;
 
-static int _bc_system_deep_sleep_disable_semaphore;
+static int _hio_system_deep_sleep_disable_semaphore;
 
-static void _bc_system_init_flash(void);
+static void _hio_system_init_flash(void);
 
-static void _bc_system_init_debug(void);
+static void _hio_system_init_debug(void);
 
-static void _bc_system_init_clock(void);
+static void _hio_system_init_clock(void);
 
-static void _bc_system_init_power(void);
+static void _hio_system_init_power(void);
 
-static void _bc_system_init_gpio(void);
+static void _hio_system_init_gpio(void);
 
-static void _bc_system_init_rtc(void);
+static void _hio_system_init_rtc(void);
 
-static void _bc_system_init_shutdown_tmp112(void);
+static void _hio_system_init_shutdown_tmp112(void);
 
-static void _bc_system_switch_clock(bc_system_clock_t clock);
+static void _hio_system_switch_clock(hio_system_clock_t clock);
 
-void bc_system_init(void)
+void hio_system_init(void)
 {
-    _bc_system_init_flash();
+    _hio_system_init_flash();
 
-    _bc_system_init_debug();
+    _hio_system_init_debug();
 
-    _bc_system_init_clock();
+    _hio_system_init_clock();
 
-    _bc_system_init_power();
+    _hio_system_init_power();
 
-    _bc_system_init_gpio();
+    _hio_system_init_gpio();
 
-    _bc_system_init_rtc();
+    _hio_system_init_rtc();
 
-    _bc_system_init_shutdown_tmp112();
+    _hio_system_init_shutdown_tmp112();
 }
 
-static void _bc_system_init_flash(void)
+static void _hio_system_init_flash(void)
 {
     // Enable prefetch
     FLASH->ACR |= FLASH_ACR_PRFTEN;
@@ -63,9 +63,9 @@ static void _bc_system_init_flash(void)
     FLASH->ACR |= FLASH_ACR_LATENCY;
 }
 
-static void _bc_system_init_debug(void)
+static void _hio_system_init_debug(void)
 {
-#if _BC_SYSTEM_DEBUG_ENABLE == 1
+#if _HIO_SYSTEM_DEBUG_ENABLE == 1
 
     // Enable clock for DBG
     RCC->APB2ENR |= RCC_APB2ENR_DBGMCUEN;
@@ -121,7 +121,7 @@ static void _bc_system_init_debug(void)
 #endif
 }
 
-static void _bc_system_init_clock(void)
+static void _hio_system_init_clock(void)
 {
 
     // Update SystemCoreClock variable
@@ -151,7 +151,7 @@ static void _bc_system_init_clock(void)
     SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
 }
 
-static void _bc_system_init_power(void)
+static void _hio_system_init_power(void)
 {
     // Enable clock for PWR
     RCC->APB1ENR |= RCC_APB1ENR_PWREN;
@@ -175,7 +175,7 @@ static void _bc_system_init_power(void)
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 }
 
-static void _bc_system_init_gpio(void)
+static void _hio_system_init_gpio(void)
 {
     // Enable clock for GPIOA
     RCC->IOPENR = RCC_IOPENR_GPIOAEN;
@@ -187,7 +187,7 @@ static void _bc_system_init_gpio(void)
     GPIOA->MODER |= GPIO_MODER_MODE4_1 | GPIO_MODER_MODE4_0;
 }
 
-static void _bc_system_init_rtc(void)
+static void _hio_system_init_rtc(void)
 {
 
     // Set LSE oscillator drive capability to medium low drive
@@ -246,7 +246,7 @@ static void _bc_system_init_rtc(void)
     }
 
     // Set wake-up auto-reload value based on the configured scheduler interval.
-    RTC->WUTR = LSE_VALUE / 16 * BC_SCHEDULER_INTERVAL_MS / 1000;
+    RTC->WUTR = LSE_VALUE / 16 * HIO_SCHEDULER_INTERVAL_MS / 1000;
 
     // Clear timer flag
     RTC->ISR &= ~RTC_ISR_WUTF;
@@ -271,51 +271,51 @@ static void _bc_system_init_rtc(void)
     NVIC_EnableIRQ(RTC_IRQn);
 }
 
-static void _bc_system_init_shutdown_tmp112(void)
+static void _hio_system_init_shutdown_tmp112(void)
 {
-    bc_i2c_init(BC_I2C_I2C0, BC_I2C_SPEED_100_KHZ);
+    hio_i2c_init(HIO_I2C_I2C0, HIO_I2C_SPEED_100_KHZ);
 
-    bc_i2c_memory_write_16b(BC_I2C_I2C0, 0x49, 0x01, 0x0180);
+    hio_i2c_memory_write_16b(HIO_I2C_I2C0, 0x49, 0x01, 0x0180);
 
-    bc_i2c_deinit(BC_I2C_I2C0);
+    hio_i2c_deinit(HIO_I2C_I2C0);
 }
 
-void bc_system_sleep(void)
+void hio_system_sleep(void)
 {
     __WFI();
 }
 
-void bc_system_deep_sleep_enable(void)
+void hio_system_deep_sleep_enable(void)
 {
-    _bc_system_deep_sleep_disable_semaphore--;
+    _hio_system_deep_sleep_disable_semaphore--;
 
-    if (_bc_system_deep_sleep_disable_semaphore == 0)
+    if (_hio_system_deep_sleep_disable_semaphore == 0)
     {
         SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
     }
 }
 
-void bc_system_deep_sleep_disable(void)
+void hio_system_deep_sleep_disable(void)
 {
-    if (_bc_system_deep_sleep_disable_semaphore == 0)
+    if (_hio_system_deep_sleep_disable_semaphore == 0)
     {
         SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
     }
 
-    _bc_system_deep_sleep_disable_semaphore++;
+    _hio_system_deep_sleep_disable_semaphore++;
 }
 
-void bc_system_enter_standby_mode(void)
+void hio_system_enter_standby_mode(void)
 {
-    bc_i2c_init(BC_I2C_I2C0, BC_I2C_SPEED_100_KHZ);
+    hio_i2c_init(HIO_I2C_I2C0, HIO_I2C_SPEED_100_KHZ);
 
     // tmp112
-    bc_i2c_memory_write_16b(BC_I2C_I2C0, 0x49, 0x01, 0x0180);
+    hio_i2c_memory_write_16b(HIO_I2C_I2C0, 0x49, 0x01, 0x0180);
 
     // lis2dh12
-    bc_i2c_memory_write_16b(BC_I2C_I2C0, 0x19, 0x20, 0x07);
+    hio_i2c_memory_write_16b(HIO_I2C_I2C0, 0x19, 0x20, 0x07);
 
-    bc_i2c_deinit(BC_I2C_I2C0);
+    hio_i2c_deinit(HIO_I2C_I2C0);
 
     __disable_irq();
 
@@ -343,25 +343,25 @@ void bc_system_enter_standby_mode(void)
     __WFI();
 }
 
-bc_system_clock_t bc_system_clock_get(void)
+hio_system_clock_t hio_system_clock_get(void)
 {
-    if (_bc_system_pll_enable_semaphore != 0)
+    if (_hio_system_pll_enable_semaphore != 0)
     {
-        return BC_SYSTEM_CLOCK_PLL;
+        return HIO_SYSTEM_CLOCK_PLL;
     }
-    else if (_bc_system_hsi16_enable_semaphore != 0)
+    else if (_hio_system_hsi16_enable_semaphore != 0)
     {
-        return BC_SYSTEM_CLOCK_HSI;
+        return HIO_SYSTEM_CLOCK_HSI;
     }
     else
     {
-        return BC_SYSTEM_CLOCK_MSI;
+        return HIO_SYSTEM_CLOCK_MSI;
     }
 }
 
-void bc_system_hsi16_enable(void)
+void hio_system_hsi16_enable(void)
 {
-    if (++_bc_system_hsi16_enable_semaphore == 1)
+    if (++_hio_system_hsi16_enable_semaphore == 1)
     {
         // Set regulator range to 1.8V
         PWR->CR |= PWR_CR_VOS_0;
@@ -378,7 +378,7 @@ void bc_system_hsi16_enable(void)
             continue;
         }
 
-        _bc_system_switch_clock(BC_SYSTEM_CLOCK_HSI);
+        _hio_system_switch_clock(HIO_SYSTEM_CLOCK_HSI);
 
         // Set SysTick reload value
         SysTick->LOAD = 16000 - 1;
@@ -387,14 +387,14 @@ void bc_system_hsi16_enable(void)
         SystemCoreClock = 16000000;
     }
 
-    bc_scheduler_disable_sleep();
+    hio_scheduler_disable_sleep();
 }
 
-void bc_system_hsi16_disable(void)
+void hio_system_hsi16_disable(void)
 {
-    if (--_bc_system_hsi16_enable_semaphore == 0)
+    if (--_hio_system_hsi16_enable_semaphore == 0)
     {
-        _bc_system_switch_clock(BC_SYSTEM_CLOCK_MSI);
+        _hio_system_switch_clock(HIO_SYSTEM_CLOCK_MSI);
 
         // Turn HSI16 off
         RCC->CR &= ~RCC_CR_HSION;
@@ -417,14 +417,14 @@ void bc_system_hsi16_disable(void)
         PWR->CR |= PWR_CR_VOS;
     }
 
-    bc_scheduler_enable_sleep();
+    hio_scheduler_enable_sleep();
 }
 
-void bc_system_pll_enable(void)
+void hio_system_pll_enable(void)
 {
-    if (++_bc_system_pll_enable_semaphore == 1)
+    if (++_hio_system_pll_enable_semaphore == 1)
     {
-        bc_system_hsi16_enable();
+        hio_system_hsi16_enable();
 
         // Turn PLL on
         RCC->CR |= RCC_CR_PLLON;
@@ -434,7 +434,7 @@ void bc_system_pll_enable(void)
             continue;
         }
 
-        _bc_system_switch_clock(BC_SYSTEM_CLOCK_PLL);
+        _hio_system_switch_clock(HIO_SYSTEM_CLOCK_PLL);
 
         // Set SysTick reload value
         SysTick->LOAD = 32000 - 1;
@@ -444,11 +444,11 @@ void bc_system_pll_enable(void)
     }
 }
 
-void bc_system_pll_disable(void)
+void hio_system_pll_disable(void)
 {
-    if (--_bc_system_pll_enable_semaphore == 0)
+    if (--_hio_system_pll_enable_semaphore == 0)
     {
-        _bc_system_switch_clock(BC_SYSTEM_CLOCK_HSI);
+        _hio_system_switch_clock(HIO_SYSTEM_CLOCK_HSI);
 
         // Turn PLL off
         RCC->CR &= ~RCC_CR_PLLON;
@@ -458,21 +458,21 @@ void bc_system_pll_disable(void)
             continue;
         }
 
-        bc_system_hsi16_disable();
+        hio_system_hsi16_disable();
     }
 }
 
-uint32_t bc_system_get_clock(void)
+uint32_t hio_system_get_clock(void)
 {
     return SystemCoreClock;
 }
 
-void bc_system_reset(void)
+void hio_system_reset(void)
 {
     NVIC_SystemReset();
 }
 
-bool bc_system_get_vbus_sense(void)
+bool hio_system_get_vbus_sense(void)
 {
     static bool init = false;
 
@@ -492,19 +492,19 @@ bool bc_system_get_vbus_sense(void)
         // Input mode
         GPIOA->MODER &= ~GPIO_MODER_MODE12_Msk;
 
-        bc_timer_init();
-        bc_timer_start();
-        bc_timer_delay(10);
-        bc_timer_stop();
+        hio_timer_init();
+        hio_timer_start();
+        hio_timer_delay(10);
+        hio_timer_stop();
     }
 
     return (GPIOA->IDR & GPIO_IDR_ID12) != 0;
 }
 
-__attribute__((weak)) void bc_system_error(void)
+__attribute__((weak)) void hio_system_error(void)
 {
 #ifdef RELEASE
-    bc_system_reset();
+    hio_system_reset();
 #else
     for (;;);
 #endif
@@ -512,7 +512,7 @@ __attribute__((weak)) void bc_system_error(void)
 
 void HardFault_Handler(void)
 {
-    bc_system_error();
+    hio_system_error();
 }
 
 void RTC_IRQHandler(void)
@@ -523,7 +523,7 @@ void RTC_IRQHandler(void)
         // Clear wake-up timer flag
         RTC->ISR &= ~RTC_ISR_WUTF;
 
-        bc_tick_increment_irq(BC_SCHEDULER_INTERVAL_MS);
+        hio_tick_increment_irq(HIO_SCHEDULER_INTERVAL_MS);
     }
 
     // Clear EXTI interrupt flag
@@ -531,16 +531,16 @@ void RTC_IRQHandler(void)
 }
 
 
-static void _bc_system_switch_clock(bc_system_clock_t clock)
+static void _hio_system_switch_clock(hio_system_clock_t clock)
 {
-    uint32_t clock_mask = bc_system_clock_table[clock];
+    uint32_t clock_mask = hio_system_clock_table[clock];
 
-    bc_irq_disable();
+    hio_irq_disable();
 
     uint32_t rcc_cfgr = RCC->CFGR;
     rcc_cfgr &= ~RCC_CFGR_SW_Msk;
     rcc_cfgr |= clock_mask;
     RCC->CFGR = rcc_cfgr;
 
-    bc_irq_enable();
+    hio_irq_enable();
 }

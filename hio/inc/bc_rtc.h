@@ -1,15 +1,15 @@
-#ifndef _BC_RTC_H
-#define _BC_RTC_H
+#ifndef _HIO_RTC_H
+#define _HIO_RTC_H
 
-#include "bc_common.h"
+#include "hio_common.h"
 
-//! @addtogroup bc_rtc bc_rtc
+//! @addtogroup hio_rtc hio_rtc
 //! @brief Driver for real-time clock
 //! @{
 
 //! @brief Initialize real-time clock
 
-void bc_rtc_init(void);
+void hio_rtc_init(void);
 
 //! @brief RTC date and time structure
 typedef struct
@@ -23,27 +23,27 @@ typedef struct
 	uint8_t month;       //!< Month in a year, 1 to 12
 	uint16_t year;        //!< Year parameter, 2000 to 2099
 	uint32_t timestamp;  //!< Seconds from 01.01.1970 00:00:00
-} bc_rtc_t;
+} hio_rtc_t;
 
 //! @brief Get date and time from RTC
 //! @param[in] rtc Pointer to the RTC date and time structure
 
-void bc_rtc_get_date_time(bc_rtc_t* rtc);
+void hio_rtc_get_date_time(hio_rtc_t* rtc);
 
 //! @brief Set gate and time to RTC
 //! @param[in] rtc Pointer to the RTC date and time structure
 //! @return true On success
 //! @return false On failure
 
-bool bc_rtc_set_date_time(bc_rtc_t* rtc);
+bool hio_rtc_set_date_time(hio_rtc_t* rtc);
 
 //! @brief Convert RTC to timestamp
 //! @param[in] rtc Pointer to the RTC date and time structure
 //! @return unix timestamp
 
-uint32_t bc_rtc_rtc_to_timestamp(bc_rtc_t *rtc);
+uint32_t hio_rtc_rtc_to_timestamp(hio_rtc_t *rtc);
 
 
 //! @}
 
-#endif // _BC_RTC_H
+#endif // _HIO_RTC_H

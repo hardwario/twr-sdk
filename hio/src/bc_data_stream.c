@@ -1,9 +1,9 @@
-#include <bc_data_stream.h>
+#include <hio_data_stream.h>
 
-static int _bc_data_stream_compare_float(const void * a, const void * b);
-static int _bc_data_stream_compare_int(const void * a, const void * b);
+static int _hio_data_stream_compare_float(const void * a, const void * b);
+static int _hio_data_stream_compare_int(const void * a, const void * b);
 //
-void bc_data_stream_init(bc_data_stream_t *self, int min_number_of_samples, bc_data_stream_buffer_t *buffer)
+void hio_data_stream_init(hio_data_stream_t *self, int min_number_of_samples, hio_data_stream_buffer_t *buffer)
 {
     memset(self, 0, sizeof(*self));
     self->_buffer = buffer;
@@ -12,11 +12,11 @@ void bc_data_stream_init(bc_data_stream_t *self, int min_number_of_samples, bc_d
     self->_min_number_of_samples = min_number_of_samples;
 }
 
-void bc_data_stream_feed(bc_data_stream_t *self, void *data)
+void hio_data_stream_feed(hio_data_stream_t *self, void *data)
 {
     if (data == NULL)
     {
-        bc_data_stream_reset(self);
+        hio_data_stream_reset(self);
         return;
     }
 
@@ -27,11 +27,11 @@ void bc_data_stream_feed(bc_data_stream_t *self, void *data)
 
     switch (self->_buffer->type)
     {
-        case BC_DATA_STREAM_TYPE_FLOAT:
+        case HIO_DATA_STREAM_TYPE_FLOAT:
         {
             if (isnan(*(float *) data) || isinf(*(float *) data))
             {
-                bc_data_stream_reset(self);
+                hio_data_stream_reset(self);
 
                 return;
             }
@@ -40,7 +40,7 @@ void bc_data_stream_feed(bc_data_stream_t *self, void *data)
 
             break;
         }
-        case BC_DATA_STREAM_TYPE_INT:
+        case HIO_DATA_STREAM_TYPE_INT:
         {
             *((int *) self->_buffer->feed + self->_feed_head) = *(int *) data;
 
@@ -55,33 +55,33 @@ void bc_data_stream_feed(bc_data_stream_t *self, void *data)
     self->_counter++;
 }
 
-void bc_data_stream_reset(bc_data_stream_t *self)
+void hio_data_stream_reset(hio_data_stream_t *self)
 {
     self->_counter = 0;
     self->_feed_head = self->_buffer->number_of_samples - 1;
 }
 
-int bc_data_stream_get_counter(bc_data_stream_t *self)
+int hio_data_stream_get_counter(hio_data_stream_t *self)
 {
     return self->_counter;
 }
 
-int bc_data_stream_get_length(bc_data_stream_t *self)
+int hio_data_stream_get_length(hio_data_stream_t *self)
 {
     return self->_counter > self->_buffer->number_of_samples ? self->_buffer->number_of_samples : self->_counter;
 }
 
-bc_data_stream_type_t bc_data_stream_get_type(bc_data_stream_t *self)
+hio_data_stream_type_t hio_data_stream_get_type(hio_data_stream_t *self)
 {
     return self->_buffer->type;
 }
 
-int bc_data_stream_get_number_of_samples(bc_data_stream_t *self)
+int hio_data_stream_get_number_of_samples(hio_data_stream_t *self)
 {
     return self->_buffer->number_of_samples;
 }
 
-bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
+bool hio_data_stream_get_average(hio_data_stream_t *self, void *result)
 {
     if (self->_counter < self->_min_number_of_samples)
     {
@@ -92,7 +92,7 @@ bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
 
     switch (self->_buffer->type)
     {
-        case BC_DATA_STREAM_TYPE_FLOAT:
+        case HIO_DATA_STREAM_TYPE_FLOAT:
         {
             float sum = 0;
             float *buffer = (float *) self->_buffer->feed;
@@ -106,7 +106,7 @@ bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
             *(float *) result = sum / length;
             break;
         }
-        case BC_DATA_STREAM_TYPE_INT:
+        case HIO_DATA_STREAM_TYPE_INT:
         {
             int64_t sum = 0;
             int *buffer = (int *) self->_buffer->feed;
@@ -128,7 +128,7 @@ bool bc_data_stream_get_average(bc_data_stream_t *self, void *result)
     return true;
 }
 
-bool bc_data_stream_get_median(bc_data_stream_t *self, void *result)
+bool hio_data_stream_get_median(hio_data_stream_t *self, void *result)
 {
     if (self->_counter < self->_min_number_of_samples)
     {
@@ -139,10 +139,10 @@ bool bc_data_stream_get_median(bc_data_stream_t *self, void *result)
 
     switch (self->_buffer->type)
     {
-        case BC_DATA_STREAM_TYPE_FLOAT:
+        case HIO_DATA_STREAM_TYPE_FLOAT:
         {
             memcpy(self->_buffer->sort, self->_buffer->feed, length * sizeof(float));
-            qsort(self->_buffer->sort, length, sizeof(float), _bc_data_stream_compare_float);
+            qsort(self->_buffer->sort, length, sizeof(float), _hio_data_stream_compare_float);
 
             float *buffer = (float *) self->_buffer->sort;
 
@@ -156,10 +156,10 @@ bool bc_data_stream_get_median(bc_data_stream_t *self, void *result)
             }
             break;
         }
-        case BC_DATA_STREAM_TYPE_INT:
+        case HIO_DATA_STREAM_TYPE_INT:
         {
             memcpy(self->_buffer->sort, self->_buffer->feed, length * sizeof(int));
-            qsort(self->_buffer->sort, length, sizeof(int), _bc_data_stream_compare_int);
+            qsort(self->_buffer->sort, length, sizeof(int), _hio_data_stream_compare_int);
 
             int *buffer = (int *) self->_buffer->sort;
 
@@ -182,7 +182,7 @@ bool bc_data_stream_get_median(bc_data_stream_t *self, void *result)
     return true;
 }
 
-bool bc_data_stream_get_first(bc_data_stream_t *self, void *result)
+bool hio_data_stream_get_first(hio_data_stream_t *self, void *result)
 {
     if (self->_counter == 0)
     {
@@ -198,12 +198,12 @@ bool bc_data_stream_get_first(bc_data_stream_t *self, void *result)
 
     switch (self->_buffer->type)
     {
-        case BC_DATA_STREAM_TYPE_FLOAT:
+        case HIO_DATA_STREAM_TYPE_FLOAT:
         {
             *(float *) result = *((float *) self->_buffer->feed + position);
             break;
         }
-        case BC_DATA_STREAM_TYPE_INT:
+        case HIO_DATA_STREAM_TYPE_INT:
         {
             *(int *) result = *((int *) self->_buffer->feed + position);
             break;
@@ -217,7 +217,7 @@ bool bc_data_stream_get_first(bc_data_stream_t *self, void *result)
     return true;
 }
 
-bool bc_data_stream_get_last(bc_data_stream_t *self, void *result)
+bool hio_data_stream_get_last(hio_data_stream_t *self, void *result)
 {
     if (self->_counter == 0)
     {
@@ -226,12 +226,12 @@ bool bc_data_stream_get_last(bc_data_stream_t *self, void *result)
 
     switch (self->_buffer->type)
     {
-        case BC_DATA_STREAM_TYPE_FLOAT:
+        case HIO_DATA_STREAM_TYPE_FLOAT:
         {
             *(float *) result = *((float *) self->_buffer->feed + self->_feed_head);
             break;
         }
-        case BC_DATA_STREAM_TYPE_INT:
+        case HIO_DATA_STREAM_TYPE_INT:
         {
             *(int *) result = *((int *) self->_buffer->feed + self->_feed_head);
             break;
@@ -245,7 +245,7 @@ bool bc_data_stream_get_last(bc_data_stream_t *self, void *result)
     return true;
 }
 
-bool bc_data_stream_get_nth(bc_data_stream_t *self, int n, void *result)
+bool hio_data_stream_get_nth(hio_data_stream_t *self, int n, void *result)
 {
     int position;
 
@@ -282,12 +282,12 @@ bool bc_data_stream_get_nth(bc_data_stream_t *self, int n, void *result)
 
     switch (self->_buffer->type)
     {
-        case BC_DATA_STREAM_TYPE_FLOAT:
+        case HIO_DATA_STREAM_TYPE_FLOAT:
         {
             *(float *) result = *((float *) self->_buffer->feed + position);
             break;
         }
-        case BC_DATA_STREAM_TYPE_INT:
+        case HIO_DATA_STREAM_TYPE_INT:
         {
             *(int *) result = *((int *) self->_buffer->feed + position);
             break;
@@ -301,18 +301,18 @@ bool bc_data_stream_get_nth(bc_data_stream_t *self, int n, void *result)
     return true;
 }
 
-bool bc_data_stream_get_max(bc_data_stream_t *self, void *result)
+bool hio_data_stream_get_max(hio_data_stream_t *self, void *result)
 {
     if (self->_counter < self->_min_number_of_samples)
     {
         return false;
     }
 
-    int length = bc_data_stream_get_length(self);
+    int length = hio_data_stream_get_length(self);
 
     switch (self->_buffer->type)
     {
-        case BC_DATA_STREAM_TYPE_FLOAT:
+        case HIO_DATA_STREAM_TYPE_FLOAT:
         {
             float *buffer = (float *) self->_buffer->feed;
 
@@ -330,7 +330,7 @@ bool bc_data_stream_get_max(bc_data_stream_t *self, void *result)
 
             break;
         }
-        case BC_DATA_STREAM_TYPE_INT:
+        case HIO_DATA_STREAM_TYPE_INT:
         {
             int *buffer = (int *) self->_buffer->feed;
 
@@ -357,18 +357,18 @@ bool bc_data_stream_get_max(bc_data_stream_t *self, void *result)
     return true;
 }
 
-bool bc_data_stream_get_min(bc_data_stream_t *self, void *result)
+bool hio_data_stream_get_min(hio_data_stream_t *self, void *result)
 {
     if (self->_counter < self->_min_number_of_samples)
     {
         return false;
     }
 
-    int length = bc_data_stream_get_length(self);
+    int length = hio_data_stream_get_length(self);
 
     switch (self->_buffer->type)
     {
-        case BC_DATA_STREAM_TYPE_FLOAT:
+        case HIO_DATA_STREAM_TYPE_FLOAT:
         {
             float *buffer = (float *) self->_buffer->feed;
 
@@ -386,7 +386,7 @@ bool bc_data_stream_get_min(bc_data_stream_t *self, void *result)
 
             break;
         }
-        case BC_DATA_STREAM_TYPE_INT:
+        case HIO_DATA_STREAM_TYPE_INT:
         {
             int *buffer = (int *) self->_buffer->feed;
 
@@ -413,12 +413,12 @@ bool bc_data_stream_get_min(bc_data_stream_t *self, void *result)
     return true;
 }
 
-static int _bc_data_stream_compare_float(const void *a, const void *b)
+static int _hio_data_stream_compare_float(const void *a, const void *b)
 {
     return *(float *) a - *(float *) b;
 }
 
-static int _bc_data_stream_compare_int(const void *a, const void *b)
+static int _hio_data_stream_compare_int(const void *a, const void *b)
 {
     return *(int *) a - *(int *) b;
 }

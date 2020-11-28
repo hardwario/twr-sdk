@@ -1,10 +1,10 @@
-#ifndef _BC_HTS221_H
-#define _BC_HTS221_H
+#ifndef _HIO_HTS221_H
+#define _HIO_HTS221_H
 
-#include <bc_i2c.h>
-#include <bc_scheduler.h>
+#include <hio_i2c.h>
+#include <hio_scheduler.h>
 
-//! @addtogroup bc_hts221 bc_hts221
+//! @addtogroup hio_hts221 hio_hts221
 //! @brief Driver for HTS221 humidity sensor
 //! @{
 
@@ -13,41 +13,41 @@
 typedef enum
 {
     //! @brief Error event
-    BC_HTS221_EVENT_ERROR = 0,
+    HIO_HTS221_EVENT_ERROR = 0,
 
     //! @brief Update event
-    BC_HTS221_EVENT_UPDATE = 1
+    HIO_HTS221_EVENT_UPDATE = 1
 
-} bc_hts221_event_t;
+} hio_hts221_event_t;
 
 //! @brief HTS221 instance
 
-typedef struct bc_hts221_t bc_hts221_t;
+typedef struct hio_hts221_t hio_hts221_t;
 
 //! @cond
 
 typedef enum
 {
-    BC_HTS221_STATE_ERROR = -1,
-    BC_HTS221_STATE_INITIALIZE = 0,
-    BC_HTS221_STATE_MEASURE = 1,
-    BC_HTS221_STATE_READ = 2,
-    BC_HTS221_STATE_UPDATE = 3
+    HIO_HTS221_STATE_ERROR = -1,
+    HIO_HTS221_STATE_INITIALIZE = 0,
+    HIO_HTS221_STATE_MEASURE = 1,
+    HIO_HTS221_STATE_READ = 2,
+    HIO_HTS221_STATE_UPDATE = 3
 
-} bc_hts221_state_t;
+} hio_hts221_state_t;
 
-struct bc_hts221_t
+struct hio_hts221_t
 {
-    bc_i2c_channel_t _i2c_channel;
+    hio_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
-    bc_scheduler_task_id_t _task_id_interval;
-    bc_scheduler_task_id_t _task_id_measure;
-    void (*_event_handler)(bc_hts221_t *, bc_hts221_event_t, void *);
+    hio_scheduler_task_id_t _task_id_interval;
+    hio_scheduler_task_id_t _task_id_measure;
+    void (*_event_handler)(hio_hts221_t *, hio_hts221_event_t, void *);
     void *_event_param;
     bool _measurement_active;
-    bc_tick_t _update_interval;
-    bc_hts221_state_t _state;
-    bc_tick_t _tick_ready;
+    hio_tick_t _update_interval;
+    hio_hts221_state_t _state;
+    hio_tick_t _tick_ready;
     bool _humidity_valid;
     int16_t _reg_humidity;
     int16_t _h0_rh;
@@ -62,27 +62,27 @@ struct bc_hts221_t
 //! @param[in] i2c_channel I2C channel
 //! @param[in] i2c_address I2C device address
 
-void bc_hts221_init(bc_hts221_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
+void hio_hts221_init(hio_hts221_t *self, hio_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address
 //! @param[in] event_param Optional event parameter (can be NULL)
 
-void bc_hts221_set_event_handler(bc_hts221_t *self, void (*event_handler)(bc_hts221_t *, bc_hts221_event_t, void *), void *event_param);
+void hio_hts221_set_event_handler(hio_hts221_t *self, void (*event_handler)(hio_hts221_t *, hio_hts221_event_t, void *), void *event_param);
 
 //! @brief Set measurement interval
 //! @param[in] self Instance
 //! @param[in] interval Measurement interval
 
-void bc_hts221_set_update_interval(bc_hts221_t *self, bc_tick_t interval);
+void hio_hts221_set_update_interval(hio_hts221_t *self, hio_tick_t interval);
 
 //! @brief Start measurement manually
 //! @param[in] self Instance
 //! @return true On success
 //! @return false When other measurement is in progress
 
-bool bc_hts221_measure(bc_hts221_t *self);
+bool hio_hts221_measure(hio_hts221_t *self);
 
 //! @brief Get measured humidity as percentage
 //! @param[in] self Instance
@@ -90,8 +90,8 @@ bool bc_hts221_measure(bc_hts221_t *self);
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_hts221_get_humidity_percentage(bc_hts221_t *self, float *percentage);
+bool hio_hts221_get_humidity_percentage(hio_hts221_t *self, float *percentage);
 
 //! @}
 
-#endif // _BC_HTS221_H
+#endif // _HIO_HTS221_H

@@ -1,157 +1,157 @@
-#include <bc_scheduler.h>
-#include <bc_system.h>
-#include <bc_error.h>
+#include <hio_scheduler.h>
+#include <hio_system.h>
+#include <hio_error.h>
 
 static struct
 {
     struct
     {
-        bc_tick_t tick_execution;
+        hio_tick_t tick_execution;
         void (*task)(void *);
         void *param;
 
-    } pool[BC_SCHEDULER_MAX_TASKS];
+    } pool[HIO_SCHEDULER_MAX_TASKS];
 
-    bc_tick_t tick_spin;
-    bc_scheduler_task_id_t current_task_id;
-    bc_scheduler_task_id_t max_task_id;
+    hio_tick_t tick_spin;
+    hio_scheduler_task_id_t current_task_id;
+    hio_scheduler_task_id_t max_task_id;
     int sleep_bypass_semaphore;
 
-} _bc_scheduler;
+} _hio_scheduler;
 
-void application_error(bc_error_t code);
+void application_error(hio_error_t code);
 
-void bc_scheduler_init(void)
+void hio_scheduler_init(void)
 {
-    memset(&_bc_scheduler, 0, sizeof(_bc_scheduler));
+    memset(&_hio_scheduler, 0, sizeof(_hio_scheduler));
 }
 
-void bc_scheduler_run(void)
+void hio_scheduler_run(void)
 {
-    static bc_scheduler_task_id_t *task_id = &_bc_scheduler.current_task_id;
+    static hio_scheduler_task_id_t *task_id = &_hio_scheduler.current_task_id;
 
     while (true)
     {
-        _bc_scheduler.tick_spin = bc_tick_get();
+        _hio_scheduler.tick_spin = hio_tick_get();
 
-        for (*task_id = 0; *task_id <= _bc_scheduler.max_task_id; (*task_id)++)
+        for (*task_id = 0; *task_id <= _hio_scheduler.max_task_id; (*task_id)++)
         {
-            if (_bc_scheduler.pool[*task_id].task != NULL)
+            if (_hio_scheduler.pool[*task_id].task != NULL)
             {
-                if (_bc_scheduler.tick_spin >= _bc_scheduler.pool[*task_id].tick_execution)
+                if (_hio_scheduler.tick_spin >= _hio_scheduler.pool[*task_id].tick_execution)
                 {
-                    _bc_scheduler.pool[*task_id].tick_execution = BC_TICK_INFINITY;
+                    _hio_scheduler.pool[*task_id].tick_execution = HIO_TICK_INFINITY;
 
-                    _bc_scheduler.pool[*task_id].task(_bc_scheduler.pool[*task_id].param);
+                    _hio_scheduler.pool[*task_id].task(_hio_scheduler.pool[*task_id].param);
                 }
             }
         }
-        if (_bc_scheduler.sleep_bypass_semaphore == 0)
+        if (_hio_scheduler.sleep_bypass_semaphore == 0)
         {
-            bc_system_sleep();
+            hio_system_sleep();
         }
     }
 }
 
-bc_scheduler_task_id_t bc_scheduler_register(void (*task)(void *), void *param, bc_tick_t tick)
+hio_scheduler_task_id_t hio_scheduler_register(void (*task)(void *), void *param, hio_tick_t tick)
 {
-    for (bc_scheduler_task_id_t i = 0; i < BC_SCHEDULER_MAX_TASKS; i++)
+    for (hio_scheduler_task_id_t i = 0; i < HIO_SCHEDULER_MAX_TASKS; i++)
     {
-        if (_bc_scheduler.pool[i].task == NULL)
+        if (_hio_scheduler.pool[i].task == NULL)
         {
-            _bc_scheduler.pool[i].tick_execution = tick;
-            _bc_scheduler.pool[i].task = task;
-            _bc_scheduler.pool[i].param = param;
+            _hio_scheduler.pool[i].tick_execution = tick;
+            _hio_scheduler.pool[i].task = task;
+            _hio_scheduler.pool[i].param = param;
 
-            if (_bc_scheduler.max_task_id < i)
+            if (_hio_scheduler.max_task_id < i)
             {
-                _bc_scheduler.max_task_id = i;
+                _hio_scheduler.max_task_id = i;
             }
 
             return i;
         }
     }
 
-    application_error(BC_ERROR_NOT_ENOUGH_TASKS);
+    application_error(HIO_ERROR_NOT_ENOUGH_TASKS);
 
     return 0;
 }
 
-void bc_scheduler_unregister(bc_scheduler_task_id_t task_id)
+void hio_scheduler_unregister(hio_scheduler_task_id_t task_id)
 {
-    _bc_scheduler.pool[task_id].task = NULL;
+    _hio_scheduler.pool[task_id].task = NULL;
 
-    if (_bc_scheduler.max_task_id == task_id)
+    if (_hio_scheduler.max_task_id == task_id)
     {
         do
         {
-            if (_bc_scheduler.max_task_id == 0)
+            if (_hio_scheduler.max_task_id == 0)
             {
                 break;
             }
 
-            _bc_scheduler.max_task_id--;
+            _hio_scheduler.max_task_id--;
 
-        } while (_bc_scheduler.pool[_bc_scheduler.max_task_id].task == NULL);
+        } while (_hio_scheduler.pool[_hio_scheduler.max_task_id].task == NULL);
     }
 }
 
-bc_scheduler_task_id_t bc_scheduler_get_current_task_id(void)
+hio_scheduler_task_id_t hio_scheduler_get_current_task_id(void)
 {
-    return _bc_scheduler.current_task_id;
+    return _hio_scheduler.current_task_id;
 }
 
-bc_tick_t bc_scheduler_get_spin_tick(void)
+hio_tick_t hio_scheduler_get_spin_tick(void)
 {
-    return _bc_scheduler.tick_spin;
+    return _hio_scheduler.tick_spin;
 }
 
-void bc_scheduler_disable_sleep(void)
+void hio_scheduler_disable_sleep(void)
 {
-    _bc_scheduler.sleep_bypass_semaphore++;
+    _hio_scheduler.sleep_bypass_semaphore++;
 }
 
-void bc_scheduler_enable_sleep(void)
+void hio_scheduler_enable_sleep(void)
 {
-    _bc_scheduler.sleep_bypass_semaphore--;
+    _hio_scheduler.sleep_bypass_semaphore--;
 }
 
-void bc_scheduler_plan_now(bc_scheduler_task_id_t task_id)
+void hio_scheduler_plan_now(hio_scheduler_task_id_t task_id)
 {
-    _bc_scheduler.pool[task_id].tick_execution = 0;
+    _hio_scheduler.pool[task_id].tick_execution = 0;
 }
 
-void bc_scheduler_plan_absolute(bc_scheduler_task_id_t task_id, bc_tick_t tick)
+void hio_scheduler_plan_absolute(hio_scheduler_task_id_t task_id, hio_tick_t tick)
 {
-    _bc_scheduler.pool[task_id].tick_execution = tick;
+    _hio_scheduler.pool[task_id].tick_execution = tick;
 }
 
-void bc_scheduler_plan_relative(bc_scheduler_task_id_t task_id, bc_tick_t tick)
+void hio_scheduler_plan_relative(hio_scheduler_task_id_t task_id, hio_tick_t tick)
 {
-    _bc_scheduler.pool[task_id].tick_execution = _bc_scheduler.tick_spin + tick;
+    _hio_scheduler.pool[task_id].tick_execution = _hio_scheduler.tick_spin + tick;
 }
 
-void bc_scheduler_plan_from_now(bc_scheduler_task_id_t task_id, bc_tick_t tick)
+void hio_scheduler_plan_from_now(hio_scheduler_task_id_t task_id, hio_tick_t tick)
 {
-    _bc_scheduler.pool[task_id].tick_execution = bc_tick_get() + tick;
+    _hio_scheduler.pool[task_id].tick_execution = hio_tick_get() + tick;
 }
 
-void bc_scheduler_plan_current_now(void)
+void hio_scheduler_plan_current_now(void)
 {
-    _bc_scheduler.pool[_bc_scheduler.current_task_id].tick_execution = 0;
+    _hio_scheduler.pool[_hio_scheduler.current_task_id].tick_execution = 0;
 }
 
-void bc_scheduler_plan_current_absolute(bc_tick_t tick)
+void hio_scheduler_plan_current_absolute(hio_tick_t tick)
 {
-    _bc_scheduler.pool[_bc_scheduler.current_task_id].tick_execution = tick;
+    _hio_scheduler.pool[_hio_scheduler.current_task_id].tick_execution = tick;
 }
 
-void bc_scheduler_plan_current_relative(bc_tick_t tick)
+void hio_scheduler_plan_current_relative(hio_tick_t tick)
 {
-    _bc_scheduler.pool[_bc_scheduler.current_task_id].tick_execution = _bc_scheduler.tick_spin + tick;
+    _hio_scheduler.pool[_hio_scheduler.current_task_id].tick_execution = _hio_scheduler.tick_spin + tick;
 }
 
-void bc_scheduler_plan_current_from_now(bc_tick_t tick)
+void hio_scheduler_plan_current_from_now(hio_tick_t tick)
 {
-    _bc_scheduler.pool[_bc_scheduler.current_task_id].tick_execution = bc_tick_get() + tick;
+    _hio_scheduler.pool[_hio_scheduler.current_task_id].tick_execution = hio_tick_get() + tick;
 }

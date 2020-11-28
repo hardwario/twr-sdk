@@ -1,41 +1,41 @@
-#include <bc_tag_temperature.h>
+#include <hio_tag_temperature.h>
 
-void bc_tag_temperature_init(bc_tag_temperature_t *self, bc_i2c_channel_t i2c_channel, bc_tag_temperature_i2c_address_t i2c_address)
+void hio_tag_temperature_init(hio_tag_temperature_t *self, hio_i2c_channel_t i2c_channel, hio_tag_temperature_i2c_address_t i2c_address)
 {
-    bc_tmp112_init(self, i2c_channel, (uint8_t) i2c_address);
+    hio_tmp112_init(self, i2c_channel, (uint8_t) i2c_address);
 }
 
-void bc_tag_temperature_set_event_handler(bc_tag_temperature_t *self, void (*event_handler)(bc_tag_temperature_t *, bc_tag_temperature_event_t, void *), void *event_param)
+void hio_tag_temperature_set_event_handler(hio_tag_temperature_t *self, void (*event_handler)(hio_tag_temperature_t *, hio_tag_temperature_event_t, void *), void *event_param)
 {
-    bc_tmp112_set_event_handler(self, (void (*)(bc_tmp112_t *, bc_tmp112_event_t, void *)) event_handler, event_param);
+    hio_tmp112_set_event_handler(self, (void (*)(hio_tmp112_t *, hio_tmp112_event_t, void *)) event_handler, event_param);
 }
 
-void bc_tag_temperature_set_update_interval(bc_tag_temperature_t *self, bc_tick_t interval)
+void hio_tag_temperature_set_update_interval(hio_tag_temperature_t *self, hio_tick_t interval)
 {
-    bc_tmp112_set_update_interval(self, interval);
+    hio_tmp112_set_update_interval(self, interval);
 }
 
-bool bc_tag_temperature_measure(bc_tag_temperature_t *self)
+bool hio_tag_temperature_measure(hio_tag_temperature_t *self)
 {
-    return bc_tmp112_measure(self);
+    return hio_tmp112_measure(self);
 }
 
-bool bc_tag_temperature_get_temperature_raw(bc_tag_temperature_t *self, int16_t *raw)
+bool hio_tag_temperature_get_temperature_raw(hio_tag_temperature_t *self, int16_t *raw)
 {
-    return bc_tmp112_get_temperature_raw(self, raw);
+    return hio_tmp112_get_temperature_raw(self, raw);
 }
 
-bool bc_tag_temperature_get_temperature_celsius(bc_tag_temperature_t *self, float *celsius)
+bool hio_tag_temperature_get_temperature_celsius(hio_tag_temperature_t *self, float *celsius)
 {
-    return bc_tmp112_get_temperature_celsius(self, celsius);
+    return hio_tmp112_get_temperature_celsius(self, celsius);
 }
 
-bool bc_tag_temperature_get_temperature_fahrenheit(bc_tag_temperature_t *self, float *fahrenheit)
+bool hio_tag_temperature_get_temperature_fahrenheit(hio_tag_temperature_t *self, float *fahrenheit)
 {
-    return bc_tmp112_get_temperature_fahrenheit(self, fahrenheit);
+    return hio_tmp112_get_temperature_fahrenheit(self, fahrenheit);
 }
 
-bool bc_tag_temperature_get_temperature_kelvin(bc_tag_temperature_t *self, float *kelvin)
+bool hio_tag_temperature_get_temperature_kelvin(hio_tag_temperature_t *self, float *kelvin)
 {
-    return bc_tmp112_get_temperature_kelvin(self, kelvin);
+    return hio_tmp112_get_temperature_kelvin(self, kelvin);
 }

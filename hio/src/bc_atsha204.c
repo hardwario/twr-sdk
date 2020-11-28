@@ -1,64 +1,64 @@
-#include <bc_atsha204.h>
-#include <bc_tick.h>
+#include <hio_atsha204.h>
+#include <hio_tick.h>
 
-#define _BC_ATSHA204_OPCODE_NULL  0x00
-#define _BC_ATSHA204_OPCODE_DEVREV 0x30
-#define _BC_ATSHA204_OPCODE_READ 0x02
+#define _HIO_ATSHA204_OPCODE_NULL  0x00
+#define _HIO_ATSHA204_OPCODE_DEVREV 0x30
+#define _HIO_ATSHA204_OPCODE_READ 0x02
 
-static void _bc_atsha204_task(void *param);
-static bool _bc_atsha204_send_command(bc_atsha204_t *self, uint8_t opcode, uint8_t param0, uint16_t param1);
-static void _bc_atsha204_wakeup_puls(bc_atsha204_t *self);
-static bool _bc_atsha204_wakeup(bc_atsha204_t *self);
-static bool _bc_atsha204_read(bc_atsha204_t *self, uint8_t *buffer, size_t length);
-static uint16_t _bc_atsha204_calculate_crc16(uint8_t *buffer, uint8_t length);
+static void _hio_atsha204_task(void *param);
+static bool _hio_atsha204_send_command(hio_atsha204_t *self, uint8_t opcode, uint8_t param0, uint16_t param1);
+static void _hio_atsha204_wakeup_puls(hio_atsha204_t *self);
+static bool _hio_atsha204_wakeup(hio_atsha204_t *self);
+static bool _hio_atsha204_read(hio_atsha204_t *self, uint8_t *buffer, size_t length);
+static uint16_t _hio_atsha204_calculate_crc16(uint8_t *buffer, uint8_t length);
 
-void bc_atsha204_init(bc_atsha204_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
+void hio_atsha204_init(hio_atsha204_t *self, hio_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
     memset(self, 0, sizeof(*self));
 
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
-    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+    hio_i2c_init(self->_i2c_channel, HIO_I2C_SPEED_400_KHZ);
 
-    self->_task_id = bc_scheduler_register(_bc_atsha204_task, self, BC_TICK_INFINITY);
+    self->_task_id = hio_scheduler_register(_hio_atsha204_task, self, HIO_TICK_INFINITY);
 
     self->_ready = true;
 }
 
-void bc_atsha204_set_event_handler(bc_atsha204_t *self, void (*event_handler)(bc_atsha204_t *, bc_atsha204_event_t, void *), void *event_param)
+void hio_atsha204_set_event_handler(hio_atsha204_t *self, void (*event_handler)(hio_atsha204_t *, hio_atsha204_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
     self->_event_param = event_param;
 }
 
-bool bc_atsha204_is_ready(bc_atsha204_t *self)
+bool hio_atsha204_is_ready(hio_atsha204_t *self)
 {
     return self->_ready;
 }
 
-bool bc_atsha204_read_serial_number(bc_atsha204_t *self)
+bool hio_atsha204_read_serial_number(hio_atsha204_t *self)
 {
-    if (!bc_atsha204_is_ready(self))
+    if (!hio_atsha204_is_ready(self))
     {
         return false;
     }
 
-    if (!_bc_atsha204_send_command(self, _BC_ATSHA204_OPCODE_READ, 0, 0x00))
+    if (!_hio_atsha204_send_command(self, _HIO_ATSHA204_OPCODE_READ, 0, 0x00))
     {
         return false;
     }
 
     self->_ready = false;
-    self->_state = BC_ATSHA204_STATE_READ_SERIAL_NUMBER;
+    self->_state = HIO_ATSHA204_STATE_READ_SERIAL_NUMBER;
 
-    bc_scheduler_plan_relative(self->_task_id, 4);
+    hio_scheduler_plan_relative(self->_task_id, 4);
     return true;
 }
 
-bool bc_atsha204_get_serial_number(bc_atsha204_t *self, void *destination, size_t size)
+bool hio_atsha204_get_serial_number(hio_atsha204_t *self, void *destination, size_t size)
 {
-    if (!bc_atsha204_is_ready(self) || self->_state != BC_ATSHA204_STATE_SERIAL_NUMBER)
+    if (!hio_atsha204_is_ready(self) || self->_state != HIO_ATSHA204_STATE_SERIAL_NUMBER)
     {
         return false;
     }
@@ -85,43 +85,43 @@ bool bc_atsha204_get_serial_number(bc_atsha204_t *self, void *destination, size_
     return true;
 }
 
-static void _bc_atsha204_task(void *param)
+static void _hio_atsha204_task(void *param)
 {
-    bc_atsha204_t *self = param;
+    hio_atsha204_t *self = param;
 
-    bc_atsha204_event_t event = BC_ATSHA204_EVENT_ERROR;
+    hio_atsha204_event_t event = HIO_ATSHA204_EVENT_ERROR;
 
     switch (self->_state) {
-        case BC_ATSHA204_STATE_READ_SERIAL_NUMBER:
+        case HIO_ATSHA204_STATE_READ_SERIAL_NUMBER:
         {
-            if (!_bc_atsha204_read(self, self->_rx_buffer, 7))
+            if (!_hio_atsha204_read(self, self->_rx_buffer, 7))
             {
                 break;
             }
 
-            if (!_bc_atsha204_send_command(self, _BC_ATSHA204_OPCODE_READ, 0, 0x02))
+            if (!_hio_atsha204_send_command(self, _HIO_ATSHA204_OPCODE_READ, 0, 0x02))
             {
                 break;
             }
 
-            self->_state = BC_ATSHA204_STATE_READ_SERIAL_NUMBER2;
-            bc_scheduler_plan_current_from_now(4);
+            self->_state = HIO_ATSHA204_STATE_READ_SERIAL_NUMBER2;
+            hio_scheduler_plan_current_from_now(4);
             return;
         }
-        case BC_ATSHA204_STATE_READ_SERIAL_NUMBER2:
+        case HIO_ATSHA204_STATE_READ_SERIAL_NUMBER2:
         {
-            if (!_bc_atsha204_read(self, self->_rx_buffer + 7, 7))
+            if (!_hio_atsha204_read(self, self->_rx_buffer + 7, 7))
             {
                 break;
             }
 
-            self->_state = BC_ATSHA204_STATE_SERIAL_NUMBER;
-            event = BC_ATSHA204_EVENT_SERIAL_NUMBER;
+            self->_state = HIO_ATSHA204_STATE_SERIAL_NUMBER;
+            event = HIO_ATSHA204_EVENT_SERIAL_NUMBER;
 
             break;
         }
-        case BC_ATSHA204_STATE_READY:
-        case BC_ATSHA204_STATE_SERIAL_NUMBER:
+        case HIO_ATSHA204_STATE_READY:
+        case HIO_ATSHA204_STATE_SERIAL_NUMBER:
         default:
         {
             return;
@@ -138,7 +138,7 @@ static void _bc_atsha204_task(void *param)
 
 }
 
-static bool _bc_atsha204_send_command(bc_atsha204_t *self, uint8_t opcode, uint8_t param0, uint16_t param1)
+static bool _hio_atsha204_send_command(hio_atsha204_t *self, uint8_t opcode, uint8_t param0, uint16_t param1)
 {
     uint8_t buffer[8];
     buffer[0] = 0x03;
@@ -148,24 +148,24 @@ static bool _bc_atsha204_send_command(bc_atsha204_t *self, uint8_t opcode, uint8
     buffer[4] = param1 & 0xff;
     buffer[5] = param1 >> 8;
 
-    uint16_t crc = _bc_atsha204_calculate_crc16(buffer + 1, 5);
+    uint16_t crc = _hio_atsha204_calculate_crc16(buffer + 1, 5);
 
     buffer[6] = crc & 0xff;
     buffer[7] = crc >> 8;
 
-    bc_i2c_transfer_t transfer;
+    hio_i2c_transfer_t transfer;
     transfer.device_address = self->_i2c_address;
     transfer.buffer = buffer;
     transfer.length = 8;
 
-    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    if (!hio_i2c_write(self->_i2c_channel, &transfer))
     {
-        if (!_bc_atsha204_wakeup(self))
+        if (!_hio_atsha204_wakeup(self))
         {
             return false;
         }
 
-        if (!bc_i2c_write(self->_i2c_channel, &transfer))
+        if (!hio_i2c_write(self->_i2c_channel, &transfer))
         {
             return false;
         }
@@ -174,58 +174,58 @@ static bool _bc_atsha204_send_command(bc_atsha204_t *self, uint8_t opcode, uint8
     return true;
 }
 
-static bool _bc_atsha204_read(bc_atsha204_t *self, uint8_t *buffer, size_t length)
+static bool _hio_atsha204_read(hio_atsha204_t *self, uint8_t *buffer, size_t length)
 {
-    bc_i2c_transfer_t transfer;
+    hio_i2c_transfer_t transfer;
     transfer.device_address = self->_i2c_address;
     transfer.buffer = buffer;
     transfer.length = length;
 
-    if (!bc_i2c_read(self->_i2c_channel, &transfer))
+    if (!hio_i2c_read(self->_i2c_channel, &transfer))
     {
 
-        _bc_atsha204_wakeup_puls(self);
+        _hio_atsha204_wakeup_puls(self);
 
-        if (!bc_i2c_read(self->_i2c_channel, &transfer))
+        if (!hio_i2c_read(self->_i2c_channel, &transfer))
         {
-            if (!bc_i2c_read(self->_i2c_channel, &transfer))
+            if (!hio_i2c_read(self->_i2c_channel, &transfer))
             {
                 return false;
             }
         }
     }
 
-    uint16_t crc = _bc_atsha204_calculate_crc16(buffer, length - 2);
+    uint16_t crc = _hio_atsha204_calculate_crc16(buffer, length - 2);
 
     return (buffer[0] == length) &&
             (buffer[length - 2] == (uint8_t) (crc & 0x00FF)) &&
             (buffer[length - 1] = (uint8_t) (crc >> 8));
 }
 
-static void _bc_atsha204_wakeup_puls(bc_atsha204_t *self)
+static void _hio_atsha204_wakeup_puls(hio_atsha204_t *self)
 {
-    bc_i2c_set_speed(self->_i2c_channel, BC_I2C_SPEED_100_KHZ);
+    hio_i2c_set_speed(self->_i2c_channel, HIO_I2C_SPEED_100_KHZ);
 
-    bc_i2c_transfer_t transfer = {.device_address = 0x00, .buffer = NULL, .length = 0};
+    hio_i2c_transfer_t transfer = {.device_address = 0x00, .buffer = NULL, .length = 0};
 
-    bc_i2c_write(self->_i2c_channel, &transfer);
+    hio_i2c_write(self->_i2c_channel, &transfer);
 
-    bc_i2c_set_speed(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+    hio_i2c_set_speed(self->_i2c_channel, HIO_I2C_SPEED_400_KHZ);
 }
 
-static bool _bc_atsha204_wakeup(bc_atsha204_t *self)
+static bool _hio_atsha204_wakeup(hio_atsha204_t *self)
 {
-    _bc_atsha204_wakeup_puls(self);
+    _hio_atsha204_wakeup_puls(self);
 
     uint8_t buffer[4];
-    bc_i2c_transfer_t transfer;
+    hio_i2c_transfer_t transfer;
     transfer.device_address = self->_i2c_address;
     transfer.buffer = buffer;
     transfer.length = sizeof(buffer);
 
-    if (!bc_i2c_read(self->_i2c_channel, &transfer))
+    if (!hio_i2c_read(self->_i2c_channel, &transfer))
     {
-        if (!bc_i2c_read(self->_i2c_channel, &transfer))
+        if (!hio_i2c_read(self->_i2c_channel, &transfer))
         {
             return false;
         }
@@ -234,7 +234,7 @@ static bool _bc_atsha204_wakeup(bc_atsha204_t *self)
     return ((buffer[0] == 0x04) && buffer[1] == 0x11 && buffer[2] == 0x33 && buffer[3] == 0x43);
 }
 
-static uint16_t _bc_atsha204_calculate_crc16(uint8_t *buffer, uint8_t length)
+static uint16_t _hio_atsha204_calculate_crc16(uint8_t *buffer, uint8_t length)
 {
     uint16_t crc16;
     uint8_t shift_register;

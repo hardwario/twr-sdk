@@ -1,62 +1,62 @@
-#include <bc_uart.h>
-#include <bc_scheduler.h>
-#include <bc_irq.h>
-#include <bc_system.h>
+#include <hio_uart.h>
+#include <hio_scheduler.h>
+#include <hio_irq.h>
+#include <hio_system.h>
 #include <stm32l0xx.h>
-#include <bc_dma.h>
+#include <hio_dma.h>
 
 typedef struct
 {
     bool initialized;
-    void (*event_handler)(bc_uart_channel_t, bc_uart_event_t, void *);
+    void (*event_handler)(hio_uart_channel_t, hio_uart_event_t, void *);
     void *event_param;
-    bc_fifo_t *write_fifo;
-    bc_fifo_t *read_fifo;
-    bc_scheduler_task_id_t async_write_task_id;
-    bc_scheduler_task_id_t async_read_task_id;
+    hio_fifo_t *write_fifo;
+    hio_fifo_t *read_fifo;
+    hio_scheduler_task_id_t async_write_task_id;
+    hio_scheduler_task_id_t async_read_task_id;
     bool async_write_in_progress;
     bool async_read_in_progress;
-    bc_tick_t async_timeout;
+    hio_tick_t async_timeout;
     USART_TypeDef *usart;
 
-} bc_uart_t;
+} hio_uart_t;
 
-static bc_uart_t _bc_uart[3] =
+static hio_uart_t _hio_uart[3] =
 {
-    [BC_UART_UART0] = { .initialized = false },
-    [BC_UART_UART1] = { .initialized = false },
-    [BC_UART_UART2] = { .initialized = false }
+    [HIO_UART_UART0] = { .initialized = false },
+    [HIO_UART_UART1] = { .initialized = false },
+    [HIO_UART_UART2] = { .initialized = false }
 };
 
 static struct
 {
-    bc_scheduler_task_id_t read_task_id;
+    hio_scheduler_task_id_t read_task_id;
     size_t length;
 
-} _bc_uart_2_dma;
+} _hio_uart_2_dma;
 
-static uint32_t _bc_uart_brr_t[] =
+static uint32_t _hio_uart_brr_t[] =
 {
-    [BC_UART_BAUDRATE_9600] = 0xd05,
-    [BC_UART_BAUDRATE_19200] = 0x682,
-    [BC_UART_BAUDRATE_38400] = 0x341,
-    [BC_UART_BAUDRATE_57600] = 0x22b,
-    [BC_UART_BAUDRATE_115200] = 0x116,
-    [BC_UART_BAUDRATE_921600] = 0x22
+    [HIO_UART_BAUDRATE_9600] = 0xd05,
+    [HIO_UART_BAUDRATE_19200] = 0x682,
+    [HIO_UART_BAUDRATE_38400] = 0x341,
+    [HIO_UART_BAUDRATE_57600] = 0x22b,
+    [HIO_UART_BAUDRATE_115200] = 0x116,
+    [HIO_UART_BAUDRATE_921600] = 0x22
 };
 
-static void _bc_uart_async_write_task(void *param);
-static void _bc_uart_async_read_task(void *param);
-static void _bc_uart_2_dma_read_task(void *param);
-static void _bc_uart_irq_handler(bc_uart_channel_t channel);
+static void _hio_uart_async_write_task(void *param);
+static void _hio_uart_async_read_task(void *param);
+static void _hio_uart_2_dma_read_task(void *param);
+static void _hio_uart_irq_handler(hio_uart_channel_t channel);
 
-void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uart_setting_t setting)
+void hio_uart_init(hio_uart_channel_t channel, hio_uart_baudrate_t baudrate, hio_uart_setting_t setting)
 {
-    memset(&_bc_uart[channel], 0, sizeof(_bc_uart[channel]));
+    memset(&_hio_uart[channel], 0, sizeof(_hio_uart[channel]));
 
     switch(channel)
     {
-        case BC_UART_UART0:
+        case HIO_UART_UART0:
         {
             // Enable GPIOA clock
             RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
@@ -86,15 +86,15 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
             USART4->CR3 = USART_CR3_UCESM | USART_CR3_OVRDIS | USART_CR3_ONEBIT;
 
             // Configure baudrate
-            USART4->BRR = _bc_uart_brr_t[baudrate];
+            USART4->BRR = _hio_uart_brr_t[baudrate];
 
             NVIC_EnableIRQ(USART4_5_IRQn);
 
-            _bc_uart[channel].usart = USART4;
+            _hio_uart[channel].usart = USART4;
 
             break;
         }
-        case BC_UART_UART1:
+        case HIO_UART_UART1:
         {
             // Enable GPIOA clock
             RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
@@ -105,7 +105,7 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
             // Enable pull-up on RXD1 pin
             GPIOA->PUPDR |= GPIO_PUPDR_PUPD3_0;
 
-            if (baudrate <= BC_UART_BAUDRATE_9600)
+            if (baudrate <= HIO_UART_BAUDRATE_9600)
             {
                 // Select AF6 alternate function for TXD1 and RXD1 pins
                 GPIOA->AFR[0] |= 6 << GPIO_AFRL_AFRL3_Pos | 6 << GPIO_AFRL_AFRL2_Pos;
@@ -133,7 +133,7 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
 
                 NVIC_EnableIRQ(LPUART1_IRQn);
 
-                _bc_uart[channel].usart = LPUART1;
+                _hio_uart[channel].usart = LPUART1;
             }
             else
             {
@@ -156,16 +156,16 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
                 USART2->CR3 = USART_CR3_UCESM | USART_CR3_OVRDIS | USART_CR3_ONEBIT;
 
                 // Configure baudrate
-                USART2->BRR = _bc_uart_brr_t[baudrate];
+                USART2->BRR = _hio_uart_brr_t[baudrate];
 
                 NVIC_EnableIRQ(USART2_IRQn);
 
-                _bc_uart[channel].usart = USART2;
+                _hio_uart[channel].usart = USART2;
             }
 
             break;
         }
-        case BC_UART_UART2:
+        case HIO_UART_UART2:
         {
             // Enable GPIOA clock
             RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
@@ -195,11 +195,11 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
             USART1->CR3 = USART_CR3_UCESM | USART_CR3_OVRDIS | USART_CR3_ONEBIT;
 
             // Configure baudrate
-            USART1->BRR = _bc_uart_brr_t[baudrate];
+            USART1->BRR = _hio_uart_brr_t[baudrate];
 
             NVIC_EnableIRQ(USART1_IRQn);
 
-            _bc_uart[channel].usart = USART1;
+            _hio_uart[channel].usart = USART1;
 
             break;
         }
@@ -210,15 +210,15 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
     }
 
     // Stop bits
-    _bc_uart[channel].usart->CR2 &= ~USART_CR2_STOP_Msk;
-    _bc_uart[channel].usart->CR2 |= ((uint32_t) setting & 0x03) << USART_CR2_STOP_Pos;
+    _hio_uart[channel].usart->CR2 &= ~USART_CR2_STOP_Msk;
+    _hio_uart[channel].usart->CR2 |= ((uint32_t) setting & 0x03) << USART_CR2_STOP_Pos;
 
     // Parity
-    _bc_uart[channel].usart->CR1 &= ~(USART_CR1_PCE_Msk | USART_CR1_PS_Msk);
-    _bc_uart[channel].usart->CR1 |= (((uint32_t) setting >> 2) & 0x03) << USART_CR1_PS_Pos;
+    _hio_uart[channel].usart->CR1 &= ~(USART_CR1_PCE_Msk | USART_CR1_PS_Msk);
+    _hio_uart[channel].usart->CR1 |= (((uint32_t) setting >> 2) & 0x03) << USART_CR1_PS_Pos;
 
     // Word length
-    _bc_uart[channel].usart->CR1 &= ~(USART_CR1_M1_Msk | USART_CR1_M0_Msk);
+    _hio_uart[channel].usart->CR1 &= ~(USART_CR1_M1_Msk | USART_CR1_M0_Msk);
 
     uint32_t word_length = setting >> 4;
 
@@ -231,30 +231,30 @@ void bc_uart_init(bc_uart_channel_t channel, bc_uart_baudrate_t baudrate, bc_uar
     {
         word_length = 0x10;
 
-        _bc_uart[channel].usart->CR1 |= 1 << USART_CR1_M1_Pos;
+        _hio_uart[channel].usart->CR1 |= 1 << USART_CR1_M1_Pos;
     }
     else if (word_length == 0x09)
     {
-        _bc_uart[channel].usart->CR1 |= 1 << USART_CR1_M0_Pos;
+        _hio_uart[channel].usart->CR1 |= 1 << USART_CR1_M0_Pos;
     }
 
     // Enable UART
-    _bc_uart[channel].usart->CR1 |= USART_CR1_UE;
+    _hio_uart[channel].usart->CR1 |= USART_CR1_UE;
 
-    _bc_uart[channel].initialized = true;
+    _hio_uart[channel].initialized = true;
 }
 
 
-void bc_uart_deinit(bc_uart_channel_t channel)
+void hio_uart_deinit(hio_uart_channel_t channel)
 {
-    bc_uart_async_read_cancel(channel);
+    hio_uart_async_read_cancel(channel);
 
     // Disable UART
-    _bc_uart[channel].usart->CR1 &= ~USART_CR1_UE_Msk;
+    _hio_uart[channel].usart->CR1 &= ~USART_CR1_UE_Msk;
 
     switch(channel)
     {
-        case BC_UART_UART0:
+        case HIO_UART_UART0:
         {
             NVIC_DisableIRQ(USART4_5_IRQn);
 
@@ -272,9 +272,9 @@ void bc_uart_deinit(bc_uart_channel_t channel)
 
             break;
         }
-        case BC_UART_UART1:
+        case HIO_UART_UART1:
         {
-            if (_bc_uart[channel].usart == LPUART1)
+            if (_hio_uart[channel].usart == LPUART1)
             {
                 NVIC_DisableIRQ(LPUART1_IRQn);
 
@@ -300,7 +300,7 @@ void bc_uart_deinit(bc_uart_channel_t channel)
 
             break;
         }
-        case BC_UART_UART2:
+        case HIO_UART_UART2:
         {
             NVIC_DisableIRQ(USART1_IRQn);
 
@@ -324,23 +324,23 @@ void bc_uart_deinit(bc_uart_channel_t channel)
         }
     }
 
-    _bc_uart[channel].initialized = false;
+    _hio_uart[channel].initialized = false;
 }
 
-size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t length)
+size_t hio_uart_write(hio_uart_channel_t channel, const void *buffer, size_t length)
 {
-    if (!_bc_uart[channel].initialized || _bc_uart[channel].async_write_in_progress)
+    if (!_hio_uart[channel].initialized || _hio_uart[channel].async_write_in_progress)
     {
         return 0;
     }
 
-    USART_TypeDef *usart = _bc_uart[channel].usart;
+    USART_TypeDef *usart = _hio_uart[channel].usart;
 
     size_t bytes_written = 0;
 
-    if (_bc_uart[channel].usart != LPUART1)
+    if (_hio_uart[channel].usart != LPUART1)
     {
-        bc_system_pll_enable();
+        hio_system_pll_enable();
     }
 
     while (bytes_written != length)
@@ -361,36 +361,36 @@ size_t bc_uart_write(bc_uart_channel_t channel, const void *buffer, size_t lengt
         continue;
     }
 
-    if (_bc_uart[channel].usart != LPUART1)
+    if (_hio_uart[channel].usart != LPUART1)
     {
-        bc_system_pll_disable();
+        hio_system_pll_disable();
     }
 
     return bytes_written;
 }
 
-size_t bc_uart_read(bc_uart_channel_t channel, void *buffer, size_t length, bc_tick_t timeout)
+size_t hio_uart_read(hio_uart_channel_t channel, void *buffer, size_t length, hio_tick_t timeout)
 {
-    if (!_bc_uart[channel].initialized)
+    if (!_hio_uart[channel].initialized)
     {
         return 0;
     }
 
-    USART_TypeDef *usart = _bc_uart[channel].usart;
+    USART_TypeDef *usart = _hio_uart[channel].usart;
 
     size_t bytes_read = 0;
 
-    if (_bc_uart[channel].usart != LPUART1)
+    if (_hio_uart[channel].usart != LPUART1)
     {
-        bc_system_pll_enable();
+        hio_system_pll_enable();
     }
 
-    bc_tick_t tick_timeout = timeout == BC_TICK_INFINITY ? BC_TICK_INFINITY : bc_tick_get() + timeout;
+    hio_tick_t tick_timeout = timeout == HIO_TICK_INFINITY ? HIO_TICK_INFINITY : hio_tick_get() + timeout;
 
     while (bytes_read != length)
     {
         // If timeout condition is met...
-        if (bc_tick_get() >= tick_timeout)
+        if (hio_tick_get() >= tick_timeout)
         {
             break;
         }
@@ -405,29 +405,29 @@ size_t bc_uart_read(bc_uart_channel_t channel, void *buffer, size_t length, bc_t
         *((uint8_t *) buffer + bytes_read++) = usart->RDR;
     }
 
-    if (_bc_uart[channel].usart != LPUART1)
+    if (_hio_uart[channel].usart != LPUART1)
     {
-        bc_system_pll_disable();
+        hio_system_pll_disable();
     }
 
     return bytes_read;
 }
 
-void bc_uart_set_event_handler(bc_uart_channel_t channel, void (*event_handler)(bc_uart_channel_t, bc_uart_event_t, void *), void *event_param)
+void hio_uart_set_event_handler(hio_uart_channel_t channel, void (*event_handler)(hio_uart_channel_t, hio_uart_event_t, void *), void *event_param)
 {
-    _bc_uart[channel].event_handler = event_handler;
-    _bc_uart[channel].event_param = event_param;
+    _hio_uart[channel].event_handler = event_handler;
+    _hio_uart[channel].event_param = event_param;
 }
 
-void bc_uart_set_async_fifo(bc_uart_channel_t channel, bc_fifo_t *write_fifo, bc_fifo_t *read_fifo)
+void hio_uart_set_async_fifo(hio_uart_channel_t channel, hio_fifo_t *write_fifo, hio_fifo_t *read_fifo)
 {
-    _bc_uart[channel].write_fifo = write_fifo;
-    _bc_uart[channel].read_fifo = read_fifo;
+    _hio_uart[channel].write_fifo = write_fifo;
+    _hio_uart[channel].read_fifo = read_fifo;
 }
 
-size_t bc_uart_async_write(bc_uart_channel_t channel, const void *buffer, size_t length)
+size_t hio_uart_async_write(hio_uart_channel_t channel, const void *buffer, size_t length)
 {
-    if (!_bc_uart[channel].initialized || _bc_uart[channel].write_fifo == NULL)
+    if (!_hio_uart[channel].initialized || _hio_uart[channel].write_fifo == NULL)
     {
         return 0;
     }
@@ -436,217 +436,217 @@ size_t bc_uart_async_write(bc_uart_channel_t channel, const void *buffer, size_t
 
     for (size_t i = 0; i < length; i += 16)
     {
-        bytes_written += bc_fifo_write(_bc_uart[channel].write_fifo, (uint8_t *)buffer + i, length - i  > 16 ? 16 : length - i);
+        bytes_written += hio_fifo_write(_hio_uart[channel].write_fifo, (uint8_t *)buffer + i, length - i  > 16 ? 16 : length - i);
     }
 
     if (bytes_written != 0)
     {
-        if (!_bc_uart[channel].async_write_in_progress)
+        if (!_hio_uart[channel].async_write_in_progress)
         {
-            _bc_uart[channel].async_write_task_id = bc_scheduler_register(_bc_uart_async_write_task, (void *) channel, BC_TICK_INFINITY);
+            _hio_uart[channel].async_write_task_id = hio_scheduler_register(_hio_uart_async_write_task, (void *) channel, HIO_TICK_INFINITY);
 
-            if (_bc_uart[channel].usart == LPUART1)
+            if (_hio_uart[channel].usart == LPUART1)
             {
-                bc_system_deep_sleep_disable();
+                hio_system_deep_sleep_disable();
             }
             else
             {
-                bc_system_pll_enable();
+                hio_system_pll_enable();
             }
         }
         else
         {
-            bc_scheduler_plan_absolute(_bc_uart[channel].async_write_task_id, BC_TICK_INFINITY);
+            hio_scheduler_plan_absolute(_hio_uart[channel].async_write_task_id, HIO_TICK_INFINITY);
         }
 
-        bc_irq_disable();
+        hio_irq_disable();
 
         // Enable transmit interrupt
-        _bc_uart[channel].usart->CR1 |= USART_CR1_TXEIE;
+        _hio_uart[channel].usart->CR1 |= USART_CR1_TXEIE;
 
-        bc_irq_enable();
+        hio_irq_enable();
 
-        _bc_uart[channel].async_write_in_progress = true;
+        _hio_uart[channel].async_write_in_progress = true;
     }
 
     return bytes_written;
 }
 
-bool bc_uart_async_read_start(bc_uart_channel_t channel, bc_tick_t timeout)
+bool hio_uart_async_read_start(hio_uart_channel_t channel, hio_tick_t timeout)
 {
-    if (!_bc_uart[channel].initialized || _bc_uart[channel].read_fifo == NULL || _bc_uart[channel].async_read_in_progress)
+    if (!_hio_uart[channel].initialized || _hio_uart[channel].read_fifo == NULL || _hio_uart[channel].async_read_in_progress)
     {
         return false;
     }
 
-    _bc_uart[channel].async_timeout = timeout;
+    _hio_uart[channel].async_timeout = timeout;
 
-    _bc_uart[channel].async_read_task_id = bc_scheduler_register(_bc_uart_async_read_task, (void *) channel, _bc_uart[channel].async_timeout);
+    _hio_uart[channel].async_read_task_id = hio_scheduler_register(_hio_uart_async_read_task, (void *) channel, _hio_uart[channel].async_timeout);
 
-    if (channel == BC_UART_UART2)
+    if (channel == HIO_UART_UART2)
     {
-        bc_dma_channel_config_t config = {
-                .request = BC_DMA_REQUEST_3,
-                .direction = BC_DMA_DIRECTION_TO_RAM,
-                .data_size_memory = BC_DMA_SIZE_1,
-                .data_size_peripheral = BC_DMA_SIZE_1,
-                .length = _bc_uart[channel].read_fifo->size,
-                .mode = BC_DMA_MODE_CIRCULAR,
-                .address_memory = _bc_uart[channel].read_fifo->buffer,
-                .address_peripheral = (void *) &_bc_uart[channel].usart->RDR,
-                .priority = BC_DMA_PRIORITY_HIGH
+        hio_dma_channel_config_t config = {
+                .request = HIO_DMA_REQUEST_3,
+                .direction = HIO_DMA_DIRECTION_TO_RAM,
+                .data_size_memory = HIO_DMA_SIZE_1,
+                .data_size_peripheral = HIO_DMA_SIZE_1,
+                .length = _hio_uart[channel].read_fifo->size,
+                .mode = HIO_DMA_MODE_CIRCULAR,
+                .address_memory = _hio_uart[channel].read_fifo->buffer,
+                .address_peripheral = (void *) &_hio_uart[channel].usart->RDR,
+                .priority = HIO_DMA_PRIORITY_HIGH
         };
 
-        bc_dma_init();
+        hio_dma_init();
 
-        bc_dma_channel_config(BC_DMA_CHANNEL_3, &config);
+        hio_dma_channel_config(HIO_DMA_CHANNEL_3, &config);
 
-        _bc_uart_2_dma.read_task_id = bc_scheduler_register(_bc_uart_2_dma_read_task, (void *) channel, 0);
+        _hio_uart_2_dma.read_task_id = hio_scheduler_register(_hio_uart_2_dma_read_task, (void *) channel, 0);
 
-        bc_irq_disable();
+        hio_irq_disable();
         // Enable receive DMA interrupt
-        _bc_uart[channel].usart->CR3 |=  USART_CR3_DMAR;
-        bc_irq_enable();
+        _hio_uart[channel].usart->CR3 |=  USART_CR3_DMAR;
+        hio_irq_enable();
 
-        bc_dma_channel_run(BC_DMA_CHANNEL_3);
+        hio_dma_channel_run(HIO_DMA_CHANNEL_3);
     }
     else
     {
-        bc_irq_disable();
+        hio_irq_disable();
         // Enable receive interrupt
-        _bc_uart[channel].usart->CR1 |= USART_CR1_RXNEIE;
-        bc_irq_enable();
+        _hio_uart[channel].usart->CR1 |= USART_CR1_RXNEIE;
+        hio_irq_enable();
     }
 
-    if (_bc_uart[channel].usart != LPUART1)
+    if (_hio_uart[channel].usart != LPUART1)
     {
-        bc_system_pll_enable();
+        hio_system_pll_enable();
     }
 
-    _bc_uart[channel].async_read_in_progress = true;
+    _hio_uart[channel].async_read_in_progress = true;
 
     return true;
 }
 
-bool bc_uart_async_read_cancel(bc_uart_channel_t channel)
+bool hio_uart_async_read_cancel(hio_uart_channel_t channel)
 {
-    if (!_bc_uart[channel].initialized || !_bc_uart[channel].async_read_in_progress)
+    if (!_hio_uart[channel].initialized || !_hio_uart[channel].async_read_in_progress)
     {
         return false;
     }
 
-    _bc_uart[channel].async_read_in_progress = false;
+    _hio_uart[channel].async_read_in_progress = false;
 
-    if (channel == BC_UART_UART2)
+    if (channel == HIO_UART_UART2)
     {
-        bc_dma_channel_stop(BC_DMA_CHANNEL_3);
+        hio_dma_channel_stop(HIO_DMA_CHANNEL_3);
 
-        bc_scheduler_unregister(_bc_uart_2_dma.read_task_id);
+        hio_scheduler_unregister(_hio_uart_2_dma.read_task_id);
 
-        bc_irq_disable();
+        hio_irq_disable();
         // Disable receive DMA interrupt
-        _bc_uart[channel].usart->CR3 &= ~USART_CR3_DMAR_Msk;
-        bc_irq_enable();
+        _hio_uart[channel].usart->CR3 &= ~USART_CR3_DMAR_Msk;
+        hio_irq_enable();
     }
     else
     {
-        bc_irq_disable();
+        hio_irq_disable();
 
         // Disable receive interrupt
-        _bc_uart[channel].usart->CR1 &= ~USART_CR1_RXNEIE_Msk;
+        _hio_uart[channel].usart->CR1 &= ~USART_CR1_RXNEIE_Msk;
 
-        bc_irq_enable();
+        hio_irq_enable();
     }
 
-    if (_bc_uart[channel].usart != LPUART1)
+    if (_hio_uart[channel].usart != LPUART1)
     {
-        bc_system_pll_disable();
+        hio_system_pll_disable();
     }
 
-    bc_scheduler_unregister(_bc_uart[channel].async_read_task_id);
+    hio_scheduler_unregister(_hio_uart[channel].async_read_task_id);
 
     return false;
 }
 
-size_t bc_uart_async_read(bc_uart_channel_t channel, void *buffer, size_t length)
+size_t hio_uart_async_read(hio_uart_channel_t channel, void *buffer, size_t length)
 {
-    if (!_bc_uart[channel].initialized || !_bc_uart[channel].async_read_in_progress)
+    if (!_hio_uart[channel].initialized || !_hio_uart[channel].async_read_in_progress)
     {
         return 0;
     }
 
-    size_t bytes_read = bc_fifo_read(_bc_uart[channel].read_fifo, buffer, length);
+    size_t bytes_read = hio_fifo_read(_hio_uart[channel].read_fifo, buffer, length);
 
     return bytes_read;
 }
 
-static void _bc_uart_async_write_task(void *param)
+static void _hio_uart_async_write_task(void *param)
 {
-    bc_uart_channel_t channel = (bc_uart_channel_t) param;
-    bc_uart_t *uart = &_bc_uart[channel];
+    hio_uart_channel_t channel = (hio_uart_channel_t) param;
+    hio_uart_t *uart = &_hio_uart[channel];
 
     uart->async_write_in_progress = false;
 
-    bc_scheduler_unregister(uart->async_write_task_id);
+    hio_scheduler_unregister(uart->async_write_task_id);
 
     if (uart->usart == LPUART1)
     {
-        bc_system_deep_sleep_enable();
+        hio_system_deep_sleep_enable();
     }
     else
     {
-        bc_system_pll_disable();
+        hio_system_pll_disable();
     }
 
     if (uart->event_handler != NULL)
     {
-        uart->event_handler(channel, BC_UART_EVENT_ASYNC_WRITE_DONE, uart->event_param);
+        uart->event_handler(channel, HIO_UART_EVENT_ASYNC_WRITE_DONE, uart->event_param);
     }
 }
 
-static void _bc_uart_async_read_task(void *param)
+static void _hio_uart_async_read_task(void *param)
 {
-    bc_uart_channel_t channel = (bc_uart_channel_t) param;
-    bc_uart_t *uart = &_bc_uart[channel];
+    hio_uart_channel_t channel = (hio_uart_channel_t) param;
+    hio_uart_t *uart = &_hio_uart[channel];
 
-    bc_scheduler_plan_current_relative(uart->async_timeout);
+    hio_scheduler_plan_current_relative(uart->async_timeout);
 
     if (uart->event_handler != NULL)
     {
-        if (bc_fifo_is_empty(uart->read_fifo))
+        if (hio_fifo_is_empty(uart->read_fifo))
         {
-            uart->event_handler(channel, BC_UART_EVENT_ASYNC_READ_TIMEOUT, uart->event_param);
+            uart->event_handler(channel, HIO_UART_EVENT_ASYNC_READ_TIMEOUT, uart->event_param);
         }
         else
         {
-            uart->event_handler(channel, BC_UART_EVENT_ASYNC_READ_DATA, uart->event_param);
+            uart->event_handler(channel, HIO_UART_EVENT_ASYNC_READ_DATA, uart->event_param);
         }
     }
 }
 
-static void _bc_uart_2_dma_read_task(void *param)
+static void _hio_uart_2_dma_read_task(void *param)
 {
     (void) param;
 
-    size_t length = bc_dma_channel_get_length(BC_DMA_CHANNEL_3);
+    size_t length = hio_dma_channel_get_length(HIO_DMA_CHANNEL_3);
 
-    bc_uart_t *uart = &_bc_uart[BC_UART_UART2];
+    hio_uart_t *uart = &_hio_uart[HIO_UART_UART2];
 
-    if (_bc_uart_2_dma.length != length)
+    if (_hio_uart_2_dma.length != length)
     {
         uart->read_fifo->head = uart->read_fifo->size - length;
 
-        _bc_uart_2_dma.length = length;
+        _hio_uart_2_dma.length = length;
 
-        bc_scheduler_plan_now(uart->async_read_task_id);
+        hio_scheduler_plan_now(uart->async_read_task_id);
     }
 
-    bc_scheduler_plan_current_now();
+    hio_scheduler_plan_current_now();
 }
 
-static void _bc_uart_irq_handler(bc_uart_channel_t channel)
+static void _hio_uart_irq_handler(hio_uart_channel_t channel)
 {
-    USART_TypeDef *usart = _bc_uart[channel].usart;
+    USART_TypeDef *usart = _hio_uart[channel].usart;
 
     if ((usart->CR1 & USART_CR1_RXNEIE) != 0 && (usart->ISR & USART_ISR_RXNE) != 0)
     {
@@ -655,9 +655,9 @@ static void _bc_uart_irq_handler(bc_uart_channel_t channel)
         // Read receive data register
         character = usart->RDR;
 
-        bc_fifo_irq_write(_bc_uart[channel].read_fifo, &character, 1);
+        hio_fifo_irq_write(_hio_uart[channel].read_fifo, &character, 1);
 
-        bc_scheduler_plan_now(_bc_uart[channel].async_read_task_id);
+        hio_scheduler_plan_now(_hio_uart[channel].async_read_task_id);
     }
 
     // If it is transmit interrupt...
@@ -666,7 +666,7 @@ static void _bc_uart_irq_handler(bc_uart_channel_t channel)
         uint8_t character;
 
         // If there are still data in FIFO...
-        if (bc_fifo_irq_read(_bc_uart[channel].write_fifo, &character, 1) != 0)
+        if (hio_fifo_irq_read(_hio_uart[channel].write_fifo, &character, 1) != 0)
         {
             // Load transmit data register
             usart->TDR = character;
@@ -687,26 +687,26 @@ static void _bc_uart_irq_handler(bc_uart_channel_t channel)
         // Disable transmission complete interrupt
         usart->CR1 &= ~USART_CR1_TCIE;
 
-        bc_scheduler_plan_now(_bc_uart[channel].async_write_task_id);
+        hio_scheduler_plan_now(_hio_uart[channel].async_write_task_id);
     }
 }
 
 void AES_RNG_LPUART1_IRQHandler(void)
 {
-    _bc_uart_irq_handler(BC_UART_UART1);
+    _hio_uart_irq_handler(HIO_UART_UART1);
 }
 
 void USART1_IRQHandler(void)
 {
-    _bc_uart_irq_handler(BC_UART_UART2);
+    _hio_uart_irq_handler(HIO_UART_UART2);
 }
 
 void USART2_IRQHandler(void)
 {
-    _bc_uart_irq_handler(BC_UART_UART1);
+    _hio_uart_irq_handler(HIO_UART_UART1);
 }
 
 void USART4_5_IRQHandler(void)
 {
-    _bc_uart_irq_handler(BC_UART_UART0);
+    _hio_uart_irq_handler(HIO_UART_UART0);
 }

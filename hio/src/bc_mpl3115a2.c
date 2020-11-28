@@ -1,51 +1,51 @@
-#include <bc_mpl3115a2.h>
+#include <hio_mpl3115a2.h>
 
-#define _BC_MPL3115A2_DELAY_RUN 1500
-#define _BC_MPL3115A2_DELAY_INITIALIZATION 1500
-#define _BC_MPL3115A2_DELAY_MEASUREMENT 1500
+#define _HIO_MPL3115A2_DELAY_RUN 1500
+#define _HIO_MPL3115A2_DELAY_INITIALIZATION 1500
+#define _HIO_MPL3115A2_DELAY_MEASUREMENT 1500
 
-static void _bc_mpl3115a2_task_interval(void *param);
+static void _hio_mpl3115a2_task_interval(void *param);
 
-static void _bc_mpl3115a2_task_measure(void *param);
+static void _hio_mpl3115a2_task_measure(void *param);
 
-void bc_mpl3115a2_init(bc_mpl3115a2_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
+void hio_mpl3115a2_init(hio_mpl3115a2_t *self, hio_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
     memset(self, 0, sizeof(*self));
 
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
-    self->_task_id_interval = bc_scheduler_register(_bc_mpl3115a2_task_interval, self, BC_TICK_INFINITY);
-    self->_task_id_measure = bc_scheduler_register(_bc_mpl3115a2_task_measure, self, _BC_MPL3115A2_DELAY_RUN);
+    self->_task_id_interval = hio_scheduler_register(_hio_mpl3115a2_task_interval, self, HIO_TICK_INFINITY);
+    self->_task_id_measure = hio_scheduler_register(_hio_mpl3115a2_task_measure, self, _HIO_MPL3115A2_DELAY_RUN);
 
-    self->_tick_ready = _BC_MPL3115A2_DELAY_RUN;
+    self->_tick_ready = _HIO_MPL3115A2_DELAY_RUN;
 
-    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_400_KHZ);
+    hio_i2c_init(self->_i2c_channel, HIO_I2C_SPEED_400_KHZ);
 }
 
-void bc_mpl3115a2_set_event_handler(bc_mpl3115a2_t *self, void (*event_handler)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t, void *), void *event_param)
+void hio_mpl3115a2_set_event_handler(hio_mpl3115a2_t *self, void (*event_handler)(hio_mpl3115a2_t *, hio_mpl3115a2_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
     self->_event_param = event_param;
 }
 
-void bc_mpl3115a2_set_update_interval(bc_mpl3115a2_t *self, bc_tick_t interval)
+void hio_mpl3115a2_set_update_interval(hio_mpl3115a2_t *self, hio_tick_t interval)
 {
     self->_update_interval = interval;
 
-    if (self->_update_interval == BC_TICK_INFINITY)
+    if (self->_update_interval == HIO_TICK_INFINITY)
     {
-        bc_scheduler_plan_absolute(self->_task_id_interval, BC_TICK_INFINITY);
+        hio_scheduler_plan_absolute(self->_task_id_interval, HIO_TICK_INFINITY);
     }
     else
     {
-        bc_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
+        hio_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
 
-        bc_mpl3115a2_measure(self);
+        hio_mpl3115a2_measure(self);
     }
 }
 
-bool bc_mpl3115a2_measure(bc_mpl3115a2_t *self)
+bool hio_mpl3115a2_measure(hio_mpl3115a2_t *self)
 {
     if (self->_measurement_active)
     {
@@ -54,12 +54,12 @@ bool bc_mpl3115a2_measure(bc_mpl3115a2_t *self)
 
     self->_measurement_active = true;
 
-    bc_scheduler_plan_absolute(self->_task_id_measure, self->_tick_ready);
+    hio_scheduler_plan_absolute(self->_task_id_measure, self->_tick_ready);
 
     return true;
 }
 
-bool bc_mpl3115a2_get_altitude_meter(bc_mpl3115a2_t *self, float *meter)
+bool hio_mpl3115a2_get_altitude_meter(hio_mpl3115a2_t *self, float *meter)
 {
     if (!self->_altitude_valid)
     {
@@ -73,7 +73,7 @@ bool bc_mpl3115a2_get_altitude_meter(bc_mpl3115a2_t *self, float *meter)
     return true;
 }
 
-bool bc_mpl3115a2_get_pressure_pascal(bc_mpl3115a2_t *self, float *pascal)
+bool hio_mpl3115a2_get_pressure_pascal(hio_mpl3115a2_t *self, float *pascal)
 {
     if (!self->_pressure_valid)
     {
@@ -87,24 +87,24 @@ bool bc_mpl3115a2_get_pressure_pascal(bc_mpl3115a2_t *self, float *pascal)
     return true;
 }
 
-static void _bc_mpl3115a2_task_interval(void *param)
+static void _hio_mpl3115a2_task_interval(void *param)
 {
-    bc_mpl3115a2_t *self = param;
+    hio_mpl3115a2_t *self = param;
 
-    bc_mpl3115a2_measure(self);
+    hio_mpl3115a2_measure(self);
 
-    bc_scheduler_plan_current_relative(self->_update_interval);
+    hio_scheduler_plan_current_relative(self->_update_interval);
 }
 
-static void _bc_mpl3115a2_task_measure(void *param)
+static void _hio_mpl3115a2_task_measure(void *param)
 {
-    bc_mpl3115a2_t *self = param;
+    hio_mpl3115a2_t *self = param;
 
 start:
 
     switch (self->_state)
     {
-        case BC_MPL3115A2_STATE_ERROR:
+        case HIO_MPL3115A2_STATE_ERROR:
         {
             self->_altitude_valid = false;
             self->_pressure_valid = false;
@@ -113,60 +113,60 @@ start:
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_MPL3115A2_EVENT_ERROR, self->_event_param);
+                self->_event_handler(self, HIO_MPL3115A2_EVENT_ERROR, self->_event_param);
             }
 
-            self->_state = BC_MPL3115A2_STATE_INITIALIZE;
+            self->_state = HIO_MPL3115A2_STATE_INITIALIZE;
 
             return;
         }
-        case BC_MPL3115A2_STATE_INITIALIZE:
+        case HIO_MPL3115A2_STATE_INITIALIZE:
         {
-            bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x04);
+            hio_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x04);
 
-            self->_state = BC_MPL3115A2_STATE_MEASURE_ALTITUDE;
+            self->_state = HIO_MPL3115A2_STATE_MEASURE_ALTITUDE;
 
-            self->_tick_ready = bc_tick_get() + _BC_MPL3115A2_DELAY_INITIALIZATION;
+            self->_tick_ready = hio_tick_get() + _HIO_MPL3115A2_DELAY_INITIALIZATION;
 
             if (self->_measurement_active)
             {
-                bc_scheduler_plan_current_absolute(self->_tick_ready);
+                hio_scheduler_plan_current_absolute(self->_tick_ready);
             }
 
             return;
         }
-        case BC_MPL3115A2_STATE_MEASURE_ALTITUDE:
+        case HIO_MPL3115A2_STATE_MEASURE_ALTITUDE:
         {
-            self->_state = BC_MPL3115A2_STATE_ERROR;
+            self->_state = HIO_MPL3115A2_STATE_ERROR;
 
-            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xb8))
+            if (!hio_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xb8))
             {
                 goto start;
             }
 
-            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
+            if (!hio_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
             {
                 goto start;
             }
 
-            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xba))
+            if (!hio_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0xba))
             {
                 goto start;
             }
 
-            self->_state = BC_MPL3115A2_STATE_READ_ALTITUDE;
+            self->_state = HIO_MPL3115A2_STATE_READ_ALTITUDE;
 
-            bc_scheduler_plan_current_from_now(_BC_MPL3115A2_DELAY_MEASUREMENT);
+            hio_scheduler_plan_current_from_now(_HIO_MPL3115A2_DELAY_MEASUREMENT);
 
             return;
         }
-        case BC_MPL3115A2_STATE_READ_ALTITUDE:
+        case HIO_MPL3115A2_STATE_READ_ALTITUDE:
         {
-            self->_state = BC_MPL3115A2_STATE_ERROR;
+            self->_state = HIO_MPL3115A2_STATE_ERROR;
 
             uint8_t reg_status;
 
-            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
+            if (!hio_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
             {
                 goto start;
             }
@@ -178,14 +178,14 @@ start:
 
             uint8_t buffer[5];
 
-            bc_i2c_memory_transfer_t transfer;
+            hio_i2c_memory_transfer_t transfer;
 
             transfer.device_address = self->_i2c_address;
             transfer.memory_address = 0x01;
             transfer.buffer = buffer;
             transfer.length = 5;
 
-            if (!bc_i2c_memory_read(self->_i2c_channel, &transfer))
+            if (!hio_i2c_memory_read(self->_i2c_channel, &transfer))
             {
                 goto start;
             }
@@ -198,42 +198,42 @@ start:
 
             self->_altitude_valid = true;
 
-            self->_state = BC_MPL3115A2_STATE_MEASURE_PRESSURE;
+            self->_state = HIO_MPL3115A2_STATE_MEASURE_PRESSURE;
 
             goto start;
         }
-        case BC_MPL3115A2_STATE_MEASURE_PRESSURE:
+        case HIO_MPL3115A2_STATE_MEASURE_PRESSURE:
         {
-            self->_state = BC_MPL3115A2_STATE_ERROR;
+            self->_state = HIO_MPL3115A2_STATE_ERROR;
 
-            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x38))
+            if (!hio_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x38))
             {
                 goto start;
             }
 
-            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
+            if (!hio_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x13, 0x07))
             {
                 goto start;
             }
 
-            if (!bc_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x3a))
+            if (!hio_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x3a))
             {
                 goto start;
             }
 
-            self->_state = BC_MPL3115A2_STATE_READ_PRESSURE;
+            self->_state = HIO_MPL3115A2_STATE_READ_PRESSURE;
 
-            bc_scheduler_plan_current_from_now(_BC_MPL3115A2_DELAY_MEASUREMENT);
+            hio_scheduler_plan_current_from_now(_HIO_MPL3115A2_DELAY_MEASUREMENT);
 
             return;
         }
-        case BC_MPL3115A2_STATE_READ_PRESSURE:
+        case HIO_MPL3115A2_STATE_READ_PRESSURE:
         {
-            self->_state = BC_MPL3115A2_STATE_ERROR;
+            self->_state = HIO_MPL3115A2_STATE_ERROR;
 
             uint8_t reg_status;
 
-            if (!bc_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
+            if (!hio_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, 0x00, &reg_status))
             {
                 goto start;
             }
@@ -245,14 +245,14 @@ start:
 
             uint8_t buffer[5];
 
-            bc_i2c_memory_transfer_t transfer;
+            hio_i2c_memory_transfer_t transfer;
 
             transfer.device_address = self->_i2c_address;
             transfer.memory_address = 0x01;
             transfer.buffer = buffer;
             transfer.length = 5;
 
-            if (!bc_i2c_memory_read(self->_i2c_channel, &transfer))
+            if (!hio_i2c_memory_read(self->_i2c_channel, &transfer))
             {
                 goto start;
             }
@@ -265,26 +265,26 @@ start:
 
             self->_pressure_valid = true;
 
-            self->_state = BC_MPL3115A2_STATE_UPDATE;
+            self->_state = HIO_MPL3115A2_STATE_UPDATE;
 
             goto start;
         }
-        case BC_MPL3115A2_STATE_UPDATE:
+        case HIO_MPL3115A2_STATE_UPDATE:
         {
             self->_measurement_active = false;
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_MPL3115A2_EVENT_UPDATE, self->_event_param);
+                self->_event_handler(self, HIO_MPL3115A2_EVENT_UPDATE, self->_event_param);
             }
 
-            self->_state = BC_MPL3115A2_STATE_MEASURE_ALTITUDE;
+            self->_state = HIO_MPL3115A2_STATE_MEASURE_ALTITUDE;
 
             return;
         }
         default:
         {
-            self->_state = BC_MPL3115A2_STATE_ERROR;
+            self->_state = HIO_MPL3115A2_STATE_ERROR;
 
             goto start;
         }

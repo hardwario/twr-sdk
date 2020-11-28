@@ -1,70 +1,70 @@
-#include <bc_sps30.h>
+#include <hio_sps30.h>
 
-#define _BC_SPS30_DELAY_RUN 100
-#define _BC_SPS30_DELAY_INITIALIZE 1000
-#define _BC_SPS30_DELAY_READ 30
-#define _BC_SPS30_DELAY_MEASUREMENT 250
+#define _HIO_SPS30_DELAY_RUN 100
+#define _HIO_SPS30_DELAY_INITIALIZE 1000
+#define _HIO_SPS30_DELAY_READ 30
+#define _HIO_SPS30_DELAY_MEASUREMENT 250
 
-#define BC_SPS30_NUM_WORDS(x) (sizeof(x) / 2)
+#define HIO_SPS30_NUM_WORDS(x) (sizeof(x) / 2)
 
 #define be16_to_cpu(s) (((uint16_t)(s) << 8) | (0xff & ((uint16_t)(s)) >> 8))
 #define be32_to_cpu(s) (((uint32_t)be16_to_cpu(s) << 16) | (0xffff & (be16_to_cpu((s) >> 16))))
 
-static void _bc_sps30_task_interval(void *param);
+static void _hio_sps30_task_interval(void *param);
 
-static void _bc_sps30_task_measure(void *param);
+static void _hio_sps30_task_measure(void *param);
 
-static uint8_t _bc_sps30_calculate_crc(uint8_t *buffer, size_t length);
-static bool _bc_sps30_convert_to_words(uint8_t *buffer, size_t buffer_length, uint16_t *data, size_t data_length);
+static uint8_t _hio_sps30_calculate_crc(uint8_t *buffer, size_t length);
+static bool _hio_sps30_convert_to_words(uint8_t *buffer, size_t buffer_length, uint16_t *data, size_t data_length);
 
-void bc_sps30_init(bc_sps30_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address)
+void hio_sps30_init(hio_sps30_t *self, hio_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
     memset(self, 0, sizeof(*self));
 
     self->_i2c_channel = i2c_channel;
     self->_i2c_address = i2c_address;
 
-    self->_task_id_interval = bc_scheduler_register(_bc_sps30_task_interval, self, BC_TICK_INFINITY);
-    self->_task_id_measure = bc_scheduler_register(_bc_sps30_task_measure, self, _BC_SPS30_DELAY_RUN);
+    self->_task_id_interval = hio_scheduler_register(_hio_sps30_task_interval, self, HIO_TICK_INFINITY);
+    self->_task_id_measure = hio_scheduler_register(_hio_sps30_task_measure, self, _HIO_SPS30_DELAY_RUN);
 
-    self->_state = BC_SPS30_STATE_INITIALIZE;
+    self->_state = HIO_SPS30_STATE_INITIALIZE;
 
-    bc_i2c_init(self->_i2c_channel, BC_I2C_SPEED_100_KHZ);
+    hio_i2c_init(self->_i2c_channel, HIO_I2C_SPEED_100_KHZ);
 }
 
-void bc_sps30_set_event_handler(bc_sps30_t *self, void (*event_handler)(bc_sps30_t *, bc_sps30_event_t, void *), void *event_param)
+void hio_sps30_set_event_handler(hio_sps30_t *self, void (*event_handler)(hio_sps30_t *, hio_sps30_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
     self->_event_param = event_param;
 }
 
-void bc_sps30_set_startup_time(bc_sps30_t *self, bc_tick_t startup_time)
+void hio_sps30_set_startup_time(hio_sps30_t *self, hio_tick_t startup_time)
 {
     self->_startup_time = startup_time;
 }
 
-void bc_sps30_set_update_interval(bc_sps30_t *self, bc_tick_t interval)
+void hio_sps30_set_update_interval(hio_sps30_t *self, hio_tick_t interval)
 {
     self->_update_interval = interval;
 
-    if (self->_update_interval == BC_TICK_INFINITY)
+    if (self->_update_interval == HIO_TICK_INFINITY)
     {
-        bc_scheduler_plan_absolute(self->_task_id_interval, BC_TICK_INFINITY);
+        hio_scheduler_plan_absolute(self->_task_id_interval, HIO_TICK_INFINITY);
     }
     else
     {
-        bc_scheduler_plan_relative(self->_task_id_interval, _BC_SPS30_DELAY_INITIALIZE);
+        hio_scheduler_plan_relative(self->_task_id_interval, _HIO_SPS30_DELAY_INITIALIZE);
     }
 }
 
-bool bc_sps30_measure(bc_sps30_t *self)
+bool hio_sps30_measure(hio_sps30_t *self)
 {
-    if (self->_state == BC_SPS30_STATE_READY)
+    if (self->_state == HIO_SPS30_STATE_READY)
     {
-        self->_state = BC_SPS30_STATE_START_MEASUREMENT;
-        self->_start_time = bc_tick_get();
+        self->_state = HIO_SPS30_STATE_START_MEASUREMENT;
+        self->_start_time = hio_tick_get();
 
-        bc_scheduler_plan_now(self->_task_id_measure);
+        hio_scheduler_plan_now(self->_task_id_measure);
 
         return true;
     }
@@ -72,7 +72,7 @@ bool bc_sps30_measure(bc_sps30_t *self)
     return false;
 }
 
-bool bc_sps30_get_mass_concentration(bc_sps30_t *self, bc_sps30_mass_concentration_t *mass_concentration)
+bool hio_sps30_get_mass_concentration(hio_sps30_t *self, hio_sps30_mass_concentration_t *mass_concentration)
 {
     if (!self->_measurement_valid)
     {
@@ -87,7 +87,7 @@ bool bc_sps30_get_mass_concentration(bc_sps30_t *self, bc_sps30_mass_concentrati
     return true;
 }
 
-bool bc_sps30_get_number_concentration(bc_sps30_t *self, bc_sps30_number_concentration_t *number_concentration)
+bool hio_sps30_get_number_concentration(hio_sps30_t *self, hio_sps30_number_concentration_t *number_concentration)
 {
     if (!self->_measurement_valid)
     {
@@ -103,7 +103,7 @@ bool bc_sps30_get_number_concentration(bc_sps30_t *self, bc_sps30_number_concent
     return true;
 }
 
-bool bc_sps30_get_typical_particle_size(bc_sps30_t *self, float *typical_particle_size)
+bool hio_sps30_get_typical_particle_size(hio_sps30_t *self, float *typical_particle_size)
 {
     if (!self->_measurement_valid)
     {
@@ -115,72 +115,72 @@ bool bc_sps30_get_typical_particle_size(bc_sps30_t *self, float *typical_particl
     return true;
 }
 
-static void _bc_sps30_task_interval(void *param)
+static void _hio_sps30_task_interval(void *param)
 {
-    bc_sps30_t *self = param;
+    hio_sps30_t *self = param;
 
-    bc_sps30_measure(self);
+    hio_sps30_measure(self);
 
-    bc_scheduler_plan_current_relative(self->_update_interval);
+    hio_scheduler_plan_current_relative(self->_update_interval);
 }
 
-static void _bc_sps30_task_measure(void *param)
+static void _hio_sps30_task_measure(void *param)
 {
-    bc_sps30_t *self = param;
+    hio_sps30_t *self = param;
 
     while (true)
     {
         switch (self->_state)
         {
-            case BC_SPS30_STATE_ERROR:
+            case HIO_SPS30_STATE_ERROR:
             {
                 self->_measurement_valid = false;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_SPS30_EVENT_ERROR, self->_event_param);
+                    self->_event_handler(self, HIO_SPS30_EVENT_ERROR, self->_event_param);
                 }
 
-                self->_state = BC_SPS30_STATE_INITIALIZE;
+                self->_state = HIO_SPS30_STATE_INITIALIZE;
 
                 continue;
             }
-            case BC_SPS30_STATE_READY:
+            case HIO_SPS30_STATE_READY:
             {
                 return;
             }
-            case BC_SPS30_STATE_INITIALIZE:
+            case HIO_SPS30_STATE_INITIALIZE:
             {
-                self->_state = BC_SPS30_STATE_GET_SERIAL_NUMBER;
+                self->_state = HIO_SPS30_STATE_GET_SERIAL_NUMBER;
 
                 continue;
             }
-            case BC_SPS30_STATE_GET_SERIAL_NUMBER:
+            case HIO_SPS30_STATE_GET_SERIAL_NUMBER:
             {
-                self->_state = BC_SPS30_STATE_ERROR;
+                self->_state = HIO_SPS30_STATE_ERROR;
 
                 static const uint8_t buffer[] = { 0xd0, 0x33 };
 
-                bc_i2c_transfer_t transfer;
+                hio_i2c_transfer_t transfer;
 
                 transfer.device_address = self->_i2c_address;
                 transfer.buffer = (uint8_t *) buffer;
                 transfer.length = sizeof(buffer);
 
-                if (!bc_i2c_write(self->_i2c_channel, &transfer))
+                if (!hio_i2c_write(self->_i2c_channel, &transfer))
                 {
                     continue;
                 }
 
-                self->_state = BC_SPS30_STATE_READ_SERIAL_NUMBER;
+                self->_state = HIO_SPS30_STATE_READ_SERIAL_NUMBER;
 
-                bc_scheduler_plan_current_from_now(_BC_SPS30_DELAY_READ);
+                hio_scheduler_plan_current_from_now(_HIO_SPS30_DELAY_READ);
 
                 return;
             }
-            case BC_SPS30_STATE_READ_SERIAL_NUMBER:
+            case HIO_SPS30_STATE_READ_SERIAL_NUMBER:
             {
-                self->_state = BC_SPS30_STATE_ERROR;
+                self->_state = HIO_SPS30_STATE_ERROR;
 
                 uint8_t buffer[48];
                 union {
@@ -188,30 +188,30 @@ static void _bc_sps30_task_measure(void *param)
                     uint16_t __enforce_alignment;
                 } data;
 
-                bc_i2c_transfer_t transfer;
+                hio_i2c_transfer_t transfer;
 
                 transfer.device_address = self->_i2c_address;
                 transfer.buffer = buffer;
                 transfer.length = sizeof(buffer);
 
-                if (!bc_i2c_read(self->_i2c_channel, &transfer))
+                if (!hio_i2c_read(self->_i2c_channel, &transfer))
                 {
                     continue;
                 }
 
-                if (!_bc_sps30_convert_to_words(buffer, sizeof(buffer),
-                    (uint16_t *) data.serial, BC_SPS30_NUM_WORDS(data.serial)))
+                if (!_hio_sps30_convert_to_words(buffer, sizeof(buffer),
+                    (uint16_t *) data.serial, HIO_SPS30_NUM_WORDS(data.serial)))
                 {
                     continue;
                 }
 
-                self->_state = BC_SPS30_STATE_READY;
+                self->_state = HIO_SPS30_STATE_READY;
 
                 continue;
             }
-            case BC_SPS30_STATE_START_MEASUREMENT:
+            case HIO_SPS30_STATE_START_MEASUREMENT:
             {
-                self->_state = BC_SPS30_STATE_ERROR;
+                self->_state = HIO_SPS30_STATE_ERROR;
 
                 uint8_t buffer[5];
 
@@ -219,107 +219,107 @@ static void _bc_sps30_task_measure(void *param)
                 buffer[1] = 0x10;
                 buffer[2] = 0x03;
                 buffer[3] = 0x00;
-                buffer[4] = _bc_sps30_calculate_crc(&buffer[2], 2);
+                buffer[4] = _hio_sps30_calculate_crc(&buffer[2], 2);
 
-                bc_i2c_transfer_t transfer;
+                hio_i2c_transfer_t transfer;
 
                 transfer.device_address = self->_i2c_address;
                 transfer.buffer = buffer;
                 transfer.length = sizeof(buffer);
 
-                if (!bc_i2c_write(self->_i2c_channel, &transfer))
+                if (!hio_i2c_write(self->_i2c_channel, &transfer))
                 {
                     continue;
                 }
 
-                self->_state = BC_SPS30_STATE_SET_DATAREADY_FLAG;
+                self->_state = HIO_SPS30_STATE_SET_DATAREADY_FLAG;
 
                 continue;
             }
-            case BC_SPS30_STATE_SET_DATAREADY_FLAG:
+            case HIO_SPS30_STATE_SET_DATAREADY_FLAG:
             {
-                self->_state = BC_SPS30_STATE_ERROR;
+                self->_state = HIO_SPS30_STATE_ERROR;
 
                 static const uint8_t buffer[] = { 0x02, 0x02 };
 
-                bc_i2c_transfer_t transfer;
+                hio_i2c_transfer_t transfer;
 
                 transfer.device_address = self->_i2c_address;
                 transfer.buffer = (uint8_t *) buffer;
                 transfer.length = sizeof(buffer);
 
-                if (!bc_i2c_write(self->_i2c_channel, &transfer))
+                if (!hio_i2c_write(self->_i2c_channel, &transfer))
                 {
                     continue;
                 }
 
-                self->_state = BC_SPS30_STATE_READ_DATAREADY_FLAG;
+                self->_state = HIO_SPS30_STATE_READ_DATAREADY_FLAG;
 
-                bc_scheduler_plan_current_from_now(_BC_SPS30_DELAY_READ);
+                hio_scheduler_plan_current_from_now(_HIO_SPS30_DELAY_READ);
 
                 return;
             }
-            case BC_SPS30_STATE_READ_DATAREADY_FLAG:
+            case HIO_SPS30_STATE_READ_DATAREADY_FLAG:
             {
-                self->_state = BC_SPS30_STATE_ERROR;
+                self->_state = HIO_SPS30_STATE_ERROR;
 
                 uint8_t buffer[3];
 
-                bc_i2c_transfer_t transfer;
+                hio_i2c_transfer_t transfer;
 
                 transfer.device_address = self->_i2c_address;
                 transfer.buffer = buffer;
                 transfer.length = sizeof(buffer);
 
-                if (!bc_i2c_read(self->_i2c_channel, &transfer))
+                if (!hio_i2c_read(self->_i2c_channel, &transfer))
                 {
                     continue;
                 }
 
-                if (_bc_sps30_calculate_crc(&buffer[0], 2) != buffer[2])
+                if (_hio_sps30_calculate_crc(&buffer[0], 2) != buffer[2])
                 {
                     continue;
                 }
 
                 if (buffer[1] == 0x01)
                 {
-                    self->_state = BC_SPS30_STATE_GET_MEASUREMENT_DATA;
+                    self->_state = HIO_SPS30_STATE_GET_MEASUREMENT_DATA;
 
                     continue;
                 }
 
-                self->_state = BC_SPS30_STATE_READ_DATAREADY_FLAG;
+                self->_state = HIO_SPS30_STATE_READ_DATAREADY_FLAG;
 
-                bc_scheduler_plan_current_from_now(_BC_SPS30_DELAY_MEASUREMENT);
+                hio_scheduler_plan_current_from_now(_HIO_SPS30_DELAY_MEASUREMENT);
 
                 return;
             }
-            case BC_SPS30_STATE_GET_MEASUREMENT_DATA:
+            case HIO_SPS30_STATE_GET_MEASUREMENT_DATA:
             {
-                self->_state = BC_SPS30_STATE_ERROR;
+                self->_state = HIO_SPS30_STATE_ERROR;
 
                 static const uint8_t buffer[] = { 0x03, 0x00 };
 
-                bc_i2c_transfer_t transfer;
+                hio_i2c_transfer_t transfer;
 
                 transfer.device_address = self->_i2c_address;
                 transfer.buffer = (uint8_t *) buffer;
                 transfer.length = sizeof(buffer);
 
-                if (!bc_i2c_write(self->_i2c_channel, &transfer))
+                if (!hio_i2c_write(self->_i2c_channel, &transfer))
                 {
                     continue;
                 }
 
-                self->_state = BC_SPS30_STATE_READ_MEASUREMENT_DATA;
+                self->_state = HIO_SPS30_STATE_READ_MEASUREMENT_DATA;
 
-                bc_scheduler_plan_current_from_now(_BC_SPS30_DELAY_READ);
+                hio_scheduler_plan_current_from_now(_HIO_SPS30_DELAY_READ);
 
                 return;
             }
-            case BC_SPS30_STATE_READ_MEASUREMENT_DATA:
+            case HIO_SPS30_STATE_READ_MEASUREMENT_DATA:
             {
-                self->_state = BC_SPS30_STATE_ERROR;
+                self->_state = HIO_SPS30_STATE_ERROR;
 
                 uint8_t buffer[60];
                 union {
@@ -328,18 +328,18 @@ static void _bc_sps30_task_measure(void *param)
                     float f;
                 } val, data[10];
 
-                bc_i2c_transfer_t transfer;
+                hio_i2c_transfer_t transfer;
 
                 transfer.device_address = self->_i2c_address;
                 transfer.buffer = (uint8_t *) buffer;
                 transfer.length = sizeof(buffer);
 
-                if (!bc_i2c_read(self->_i2c_channel, &transfer))
+                if (!hio_i2c_read(self->_i2c_channel, &transfer))
                 {
                     continue;
                 }
 
-                if (!_bc_sps30_convert_to_words(buffer, sizeof(buffer), data->uint16_t, BC_SPS30_NUM_WORDS(data)))
+                if (!_hio_sps30_convert_to_words(buffer, sizeof(buffer), data->uint16_t, HIO_SPS30_NUM_WORDS(data)))
                 {
                     continue;
                 }
@@ -367,46 +367,46 @@ static void _bc_sps30_task_measure(void *param)
 
                 self->_measurement_valid = true;
 
-                if ((bc_tick_get() - self->_start_time) > self->_startup_time)
+                if ((hio_tick_get() - self->_start_time) > self->_startup_time)
                 {
                     if (self->_event_handler != NULL)
                     {
-                        self->_event_handler(self, BC_SPS30_EVENT_UPDATE, self->_event_param);
+                        self->_event_handler(self, HIO_SPS30_EVENT_UPDATE, self->_event_param);
                     }
 
-                    self->_state = BC_SPS30_STATE_STOP_MEASUREMENT;
+                    self->_state = HIO_SPS30_STATE_STOP_MEASUREMENT;
                 }
                 else
                 {
-                    self->_state = BC_SPS30_STATE_SET_DATAREADY_FLAG;
+                    self->_state = HIO_SPS30_STATE_SET_DATAREADY_FLAG;
                 }
 
                 continue;
             }
-            case BC_SPS30_STATE_STOP_MEASUREMENT:
+            case HIO_SPS30_STATE_STOP_MEASUREMENT:
             {
-                self->_state = BC_SPS30_STATE_ERROR;
+                self->_state = HIO_SPS30_STATE_ERROR;
 
                 static const uint8_t buffer[] = { 0x01, 0x04 };
 
-                bc_i2c_transfer_t transfer;
+                hio_i2c_transfer_t transfer;
 
                 transfer.device_address = self->_i2c_address;
                 transfer.buffer = (uint8_t *) buffer;
                 transfer.length = sizeof(buffer);
 
-                if (!bc_i2c_write(self->_i2c_channel, &transfer))
+                if (!hio_i2c_write(self->_i2c_channel, &transfer))
                 {
                     continue;
                 }
 
-                self->_state = BC_SPS30_STATE_READY;
+                self->_state = HIO_SPS30_STATE_READY;
 
                 continue;
             }
             default:
             {
-                self->_state = BC_SPS30_STATE_ERROR;
+                self->_state = HIO_SPS30_STATE_ERROR;
 
                 continue;
             }
@@ -414,7 +414,7 @@ static void _bc_sps30_task_measure(void *param)
     }
 }
 
-static uint8_t _bc_sps30_calculate_crc(uint8_t *buffer, size_t length)
+static uint8_t _hio_sps30_calculate_crc(uint8_t *buffer, size_t length)
 {
     uint8_t crc = 0xff;
 
@@ -438,7 +438,7 @@ static uint8_t _bc_sps30_calculate_crc(uint8_t *buffer, size_t length)
     return crc;
 }
 
-static bool _bc_sps30_convert_to_words(uint8_t *buffer, size_t buffer_length, uint16_t *data, size_t data_length)
+static bool _hio_sps30_convert_to_words(uint8_t *buffer, size_t buffer_length, uint16_t *data, size_t data_length)
 {
     uint8_t *data8 = (uint8_t *) data;
     size_t i, j;
@@ -450,7 +450,7 @@ static bool _bc_sps30_convert_to_words(uint8_t *buffer, size_t buffer_length, ui
 
     for (i = 0, j = 0; i < buffer_length; i += 3)
     {
-        if (_bc_sps30_calculate_crc(&buffer[i], 2) != buffer[i + 2])
+        if (_hio_sps30_calculate_crc(&buffer[i], 2) != buffer[i + 2])
         {
             return false;
         }

@@ -1,30 +1,30 @@
-#ifndef _BC_IR_RX_H
-#define _BC_IR_RX_H
+#ifndef _HIO_IR_RX_H
+#define _HIO_IR_RX_H
 
-#include <bc_common.h>
+#include <hio_common.h>
 
 typedef enum
 {
     //! @brief Receiver IR command
-    BC_IR_RX_NEC_FORMAT = 0,
+    HIO_IR_RX_NEC_FORMAT = 0,
 
     //! @brief Received repeat command
-    BC_IR_RX_NEC_FORMAT_REPEAT = 1
+    HIO_IR_RX_NEC_FORMAT_REPEAT = 1
 
-} bc_ir_rx_event_t;
+} hio_ir_rx_event_t;
 
 //! @brief Init infrared RX driver
 
-void bc_ir_rx_init();
+void hio_ir_rx_init();
 
 //! @brief Set callback function
 //! @param[in] event_handler Function address
 //! @param[in] event_param Optional event parameter (can be NULL)
 
-void bc_ir_rx_set_event_handler(void (*event_handler)(bc_ir_rx_event_t, void *), void *event_param);
+void hio_ir_rx_set_event_handler(void (*event_handler)(hio_ir_rx_event_t, void *), void *event_param);
 
 //! @brief Get received code
 
-void bc_ir_rx_get_code(uint32_t *nec_code);
+void hio_ir_rx_get_code(uint32_t *nec_code);
 
-#endif //_BC_IR_RX_H
+#endif //_HIO_IR_RX_H

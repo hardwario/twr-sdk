@@ -1,17 +1,17 @@
-#ifndef _BC_DELAY_H
-#define _BC_DELAY_H
+#ifndef _HIO_DELAY_H
+#define _HIO_DELAY_H
 
-#include <bc_common.h>
+#include <hio_common.h>
 
-//! @addtogroup bc_delay bc_delay
+//! @addtogroup hio_delay hio_delay
 //! @brief Library for delay
 //! @{
 
 //! @brief Delay us
 //! @param[in] microseconds Time to delay in us
 
-void bc_delay_us(uint16_t microseconds);
+void hio_delay_us(uint16_t microseconds);
 
 //! @}
 
-#endif // _BC_DELAY_H
+#endif // _HIO_DELAY_H

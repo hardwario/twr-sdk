@@ -1,15 +1,15 @@
-#ifndef _BC_DFU_H
-#define _BC_DFU_H
+#ifndef _HIO_DFU_H
+#define _HIO_DFU_H
 
-#include <bc_common.h>
+#include <hio_common.h>
 
-//! @addtogroup bc_dfu bc_dfu
+//! @addtogroup hio_dfu hio_dfu
 //! @brief USB DFU Bootloader function
 //! @{
 
 //! @brief Reset the CPU and jump to the USB DFU bootloader.
-void bc_dfu_jump(void);
+void hio_dfu_jump(void);
 
 //! @}
 
-#endif // _BC_DFU_H
+#endif // _HIO_DFU_H

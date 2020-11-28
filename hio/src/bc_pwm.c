@@ -1,4 +1,4 @@
-#include <bc_pwm.h>
+#include <hio_pwm.h>
 
 /*
     Table of pins and TIM channels
@@ -24,7 +24,7 @@
     P17 PB9 none
 */
 
-static void _bc_pwm_tim2_configure(uint32_t resolution_us, uint32_t period_cycles)
+static void _hio_pwm_tim2_configure(uint32_t resolution_us, uint32_t period_cycles)
 {
     // Enable TIM2 clock
     RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
@@ -56,7 +56,7 @@ static void _bc_pwm_tim2_configure(uint32_t resolution_us, uint32_t period_cycle
     TIM2->CR1 |= TIM_CR1_CEN;
 }
 
-static void _bc_pwm_tim3_configure(uint32_t resolution_us, uint32_t period_cycles)
+static void _hio_pwm_tim3_configure(uint32_t resolution_us, uint32_t period_cycles)
 {
     // Enable TIM3 clock
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
@@ -87,7 +87,7 @@ static void _bc_pwm_tim3_configure(uint32_t resolution_us, uint32_t period_cycle
     TIM3->CR1 |= TIM_CR1_CEN;
 }
 
-static void _bc_pwm_tim21_configure(uint32_t resolution_us, uint32_t period_cycles)
+static void _hio_pwm_tim21_configure(uint32_t resolution_us, uint32_t period_cycles)
 {
     // Enable TIM21 clock
     RCC->APB2ENR |= RCC_APB2ENR_TIM21EN;
@@ -112,23 +112,23 @@ static void _bc_pwm_tim21_configure(uint32_t resolution_us, uint32_t period_cycl
     TIM21->CR1 |= TIM_CR1_CEN;
 }
 
-void bc_pwm_tim_configure(bc_pwm_tim_t tim, uint32_t resolution_us, uint32_t period_cycles)
+void hio_pwm_tim_configure(hio_pwm_tim_t tim, uint32_t resolution_us, uint32_t period_cycles)
 {
     switch (tim)
     {
-        case BC_PWM_TIM2_P0_P1_P2_P3:
+        case HIO_PWM_TIM2_P0_P1_P2_P3:
         {
-            _bc_pwm_tim2_configure(resolution_us, period_cycles);
+            _hio_pwm_tim2_configure(resolution_us, period_cycles);
             break;
         }
-        case BC_PWM_TIM3_P6_P7_P8:
+        case HIO_PWM_TIM3_P6_P7_P8:
         {
-            _bc_pwm_tim3_configure(resolution_us, period_cycles);
+            _hio_pwm_tim3_configure(resolution_us, period_cycles);
             break;
         }
-        case BC_PWM_TIM21_P12_P14:
+        case HIO_PWM_TIM21_P12_P14:
         {
-            _bc_pwm_tim21_configure(resolution_us, period_cycles);
+            _hio_pwm_tim21_configure(resolution_us, period_cycles);
             break;
         }
         default:
@@ -138,7 +138,7 @@ void bc_pwm_tim_configure(bc_pwm_tim_t tim, uint32_t resolution_us, uint32_t per
     }
 }
 
-void bc_pwm_init(bc_pwm_channel_t channel)
+void hio_pwm_init(hio_pwm_channel_t channel)
 {
     static bool tim2_initialized = false;
     static bool tim3_initialized = false;
@@ -147,94 +147,94 @@ void bc_pwm_init(bc_pwm_channel_t channel)
 
     if (!pll_enabled)
     {
-        bc_system_pll_enable();
+        hio_system_pll_enable();
         pll_enabled = true;
     }
 
-    if (!tim2_initialized && (channel == BC_PWM_P0 || channel == BC_PWM_P1 || channel == BC_PWM_P2 || channel == BC_PWM_P3))
+    if (!tim2_initialized && (channel == HIO_PWM_P0 || channel == HIO_PWM_P1 || channel == HIO_PWM_P2 || channel == HIO_PWM_P3))
     {
         // 5 us * 255 = cca 784 Hz
-        bc_pwm_tim_configure(BC_PWM_TIM2_P0_P1_P2_P3, 5, 255);
+        hio_pwm_tim_configure(HIO_PWM_TIM2_P0_P1_P2_P3, 5, 255);
         tim2_initialized = true;
     }
 
-    if (!tim3_initialized && (channel == BC_PWM_P6 || channel == BC_PWM_P7 || channel == BC_PWM_P8))
+    if (!tim3_initialized && (channel == HIO_PWM_P6 || channel == HIO_PWM_P7 || channel == HIO_PWM_P8))
     {
-        bc_pwm_tim_configure(BC_PWM_TIM3_P6_P7_P8, 5, 255);
+        hio_pwm_tim_configure(HIO_PWM_TIM3_P6_P7_P8, 5, 255);
         tim3_initialized = true;
     }
 
-    if (!tim21_initialized && (channel == BC_PWM_P12 || channel == BC_PWM_P14))
+    if (!tim21_initialized && (channel == HIO_PWM_P12 || channel == HIO_PWM_P14))
     {
-        bc_pwm_tim_configure(BC_PWM_TIM21_P12_P14, 5, 255);
+        hio_pwm_tim_configure(HIO_PWM_TIM21_P12_P14, 5, 255);
         tim21_initialized = true;
     }
 }
 
-void bc_pwm_enable(bc_pwm_channel_t channel)
+void hio_pwm_enable(hio_pwm_channel_t channel)
 {
-    bc_gpio_init(channel);
+    hio_gpio_init(channel);
 
-    if (channel == BC_PWM_P12 || channel == BC_PWM_P14)
+    if (channel == HIO_PWM_P12 || channel == HIO_PWM_P14)
     {
-        bc_gpio_set_mode(channel, BC_GPIO_MODE_ALTERNATE_6);
+        hio_gpio_set_mode(channel, HIO_GPIO_MODE_ALTERNATE_6);
     }
     else
     {
-        bc_gpio_set_mode(channel, BC_GPIO_MODE_ALTERNATE_2);
+        hio_gpio_set_mode(channel, HIO_GPIO_MODE_ALTERNATE_2);
     }
 }
 
-void bc_pwm_disable(bc_pwm_channel_t channel)
+void hio_pwm_disable(hio_pwm_channel_t channel)
 {
-    bc_gpio_set_mode(channel, BC_GPIO_MODE_ANALOG);
+    hio_gpio_set_mode(channel, HIO_GPIO_MODE_ANALOG);
 }
 
-void bc_pwm_set(bc_pwm_channel_t channel, uint16_t pwm_value)
+void hio_pwm_set(hio_pwm_channel_t channel, uint16_t pwm_value)
 {
     switch (channel)
     {
-        case BC_PWM_P0:
+        case HIO_PWM_P0:
         {
             TIM2->CCR1 = pwm_value;
             break;
         }
-        case BC_PWM_P1:
+        case HIO_PWM_P1:
         {
             TIM2->CCR2 = pwm_value;
             break;
         }
-        case BC_PWM_P2:
+        case HIO_PWM_P2:
         {
             TIM2->CCR3 = pwm_value;
             break;
         }
-        case BC_PWM_P3:
+        case HIO_PWM_P3:
         {
             TIM2->CCR4 = pwm_value;
             break;
         }
-        case BC_PWM_P6:
+        case HIO_PWM_P6:
         {
             TIM3->CCR4 = pwm_value;
             break;
         }
-        case BC_PWM_P7:
+        case HIO_PWM_P7:
         {
             TIM3->CCR1 = pwm_value;
             break;
         }
-        case BC_PWM_P8:
+        case HIO_PWM_P8:
         {
             TIM3->CCR3 = pwm_value;
             break;
         }
-        case BC_PWM_P12:
+        case HIO_PWM_P12:
         {
             TIM21->CCR2 = pwm_value;
             break;
         }
-        case BC_PWM_P14:
+        case HIO_PWM_P14:
         {
             TIM21->CCR1 = pwm_value;
             break;

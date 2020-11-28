@@ -1,21 +1,21 @@
-#include <bc_ls013b7dh03.h>
-#include <bc_spi.h>
+#include <hio_ls013b7dh03.h>
+#include <hio_spi.h>
 
-#define _BC_LS013B7DH03_VCOM_PERIOD 15000
+#define _HIO_LS013B7DH03_VCOM_PERIOD 15000
 
-static void _bc_ls013b7dh03_task(void *param);
-static bool _bc_ls013b7dh03_spi_transfer(bc_ls013b7dh03_t *self, uint8_t *buffer, size_t length);
-static void _bc_ls013b7dh03_spi_event_handler(bc_spi_event_t event, void *event_param);
-static inline uint8_t _bc_ls013b7dh03_reverse(uint8_t b);
+static void _hio_ls013b7dh03_task(void *param);
+static bool _hio_ls013b7dh03_spi_transfer(hio_ls013b7dh03_t *self, uint8_t *buffer, size_t length);
+static void _hio_ls013b7dh03_spi_event_handler(hio_spi_event_t event, void *event_param);
+static inline uint8_t _hio_ls013b7dh03_reverse(uint8_t b);
 
-void bc_ls013b7dh03_init(bc_ls013b7dh03_t *self, bool (*pin_cs_set)(bool state))
+void hio_ls013b7dh03_init(hio_ls013b7dh03_t *self, bool (*pin_cs_set)(bool state))
 {
     memset(self, 0xff, sizeof(*self));
 
     self->_vcom = 0;
     self->_pin_cs_set = pin_cs_set;
 
-    bc_spi_init(BC_SPI_SPEED_1_MHZ, BC_SPI_MODE_0);
+    hio_spi_init(HIO_SPI_SPEED_1_MHZ, HIO_SPI_MODE_0);
 
     // Address lines
     uint8_t line;
@@ -23,31 +23,31 @@ void bc_ls013b7dh03_init(bc_ls013b7dh03_t *self, bool (*pin_cs_set)(bool state))
     for (line = 0x01, offs = 1; line <= 128; line++, offs += 18)
     {
         // Fill the gate line addresses on the exact place in the buffer
-        self->_framebuffer[offs] = _bc_ls013b7dh03_reverse(line);
+        self->_framebuffer[offs] = _hio_ls013b7dh03_reverse(line);
     }
 
     self->_pin_cs_set(1);
 
-    self->_task_id = bc_scheduler_register(_bc_ls013b7dh03_task, self, _BC_LS013B7DH03_VCOM_PERIOD);
+    self->_task_id = hio_scheduler_register(_hio_ls013b7dh03_task, self, _HIO_LS013B7DH03_VCOM_PERIOD);
 }
 
-bc_gfx_caps_t bc_ls013b7dh03_get_caps(bc_ls013b7dh03_t *self)
+hio_gfx_caps_t hio_ls013b7dh03_get_caps(hio_ls013b7dh03_t *self)
 {
     (void) self;
 
-    static const bc_gfx_caps_t caps = { .width = BC_LS013B7DH03_WIDTH, .height = BC_LS013B7DH03_HEIGHT };
+    static const hio_gfx_caps_t caps = { .width = HIO_LS013B7DH03_WIDTH, .height = HIO_LS013B7DH03_HEIGHT };
 
     return caps;
 }
 
-bool bc_ls013b7dh03_is_ready(bc_ls013b7dh03_t *self)
+bool hio_ls013b7dh03_is_ready(hio_ls013b7dh03_t *self)
 {
     (void) self;
 
-    return bc_spi_is_ready();
+    return hio_spi_is_ready();
 }
 
-void bc_ls013b7dh03_clear(bc_ls013b7dh03_t *self)
+void hio_ls013b7dh03_clear(hio_ls013b7dh03_t *self)
 {
     uint8_t line;
     uint32_t offs;
@@ -61,7 +61,7 @@ void bc_ls013b7dh03_clear(bc_ls013b7dh03_t *self)
     }
 }
 
-void bc_ls013b7dh03_draw_pixel(bc_ls013b7dh03_t *self, int x, int y, uint32_t color)
+void hio_ls013b7dh03_draw_pixel(hio_ls013b7dh03_t *self, int x, int y, uint32_t color)
 {
     // Skip mode byte + addr byte
     uint32_t byteIndex = 2;
@@ -82,7 +82,7 @@ void bc_ls013b7dh03_draw_pixel(bc_ls013b7dh03_t *self, int x, int y, uint32_t co
     }
 }
 
-uint32_t bc_ls013b7dh03_get_pixel(bc_ls013b7dh03_t *self, int x, int y)
+uint32_t hio_ls013b7dh03_get_pixel(hio_ls013b7dh03_t *self, int x, int y)
 {
     // Skip mode byte + addr byte
     uint32_t byteIndex = 2;
@@ -103,9 +103,9 @@ Framebuffer format for updating multiple lines, ideal for later DMA TX:
 ||  M0 M1 M2  DUMMY || ADDR | DATA | DUMMY || ADDR | DATA | DUMMY |
 
 */
-bool bc_ls013b7dh03_update(bc_ls013b7dh03_t *self)
+bool hio_ls013b7dh03_update(hio_ls013b7dh03_t *self)
 {
-    if (bc_spi_is_ready())
+    if (hio_spi_is_ready())
     {
         if (!self->_pin_cs_set(0))
         {
@@ -114,14 +114,14 @@ bool bc_ls013b7dh03_update(bc_ls013b7dh03_t *self)
 
         self->_framebuffer[0] = 0x80 | self->_vcom;
 
-        if (!bc_spi_async_transfer(self->_framebuffer, NULL, BC_LS013B7DH03_FRAMEBUFFER_SIZE, _bc_ls013b7dh03_spi_event_handler, self))
+        if (!hio_spi_async_transfer(self->_framebuffer, NULL, HIO_LS013B7DH03_FRAMEBUFFER_SIZE, _hio_ls013b7dh03_spi_event_handler, self))
         {
             self->_pin_cs_set(1);
 
             return false;
         }
 
-        bc_scheduler_plan_relative(self->_task_id, _BC_LS013B7DH03_VCOM_PERIOD);
+        hio_scheduler_plan_relative(self->_task_id, _HIO_LS013B7DH03_VCOM_PERIOD);
 
         self->_vcom ^= 0x40;
 
@@ -131,45 +131,45 @@ bool bc_ls013b7dh03_update(bc_ls013b7dh03_t *self)
     return false;
 }
 
-const bc_gfx_driver_t *bc_ls013b7dh03_get_driver(void)
+const hio_gfx_driver_t *hio_ls013b7dh03_get_driver(void)
 {
-    static const bc_gfx_driver_t driver =
+    static const hio_gfx_driver_t driver =
     {
-        .is_ready = (bool (*)(void *)) bc_ls013b7dh03_is_ready,
-        .clear = (void (*)(void *)) bc_ls013b7dh03_clear,
-        .draw_pixel = (void (*)(void *, int, int, uint32_t)) bc_ls013b7dh03_draw_pixel,
-        .get_pixel = (uint32_t (*)(void *, int, int)) bc_ls013b7dh03_get_pixel,
-        .update = (bool (*)(void *)) bc_ls013b7dh03_update,
-        .get_caps = (bc_gfx_caps_t (*)(void *)) bc_ls013b7dh03_get_caps
+        .is_ready = (bool (*)(void *)) hio_ls013b7dh03_is_ready,
+        .clear = (void (*)(void *)) hio_ls013b7dh03_clear,
+        .draw_pixel = (void (*)(void *, int, int, uint32_t)) hio_ls013b7dh03_draw_pixel,
+        .get_pixel = (uint32_t (*)(void *, int, int)) hio_ls013b7dh03_get_pixel,
+        .update = (bool (*)(void *)) hio_ls013b7dh03_update,
+        .get_caps = (hio_gfx_caps_t (*)(void *)) hio_ls013b7dh03_get_caps
     };
 
     return &driver;
 }
 
-bool bc_ls013b7dh03_clear_memory_command(bc_ls013b7dh03_t *self)
+bool hio_ls013b7dh03_clear_memory_command(hio_ls013b7dh03_t *self)
 {
     uint8_t spi_data[2] = { 0x20, 0x00 };
 
-    return _bc_ls013b7dh03_spi_transfer(self, spi_data, sizeof(spi_data));
+    return _hio_ls013b7dh03_spi_transfer(self, spi_data, sizeof(spi_data));
 }
 
-static void _bc_ls013b7dh03_task(void *param)
+static void _hio_ls013b7dh03_task(void *param)
 {
-    bc_ls013b7dh03_t *self = (bc_ls013b7dh03_t *) param;
+    hio_ls013b7dh03_t *self = (hio_ls013b7dh03_t *) param;
 
     uint8_t spi_data[2] = {self->_vcom, 0x00};
 
-    if (_bc_ls013b7dh03_spi_transfer(self, spi_data, sizeof(spi_data)))
+    if (_hio_ls013b7dh03_spi_transfer(self, spi_data, sizeof(spi_data)))
     {
         self->_vcom ^= 0x40;
     }
 
-    bc_scheduler_plan_current_from_now(_BC_LS013B7DH03_VCOM_PERIOD);
+    hio_scheduler_plan_current_from_now(_HIO_LS013B7DH03_VCOM_PERIOD);
 }
 
-static bool _bc_ls013b7dh03_spi_transfer(bc_ls013b7dh03_t *self, uint8_t *buffer, size_t length)
+static bool _hio_ls013b7dh03_spi_transfer(hio_ls013b7dh03_t *self, uint8_t *buffer, size_t length)
 {
-    if (!bc_spi_is_ready())
+    if (!hio_spi_is_ready())
     {
         return false;
     }
@@ -179,24 +179,24 @@ static bool _bc_ls013b7dh03_spi_transfer(bc_ls013b7dh03_t *self, uint8_t *buffer
         return false;
     }
 
-    bool spi_state = bc_spi_transfer(buffer, NULL, length);
+    bool spi_state = hio_spi_transfer(buffer, NULL, length);
 
     self->_pin_cs_set(1);
 
     return spi_state;
 }
 
-static void _bc_ls013b7dh03_spi_event_handler(bc_spi_event_t event, void *event_param)
+static void _hio_ls013b7dh03_spi_event_handler(hio_spi_event_t event, void *event_param)
 {
-    bc_ls013b7dh03_t *self = (bc_ls013b7dh03_t *) event_param;
+    hio_ls013b7dh03_t *self = (hio_ls013b7dh03_t *) event_param;
 
-    if (event == BC_SPI_EVENT_DONE)
+    if (event == HIO_SPI_EVENT_DONE)
     {
         self->_pin_cs_set(1);
     }
 }
 
-static inline uint8_t _bc_ls013b7dh03_reverse(uint8_t b)
+static inline uint8_t _hio_ls013b7dh03_reverse(uint8_t b)
 {
    b = (b & 0xf0) >> 4 | (b & 0x0f) << 4;
    b = (b & 0xcc) >> 2 | (b & 0x33) << 2;

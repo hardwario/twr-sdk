@@ -1,37 +1,37 @@
-#ifndef _BC_ONEWIRE_RELAY_H
-#define _BC_ONEWIRE_RELAY_H
+#ifndef _HIO_ONEWIRE_RELAY_H
+#define _HIO_ONEWIRE_RELAY_H
 
-#include <bc_onewire.h>
+#include <hio_onewire.h>
 
-#define BC_ONEWIRE_RELAY_FAMILY_CODE 0x29
+#define HIO_ONEWIRE_RELAY_FAMILY_CODE 0x29
 
-//! @addtogroup bc_onewire_relay bc_onewire_relay
+//! @addtogroup hio_onewire_relay hio_onewire_relay
 //! @brief Driver for HARDWARIO 1-wire relay, chipset: DS2408
 //! @{
 
 typedef enum
 {
-    BC_ONEWIRE_RELAY_CHANNEL_Q1 = 0,
-    BC_ONEWIRE_RELAY_CHANNEL_Q2 = 1,
-    BC_ONEWIRE_RELAY_CHANNEL_Q3 = 2,
-    BC_ONEWIRE_RELAY_CHANNEL_Q4 = 3,
-    BC_ONEWIRE_RELAY_CHANNEL_Q5 = 4,
-    BC_ONEWIRE_RELAY_CHANNEL_Q6 = 5,
-    BC_ONEWIRE_RELAY_CHANNEL_Q7 = 6,
-    BC_ONEWIRE_RELAY_CHANNEL_Q8 = 7
+    HIO_ONEWIRE_RELAY_CHANNEL_Q1 = 0,
+    HIO_ONEWIRE_RELAY_CHANNEL_Q2 = 1,
+    HIO_ONEWIRE_RELAY_CHANNEL_Q3 = 2,
+    HIO_ONEWIRE_RELAY_CHANNEL_Q4 = 3,
+    HIO_ONEWIRE_RELAY_CHANNEL_Q5 = 4,
+    HIO_ONEWIRE_RELAY_CHANNEL_Q6 = 5,
+    HIO_ONEWIRE_RELAY_CHANNEL_Q7 = 6,
+    HIO_ONEWIRE_RELAY_CHANNEL_Q8 = 7
 
-} bc_onewire_relay_channel_t;
+} hio_onewire_relay_channel_t;
 
 //! @brief HARDWARIO 1-wire relay instance
 
 typedef struct
 {
     uint64_t _device_number;
-    bc_onewire_t *_onewire;
+    hio_onewire_t *_onewire;
     uint8_t _state;
     bool _state_valid;
 
-} bc_onewire_relay_t;
+} hio_onewire_relay_t;
 
 //! @brief Initialize relay
 //! @param[in] self Instance
@@ -39,7 +39,7 @@ typedef struct
 //! @return true On success
 //! @return false On failure
 
-bool bc_onewire_relay_init(bc_onewire_relay_t *self, bc_onewire_t *onewire, uint64_t device_number);
+bool hio_onewire_relay_init(hio_onewire_relay_t *self, hio_onewire_t *onewire, uint64_t device_number);
 
 //! @brief Set relay to specified state
 //! @param[in] self Instance
@@ -48,7 +48,7 @@ bool bc_onewire_relay_init(bc_onewire_relay_t *self, bc_onewire_t *onewire, uint
 //! @return true On success
 //! @return false On failure
 
-bool bc_onewire_relay_set_state(bc_onewire_relay_t *self, bc_onewire_relay_channel_t relay_channel, bool state);
+bool hio_onewire_relay_set_state(hio_onewire_relay_t *self, hio_onewire_relay_channel_t relay_channel, bool state);
 
 //! @brief Get current relay state
 //! @param[in] self Instance
@@ -57,8 +57,8 @@ bool bc_onewire_relay_set_state(bc_onewire_relay_t *self, bc_onewire_relay_chann
 //! @return true When state is valid
 //! @return false When state is invalid
 
-bool bc_onewire_relay_get_state(bc_onewire_relay_t *self, bc_onewire_relay_channel_t relay_channel, bool *state);
+bool hio_onewire_relay_get_state(hio_onewire_relay_t *self, hio_onewire_relay_channel_t relay_channel, bool *state);
 
 //! @}
 
-#endif // _BC_ONEWIRE_RELAY_H
+#endif // _HIO_ONEWIRE_RELAY_H

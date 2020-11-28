@@ -1,55 +1,55 @@
-#include <bc_rtc.h>
-#include <bc_irq.h>
+#include <hio_rtc.h>
+#include <hio_irq.h>
 #include <stm32l0xx.h>
 
-#define _BC_RTC_LEAP_YEAR(year) ((((year) % 4 == 0) && ((year) % 100 != 0)) || ((year) % 400 == 0))
-#define _BC_RTC_DAYS_IN_YEAR(x) _BC_RTC_LEAP_YEAR(x) ? 366 : 365
-#define _BC_RTC_OFFSET_YEAR 1970
-#define _BC_RTC_SECONDS_PER_DAY 86400
-#define _BC_RTC_SECONDS_PER_HOUR 3600
-#define _BC_RTC_SECONDS_PER_MINUTE 60
+#define _HIO_RTC_LEAP_YEAR(year) ((((year) % 4 == 0) && ((year) % 100 != 0)) || ((year) % 400 == 0))
+#define _HIO_RTC_DAYS_IN_YEAR(x) _HIO_RTC_LEAP_YEAR(x) ? 366 : 365
+#define _HIO_RTC_OFFSET_YEAR 1970
+#define _HIO_RTC_SECONDS_PER_DAY 86400
+#define _HIO_RTC_SECONDS_PER_HOUR 3600
+#define _HIO_RTC_SECONDS_PER_MINUTE 60
 
 // Days in a month
-uint8_t _bc_rtc_months[2][12] =
+uint8_t _hio_rtc_months[2][12] =
     {
         {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}, // Not leap year
         {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}  // Leap year
 };
 
-void bc_rtc_init(void)
+void hio_rtc_init(void)
 {
 }
 
-uint32_t bc_rtc_rtc_to_timestamp(bc_rtc_t *rtc)
+uint32_t hio_rtc_rtc_to_timestamp(hio_rtc_t *rtc)
 {
     uint32_t days = 0, seconds = 0;
     uint16_t i;
     // Year is below offset year
-    if (rtc->year < _BC_RTC_OFFSET_YEAR)
+    if (rtc->year < _HIO_RTC_OFFSET_YEAR)
     {
         return 0;
     }
     // Days in back years
-    for (i = _BC_RTC_OFFSET_YEAR; i < rtc->year; i++)
+    for (i = _HIO_RTC_OFFSET_YEAR; i < rtc->year; i++)
     {
-        days += _BC_RTC_DAYS_IN_YEAR(i);
+        days += _HIO_RTC_DAYS_IN_YEAR(i);
     }
     // Days in current year
     for (i = 1; i < rtc->month; i++)
     {
-        days += _bc_rtc_months[_BC_RTC_LEAP_YEAR(rtc->year)][i - 1];
+        days += _hio_rtc_months[_HIO_RTC_LEAP_YEAR(rtc->year)][i - 1];
     }
     // Day starts with 1
     days += rtc->date - 1;
-    seconds = days * _BC_RTC_SECONDS_PER_DAY;
-    seconds += rtc->hours * _BC_RTC_SECONDS_PER_HOUR;
-    seconds += rtc->minutes * _BC_RTC_SECONDS_PER_MINUTE;
+    seconds = days * _HIO_RTC_SECONDS_PER_DAY;
+    seconds += rtc->hours * _HIO_RTC_SECONDS_PER_HOUR;
+    seconds += rtc->minutes * _HIO_RTC_SECONDS_PER_MINUTE;
     seconds += rtc->seconds;
 
     return seconds;
 }
 
-void bc_rtc_get_date_time(bc_rtc_t *rtc)
+void hio_rtc_get_date_time(hio_rtc_t *rtc)
 {
     uint32_t unix;
 
@@ -70,11 +70,11 @@ void bc_rtc_get_date_time(bc_rtc_t *rtc)
     rtc->week_day = (dr & RTC_DR_WDU_Msk) >> RTC_DR_WDU_Pos;
 
     // Calculate unix offset
-    unix = bc_rtc_rtc_to_timestamp(rtc);
+    unix = hio_rtc_rtc_to_timestamp(rtc);
     rtc->timestamp = unix;
 }
 
-bool bc_rtc_set_date_time(bc_rtc_t *rtc)
+bool hio_rtc_set_date_time(hio_rtc_t *rtc)
 {
     if (rtc->year < 2000 || rtc->year > 2099)
     {

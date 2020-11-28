@@ -1,36 +1,36 @@
-#include <bc_tick.h>
-#include <bc_irq.h>
+#include <hio_tick.h>
+#include <hio_irq.h>
 #include <stm32l0xx.h>
 
-static volatile bc_tick_t _bc_tick_counter = 0;
+static volatile hio_tick_t _hio_tick_counter = 0;
 
-bc_tick_t bc_tick_get(void)
+hio_tick_t hio_tick_get(void)
 {
-    bc_tick_t tick;
+    hio_tick_t tick;
 
     // Disable interrupts
-    bc_irq_disable();
+    hio_irq_disable();
 
     // Get current tick counter
-    tick = _bc_tick_counter;
+    tick = _hio_tick_counter;
 
     // Enable interrupts
-    bc_irq_enable();
+    hio_irq_enable();
 
     return tick;
 }
 
-void bc_tick_wait(bc_tick_t delay)
+void hio_tick_wait(hio_tick_t delay)
 {
-    bc_tick_t timeout = bc_tick_get() + delay;
+    hio_tick_t timeout = hio_tick_get() + delay;
 
-    while (bc_tick_get() < timeout)
+    while (hio_tick_get() < timeout)
     {
         continue;
     }
 }
 
-void bc_tick_increment_irq(bc_tick_t delta)
+void hio_tick_increment_irq(hio_tick_t delta)
 {
-    _bc_tick_counter += delta;
+    _hio_tick_counter += delta;
 }

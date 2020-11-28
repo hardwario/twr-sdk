@@ -1,10 +1,10 @@
-#ifndef _BC_MPL3115A2_H
-#define _BC_MPL3115A2_H
+#ifndef _HIO_MPL3115A2_H
+#define _HIO_MPL3115A2_H
 
-#include <bc_i2c.h>
-#include <bc_scheduler.h>
+#include <hio_i2c.h>
+#include <hio_scheduler.h>
 
-//! @addtogroup bc_mpl3115a2 bc_mpl3115a2
+//! @addtogroup hio_mpl3115a2 hio_mpl3115a2
 //! @brief Driver for MPL3115A2 pressure/altitude sensor
 //! @{
 
@@ -13,43 +13,43 @@
 typedef enum
 {
     //! @brief Error event
-    BC_MPL3115A2_EVENT_ERROR = 0,
+    HIO_MPL3115A2_EVENT_ERROR = 0,
 
     //! @brief Update event
-    BC_MPL3115A2_EVENT_UPDATE = 1
+    HIO_MPL3115A2_EVENT_UPDATE = 1
 
-} bc_mpl3115a2_event_t;
+} hio_mpl3115a2_event_t;
 
 //! @brief MPL3115A2 instance
 
-typedef struct bc_mpl3115a2_t bc_mpl3115a2_t;
+typedef struct hio_mpl3115a2_t hio_mpl3115a2_t;
 
 //! @cond
 
 typedef enum
 {
-    BC_MPL3115A2_STATE_ERROR = -1,
-    BC_MPL3115A2_STATE_INITIALIZE = 0,
-    BC_MPL3115A2_STATE_MEASURE_ALTITUDE = 1,
-    BC_MPL3115A2_STATE_READ_ALTITUDE = 2,
-    BC_MPL3115A2_STATE_MEASURE_PRESSURE = 3,
-    BC_MPL3115A2_STATE_READ_PRESSURE = 4,
-    BC_MPL3115A2_STATE_UPDATE = 5
+    HIO_MPL3115A2_STATE_ERROR = -1,
+    HIO_MPL3115A2_STATE_INITIALIZE = 0,
+    HIO_MPL3115A2_STATE_MEASURE_ALTITUDE = 1,
+    HIO_MPL3115A2_STATE_READ_ALTITUDE = 2,
+    HIO_MPL3115A2_STATE_MEASURE_PRESSURE = 3,
+    HIO_MPL3115A2_STATE_READ_PRESSURE = 4,
+    HIO_MPL3115A2_STATE_UPDATE = 5
 
-} bc_mpl3115a2_state_t;
+} hio_mpl3115a2_state_t;
 
-struct bc_mpl3115a2_t
+struct hio_mpl3115a2_t
 {
-    bc_i2c_channel_t _i2c_channel;
+    hio_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
-    bc_scheduler_task_id_t _task_id_interval;
-    bc_scheduler_task_id_t _task_id_measure;
-    void (*_event_handler)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t, void *);
+    hio_scheduler_task_id_t _task_id_interval;
+    hio_scheduler_task_id_t _task_id_measure;
+    void (*_event_handler)(hio_mpl3115a2_t *, hio_mpl3115a2_event_t, void *);
     void *_event_param;
     bool _measurement_active;
-    bc_tick_t _update_interval;
-    bc_mpl3115a2_state_t _state;
-    bc_tick_t _tick_ready;
+    hio_tick_t _update_interval;
+    hio_mpl3115a2_state_t _state;
+    hio_tick_t _tick_ready;
     bool _altitude_valid;
     bool _pressure_valid;
     uint8_t _reg_out_p_msb_altitude;
@@ -71,27 +71,27 @@ struct bc_mpl3115a2_t
 //! @param[in] i2c_channel I2C channel
 //! @param[in] i2c_address I2C device address
 
-void bc_mpl3115a2_init(bc_mpl3115a2_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
+void hio_mpl3115a2_init(hio_mpl3115a2_t *self, hio_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address
 //! @param[in] event_param Optional event parameter (can be NULL)
 
-void bc_mpl3115a2_set_event_handler(bc_mpl3115a2_t *self, void (*event_handler)(bc_mpl3115a2_t *, bc_mpl3115a2_event_t, void *), void *event_param);
+void hio_mpl3115a2_set_event_handler(hio_mpl3115a2_t *self, void (*event_handler)(hio_mpl3115a2_t *, hio_mpl3115a2_event_t, void *), void *event_param);
 
 //! @brief Set measurement interval
 //! @param[in] self Instance
 //! @param[in] interval Measurement interval
 
-void bc_mpl3115a2_set_update_interval(bc_mpl3115a2_t *self, bc_tick_t interval);
+void hio_mpl3115a2_set_update_interval(hio_mpl3115a2_t *self, hio_tick_t interval);
 
 //! @brief Start measurement manually
 //! @param[in] self Instance
 //! @return true On success
 //! @return false When other measurement is in progress
 
-bool bc_mpl3115a2_measure(bc_mpl3115a2_t *self);
+bool hio_mpl3115a2_measure(hio_mpl3115a2_t *self);
 
 //! @brief Get measured altitude in meters
 //! @param[in] self Instance
@@ -99,7 +99,7 @@ bool bc_mpl3115a2_measure(bc_mpl3115a2_t *self);
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_mpl3115a2_get_altitude_meter(bc_mpl3115a2_t *self, float *meter);
+bool hio_mpl3115a2_get_altitude_meter(hio_mpl3115a2_t *self, float *meter);
 
 //! @brief Get measured pressured in Pascal
 //! @param[in] self Instance
@@ -107,8 +107,8 @@ bool bc_mpl3115a2_get_altitude_meter(bc_mpl3115a2_t *self, float *meter);
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_mpl3115a2_get_pressure_pascal(bc_mpl3115a2_t *self, float *pascal);
+bool hio_mpl3115a2_get_pressure_pascal(hio_mpl3115a2_t *self, float *pascal);
 
 //! @}
 
-#endif // _BC_MPL3115A2_H
+#endif // _HIO_MPL3115A2_H

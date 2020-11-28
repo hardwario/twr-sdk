@@ -1,47 +1,47 @@
-#include <bc_module_power.h>
-#include <bc_scheduler.h>
-#include <bc_gpio.h>
-#include <bc_ws2812b.h>
+#include <hio_module_power.h>
+#include <hio_scheduler.h>
+#include <hio_gpio.h>
+#include <hio_ws2812b.h>
 
-#define BC_MODULE_POWER_PIN_RELAY BC_GPIO_P0
+#define HIO_MODULE_POWER_PIN_RELAY HIO_GPIO_P0
 
-static uint32_t _bc_module_power_led_strip_dma_buffer_rgbw_144[144 * 4 * 2];
-static uint32_t _bc_module_power_led_strip_dma_buffer_rgb_150[150 * 3 * 2];
+static uint32_t _hio_module_power_led_strip_dma_buffer_rgbw_144[144 * 4 * 2];
+static uint32_t _hio_module_power_led_strip_dma_buffer_rgb_150[150 * 3 * 2];
 
-const bc_led_strip_buffer_t bc_module_power_led_strip_buffer_rgbw_144 =
+const hio_led_strip_buffer_t hio_module_power_led_strip_buffer_rgbw_144 =
 {
-    .type = BC_LED_STRIP_TYPE_RGBW,
+    .type = HIO_LED_STRIP_TYPE_RGBW,
     .count = 144,
-    .buffer = _bc_module_power_led_strip_dma_buffer_rgbw_144
+    .buffer = _hio_module_power_led_strip_dma_buffer_rgbw_144
 };
 
-const bc_led_strip_buffer_t bc_module_power_led_strip_buffer_rgb_150 =
+const hio_led_strip_buffer_t hio_module_power_led_strip_buffer_rgb_150 =
 {
-    .type = BC_LED_STRIP_TYPE_RGB,
+    .type = HIO_LED_STRIP_TYPE_RGB,
     .count = 150,
-    .buffer = _bc_module_power_led_strip_dma_buffer_rgb_150
+    .buffer = _hio_module_power_led_strip_dma_buffer_rgb_150
 };
 
 #if LED_STRIP_SWAP_RG == 0
 
-const bc_led_strip_driver_t bc_module_power_led_strip_driver =
+const hio_led_strip_driver_t hio_module_power_led_strip_driver =
 {
-    .init = bc_ws2812b_init,
-    .write = bc_ws2812b_write,
-    .set_pixel = bc_ws2812b_set_pixel_from_uint32,
-    .set_pixel_rgbw = bc_ws2812b_set_pixel_from_rgb,
-    .is_ready = bc_ws2812b_is_ready
+    .init = hio_ws2812b_init,
+    .write = hio_ws2812b_write,
+    .set_pixel = hio_ws2812b_set_pixel_from_uint32,
+    .set_pixel_rgbw = hio_ws2812b_set_pixel_from_rgb,
+    .is_ready = hio_ws2812b_is_ready
 };
 
 #else
 
-const bc_led_strip_driver_t bc_module_power_led_strip_driver =
+const hio_led_strip_driver_t hio_module_power_led_strip_driver =
 {
-    .init = bc_ws2812b_init,
-    .write = bc_ws2812b_write,
-    .set_pixel = bc_ws2812b_set_pixel_from_uint32_swap_rg,
-    .set_pixel_rgbw = bc_ws2812b_set_pixel_from_rgb_swap_rg,
-    .is_ready = bc_ws2812b_is_ready
+    .init = hio_ws2812b_init,
+    .write = hio_ws2812b_write,
+    .set_pixel = hio_ws2812b_set_pixel_from_uint32_swap_rg,
+    .set_pixel_rgbw = hio_ws2812b_set_pixel_from_rgb_swap_rg,
+    .is_ready = hio_ws2812b_is_ready
 };
 
 #endif
@@ -54,29 +54,29 @@ static struct
 
     } relay;
 
-} _bc_module_power;
+} _hio_module_power;
 
-void bc_module_power_init(void)
+void hio_module_power_init(void)
 {
-    memset(&_bc_module_power, 0, sizeof(_bc_module_power));
+    memset(&_hio_module_power, 0, sizeof(_hio_module_power));
 
-    bc_gpio_init(BC_MODULE_POWER_PIN_RELAY);
-    bc_gpio_set_mode(BC_MODULE_POWER_PIN_RELAY, BC_GPIO_MODE_OUTPUT);
+    hio_gpio_init(HIO_MODULE_POWER_PIN_RELAY);
+    hio_gpio_set_mode(HIO_MODULE_POWER_PIN_RELAY, HIO_GPIO_MODE_OUTPUT);
 }
 
-void bc_module_power_relay_set_state(bool state)
+void hio_module_power_relay_set_state(bool state)
 {
-    _bc_module_power.relay.on = state;
+    _hio_module_power.relay.on = state;
 
-    bc_gpio_set_output(BC_MODULE_POWER_PIN_RELAY, _bc_module_power.relay.on ? 1 : 0);
+    hio_gpio_set_output(HIO_MODULE_POWER_PIN_RELAY, _hio_module_power.relay.on ? 1 : 0);
 }
 
-bool bc_module_power_relay_get_state(void)
+bool hio_module_power_relay_get_state(void)
 {
-    return _bc_module_power.relay.on;
+    return _hio_module_power.relay.on;
 }
 
-const bc_led_strip_driver_t *bc_module_power_get_led_strip_driver(void)
+const hio_led_strip_driver_t *hio_module_power_get_led_strip_driver(void)
 {
-    return &bc_module_power_led_strip_driver;
+    return &hio_module_power_led_strip_driver;
 }

@@ -1,80 +1,80 @@
-#include <bc_onewire_gpio.h>
-#include <bc_system.h>
-#include <bc_timer.h>
-#include <bc_irq.h>
+#include <hio_onewire_gpio.h>
+#include <hio_system.h>
+#include <hio_timer.h>
+#include <hio_irq.h>
 #include <stm32l0xx.h>
 
-static bool _bc_onewire_gpio_init(void *ctx);
-static bool _bc_onewire_gpio_enable(void *ctx);
-static bool _bc_onewire_gpio_disable(void *ctx);
-static bool _bc_onewire_gpio_reset(void *ctx);
-static void _bc_onewire_gpio_write_bit(void *ctx, uint8_t bit);
-static uint8_t _bc_onewire_gpio_read_bit(void *ctx);
-static void _bc_onewire_gpio_write_byte(void *ctx, uint8_t byte);
-static uint8_t _bc_onewire_gpio_read_byte(void *ctx);
-static bool _bc_onewire_gpio_search_next(void *ctx, bc_onewire_t *onewire, uint64_t *device_number);
+static bool _hio_onewire_gpio_init(void *ctx);
+static bool _hio_onewire_gpio_enable(void *ctx);
+static bool _hio_onewire_gpio_disable(void *ctx);
+static bool _hio_onewire_gpio_reset(void *ctx);
+static void _hio_onewire_gpio_write_bit(void *ctx, uint8_t bit);
+static uint8_t _hio_onewire_gpio_read_bit(void *ctx);
+static void _hio_onewire_gpio_write_byte(void *ctx, uint8_t byte);
+static uint8_t _hio_onewire_gpio_read_byte(void *ctx);
+static bool _hio_onewire_gpio_search_next(void *ctx, hio_onewire_t *onewire, uint64_t *device_number);
 
-static const bc_onewire_driver_t _bc_onewire_gpio_driver =
+static const hio_onewire_driver_t _hio_onewire_gpio_driver =
 {
-    .init = _bc_onewire_gpio_init,
-    .enable = _bc_onewire_gpio_enable,
-    .disable = _bc_onewire_gpio_disable,
-    .reset = _bc_onewire_gpio_reset,
-    .write_bit = _bc_onewire_gpio_write_bit,
-    .read_bit = _bc_onewire_gpio_read_bit,
-    .write_byte = _bc_onewire_gpio_write_byte,
-    .read_byte = _bc_onewire_gpio_read_byte,
-    .search_next = _bc_onewire_gpio_search_next
+    .init = _hio_onewire_gpio_init,
+    .enable = _hio_onewire_gpio_enable,
+    .disable = _hio_onewire_gpio_disable,
+    .reset = _hio_onewire_gpio_reset,
+    .write_bit = _hio_onewire_gpio_write_bit,
+    .read_bit = _hio_onewire_gpio_read_bit,
+    .write_byte = _hio_onewire_gpio_write_byte,
+    .read_byte = _hio_onewire_gpio_read_byte,
+    .search_next = _hio_onewire_gpio_search_next
 };
 
-void bc_onewire_gpio_init(bc_onewire_t *onewire, bc_gpio_channel_t channel)
+void hio_onewire_gpio_init(hio_onewire_t *onewire, hio_gpio_channel_t channel)
 {
-    bc_onewire_init(onewire, &_bc_onewire_gpio_driver, (void *) channel);
+    hio_onewire_init(onewire, &_hio_onewire_gpio_driver, (void *) channel);
 }
 
-const bc_onewire_driver_t *bc_onewire_gpio_det_driver(void)
+const hio_onewire_driver_t *hio_onewire_gpio_det_driver(void)
 {
-    return &_bc_onewire_gpio_driver;
+    return &_hio_onewire_gpio_driver;
 }
 
-static bool _bc_onewire_gpio_init(void *ctx)
+static bool _hio_onewire_gpio_init(void *ctx)
 {
-    bc_gpio_channel_t channel = (bc_gpio_channel_t) ctx;
+    hio_gpio_channel_t channel = (hio_gpio_channel_t) ctx;
 
-    bc_gpio_init(channel);
+    hio_gpio_init(channel);
 
-    bc_gpio_set_pull(channel, BC_GPIO_PULL_NONE);
+    hio_gpio_set_pull(channel, HIO_GPIO_PULL_NONE);
 
-    bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
+    hio_gpio_set_mode(channel, HIO_GPIO_MODE_INPUT);
 
     return true;
 }
 
-static bool _bc_onewire_gpio_enable(void *ctx)
+static bool _hio_onewire_gpio_enable(void *ctx)
 {
     (void) ctx;
-    bc_system_pll_enable();
-    bc_timer_init();
-    bc_timer_start();
+    hio_system_pll_enable();
+    hio_timer_init();
+    hio_timer_start();
     return true;
 }
 
-static bool _bc_onewire_gpio_disable(void *ctx)
+static bool _hio_onewire_gpio_disable(void *ctx)
 {
     (void) ctx;
-    bc_timer_stop();
-    bc_system_pll_disable();
+    hio_timer_stop();
+    hio_system_pll_disable();
     return true;
 }
 
-static bool _bc_onewire_gpio_reset(void *ctx)
+static bool _hio_onewire_gpio_reset(void *ctx)
 {
-    bc_gpio_channel_t channel = (bc_gpio_channel_t) ctx;
+    hio_gpio_channel_t channel = (hio_gpio_channel_t) ctx;
 
     int i;
     uint8_t retries = 125;
 
-    bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
+    hio_gpio_set_mode(channel, HIO_GPIO_MODE_INPUT);
 
     do
     {
@@ -82,16 +82,16 @@ static bool _bc_onewire_gpio_reset(void *ctx)
         {
             return false;
         }
-        bc_timer_delay(2);
+        hio_timer_delay(2);
     }
-    while (bc_gpio_get_input(channel) == 0);
+    while (hio_gpio_get_input(channel) == 0);
 
-    bc_gpio_set_output(channel, 0);
-    bc_gpio_set_mode(channel, BC_GPIO_MODE_OUTPUT);
+    hio_gpio_set_output(channel, 0);
+    hio_gpio_set_mode(channel, HIO_GPIO_MODE_OUTPUT);
 
-    bc_timer_delay(480);
+    hio_timer_delay(480);
 
-    bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
+    hio_gpio_set_mode(channel, HIO_GPIO_MODE_INPUT);
 
     // Some devices responds little bit later than expected 70us, be less strict in timing...
     // Low state of data line (presence detect) should be definitely low between 60us and 75us from now
@@ -103,101 +103,101 @@ static bool _bc_onewire_gpio_reset(void *ctx)
     //     ^     ^     ^      ^     ^
     //     now   15    60     75    300  us
     //
-    bc_timer_delay(60);
+    hio_timer_delay(60);
     retries = 4;
     do {
-        i = bc_gpio_get_input(channel);
-        bc_timer_delay(4);
+        i = hio_gpio_get_input(channel);
+        hio_timer_delay(4);
     }
     while (i && --retries);
-    bc_timer_delay(retries * 4);
-    //bc_log_debug("retries=%d",retries);
+    hio_timer_delay(retries * 4);
+    //hio_log_debug("retries=%d",retries);
 
-    bc_timer_delay(410);
+    hio_timer_delay(410);
 
     return i == 0;
 }
 
-static void _bc_onewire_gpio_write_bit(void *ctx, uint8_t bit)
+static void _hio_onewire_gpio_write_bit(void *ctx, uint8_t bit)
 {
-    bc_gpio_channel_t channel = (bc_gpio_channel_t) ctx;
+    hio_gpio_channel_t channel = (hio_gpio_channel_t) ctx;
 
-    bc_gpio_set_output(channel, 0);
-    bc_gpio_set_mode(channel, BC_GPIO_MODE_OUTPUT);
+    hio_gpio_set_output(channel, 0);
+    hio_gpio_set_mode(channel, HIO_GPIO_MODE_OUTPUT);
 
     if (bit)
     {
-        bc_irq_disable();
+        hio_irq_disable();
 
-        bc_timer_delay(3);
+        hio_timer_delay(3);
 
-        bc_irq_enable();
+        hio_irq_enable();
 
-        bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
+        hio_gpio_set_mode(channel, HIO_GPIO_MODE_INPUT);
 
-        bc_timer_delay(60);
+        hio_timer_delay(60);
     }
     else
     {
-        bc_timer_delay(55);
+        hio_timer_delay(55);
 
-        bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
+        hio_gpio_set_mode(channel, HIO_GPIO_MODE_INPUT);
 
-        bc_timer_delay(8);
+        hio_timer_delay(8);
     }
 }
 
-static uint8_t _bc_onewire_gpio_read_bit(void *ctx)
+static uint8_t _hio_onewire_gpio_read_bit(void *ctx)
 {
-    bc_gpio_channel_t channel = (bc_gpio_channel_t) ctx;
+    hio_gpio_channel_t channel = (hio_gpio_channel_t) ctx;
 
     uint8_t bit = 0;
 
-    bc_gpio_set_output(channel, 0);
+    hio_gpio_set_output(channel, 0);
 
-    bc_gpio_set_mode(channel, BC_GPIO_MODE_OUTPUT);
+    hio_gpio_set_mode(channel, HIO_GPIO_MODE_OUTPUT);
 
-    bc_irq_disable();
+    hio_irq_disable();
 
-    bc_timer_delay(3);
+    hio_timer_delay(3);
 
-    bc_irq_enable();
+    hio_irq_enable();
 
-    bc_gpio_set_mode(channel, BC_GPIO_MODE_INPUT);
+    hio_gpio_set_mode(channel, HIO_GPIO_MODE_INPUT);
 
-    bc_irq_disable();
+    hio_irq_disable();
 
-    bc_timer_delay(8);
+    hio_timer_delay(8);
 
-    bc_irq_enable();
+    hio_irq_enable();
 
-    bit = bc_gpio_get_input(channel);
+    bit = hio_gpio_get_input(channel);
 
-    bc_timer_delay(50);
+    hio_timer_delay(50);
 
     return bit;
 }
 
-static void _bc_onewire_gpio_write_byte(void *ctx, uint8_t byte)
+static void _hio_onewire_gpio_write_byte(void *ctx, uint8_t byte)
 {
     for (uint8_t i = 0; i < 8; i++)
     {
-        _bc_onewire_gpio_write_bit(ctx, byte & 0x01);
+        _hio_onewire_gpio_write_bit(ctx, byte & 0x01);
         byte >>= 1;
     }
 }
 
-static uint8_t _bc_onewire_gpio_read_byte(void *ctx)
+static uint8_t _hio_onewire_gpio_read_byte(void *ctx)
 {
     uint8_t byte = 0;
     for (uint8_t i = 0; i < 8; i++)
     {
-        byte |= (_bc_onewire_gpio_read_bit(ctx) << i);
+        byte |= (_hio_onewire_gpio_read_bit(ctx) << i);
     }
     return byte;
 }
 
-static bool _bc_onewire_gpio_search_next(void *ctx, bc_onewire_t *onewire, uint64_t *device_number)
+static bool _hio_onewire_gpio_search_next(void *ctx, hio_onewire_t *onewire, uint64_t *device_number)
 {
     bool search_result = false;
     uint8_t id_bit_number;
@@ -211,19 +211,19 @@ static bool _bc_onewire_gpio_search_next(void *ctx, bc_onewire_t *onewire, uint6
     rom_byte_number = 0;
     rom_byte_mask = 1;
 
-    if (!_bc_onewire_gpio_reset(ctx))
+    if (!_hio_onewire_gpio_reset(ctx))
     {
         return false;
     }
 
     // issue the search command
-    _bc_onewire_gpio_write_byte(ctx, 0xf0);
+    _hio_onewire_gpio_write_byte(ctx, 0xf0);
 
     // loop to do the search
     do
     {
-        id_bit = _bc_onewire_gpio_read_bit(ctx);
-        cmp_id_bit = _bc_onewire_gpio_read_bit(ctx);
+        id_bit = _hio_onewire_gpio_read_bit(ctx);
+        cmp_id_bit = _hio_onewire_gpio_read_bit(ctx);
 
         // check for no devices on 1-wire
         if ((id_bit == 1) && (cmp_id_bit == 1))
@@ -275,7 +275,7 @@ static bool _bc_onewire_gpio_search_next(void *ctx, bc_onewire_t *onewire, uint6
             }
 
             /* Serial number search direction write bit */
-            _bc_onewire_gpio_write_bit(ctx, search_direction);
+            _hio_onewire_gpio_write_bit(ctx, search_direction);
 
             /* Increment the byte counter id_bit_number and shift the mask rom_byte_mask */
             id_bit_number++;
@@ -306,7 +306,7 @@ static bool _bc_onewire_gpio_search_next(void *ctx, bc_onewire_t *onewire, uint6
         search_result = !onewire->_last_rom_no[0] ? false : true;
     }
 
-    if (search_result && bc_onewire_crc8(onewire->_last_rom_no, sizeof(onewire->_last_rom_no), 0x00) != 0)
+    if (search_result && hio_onewire_crc8(onewire->_last_rom_no, sizeof(onewire->_last_rom_no), 0x00) != 0)
     {
         search_result = false;
     }
@@ -317,7 +317,7 @@ static bool _bc_onewire_gpio_search_next(void *ctx, bc_onewire_t *onewire, uint6
     }
     else
     {
-        _bc_onewire_gpio_reset(ctx);
+        _hio_onewire_gpio_reset(ctx);
     }
 
     return search_result;

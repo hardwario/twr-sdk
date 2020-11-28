@@ -1,26 +1,26 @@
-#ifndef _BC_WATCHDOG_H
-#define _BC_WATCHDOG_H
+#ifndef _HIO_WATCHDOG_H
+#define _HIO_WATCHDOG_H
 
-//#define BC_WATCHDOG_ENABLED
+//#define HIO_WATCHDOG_ENABLED
 
 typedef enum
 {
-    BC_WATCHDOG_27S = 0,
-    BC_WATCHDOG_13S = 1,
-    BC_WATCHDOG_6S = 2,
-    BC_WATCHDOG_3S = 3,
-    BC_WATCHDOG_1S = 4,
-    BC_WATCHDOG_86MS = 5,
-    BC_WATCHDOG_43MS = 6,
-} bc_watchdog_time_t;
+    HIO_WATCHDOG_27S = 0,
+    HIO_WATCHDOG_13S = 1,
+    HIO_WATCHDOG_6S = 2,
+    HIO_WATCHDOG_3S = 3,
+    HIO_WATCHDOG_1S = 4,
+    HIO_WATCHDOG_86MS = 5,
+    HIO_WATCHDOG_43MS = 6,
+} hio_watchdog_time_t;
 
 //! @brief Initialize Independent Watchdog based on LSI oscillator
-//! @param[in] bc_watchdog_time Time when the watchdog needs to be refreshed
+//! @param[in] hio_watchdog_time Time when the watchdog needs to be refreshed
 
-void bc_watchdog_init(bc_watchdog_time_t bc_watchdog_time);
+void hio_watchdog_init(hio_watchdog_time_t hio_watchdog_time);
 
 //! @brief Refresh watchdog so that the mcu is not restarted
 
-void bc_watchdog_refresh();
+void hio_watchdog_refresh();
 
 #endif

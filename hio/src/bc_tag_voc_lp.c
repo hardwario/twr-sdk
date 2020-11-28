@@ -1,31 +1,31 @@
-#include <bc_tag_voc_lp.h>
+#include <hio_tag_voc_lp.h>
 
-void bc_tag_voc_lp_init(bc_tag_voc_lp_t *self, bc_i2c_channel_t i2c_channel)
+void hio_tag_voc_lp_init(hio_tag_voc_lp_t *self, hio_i2c_channel_t i2c_channel)
 {
-    bc_sgpc3_init(self, i2c_channel, 0x58);
+    hio_sgpc3_init(self, i2c_channel, 0x58);
 }
 
-void bc_tag_voc_lp_set_event_handler(bc_tag_voc_lp_t *self, void (*event_handler)(bc_tag_voc_lp_t *, bc_tag_voc_lp_event_t, void *), void *event_param)
+void hio_tag_voc_lp_set_event_handler(hio_tag_voc_lp_t *self, void (*event_handler)(hio_tag_voc_lp_t *, hio_tag_voc_lp_event_t, void *), void *event_param)
 {
-    bc_sgpc3_set_event_handler(self, (void (*)(bc_sgpc3_t *, bc_sgpc3_event_t, void *)) event_handler, event_param);
+    hio_sgpc3_set_event_handler(self, (void (*)(hio_sgpc3_t *, hio_sgpc3_event_t, void *)) event_handler, event_param);
 }
 
-void bc_tag_voc_lp_set_update_interval(bc_tag_voc_lp_t *self, bc_tick_t interval)
+void hio_tag_voc_lp_set_update_interval(hio_tag_voc_lp_t *self, hio_tick_t interval)
 {
-    bc_sgpc3_set_update_interval(self, interval);
+    hio_sgpc3_set_update_interval(self, interval);
 }
 
-bool bc_tag_voc_lp_measure(bc_tag_voc_lp_t *self)
+bool hio_tag_voc_lp_measure(hio_tag_voc_lp_t *self)
 {
-    return bc_sgpc3_measure(self);
+    return hio_sgpc3_measure(self);
 }
 
-bool bc_tag_voc_lp_get_tvoc_ppb(bc_tag_voc_lp_t *self, uint16_t *ppb)
+bool hio_tag_voc_lp_get_tvoc_ppb(hio_tag_voc_lp_t *self, uint16_t *ppb)
 {
-    return bc_sgpc3_get_tvoc_ppb(self, ppb);
+    return hio_sgpc3_get_tvoc_ppb(self, ppb);
 }
 
-float bc_tag_voc_lp_set_compensation(bc_tag_voc_lp_t *self, float *t_celsius, float *rh_percentage)
+float hio_tag_voc_lp_set_compensation(hio_tag_voc_lp_t *self, float *t_celsius, float *rh_percentage)
 {
-    return bc_sgpc3_set_compensation(self, t_celsius, rh_percentage);
+    return hio_sgpc3_set_compensation(self, t_celsius, rh_percentage);
 }
