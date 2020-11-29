@@ -122,7 +122,7 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
-void bc_usb_cdc_received_data(const void *buffer, size_t length);
+void hio_usb_cdc_received_data(const void *buffer, size_t length);
 
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
 
@@ -263,7 +263,7 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  bc_usb_cdc_received_data(Buf, *Len);
+  hio_usb_cdc_received_data(Buf, *Len);
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   return (USBD_OK);
