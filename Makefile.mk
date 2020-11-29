@@ -167,13 +167,14 @@ OBJ_C = $(SRC_C:%.c=$(OBJ_DIR)/$(TYPE)/%.o)
 OBJ_S = $(SRC_S:%.s=$(OBJ_DIR)/$(TYPE)/%.o)
 OBJ = $(OBJ_C) $(OBJ_S)
 DEP = $(OBJ:%.o=%.d)
+ALLDEP = $(MAKEFILE_LIST)
 
 ################################################################################
 # Debug target                                                                 #
 ################################################################################
 
 .PHONY: debug
-debug:
+debug: $(ALLDEP)
 	$(Q)$(MAKE) .clean-out
 	$(Q)$(MAKE) .obj-debug
 	$(Q)$(MAKE) elf
@@ -185,7 +186,7 @@ debug:
 ################################################################################
 
 .PHONY: release
-release:
+release: $(ALLDEP)
 	$(Q)$(MAKE) clean TYPE=release
 	$(Q)$(MAKE) .obj-release TYPE=release
 	$(Q)$(MAKE) elf TYPE=release
@@ -198,17 +199,17 @@ release:
 ################################################################################
 
 .PHONY: clean
-clean:
+clean: $(ALLDEP)
 	$(Q)$(MAKE) .clean-obj
 	$(Q)$(MAKE) .clean-out
 
 .PHONY: .clean-obj
-.clean-obj:
+.clean-obj: $(ALLDEP)
 	$(Q)$(ECHO) "Removing object directory..."
 	$(Q)rm -rf $(OBJ_DIR)/$(TYPE)
 
 .PHONY: .clean-out
-.clean-out:
+.clean-out: $(ALLDEP)
 	$(Q)$(ECHO) "Clean output ..."
 	$(Q)rm -f "$(ELF)" "$(MAP)" "$(BIN)"
 
@@ -217,15 +218,15 @@ clean:
 ################################################################################
 
 .PHONY: dfu-release
-dfu-release:
+dfu-release: $(ALLDEP)
 	$(Q)$(MAKE) dfu TYPE=release
 
 .PHONY: dfu-debug
-dfu-debug:
+dfu-debug: $(ALLDEP)
 	$(Q)$(MAKE) dfu
 
 .PHONY: dfu
-dfu: $(BIN)
+dfu: $(BIN) $(ALLDEP)
 	$(Q)$(ECHO) "Flashing $(BIN)..."
 	$(Q)$(DFU_UTIL) -d 0483:df11 -a 0 -s 0x08000000:leave -D $(BIN)
 
@@ -234,7 +235,7 @@ dfu: $(BIN)
 ################################################################################
 
 .PHONY: doc
-doc:
+doc: $(ALLDEP)
 	$(Q)$(ECHO) "Generating documentation..."
 	$(Q)sh -c 'cd $(SDK_DIR) && $(DOXYGEN) Doxyfile'
 
@@ -243,7 +244,7 @@ doc:
 ################################################################################
 
 .PHONY: gdb
-gdb: debug
+gdb: debug $(ALLDEP)
 	$(Q)$(ECHO) "Launching GDB debugger..."
 	$(Q)$(GDB) -x $(SDK_DIR)/tools/gdb/gdbinit $(ELF)
 
@@ -252,7 +253,7 @@ gdb: debug
 ################################################################################
 
 .PHONY: ozone
-ozone: debug
+ozone: debug $(ALLDEP)
 	$(Q)$(ECHO) "Launching Ozone debugger..."
 	$(Q)$(OZONE) $(SDK_DIR)/tools/ozone/ozone.jdebug
 
@@ -261,7 +262,7 @@ ozone: debug
 ################################################################################
 
 .PHONY: code
-code:
+code: $(ALLDEP)
 	$(Q)$(ECHO) "Opening project in Visual Code..."
 	$(Q)$(VSCODE) .
 
@@ -270,7 +271,7 @@ code:
 ################################################################################
 
 .PHONY: flash
-flash:
+flash: $(ALLDEP)
 	bcf flash
 
 ################################################################################
@@ -278,7 +279,7 @@ flash:
 ################################################################################
 
 .PHONY: jlink-flash
-jlink-flash:
+jlink-flash: $(ALLDEP)
 ifeq ($(OS),Windows_NT)
 	JLink -device stm32l083cz -CommanderScript $(SDK_DIR)/tools/jlink/flash.jlink
 else
@@ -286,7 +287,7 @@ else
 endif
 
 .PHONY: jlink-gdbserver
-jlink-gdbserver:
+jlink-gdbserver: $(ALLDEP)
 ifeq ($(OS),Windows_NT)
 	JLinkGDBServerCL -singlerun -device stm32l083cz -if swd -speed 4000 -localhostonly -reset
 else
@@ -294,7 +295,7 @@ else
 endif
 
 .PHONY: jlink
-jlink:
+jlink: $(ALLDEP)
 	$(Q)$(MAKE) jlink-flash
 	$(Q)$(MAKE) jlink-gdbserver
 
@@ -303,9 +304,9 @@ jlink:
 ################################################################################
 
 .PHONY: elf
-elf: $(ELF)
+elf: $(ELF) $(ALLDEP)
 
-$(ELF): $(OBJ)
+$(ELF): $(OBJ) $(ALLDEP)
 	$(Q)$(ECHO) "Linking object files..."
 	$(Q)mkdir -p $(OUT_DIR)/$(TYPE)
 	$(Q)$(CC) $(LDFLAGS) $(OBJ) -o $(ELF)
@@ -315,7 +316,7 @@ $(ELF): $(OBJ)
 ################################################################################
 
 .PHONY: size
-size: $(ELF)
+size: $(ELF) $(ALLDEP)
 	$(Q)$(ECHO) "Size of sections:"
 	$(Q)$(SIZE) $(ELF)
 
@@ -324,9 +325,9 @@ size: $(ELF)
 ################################################################################
 
 .PHONY: bin
-bin: $(BIN)
+bin: $(BIN) $(ALLDEP)
 
-$(BIN): $(ELF)
+$(BIN): $(ELF) $(ALLDEP)
 	$(Q)$(ECHO) "Creating $(BIN) from $(ELF)..."
 	$(Q)$(OBJCOPY) -O binary $(ELF) $(BIN)
 	$(Q)rm -f $(OUT).bin
@@ -339,18 +340,18 @@ $(BIN): $(ELF)
 .PHONY: .obj-debug
 .obj-debug: CFLAGS += $(CFLAGS_DEBUG)
 .obj-debug: ASFLAGS += $(ASFLAGS_DEBUG)
-.obj-debug: $(OBJ)
+.obj-debug: $(OBJ) $(ALLDEP)
 
 .PHONY: .obj-release
 .obj-release: CFLAGS += $(CFLAGS_RELEASE)
 .obj-release: ASFLAGS += $(ASFLAGS_RELEASE)
-.obj-release: $(OBJ)
+.obj-release: $(OBJ) $(ALLDEP)
 
 ################################################################################
 # Compile "c" files                                                            #
 ################################################################################
 
-$(OBJ_DIR)/$(TYPE)/%.o: %.c
+$(OBJ_DIR)/$(TYPE)/%.o: %.c $(ALLDEP)
 	$(Q)$(ECHO) "Compiling: $<"
 	$(Q)mkdir -p $(@D)
 	$(Q)$(CC) -MMD -MP -MT "$@ $(@:.o=.d)" -c $(CFLAGS) $(foreach d,$(INC_DIR),-I$d) $< -o $@
@@ -359,7 +360,7 @@ $(OBJ_DIR)/$(TYPE)/%.o: %.c
 # Compile "s" files                                                            #
 ################################################################################
 
-$(OBJ_DIR)/$(TYPE)/%.o: %.s
+$(OBJ_DIR)/$(TYPE)/%.o: %.s $(ALLDEP)
 	$(Q)$(ECHO) "Compiling: $<"
 	$(Q)mkdir -p $(@D)
 	$(Q)$(CC) -MMD -MP -MT "$@ $(@:.o=.d)" -c $(ASFLAGS) $< -o $@
