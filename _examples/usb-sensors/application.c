@@ -7,16 +7,6 @@ Ctrl+P task dfu  to flash MCU with dfu-util
 */
 
 #include <application.h>
-#include <bc_led.h>
-#include <bc_button.h>
-#include <bc_i2c.h>
-#include <bc_tag_temperature.h>
-#include <bc_tag_humidity.h>
-#include <bc_tag_lux_meter.h>
-#include <bc_tag_barometer.h>
-#include <bc_lis2dh12.h>
-
-#include <bc_spirit1.h>
 
 struct
 {

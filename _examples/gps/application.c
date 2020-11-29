@@ -28,6 +28,8 @@ void application_init(void)
 
 void gps_module_event_handler(bc_module_gps_event_t event, void *event_param)
 {
+    (void) event_param;
+
     if (event == BC_MODULE_GPS_EVENT_START)
     {
         bc_led_set_mode(&gps_led_g, BC_LED_MODE_ON);
