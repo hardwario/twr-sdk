@@ -353,7 +353,7 @@ $(BIN): $(ELF)
 $(OBJ_DIR)/$(TYPE)/%.o: %.c
 	$(Q)$(ECHO) "Compiling: $<"
 	$(Q)mkdir -p $(@D)
-	$(Q)$(CC) -MMD -MP -c $(CFLAGS) $(foreach d,$(INC_DIR),-I$d) $< -o $@
+	$(Q)$(CC) -MMD -MP -MT "$@ $(@:.o=.d)" -c $(CFLAGS) $(foreach d,$(INC_DIR),-I$d) $< -o $@
 
 ################################################################################
 # Compile "s" files                                                            #
@@ -362,7 +362,7 @@ $(OBJ_DIR)/$(TYPE)/%.o: %.c
 $(OBJ_DIR)/$(TYPE)/%.o: %.s
 	$(Q)$(ECHO) "Compiling: $<"
 	$(Q)mkdir -p $(@D)
-	$(Q)$(CC) -MMD -MP -c $(ASFLAGS) $< -o $@
+	$(Q)$(CC) -MMD -MP -MT "$@ $(@:.o=.d)" -c $(ASFLAGS) $< -o $@
 
 ################################################################################
 # Include dependencies                                                         #
