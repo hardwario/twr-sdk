@@ -169,6 +169,20 @@ OBJ = $(OBJ_C) $(OBJ_S)
 DEP = $(OBJ:%.o=%.d)
 ALLDEP = $(MAKEFILE_LIST)
 
+# A list of make targets for which dependency files should not be generated.
+# That's generally any target that does not build firmware.
+NODEPS = clean doc gdb ozone code flash jlink-flash jlink-gdbserver jlink
+
+# We only need to generate dependency files if the make target is empty or
+#if it is not one of the targets in NODEPS
+ifeq (,$(MAKECMDGOALS))
+	need_deps=1
+else
+ifneq (,$(filter-out $(NODEPS),$(MAKECMDGOALS)))
+	need_deps=1
+endif
+endif
+
 ################################################################################
 # Debug target                                                                 #
 ################################################################################
@@ -369,7 +383,9 @@ $(OBJ_DIR)/$(TYPE)/%.o: %.s $(ALLDEP)
 # Include dependencies                                                         #
 ################################################################################
 
+ifeq (1,$(need_deps))
 -include $(DEP)
+endif
 
 ################################################################################
 # End of file                                                                  #
