@@ -113,23 +113,23 @@ StatusBytes SdkEvalSpiCommandStrobes(uint8_t cCommandCode);
 StatusBytes SdkEvalSpiWriteFifo(uint8_t cNbBytes, uint8_t* pcBuffer);
 StatusBytes SdkEvalSpiReadFifo(uint8_t cNbBytes, uint8_t* pcBuffer);
 
-#define bc_spirit_status_t SpiritStatus
+#define hio_spirit_status_t SpiritStatus
 
-bc_spirit_status_t bc_spirit1_command(uint8_t command);
-bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t length);
-bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length);
-void bc_spirit1_hal_init(void);
-void bc_spirit1_hal_shutdown_low(void);
-void bc_spirit1_hal_shutdown_high(void);
+hio_spirit_status_t hio_spirit1_command(uint8_t command);
+hio_spirit_status_t hio_spirit1_write(uint8_t address, const void *buffer, size_t length);
+hio_spirit_status_t hio_spirit1_read(uint8_t address, void *buffer, size_t length);
+void hio_spirit1_hal_init(void);
+void hio_spirit1_hal_shutdown_low(void);
+void hio_spirit1_hal_shutdown_high(void);
 
-#define SpiritEnterShutdown                                            bc_spirit1_hal_shutdown_high
-#define SpiritExitShutdown                                             bc_spirit1_hal_shutdown_low
-#define SpiritSpiInit                                                  bc_spirit1_hal_init
-#define SpiritSpiWriteRegisters(cRegAddress, cNbBytes, pcBuffer)       bc_spirit1_write(cRegAddress, pcBuffer, cNbBytes)
-#define SpiritSpiReadRegisters(cRegAddress, cNbBytes, pcBuffer)        bc_spirit1_read(cRegAddress, pcBuffer, cNbBytes)
-#define SpiritSpiCommandStrobes(cCommandCode)                          bc_spirit1_command(cCommandCode)
-#define SpiritSpiWriteLinearFifo(cNbBytes, pcBuffer)                   bc_spirit1_write(0xFF, pcBuffer, cNbBytes)
-#define SpiritSpiReadLinearFifo(cNbBytes, pcBuffer)                    bc_spirit1_read(0xFF, pcBuffer, cNbBytes)
+#define SpiritEnterShutdown                                            hio_spirit1_hal_shutdown_high
+#define SpiritExitShutdown                                             hio_spirit1_hal_shutdown_low
+#define SpiritSpiInit                                                  hio_spirit1_hal_init
+#define SpiritSpiWriteRegisters(cRegAddress, cNbBytes, pcBuffer)       hio_spirit1_write(cRegAddress, pcBuffer, cNbBytes)
+#define SpiritSpiReadRegisters(cRegAddress, cNbBytes, pcBuffer)        hio_spirit1_read(cRegAddress, pcBuffer, cNbBytes)
+#define SpiritSpiCommandStrobes(cCommandCode)                          hio_spirit1_command(cCommandCode)
+#define SpiritSpiWriteLinearFifo(cNbBytes, pcBuffer)                   hio_spirit1_write(0xFF, pcBuffer, cNbBytes)
+#define SpiritSpiReadLinearFifo(cNbBytes, pcBuffer)                    hio_spirit1_read(0xFF, pcBuffer, cNbBytes)
 
 /**
  * @}
