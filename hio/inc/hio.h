@@ -90,7 +90,9 @@
 #include <hio_onewire.h>
 #include <hio_onewire_gpio.h>
 #include <hio_onewire_ds2484.h>
+#include <hio_onewire_relay.h>
 #include <hio_delay.h>
+#include <hio_usb_cdc.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
