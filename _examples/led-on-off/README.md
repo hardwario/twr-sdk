@@ -1,7 +1,7 @@
 # LED On/Off Example
 
 
-This example demonstrates simple use of bc_led and bc_button API.
+This example demonstrates simple use of hio_led and hio_button API.
 
 
 ## Requirements

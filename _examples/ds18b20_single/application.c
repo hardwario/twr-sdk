@@ -20,32 +20,32 @@ DATA- yellow (white)
 
 */
 
-static bc_ds18b20_t ds18b20;
+static hio_ds18b20_t ds18b20;
 
 
-void ds18b20_event_handler(bc_ds18b20_t *self, uint64_t device_address, bc_ds18b20_event_t event, void *param)
+void ds18b20_event_handler(hio_ds18b20_t *self, uint64_t device_address, hio_ds18b20_event_t event, void *param)
 {
     (void) param;
 
     float temperature = NAN;
 
-    if (event == BC_DS18B20_EVENT_UPDATE)
+    if (event == HIO_DS18B20_EVENT_UPDATE)
     {
-        bc_ds18b20_get_temperature_celsius(self, device_address, &temperature);
+        hio_ds18b20_get_temperature_celsius(self, device_address, &temperature);
 
-        bc_log_debug("UPDATE %" PRIx64 " = %0.2f", device_address, temperature);
+        hio_log_debug("UPDATE %" PRIx64 " = %0.2f", device_address, temperature);
     }
     else
     {
-        bc_log_error("%" PRIx64, device_address);
+        hio_log_error("%" PRIx64, device_address);
     }
 }
 
 void application_init(void)
 {
-    bc_log_init(BC_LOG_LEVEL_DEBUG, BC_LOG_TIMESTAMP_ABS);
+    hio_log_init(HIO_LOG_LEVEL_DEBUG, HIO_LOG_TIMESTAMP_ABS);
 
-    bc_ds18b20_init_single(&ds18b20, BC_DS18B20_RESOLUTION_BITS_12);
-    bc_ds18b20_set_event_handler(&ds18b20, ds18b20_event_handler, NULL);
-    bc_ds18b20_set_update_interval(&ds18b20, 5 * 1000);
+    hio_ds18b20_init_single(&ds18b20, HIO_DS18B20_RESOLUTION_BITS_12);
+    hio_ds18b20_set_event_handler(&ds18b20, ds18b20_event_handler, NULL);
+    hio_ds18b20_set_update_interval(&ds18b20, 5 * 1000);
 }

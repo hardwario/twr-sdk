@@ -1,9 +1,9 @@
 #ifndef _APPLICATION_H
 #define _APPLICATION_H
 
-#include <bcl.h>
+#include <hio.h>
 
-void button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param);
+void button_event_handler(hio_button_t *self, hio_button_event_t event, void *event_param);
 
 
 #endif // _APPLICATION_H
