@@ -1167,7 +1167,7 @@ uint8_t *bc_radio_uint16_to_buffer(uint16_t *value, uint8_t *buffer)
         memcpy(buffer, value, sizeof(uint16_t));
     }
 
-    return buffer + sizeof(uint32_t);
+    return buffer + sizeof(uint16_t);
 }
 
 uint8_t *bc_radio_uint32_to_buffer(uint32_t *value, uint8_t *buffer)
