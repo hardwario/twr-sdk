@@ -65,6 +65,7 @@
 #include <hio_module_co2.h>
 #include <hio_module_sensor.h>
 #include <hio_module_infra_grid.h>
+#include <hio_module_x1.h>
 
 // Other
 
