@@ -30,7 +30,6 @@
 #define _HIO_DS2484_CFG_1WS (1<<3) // 1-Wire Speed(0==standard, 1==overdrive)
 
 #define _HIO_DS2484_CFG_DEFAULT (_HIO_DS2484_CFG_APU)
-// #define _HIO_DS2484_PIN_SLPZ (HIO_GPIO_P2)
 
 static bool _hio_ds2484_i2c_read_byte(hio_ds2484_t *self, uint8_t *b);
 static bool _hio_ds2484_i2c_write_byte(hio_ds2484_t *self, const uint8_t b);
@@ -46,20 +45,28 @@ bool hio_ds2484_init(hio_ds2484_t *self, hio_i2c_channel_t i2c_channel)
 
     self->_ready = false;
 
-    // hio_gpio_init(_HIO_DS2484_PIN_SLPZ);
-    // hio_gpio_set_output(_HIO_DS2484_PIN_SLPZ, 0);
-    // hio_gpio_set_mode(_HIO_DS2484_PIN_SLPZ, HIO_GPIO_MODE_OUTPUT);
-
     hio_i2c_init(self->_i2c_channel, HIO_I2C_SPEED_400_KHZ);
 
     return true;
+}
+
+void hio_ds2484_set_slpz_handler(hio_ds2484_t *self, bool (*handler)(void *, bool), void *handler_ctx)
+{
+    self->_set_slpz = handler;
+    self->_set_slpz_ctx = handler_ctx;
 }
 
 void hio_ds2484_enable(hio_ds2484_t *self)
 {
     self->_ready = false;
 
-    // hio_gpio_set_output(_HIO_DS2484_PIN_SLPZ, 1);
+    if (self->_set_slpz != NULL)
+    {
+        if (!self->_set_slpz(self->_set_slpz_ctx, 1))
+        {
+            return;
+        }
+    }
 
     if (!_hio_ds2484_device_reset(self))
     {
@@ -84,7 +91,10 @@ void hio_ds2484_disable(hio_ds2484_t *self)
 {
     hio_ds2484_busy_wait(self);
 
-    // hio_gpio_set_output(_HIO_DS2484_PIN_SLPZ, 0);
+    if (self->_set_slpz != NULL)
+    {
+        self->_set_slpz(self->_set_slpz_ctx, 0);
+    }
 
     self->_ready = false;
 }

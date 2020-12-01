@@ -31,6 +31,8 @@ struct hio_ds2484_t
     uint8_t _status;
     uint8_t _srp;
     hio_i2c_channel_t _i2c_channel;
+    bool (*_set_slpz)(void *, bool);
+    void *_set_slpz_ctx;
 };
 
 //! @endcond
@@ -40,6 +42,8 @@ struct hio_ds2484_t
 //! @param[in] i2c_channel I2C channel
 
 bool hio_ds2484_init(hio_ds2484_t *self, hio_i2c_channel_t i2c_channel);
+
+void hio_ds2484_set_slpz_handler(hio_ds2484_t *self, bool (*handler)(void *, bool), void *handler_ctx);
 
 //! @brief Enable DS2484
 //! @param[in] self Instance
