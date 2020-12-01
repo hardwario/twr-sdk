@@ -4,6 +4,8 @@
 #include <hio_scheduler.h>
 #include <hio_ds28e17.h>
 #include <hio_module_sensor.h>
+#include <hio_module_x1.h>
+#include <hio_onewire.h>
 #include <hio_system.h>
 
 #define _HIO_I2C_TX_TIMEOUT_ADJUST_FACTOR 1.5
@@ -110,9 +112,16 @@ void hio_i2c_init(hio_i2c_channel_t channel, hio_i2c_speed_t speed)
     }
     else if (channel == HIO_I2C_I2C_1W)
     {
-        hio_module_sensor_init();
+        hio_onewire_t *onewire;
 
+        #if HIO_USE_X1_FOR_I2C_1W != 1
+        hio_module_sensor_init();
         hio_module_sensor_onewire_power_up();
+        onewire = hio_module_sensor_get_onewire();
+        #else
+        hio_module_x1_init();
+        onewire = hio_module_x1_get_onewire();
+        #endif
 
         hio_tick_t t_timeout = hio_tick_get() + 500;
 
@@ -121,7 +130,7 @@ void hio_i2c_init(hio_i2c_channel_t channel, hio_i2c_speed_t speed)
             continue;
         }
 
-        hio_ds28e17_init(&ds28e17, hio_module_sensor_get_onewire(), 0x00);
+        hio_ds28e17_init(&ds28e17, onewire, 0x00);
 
         hio_i2c_set_speed(channel, speed);
     }
