@@ -26,6 +26,7 @@ const char *_init_commands[] =
     "AT+CLASS?\r",
     "AT+RX2?\r",
     "AT+NWK?\r",
+    "AT+ADR?\r",
     "AT+DR?\r",
     NULL
 };
@@ -405,6 +406,14 @@ static void _hio_cmwx1zzabz_task(void *param)
                     }
                     response_handled = 1;
                 }
+                else if (strcmp(last_command, "AT+ADR?\r") == 0 && response_valid)
+                {
+                    if ((self->_save_config_mask & 1 << HIO_CMWX1ZZABZ_CONFIG_INDEX_ADAPTIVE_DATARATE) == 0)
+                    {
+                        self->_config.adaptive_datarate = response_string_value[0] == '1';
+                    }
+                    response_handled = 1;
+                }
                 else if (strcmp(last_command, "AT+DR?\r") == 0 && response_valid)
                 {
                     if ((self->_save_config_mask & 1 << HIO_CMWX1ZZABZ_CONFIG_INDEX_DATARATE) == 0)
@@ -609,6 +618,11 @@ static void _hio_cmwx1zzabz_task(void *param)
                     case HIO_CMWX1ZZABZ_CONFIG_INDEX_NWK:
                     {
                         snprintf(self->_command, HIO_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+NWK=%d\r", (int) self->_config.nwk_public);
+                        break;
+                    }
+                    case HIO_CMWX1ZZABZ_CONFIG_INDEX_ADAPTIVE_DATARATE:
+                    {
+                        snprintf(self->_command, HIO_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+ADR=%d\r", self->_config.adaptive_datarate ? 1 : 0);
                         break;
                     }
                     case HIO_CMWX1ZZABZ_CONFIG_INDEX_DATARATE:
@@ -900,6 +914,18 @@ void hio_cmwx1zzabz_set_nwk_public(hio_cmwx1zzabz_t *self, uint8_t public)
 uint8_t hio_cmwx1zzabz_get_nwk_public(hio_cmwx1zzabz_t *self)
 {
     return self->_config.nwk_public;
+}
+
+void hio_cmwx1zzabz_set_adaptive_datarate(hio_cmwx1zzabz_t *self, bool enable)
+{
+    self->_config.adaptive_datarate = enable;
+
+    _hio_cmwx1zzabz_save_config(self, HIO_CMWX1ZZABZ_CONFIG_INDEX_ADAPTIVE_DATARATE);
+}
+
+bool hio_cmwx1zzabz_get_adaptive_datarate(hio_cmwx1zzabz_t *self)
+{
+    return self->_config.adaptive_datarate;
 }
 
 void hio_cmwx1zzabz_set_datarate(hio_cmwx1zzabz_t *self, uint8_t datarate)
