@@ -38,6 +38,7 @@
 #include <bc_cmwx1zzabz.h>
 #include <bc_sam_m8q.h>
 #include <bc_esp8266.h>
+#include <bc_ds2484.h>
 
 // HARDWARIO tags
 
@@ -86,7 +87,10 @@
 #include <bc_base64.h>
 #include <bc_sha256.h>
 #include <bc_ds18b20.h>
-
+#include <bc_onewire.h>
+#include <bc_onewire_gpio.h>
+#include <bc_onewire_ds2484.h>
+#include <bc_delay.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 

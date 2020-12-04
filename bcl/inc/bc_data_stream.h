@@ -31,6 +31,26 @@
             .type=BC_DATA_STREAM_TYPE_INT \
     };
 
+//! @brief Macro for float data stream array declaration
+
+#define BC_DATA_STREAM_FLOAT_ARRAY(NAME, COUNT, NUMBER_OF_SAMPLES) \
+    static float NAME##_feed[(COUNT)][(NUMBER_OF_SAMPLES)]; \
+    static float NAME##_sort[(NUMBER_OF_SAMPLES)]; \
+    static bc_data_stream_buffer_t NAME##_buffer[(COUNT)]; \
+    static bc_data_stream_t NAME[(COUNT)];
+
+//! @brief Macro for float data stream array initialization
+
+#define BC_DATA_STREAM_FLOAT_ARRAY_INIT(NAME, COUNT, MIN_NUMBER_OF_SAMPLES) \
+    for (size_t i = 0; i < (COUNT); i++) \
+    { \
+        NAME##_buffer[i].feed = NAME##_feed[i]; \
+        NAME##_buffer[i].sort = NAME##_sort; \
+        NAME##_buffer[i].number_of_samples = (sizeof(NAME##_feed[i]) / sizeof(float)); \
+        NAME##_buffer[i].type=BC_DATA_STREAM_TYPE_FLOAT; \
+        bc_data_stream_init(&NAME[i], (MIN_NUMBER_OF_SAMPLES), &NAME##_buffer[i]); \
+    }
+
 //! @brief Data stream type
 
 typedef enum

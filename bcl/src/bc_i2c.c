@@ -112,16 +112,7 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
     {
         bc_module_sensor_init();
 
-        if (bc_module_sensor_get_revision() == BC_MODULE_SENSOR_REVISION_R1_1)
-        {
-            bc_module_sensor_set_vdd(1);
-        }
-        else
-        {
-            bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_A, BC_MODULE_SENSOR_PULL_UP_56R);
-        }
-
-        bc_module_sensor_set_pull(BC_MODULE_SENSOR_CHANNEL_B, BC_MODULE_SENSOR_PULL_UP_4K7);
+        bc_module_sensor_onewire_power_up();
 
         bc_tick_t t_timeout = bc_tick_get() + 500;
 
@@ -130,7 +121,7 @@ void bc_i2c_init(bc_i2c_channel_t channel, bc_i2c_speed_t speed)
             continue;
         }
 
-        bc_ds28e17_init(&ds28e17, BC_GPIO_P5, 0x00);
+        bc_ds28e17_init(&ds28e17, bc_module_sensor_get_onewire(), 0x00);
 
         bc_i2c_set_speed(channel, speed);
     }
