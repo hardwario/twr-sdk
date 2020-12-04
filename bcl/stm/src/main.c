@@ -4,6 +4,7 @@
 #include <bc_log.h>
 #include <bc_led.h>
 #include <bc_timer.h>
+#include <bc_sleep.h>
 
 void application_init(void);
 
@@ -36,6 +37,11 @@ __attribute__((weak)) void application_init(void)
 __attribute__((weak)) void application_task(void *param)
 {
     (void) param;
+}
+
+__attribute__((weak)) void application_idle()
+{
+    bc_sleep();
 }
 
 __attribute__((weak)) void application_error(bc_error_t code)

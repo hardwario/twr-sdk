@@ -1,6 +1,7 @@
 #include <bc_scheduler.h>
 #include <bc_system.h>
 #include <bc_error.h>
+#include <main.h>
 
 static struct
 {
@@ -15,7 +16,6 @@ static struct
     bc_tick_t tick_spin;
     bc_scheduler_task_id_t current_task_id;
     bc_scheduler_task_id_t max_task_id;
-    int sleep_bypass_semaphore;
 
 } _bc_scheduler;
 
@@ -46,10 +46,7 @@ void bc_scheduler_run(void)
                 }
             }
         }
-        if (_bc_scheduler.sleep_bypass_semaphore == 0)
-        {
-            bc_system_sleep();
-        }
+        application_idle();
     }
 }
 
@@ -104,16 +101,6 @@ bc_scheduler_task_id_t bc_scheduler_get_current_task_id(void)
 bc_tick_t bc_scheduler_get_spin_tick(void)
 {
     return _bc_scheduler.tick_spin;
-}
-
-void bc_scheduler_disable_sleep(void)
-{
-    _bc_scheduler.sleep_bypass_semaphore++;
-}
-
-void bc_scheduler_enable_sleep(void)
-{
-    _bc_scheduler.sleep_bypass_semaphore--;
 }
 
 void bc_scheduler_plan_now(bc_scheduler_task_id_t task_id)

@@ -2,6 +2,7 @@
 #include <bc_scheduler.h>
 #include <bc_irq.h>
 #include <stm32l083xx.h>
+#include <bc_sleep.h>
 
 #include <bc_system.h>
 
@@ -336,7 +337,7 @@ void ADC1_COMP_IRQHandler(void)
         // Disable all ADC interrupts
         ADC1->IER = 0;
 
-        bc_scheduler_enable_sleep();
+        bc_sleep_enable();
     }
 }
 

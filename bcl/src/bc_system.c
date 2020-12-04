@@ -5,6 +5,7 @@
 #include <bc_timer.h>
 #include <stm32l0xx.h>
 #include <stm32l0xx_hal_conf.h>
+#include <bc_sleep.h>
 
 #define _BC_SYSTEM_DEBUG_ENABLE 0
 
@@ -387,7 +388,7 @@ void bc_system_hsi16_enable(void)
         SystemCoreClock = 16000000;
     }
 
-    bc_scheduler_disable_sleep();
+    bc_sleep_disable();
 }
 
 void bc_system_hsi16_disable(void)
@@ -417,7 +418,7 @@ void bc_system_hsi16_disable(void)
         PWR->CR |= PWR_CR_VOS;
     }
 
-    bc_scheduler_enable_sleep();
+    bc_sleep_enable();
 }
 
 void bc_system_pll_enable(void)
