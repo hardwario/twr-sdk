@@ -5,6 +5,7 @@
 #include <bc_timer.h>
 #include <stm32l0xx.h>
 #include <stm32l0xx_hal_conf.h>
+#include <bc_rtc.h>
 #include <bc_sleep.h>
 
 #define _BC_SYSTEM_DEBUG_ENABLE 0
@@ -212,29 +213,21 @@ static void _bc_system_init_rtc(void)
     // Errata workaround
     RCC->CSR;
 
-    // Disable write protection
-    RTC->WPR = 0xca;
-    RTC->WPR = 0x53;
+    bc_rtc_enable_write();
 
     // Initialize RTC only once
     if ((RTC->ISR & RTC_ISR_INITS) == 0)
     {
-
-        // Enable initialization mode
-        RTC->ISR |= RTC_ISR_INIT;
-
-        // Wait for RTC to be in initialization mode...
-        while ((RTC->ISR & RTC_ISR_INITF) == 0)
-        {
-            continue;
-        }
+        bc_rtc_set_init(true);
 
         // Set RTC prescaler
-        RTC->PRER = (127 << 16) | 255;
+        RTC->PRER = BC_RTC_PREDIV_S - 1;
+        RTC->PRER |= (BC_RTC_PREDIV_A - 1) << 16;
 
-        // Exit from initialization mode
-        RTC->ISR &= ~RTC_ISR_INIT;
+        // Make sure RTC runs in 24-hour mode
+        RTC->CR &= ~RTC_CR_FMT;
 
+        bc_rtc_set_init(false);
     }
 
     // Disable timer
@@ -258,9 +251,7 @@ static void _bc_system_init_rtc(void)
     // Enable timer
     RTC->CR |= RTC_CR_WUTE;
 
-    // Enable write protection
-    RTC->WPR = 0xff;
-
+    bc_rtc_disable_write();
 
     // RTC IRQ needs to be configured through EXTI
     EXTI->IMR |= EXTI_IMR_IM20;
@@ -279,11 +270,6 @@ static void _bc_system_init_shutdown_tmp112(void)
     bc_i2c_memory_write_16b(BC_I2C_I2C0, 0x49, 0x01, 0x0180);
 
     bc_i2c_deinit(BC_I2C_I2C0);
-}
-
-void bc_system_sleep(void)
-{
-    __WFI();
 }
 
 void bc_system_deep_sleep_enable(void)
@@ -341,7 +327,7 @@ void bc_system_enter_standby_mode(void)
 
     PWR->CR |= PWR_CR_CWUF;
 
-    __WFI();
+    bc_system_sleep();
 }
 
 bc_system_clock_t bc_system_clock_get(void)
