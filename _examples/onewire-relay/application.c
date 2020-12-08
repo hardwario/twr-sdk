@@ -1,18 +1,18 @@
 #include <application.h>
 
 // 1-wire relay instance
-bc_onewire_relay_t relay;
+twr_onewire_relay_t relay;
 
 // lookup table
-bc_onewire_relay_channel_t q_table[] = {
-    BC_ONEWIRE_RELAY_CHANNEL_Q1,
-    BC_ONEWIRE_RELAY_CHANNEL_Q2,
-    BC_ONEWIRE_RELAY_CHANNEL_Q3,
-    BC_ONEWIRE_RELAY_CHANNEL_Q4,
-    BC_ONEWIRE_RELAY_CHANNEL_Q5,
-    BC_ONEWIRE_RELAY_CHANNEL_Q6,
-    BC_ONEWIRE_RELAY_CHANNEL_Q7,
-    BC_ONEWIRE_RELAY_CHANNEL_Q8
+twr_onewire_relay_channel_t q_table[] = {
+    TWR_ONEWIRE_RELAY_CHANNEL_Q1,
+    TWR_ONEWIRE_RELAY_CHANNEL_Q2,
+    TWR_ONEWIRE_RELAY_CHANNEL_Q3,
+    TWR_ONEWIRE_RELAY_CHANNEL_Q4,
+    TWR_ONEWIRE_RELAY_CHANNEL_Q5,
+    TWR_ONEWIRE_RELAY_CHANNEL_Q6,
+    TWR_ONEWIRE_RELAY_CHANNEL_Q7,
+    TWR_ONEWIRE_RELAY_CHANNEL_Q8
 };
 
 // actual active relay
@@ -20,16 +20,16 @@ int q_i = 7;
 
 void application_init(void)
 {
-    bc_module_sensor_init();
+    twr_module_sensor_init();
 
-    bc_module_sensor_onewire_power_up();
+    twr_module_sensor_onewire_power_up();
 
-    bc_onewire_relay_init(&relay, bc_module_sensor_get_onewire(), 0x00);
+    twr_onewire_relay_init(&relay, twr_module_sensor_get_onewire(), 0x00);
 }
 
 void application_task()
 {
-    bc_onewire_relay_set_state(&relay, q_table[q_i], false);
+    twr_onewire_relay_set_state(&relay, q_table[q_i], false);
 
     q_i++;
 
@@ -38,7 +38,7 @@ void application_task()
         q_i = 0;
     }
 
-    bc_onewire_relay_set_state(&relay, q_table[q_i], true);
+    twr_onewire_relay_set_state(&relay, q_table[q_i], true);
 
-    bc_scheduler_plan_current_relative(1000);
+    twr_scheduler_plan_current_relative(1000);
 }

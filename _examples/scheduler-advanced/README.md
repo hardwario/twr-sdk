@@ -2,10 +2,10 @@
 
 This example explains how to use scheduler to handle more tasks
 The application_task() Task is created automatically by SDK.
-If you need more tasks then call the bc_scheduler_register()
+If you need more tasks then call the twr_scheduler_register()
 
 This example demonstrates scheduling the task to blink a LED. The right and more
-efficient way would be use just the bc_led_set_mode(&led, BC_LED_MODE_BLINK) function
+efficient way would be use just the twr_led_set_mode(&led, TWR_LED_MODE_BLINK) function
 to set the blinking speed and the toggling will be handled in the background.
 
-For more information please see http://sdk.hardwario.com/group__bc__scheduler.html
+For more information please see http://sdk.hardwario.com/group__twr__scheduler.html

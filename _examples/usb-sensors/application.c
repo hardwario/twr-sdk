@@ -22,79 +22,79 @@ struct
 
 } i2c_sensors;
 
-bc_led_t led;
+twr_led_t led;
 
-static void spirit1_event_handler(bc_spirit1_event_t event, void *event_param);
+static void spirit1_event_handler(twr_spirit1_event_t event, void *event_param);
 
-void temperature_tag_event_handler(bc_tag_temperature_t *self, bc_tag_temperature_event_t event, void *event_param)
+void temperature_tag_event_handler(twr_tag_temperature_t *self, twr_tag_temperature_event_t event, void *event_param)
 {
     (void) event;
     (void) event_param;
 
-    i2c_sensors.temperature.valid = bc_tag_temperature_get_temperature_celsius(self, &i2c_sensors.temperature.value);
+    i2c_sensors.temperature.valid = twr_tag_temperature_get_temperature_celsius(self, &i2c_sensors.temperature.value);
 }
 
-void humidity_tag_event_handler(bc_tag_humidity_t *self, bc_tag_humidity_event_t event, void *event_param)
+void humidity_tag_event_handler(twr_tag_humidity_t *self, twr_tag_humidity_event_t event, void *event_param)
 {
     (void) event;
     (void) event_param;
 
-    i2c_sensors.humidity.valid = bc_tag_humidity_get_humidity_percentage(self, &i2c_sensors.humidity.value);
+    i2c_sensors.humidity.valid = twr_tag_humidity_get_humidity_percentage(self, &i2c_sensors.humidity.value);
 }
 
-void humidity_tag_event_handler_r1(bc_tag_humidity_t *self, bc_tag_humidity_event_t event, void *event_param)
+void humidity_tag_event_handler_r1(twr_tag_humidity_t *self, twr_tag_humidity_event_t event, void *event_param)
 {
     (void) event;
     (void) event_param;
 
-    i2c_sensors.humidity_r1.valid = bc_tag_humidity_get_humidity_percentage(self, &i2c_sensors.humidity_r1.value);
+    i2c_sensors.humidity_r1.valid = twr_tag_humidity_get_humidity_percentage(self, &i2c_sensors.humidity_r1.value);
 }
 
-void lux_meter_event_handler(bc_tag_lux_meter_t *self, bc_tag_lux_meter_event_t event, void *event_param)
+void lux_meter_event_handler(twr_tag_lux_meter_t *self, twr_tag_lux_meter_event_t event, void *event_param)
 {
     (void) event;
     (void) event_param;
 
-    i2c_sensors.luminosity.valid = bc_tag_lux_meter_get_illuminance_lux(self, &i2c_sensors.luminosity.value);
+    i2c_sensors.luminosity.valid = twr_tag_lux_meter_get_illuminance_lux(self, &i2c_sensors.luminosity.value);
 }
 
-void barometer_tag_event_handler(bc_tag_barometer_t *self, bc_tag_barometer_event_t event, void *event_param)
+void barometer_tag_event_handler(twr_tag_barometer_t *self, twr_tag_barometer_event_t event, void *event_param)
 {
     (void) event;
     (void) event_param;
 
-    i2c_sensors.altitude.valid = bc_tag_barometer_get_altitude_meter(self, &i2c_sensors.altitude.value);
-    i2c_sensors.pressure.valid = bc_tag_barometer_get_pressure_pascal(self, &i2c_sensors.pressure.value);
+    i2c_sensors.altitude.valid = twr_tag_barometer_get_altitude_meter(self, &i2c_sensors.altitude.value);
+    i2c_sensors.pressure.valid = twr_tag_barometer_get_pressure_pascal(self, &i2c_sensors.pressure.value);
 }
 
-void button_event_handler(bc_button_t *self, bc_button_event_t event, void *event_param)
+void button_event_handler(twr_button_t *self, twr_button_event_t event, void *event_param)
 {
     (void) self;
     (void) event_param;
 
-    if (event == BC_BUTTON_EVENT_PRESS)
+    if (event == TWR_BUTTON_EVENT_PRESS)
     {
-        bc_led_pulse(&led, 100);
+        twr_led_pulse(&led, 100);
 
-        bc_spirit1_set_tx_length(16);
-        bc_spirit1_tx();
+        twr_spirit1_set_tx_length(16);
+        twr_spirit1_tx();
     }
 
-    if (event == BC_BUTTON_EVENT_RELEASE)
+    if (event == TWR_BUTTON_EVENT_RELEASE)
     {
-        bc_led_pulse(&led, 100);
+        twr_led_pulse(&led, 100);
     }
 }
 
-void lis2dh12_event_handler(bc_lis2dh12_t *self, bc_lis2dh12_event_t event, void *event_param)
+void lis2dh12_event_handler(twr_lis2dh12_t *self, twr_lis2dh12_event_t event, void *event_param)
 {
     (void) event_param;
 
-    if (event == BC_LIS2DH12_EVENT_UPDATE)
+    if (event == TWR_LIS2DH12_EVENT_UPDATE)
     {
-        bc_lis2dh12_result_g_t result;
+        twr_lis2dh12_result_g_t result;
 
-        if (bc_lis2dh12_get_result_g(self, &result))
+        if (twr_lis2dh12_get_result_g(self, &result))
         {
             i2c_sensors.acceleration_x.value = result.x_axis;
             i2c_sensors.acceleration_y.value = result.y_axis;
@@ -111,56 +111,56 @@ void lis2dh12_event_handler(bc_lis2dh12_t *self, bc_lis2dh12_event_t event, void
             i2c_sensors.acceleration_z.valid = false;
         }
     }
-    else if (event == BC_LIS2DH12_EVENT_ALARM)
+    else if (event == TWR_LIS2DH12_EVENT_ALARM)
     {
-        bc_led_pulse(&led, 100);
+        twr_led_pulse(&led, 100);
     }
 }
 
-bc_tag_humidity_t humidity_tag;
-bc_tag_humidity_t humidity_tag_r1;
+twr_tag_humidity_t humidity_tag;
+twr_tag_humidity_t humidity_tag_r1;
 
 void application_init(void)
 {
-    bc_led_init(&led, BC_GPIO_LED, false, false);
-    //bc_led_set_mode(&led, BC_LED_MODE_BLINK);
+    twr_led_init(&led, TWR_GPIO_LED, false, false);
+    //twr_led_set_mode(&led, TWR_LED_MODE_BLINK);
 
-    static bc_button_t button;
+    static twr_button_t button;
 
-    bc_button_init(&button, BC_GPIO_BUTTON, BC_GPIO_PULL_DOWN, false);
-    bc_button_set_event_handler(&button, button_event_handler, NULL);
+    twr_button_init(&button, TWR_GPIO_BUTTON, TWR_GPIO_PULL_DOWN, false);
+    twr_button_set_event_handler(&button, button_event_handler, NULL);
 
-    bc_i2c_init(BC_I2C_I2C0, BC_I2C_SPEED_400_KHZ);
+    twr_i2c_init(TWR_I2C_I2C0, TWR_I2C_SPEED_400_KHZ);
 
-    static bc_tag_temperature_t temperature_tag;
+    static twr_tag_temperature_t temperature_tag;
 
-    bc_tag_temperature_init(&temperature_tag, BC_I2C_I2C0, BC_TAG_TEMPERATURE_I2C_ADDRESS_ALTERNATE);
-    bc_tag_temperature_set_update_interval(&temperature_tag, 1000);
-    bc_tag_temperature_set_event_handler(&temperature_tag, temperature_tag_event_handler, NULL);
+    twr_tag_temperature_init(&temperature_tag, TWR_I2C_I2C0, TWR_TAG_TEMPERATURE_I2C_ADDRESS_ALTERNATE);
+    twr_tag_temperature_set_update_interval(&temperature_tag, 1000);
+    twr_tag_temperature_set_event_handler(&temperature_tag, temperature_tag_event_handler, NULL);
 
-    bc_tag_humidity_init(&humidity_tag, BC_TAG_HUMIDITY_REVISION_R2, BC_I2C_I2C0, BC_TAG_HUMIDITY_I2C_ADDRESS_DEFAULT);
-    bc_tag_humidity_set_update_interval(&humidity_tag, 1000);
-    bc_tag_humidity_set_event_handler(&humidity_tag, humidity_tag_event_handler, NULL);
+    twr_tag_humidity_init(&humidity_tag, TWR_TAG_HUMIDITY_REVISION_R2, TWR_I2C_I2C0, TWR_TAG_HUMIDITY_I2C_ADDRESS_DEFAULT);
+    twr_tag_humidity_set_update_interval(&humidity_tag, 1000);
+    twr_tag_humidity_set_event_handler(&humidity_tag, humidity_tag_event_handler, NULL);
 
-    bc_tag_humidity_init(&humidity_tag_r1, BC_TAG_HUMIDITY_REVISION_R1, BC_I2C_I2C0, BC_TAG_HUMIDITY_I2C_ADDRESS_DEFAULT);
-    bc_tag_humidity_set_update_interval(&humidity_tag_r1, 1000);
-    bc_tag_humidity_set_event_handler(&humidity_tag_r1, humidity_tag_event_handler_r1, NULL);
+    twr_tag_humidity_init(&humidity_tag_r1, TWR_TAG_HUMIDITY_REVISION_R1, TWR_I2C_I2C0, TWR_TAG_HUMIDITY_I2C_ADDRESS_DEFAULT);
+    twr_tag_humidity_set_update_interval(&humidity_tag_r1, 1000);
+    twr_tag_humidity_set_event_handler(&humidity_tag_r1, humidity_tag_event_handler_r1, NULL);
 
-    static bc_tag_lux_meter_t lux_meter;
+    static twr_tag_lux_meter_t lux_meter;
 
-    bc_tag_lux_meter_init(&lux_meter, BC_I2C_I2C0, BC_TAG_LUX_METER_I2C_ADDRESS_DEFAULT);
-    bc_tag_lux_meter_set_update_interval(&lux_meter, 1000);
-    bc_tag_lux_meter_set_event_handler(&lux_meter, lux_meter_event_handler, NULL);
+    twr_tag_lux_meter_init(&lux_meter, TWR_I2C_I2C0, TWR_TAG_LUX_METER_I2C_ADDRESS_DEFAULT);
+    twr_tag_lux_meter_set_update_interval(&lux_meter, 1000);
+    twr_tag_lux_meter_set_event_handler(&lux_meter, lux_meter_event_handler, NULL);
 
-    static bc_tag_barometer_t barometer_tag;
+    static twr_tag_barometer_t barometer_tag;
 
-    bc_tag_barometer_init(&barometer_tag, BC_I2C_I2C0);
-    bc_tag_barometer_set_update_interval(&barometer_tag, 1000);
-    bc_tag_barometer_set_event_handler(&barometer_tag, barometer_tag_event_handler, NULL);
+    twr_tag_barometer_init(&barometer_tag, TWR_I2C_I2C0);
+    twr_tag_barometer_set_update_interval(&barometer_tag, 1000);
+    twr_tag_barometer_set_event_handler(&barometer_tag, barometer_tag_event_handler, NULL);
 
-    static bc_lis2dh12_t lis2dh12;
+    static twr_lis2dh12_t lis2dh12;
 
-    bc_lis2dh12_alarm_t alarm;
+    twr_lis2dh12_alarm_t alarm;
 
     alarm.x_high = false;
     alarm.x_low = false;
@@ -171,27 +171,27 @@ void application_init(void)
     alarm.threshold = .5f;
     alarm.duration = 1;
 
-    bc_lis2dh12_init(&lis2dh12, BC_I2C_I2C0, 0x19);
-    bc_lis2dh12_set_update_interval(&lis2dh12, 100);
-    bc_lis2dh12_set_alarm(&lis2dh12, &alarm);
-    bc_lis2dh12_set_event_handler(&lis2dh12, lis2dh12_event_handler, NULL);
+    twr_lis2dh12_init(&lis2dh12, TWR_I2C_I2C0, 0x19);
+    twr_lis2dh12_set_update_interval(&lis2dh12, 100);
+    twr_lis2dh12_set_alarm(&lis2dh12, &alarm);
+    twr_lis2dh12_set_event_handler(&lis2dh12, lis2dh12_event_handler, NULL);
 
-    bc_spirit1_init();
-    bc_spirit1_set_event_handler(spirit1_event_handler, NULL);
-    bc_spirit1_rx();
+    twr_spirit1_init();
+    twr_spirit1_set_event_handler(spirit1_event_handler, NULL);
+    twr_spirit1_rx();
 }
 
-static void spirit1_event_handler(bc_spirit1_event_t event, void *event_param)
+static void spirit1_event_handler(twr_spirit1_event_t event, void *event_param)
 {
     (void) event_param;
 
-    if (event == BC_SPIRIT1_EVENT_RX_DONE)
+    if (event == TWR_SPIRIT1_EVENT_RX_DONE)
     {
-        bc_led_pulse(&led, 100);
+        twr_led_pulse(&led, 100);
     }
 
-    if (event == BC_SPIRIT1_EVENT_TX_DONE)
+    if (event == TWR_SPIRIT1_EVENT_TX_DONE)
     {
-        bc_spirit1_rx();
+        twr_spirit1_rx();
     }
 }
