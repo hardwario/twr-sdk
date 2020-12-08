@@ -189,7 +189,8 @@ typedef enum
     TWR_CMWX1ZZABZ_CONFIG_INDEX_CLASS = 8,
     TWR_CMWX1ZZABZ_CONFIG_INDEX_RX2 = 9,
     TWR_CMWX1ZZABZ_CONFIG_INDEX_NWK = 10,
-    TWR_CMWX1ZZABZ_CONFIG_INDEX_DATARATE = 11,
+    TWR_CMWX1ZZABZ_CONFIG_INDEX_ADAPTIVE_DATARATE = 11,
+    TWR_CMWX1ZZABZ_CONFIG_INDEX_DATARATE = 12,
     TWR_CMWX1ZZABZ_CONFIG_INDEX_LAST_ITEM
 
 } twr_cmwx1zzabz_config_index_t;
@@ -231,6 +232,7 @@ typedef struct
     uint32_t rx2_frequency;
     uint8_t rx2_datarate;
     uint8_t nwk_public;
+    bool adaptive_datarate;
     uint8_t datarate;
 
 } twr_cmwx1zzabz_config;
@@ -474,6 +476,18 @@ void twr_cmwx1zzabz_set_nwk_public(twr_cmwx1zzabz_t *self, uint8_t public);
 //! @return public networks enabled
 
 uint8_t twr_cmwx1zzabz_get_nwk_public(twr_cmwx1zzabz_t *self);
+
+//! @brief Set the configuration adaptive data rate
+//! @param[in] self Instance
+//! @param[in] public enable or disable adaptive data rate
+
+void twr_cmwx1zzabz_set_adaptive_datarate(twr_cmwx1zzabz_t *self, bool enable);
+
+//! @brief Get the configuration if adaptive data rate are enabled
+//! @param[in] self Instance
+//! @return public adaptive data rate enabled
+
+bool twr_cmwx1zzabz_get_adaptive_datarate(twr_cmwx1zzabz_t *self);
 
 //! @brief Set the configuration of datarate
 //! @param[in] self Instance
