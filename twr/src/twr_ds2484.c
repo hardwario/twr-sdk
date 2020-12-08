@@ -30,7 +30,6 @@
 #define _TWR_DS2484_CFG_1WS (1<<3) // 1-Wire Speed(0==standard, 1==overdrive)
 
 #define _TWR_DS2484_CFG_DEFAULT (_TWR_DS2484_CFG_APU)
-// #define _TWR_DS2484_PIN_SLPZ (TWR_GPIO_P2)
 
 static bool _twr_ds2484_i2c_read_byte(twr_ds2484_t *self, uint8_t *b);
 static bool _twr_ds2484_i2c_write_byte(twr_ds2484_t *self, const uint8_t b);
@@ -46,20 +45,28 @@ bool twr_ds2484_init(twr_ds2484_t *self, twr_i2c_channel_t i2c_channel)
 
     self->_ready = false;
 
-    // twr_gpio_init(_TWR_DS2484_PIN_SLPZ);
-    // twr_gpio_set_output(_TWR_DS2484_PIN_SLPZ, 0);
-    // twr_gpio_set_mode(_TWR_DS2484_PIN_SLPZ, TWR_GPIO_MODE_OUTPUT);
-
     twr_i2c_init(self->_i2c_channel, TWR_I2C_SPEED_400_KHZ);
 
     return true;
+}
+
+void twr_ds2484_set_slpz_handler(twr_ds2484_t *self, bool (*handler)(void *, bool), void *handler_ctx)
+{
+    self->_set_slpz = handler;
+    self->_set_slpz_ctx = handler_ctx;
 }
 
 void twr_ds2484_enable(twr_ds2484_t *self)
 {
     self->_ready = false;
 
-    // twr_gpio_set_output(_TWR_DS2484_PIN_SLPZ, 1);
+    if (self->_set_slpz != NULL)
+    {
+        if (!self->_set_slpz(self->_set_slpz_ctx, 1))
+        {
+            return;
+        }
+    }
 
     if (!_twr_ds2484_device_reset(self))
     {
@@ -84,7 +91,10 @@ void twr_ds2484_disable(twr_ds2484_t *self)
 {
     twr_ds2484_busy_wait(self);
 
-    // twr_gpio_set_output(_TWR_DS2484_PIN_SLPZ, 0);
+    if (self->_set_slpz != NULL)
+    {
+        self->_set_slpz(self->_set_slpz_ctx, 0);
+    }
 
     self->_ready = false;
 }
