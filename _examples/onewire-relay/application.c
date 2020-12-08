@@ -1,5 +1,4 @@
 #include <application.h>
-#include <bc_onewire_relay.h>
 
 // 1-wire relay instance
 bc_onewire_relay_t relay;

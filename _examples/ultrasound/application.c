@@ -1,8 +1,5 @@
 #include <application.h>
 
-#include <bc_hc_sr04.h>
-#include <bc_gpio.h>
-
 // LED instance
 bc_led_t led;
 

@@ -1,4 +1,3 @@
-#include <bc_usb_cdc.h>
 #include "application.h"
 
 

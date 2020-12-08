@@ -14,6 +14,8 @@ bc_switch_t p0;
 
 void button_event_handler(bc_switch_t *self, bc_switch_event_t event, void *event_param)
 {
+    (void) event_param;
+
     if (event == BC_SWITCH_EVENT_OPENED)
     {
         bc_log_info("Button BC_SWITCH_EVENT_OPENED");
@@ -28,6 +30,8 @@ void button_event_handler(bc_switch_t *self, bc_switch_event_t event, void *even
 
 void door_sensor_event_handler(bc_switch_t *self, bc_switch_event_t event, void *event_param)
 {
+    (void) event_param;
+
     if (event == BC_SWITCH_EVENT_OPENED)
     {
         bc_log_info("Door BC_SWITCH_EVENT_OPENED");
@@ -42,6 +46,8 @@ void door_sensor_event_handler(bc_switch_t *self, bc_switch_event_t event, void 
 
 void p0_event_handler(bc_switch_t *self, bc_switch_event_t event, void *event_param)
 {
+    (void) event_param;
+
     if (event == BC_SWITCH_EVENT_OPENED)
     {
         bc_log_info("P0 BC_SWITCH_EVENT_OPENED");
