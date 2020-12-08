@@ -1,9 +1,9 @@
-#ifndef _BC_FIFO_H
-#define _BC_FIFO_H
+#ifndef _TWR_FIFO_H
+#define _TWR_FIFO_H
 
-#include <bc_common.h>
+#include <twr_common.h>
 
-//! @addtogroup bc_fifo bc_fifo
+//! @addtogroup twr_fifo twr_fifo
 //! @brief FIFO buffer implementation
 //! @{
 
@@ -23,19 +23,19 @@ typedef struct
     //! @brief Position of FIFO's tail
     size_t tail;
 
-} bc_fifo_t;
+} twr_fifo_t;
 
 //! @brief Initialize FIFO buffer
 //! @param[in] fifo FIFO instance
 //! @param[in] buffer Pointer to buffer where FIFO holds data
 //! @param[in] size Size of buffer where FIFO holds data
 
-void bc_fifo_init(bc_fifo_t *fifo, void *buffer, size_t size);
+void twr_fifo_init(twr_fifo_t *fifo, void *buffer, size_t size);
 
 //! @brief Purge FIFO buffer
 //! @param[in] fifo FIFO instance
 
-void bc_fifo_purge(bc_fifo_t *fifo);
+void twr_fifo_purge(twr_fifo_t *fifo);
 
 //! @brief Write data to FIFO
 //! @param[in] fifo FIFO instance
@@ -43,7 +43,7 @@ void bc_fifo_purge(bc_fifo_t *fifo);
 //! @param[in] length Number of requested bytes to be written
 //! @return Number of bytes written
 
-size_t bc_fifo_write(bc_fifo_t *fifo, const void *buffer, size_t length);
+size_t twr_fifo_write(twr_fifo_t *fifo, const void *buffer, size_t length);
 
 //! @brief Read data from FIFO
 //! @param[in] fifo FIFO instance
@@ -51,7 +51,7 @@ size_t bc_fifo_write(bc_fifo_t *fifo, const void *buffer, size_t length);
 //! @param[in] length Number of requested bytes to be read
 //! @return Number of bytes read
 
-size_t bc_fifo_read(bc_fifo_t *fifo, void *buffer, size_t length);
+size_t twr_fifo_read(twr_fifo_t *fifo, void *buffer, size_t length);
 
 //! @brief Write data to FIFO from interrupt
 //! @param[in] fifo FIFO instance
@@ -59,7 +59,7 @@ size_t bc_fifo_read(bc_fifo_t *fifo, void *buffer, size_t length);
 //! @param[in] length Number of requested bytes to be written
 //! @return Number of bytes written
 
-size_t bc_fifo_irq_write(bc_fifo_t *fifo, const void *buffer, size_t length);
+size_t twr_fifo_irq_write(twr_fifo_t *fifo, const void *buffer, size_t length);
 
 //! @brief Read data from FIFO from interrupt
 //! @param[in] fifo FIFO instance
@@ -67,15 +67,15 @@ size_t bc_fifo_irq_write(bc_fifo_t *fifo, const void *buffer, size_t length);
 //! @param[in] length Number of requested bytes to be read
 //! @return Number of bytes read
 
-size_t bc_fifo_irq_read(bc_fifo_t *fifo, void *buffer, size_t length);
+size_t twr_fifo_irq_read(twr_fifo_t *fifo, void *buffer, size_t length);
 
 //! @brief Is empty
 //! @param[in] fifo FIFO instance
 //! @return true When is empty
 //! @return false When is not empty
 
-bool bc_fifo_is_empty(bc_fifo_t *fifo);
+bool twr_fifo_is_empty(twr_fifo_t *fifo);
 
 //! @}
 
-#endif // _BC_FIFO_H
+#endif // _TWR_FIFO_H

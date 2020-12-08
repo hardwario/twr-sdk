@@ -1,36 +1,36 @@
-#include <bc_tick.h>
-#include <bc_irq.h>
+#include <twr_tick.h>
+#include <twr_irq.h>
 #include <stm32l0xx.h>
 
-static volatile bc_tick_t _bc_tick_counter = 0;
+static volatile twr_tick_t _twr_tick_counter = 0;
 
-bc_tick_t bc_tick_get(void)
+twr_tick_t twr_tick_get(void)
 {
-    bc_tick_t tick;
+    twr_tick_t tick;
 
     // Disable interrupts
-    bc_irq_disable();
+    twr_irq_disable();
 
     // Get current tick counter
-    tick = _bc_tick_counter;
+    tick = _twr_tick_counter;
 
     // Enable interrupts
-    bc_irq_enable();
+    twr_irq_enable();
 
     return tick;
 }
 
-void bc_tick_wait(bc_tick_t delay)
+void twr_tick_wait(twr_tick_t delay)
 {
-    bc_tick_t timeout = bc_tick_get() + delay;
+    twr_tick_t timeout = twr_tick_get() + delay;
 
-    while (bc_tick_get() < timeout)
+    while (twr_tick_get() < timeout)
     {
         continue;
     }
 }
 
-void bc_tick_increment_irq(bc_tick_t delta)
+void twr_tick_increment_irq(twr_tick_t delta)
 {
-    _bc_tick_counter += delta;
+    _twr_tick_counter += delta;
 }

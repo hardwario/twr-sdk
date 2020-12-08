@@ -1,9 +1,9 @@
-#ifndef _BC_SHA256_H
-#define _BC_SHA256_H
+#ifndef _TWR_SHA256_H
+#define _TWR_SHA256_H
 
-#include "bc_common.h"
+#include "twr_common.h"
 
-//! @addtogroup bc_sha256 bc_sha256
+//! @addtogroup twr_sha256 twr_sha256
 //! @brief Library for SHA256 hash
 //! @{
 
@@ -16,28 +16,28 @@ typedef struct
     uint64_t _bit_length;
     uint32_t _state[8];
 
-} bc_sha256_t;
+} twr_sha256_t;
 
 //! @endcond
 
 //! @brief Initialize SHA256 structure
 //! @param[in] self SHA256 instance
 
-void bc_sha256_init(bc_sha256_t *self);
+void twr_sha256_init(twr_sha256_t *self);
 
 //! @brief Compute SHA256 from data
 //! @param[in] self SHA256 instance
 //! @param[in] buffer data
 //! @param[in] length data length
 
-void bc_sha256_update(bc_sha256_t *self, const void *buffer, size_t length);
+void twr_sha256_update(twr_sha256_t *self, const void *buffer, size_t length);
 
 //! @brief Finalize SHA256 computation and read the final hash
 //! @param[in] self SHA256 instance
 //! @param[in] hash pointer to the array where the hash will be copied
 //! @param[in] little_endian endian format
 
-void bc_sha256_final(bc_sha256_t *self, uint8_t *hash, bool little_endian);
+void twr_sha256_final(twr_sha256_t *self, uint8_t *hash, bool little_endian);
 
 //! @}
 

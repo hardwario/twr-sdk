@@ -1,10 +1,10 @@
-#ifndef _BC_GFX_H
-#define _BC_GFX_H
+#ifndef _TWR_GFX_H
+#define _TWR_GFX_H
 
-#include <bc_common.h>
-#include <bc_font_common.h>
+#include <twr_common.h>
+#include <twr_font_common.h>
 
-//! @addtogroup bc_gfx bc_gfx
+//! @addtogroup twr_gfx twr_gfx
 //! @brief Graphics library
 //! @{
 
@@ -15,7 +15,7 @@ typedef struct
     int width;
     int height;
 
-} bc_gfx_caps_t;
+} twr_gfx_caps_t;
 
 //! @brief Display driver interface
 
@@ -37,95 +37,95 @@ typedef struct
     bool (*update)(void *self);
 
     //! @brief Callback for get capabilities
-    bc_gfx_caps_t (*get_caps)(void *self);
+    twr_gfx_caps_t (*get_caps)(void *self);
 
-} bc_gfx_driver_t;
+} twr_gfx_driver_t;
 
 //! @brief Rotation
 
 typedef enum
 {
     //! @brief Rotation 0 degrees
-    BC_GFX_ROTATION_0   = 0,
+    TWR_GFX_ROTATION_0   = 0,
 
     //! @brief Rotation 90 degrees
-    BC_GFX_ROTATION_90  = 1,
+    TWR_GFX_ROTATION_90  = 1,
 
     //! @brief Rotation 180 degrees
-    BC_GFX_ROTATION_180 = 2,
+    TWR_GFX_ROTATION_180 = 2,
 
     //! @brief Rotation 270 degrees
-    BC_GFX_ROTATION_270 = 3
+    TWR_GFX_ROTATION_270 = 3
 
-} bc_gfx_rotation_t;
+} twr_gfx_rotation_t;
 
 typedef enum
 {
     //! @brief Round corner right top
-    BC_GFX_ROUND_CORNER_RIGHT_TOP =    0x01,
+    TWR_GFX_ROUND_CORNER_RIGHT_TOP =    0x01,
 
     //! @brief Round corner right bottom
-    BC_GFX_ROUND_CORNER_RIGHT_BOTTOM = 0x02,
+    TWR_GFX_ROUND_CORNER_RIGHT_BOTTOM = 0x02,
 
     //! @brief Round corner left bottom
-    BC_GFX_ROUND_CORNER_LEFT_BOTTOM = 0x04,
+    TWR_GFX_ROUND_CORNER_LEFT_BOTTOM = 0x04,
 
     //! @brief Round corner left top
-    BC_GFX_ROUND_CORNER_LEFT_TOP = 0x08
+    TWR_GFX_ROUND_CORNER_LEFT_TOP = 0x08
 
-} bc_gfx_round_corner_t;
+} twr_gfx_round_corner_t;
 
 //! @brief Instance
 
 typedef struct
 {
     void *_display;
-    const bc_gfx_driver_t *_driver;
-    bc_gfx_rotation_t _rotation;
-    const bc_font_t *_font;
-    bc_gfx_caps_t _caps;
+    const twr_gfx_driver_t *_driver;
+    twr_gfx_rotation_t _rotation;
+    const twr_font_t *_font;
+    twr_gfx_caps_t _caps;
 
-} bc_gfx_t;
+} twr_gfx_t;
 
 //! @brief Initialize button
 //! @param[in] self Instance
 
-void bc_gfx_init(bc_gfx_t *self, void *display, const bc_gfx_driver_t *driver);
+void twr_gfx_init(twr_gfx_t *self, void *display, const twr_gfx_driver_t *driver);
 
 //! @brief Check if display driver is ready for commands
 //! @param[in] self Instance
 //! @return true If ready
 //! @return false If not ready
 
-bool bc_gfx_display_is_ready(bc_gfx_t *self);
+bool twr_gfx_display_is_ready(twr_gfx_t *self);
 
 //! @brief Get Display capabilities
 //! @param[in] self Instance
 
-bc_gfx_caps_t bc_gfx_get_caps(bc_gfx_t *self);
+twr_gfx_caps_t twr_gfx_get_caps(twr_gfx_t *self);
 
 //! @brief Clear
 //! @param[in] self Instance
 
-void bc_gfx_clear(bc_gfx_t *self);
+void twr_gfx_clear(twr_gfx_t *self);
 
 //! @brief Set font
 //! @param[in] self Instance
 //! @param[in] *font Font
 
-void bc_gfx_set_font(bc_gfx_t *self, const bc_font_t *font);
+void twr_gfx_set_font(twr_gfx_t *self, const twr_font_t *font);
 
 //! @brief Set rotation
 //! @param[in] self Instance
 //! @param[in] rotation Rotation of diplay
 
-void bc_gfx_set_rotation(bc_gfx_t *self, bc_gfx_rotation_t rotation);
+void twr_gfx_set_rotation(twr_gfx_t *self, twr_gfx_rotation_t rotation);
 
 //! @brief Get rotation
 //! @param[in] self Instance
 //! @return Rotation of display
 
-bc_gfx_rotation_t bc_gfx_get_rotation(bc_gfx_t *self);
+twr_gfx_rotation_t twr_gfx_get_rotation(twr_gfx_t *self);
 
 //! @brief Draw pixel
 //! @param[in] self Instance
@@ -133,7 +133,7 @@ bc_gfx_rotation_t bc_gfx_get_rotation(bc_gfx_t *self);
 //! @param[in] top Pixels from top edge
 //! @param[in] color
 
-void bc_gfx_draw_pixel(bc_gfx_t *self, int x, int y, uint32_t color);
+void twr_gfx_draw_pixel(twr_gfx_t *self, int x, int y, uint32_t color);
 
 //! @brief Display draw char
 //! @param[in] self Instance
@@ -143,13 +143,13 @@ void bc_gfx_draw_pixel(bc_gfx_t *self, int x, int y, uint32_t color);
 //! @param[in] color
 //! @return Width of printed character
 
-int bc_gfx_draw_char(bc_gfx_t *self, int left, int top, uint8_t ch, uint32_t color);
+int twr_gfx_draw_char(twr_gfx_t *self, int left, int top, uint8_t ch, uint32_t color);
 
 //! @brief Calc width character
 //! @param[in] self Instance
 //! @return Width of printed character
 
-int bc_gfx_calc_char_width(bc_gfx_t *self, uint8_t ch);
+int twr_gfx_calc_char_width(twr_gfx_t *self, uint8_t ch);
 
 //! @brief Display draw string
 //! @param[in] self Instance
@@ -159,14 +159,14 @@ int bc_gfx_calc_char_width(bc_gfx_t *self, uint8_t ch);
 //! @param[in] color
 //! @return Width of printed string
 
-int bc_gfx_draw_string(bc_gfx_t *self, int left, int top, char *str, uint32_t color);
+int twr_gfx_draw_string(twr_gfx_t *self, int left, int top, char *str, uint32_t color);
 
 //! @brief Calc width string
 //! @param[in] self Instance
 //! @param[in] *str String to be printed
 //! @return Width of printed string
 
-int bc_gfx_calc_string_width(bc_gfx_t *self,  char *str);
+int twr_gfx_calc_string_width(twr_gfx_t *self,  char *str);
 
 //! @brief Display string
 //! @param[in] self Instance
@@ -177,7 +177,7 @@ int bc_gfx_calc_string_width(bc_gfx_t *self,  char *str);
 //! @param[in] ... Optional format arguments
 //! @return Width of printed string
 
-int bc_gfx_printf(bc_gfx_t *self, int left, int top, uint32_t color, char *format, ...);
+int twr_gfx_printf(twr_gfx_t *self, int left, int top, uint32_t color, char *format, ...);
 
 //! @brief Display draw line
 //! @param[in] self Instance
@@ -187,7 +187,7 @@ int bc_gfx_printf(bc_gfx_t *self, int left, int top, uint32_t color, char *forma
 //! @param[in] y1 Pixels from top edge
 //! @param[in] color
 
-void bc_gfx_draw_line(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
+void twr_gfx_draw_line(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
 
 //! @brief Display draw rectangle
 //! @param[in] self Instance
@@ -197,7 +197,7 @@ void bc_gfx_draw_line(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t c
 //! @param[in] y1 Pixels from top edge
 //! @param[in] color
 
-void bc_gfx_draw_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
+void twr_gfx_draw_rectangle(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
 
 //! @brief Display draw fill rectangle
 //! @param[in] self Instance
@@ -207,7 +207,7 @@ void bc_gfx_draw_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint3
 //! @param[in] y1 Pixels from top edge
 //! @param[in] color
 
-void bc_gfx_draw_fill_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
+void twr_gfx_draw_fill_rectangle(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
 
 //! @brief Display draw fill rectangle with a dithering pattern defined in the color parameter
 //! @param[in] self Instance
@@ -217,7 +217,7 @@ void bc_gfx_draw_fill_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, 
 //! @param[in] y1 Pixels from top edge
 //! @param[in] color Dithering mask, 16 bits define bit pattern in the 4 by 4 area
 
-void bc_gfx_draw_fill_rectangle_dithering(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
+void twr_gfx_draw_fill_rectangle_dithering(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
 
 //! @brief Lcd draw circle, using Midpoint circle algorithm
 //! @param[in] self Instance
@@ -226,7 +226,7 @@ void bc_gfx_draw_fill_rectangle_dithering(bc_gfx_t *self, int x0, int y0, int x1
 //! @param[in] radius In pixels
 //! @param[in] color
 
-void bc_gfx_draw_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t color);
+void twr_gfx_draw_circle(twr_gfx_t *self, int x0, int y0, int radius, uint32_t color);
 
 //! @brief Lcd draw fill circle, using Midpoint circle algorithm
 //! @param[in] self Instance
@@ -235,7 +235,7 @@ void bc_gfx_draw_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t col
 //! @param[in] radius In pixels
 //! @param[in] color
 
-void bc_gfx_draw_fill_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t color);
+void twr_gfx_draw_fill_circle(twr_gfx_t *self, int x0, int y0, int radius, uint32_t color);
 
 //! @brief Lcd draw round corner, using Midpoint circle algorithm
 //! @param[in] self Instance
@@ -245,7 +245,7 @@ void bc_gfx_draw_fill_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_
 //! @param[in] radius In pixels
 //! @param[in] color
 
-void bc_gfx_draw_round_corner(bc_gfx_t *self, int x0, int y0, int radius, bc_gfx_round_corner_t corner, uint32_t color);
+void twr_gfx_draw_round_corner(twr_gfx_t *self, int x0, int y0, int radius, twr_gfx_round_corner_t corner, uint32_t color);
 
 //! @brief Lcd draw fill round corner, using Midpoint circle algorithm
 //! @param[in] self Instance
@@ -255,15 +255,15 @@ void bc_gfx_draw_round_corner(bc_gfx_t *self, int x0, int y0, int radius, bc_gfx
 //! @param[in] radius In pixels
 //! @param[in] color
 
-void bc_gfx_draw_fill_round_corner(bc_gfx_t *self, int x0, int y0, int radius, bc_gfx_round_corner_t corner, uint32_t color);
+void twr_gfx_draw_fill_round_corner(twr_gfx_t *self, int x0, int y0, int radius, twr_gfx_round_corner_t corner, uint32_t color);
 
 //! @brief Display update, send data
 //! @param[in] self Instance
 //! @return true On success
 //! @return false On failure
 
-bool bc_gfx_update(bc_gfx_t *self);
+bool twr_gfx_update(twr_gfx_t *self);
 
 //! @}
 
-#endif // _BC_GFX_H
+#endif // _TWR_GFX_H

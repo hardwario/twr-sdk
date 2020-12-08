@@ -1,12 +1,12 @@
-#ifndef _BC_TAG_HUMIDITY_H
-#define _BC_TAG_HUMIDITY_H
+#ifndef _TWR_TAG_HUMIDITY_H
+#define _TWR_TAG_HUMIDITY_H
 
-#include <bc_hts221.h>
-#include <bc_hdc2080.h>
-#include <bc_sht20.h>
-#include <bc_sht30.h>
+#include <twr_hts221.h>
+#include <twr_hdc2080.h>
+#include <twr_sht20.h>
+#include <twr_sht30.h>
 
-//! @addtogroup bc_tag_humidity bc_tag_humidity
+//! @addtogroup twr_tag_humidity twr_tag_humidity
 //! @brief Driver for HARDWARIO Humidity Module
 //! @{
 
@@ -15,61 +15,61 @@
 typedef enum
 {
     //! @brief Hardware revision R1
-    BC_TAG_HUMIDITY_REVISION_R1 = 0,
+    TWR_TAG_HUMIDITY_REVISION_R1 = 0,
 
     //! @brief Hardware revision R2
-    BC_TAG_HUMIDITY_REVISION_R2 = 1,
+    TWR_TAG_HUMIDITY_REVISION_R2 = 1,
 
     //! @brief Hardware revision R3
-    BC_TAG_HUMIDITY_REVISION_R3 = 2,
+    TWR_TAG_HUMIDITY_REVISION_R3 = 2,
 
     //! @brief Hardware revision R4
-    BC_TAG_HUMIDITY_REVISION_R4 = 3
+    TWR_TAG_HUMIDITY_REVISION_R4 = 3
 
 
-} bc_tag_humidity_revision_t;
+} twr_tag_humidity_revision_t;
 
 //! @brief I2C address
 
 typedef enum
 {
     //! @brief Default I2C address
-    BC_TAG_HUMIDITY_I2C_ADDRESS_DEFAULT = 0,
+    TWR_TAG_HUMIDITY_I2C_ADDRESS_DEFAULT = 0,
 
     //! @brief Alternate I2C address
-    BC_TAG_HUMIDITY_I2C_ADDRESS_ALTERNATE = 1
+    TWR_TAG_HUMIDITY_I2C_ADDRESS_ALTERNATE = 1
 
-} bc_tag_humidity_i2c_address_t;
+} twr_tag_humidity_i2c_address_t;
 
 //! @brief Callback events
 
 typedef enum
 {
     //! @brief Error event
-    BC_TAG_HUMIDITY_EVENT_ERROR = 0,
+    TWR_TAG_HUMIDITY_EVENT_ERROR = 0,
 
     //! @brief Update event
-    BC_TAG_HUMIDITY_EVENT_UPDATE = 1
+    TWR_TAG_HUMIDITY_EVENT_UPDATE = 1
 
-} bc_tag_humidity_event_t;
+} twr_tag_humidity_event_t;
 
 //! @brief HARDWARIO Humidity Module instance
 
-typedef struct bc_tag_humidity_t bc_tag_humidity_t;
+typedef struct twr_tag_humidity_t twr_tag_humidity_t;
 
 //! @cond
 
-struct bc_tag_humidity_t
+struct twr_tag_humidity_t
 {
-    bc_tag_humidity_revision_t _revision;
-    void (*_event_handler)(bc_tag_humidity_t *, bc_tag_humidity_event_t, void *);
+    twr_tag_humidity_revision_t _revision;
+    void (*_event_handler)(twr_tag_humidity_t *, twr_tag_humidity_event_t, void *);
     void *_event_param;
     union
     {
-        bc_hts221_t hts221;
-        bc_hdc2080_t hdc2080;
-        bc_sht20_t sht20;
-        bc_sht30_t sht30;
+        twr_hts221_t hts221;
+        twr_hdc2080_t hdc2080;
+        twr_sht20_t sht20;
+        twr_sht30_t sht30;
     } _sensor;
 };
 
@@ -81,27 +81,27 @@ struct bc_tag_humidity_t
 //! @param[in] i2c_channel I2C channel
 //! @param[in] i2c_address I2C device address
 
-void bc_tag_humidity_init(bc_tag_humidity_t *self, bc_tag_humidity_revision_t revision, bc_i2c_channel_t i2c_channel, bc_tag_humidity_i2c_address_t i2c_address);
+void twr_tag_humidity_init(twr_tag_humidity_t *self, twr_tag_humidity_revision_t revision, twr_i2c_channel_t i2c_channel, twr_tag_humidity_i2c_address_t i2c_address);
 
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address
 //! @param[in] event_param Optional event parameter (can be NULL)
 
-void bc_tag_humidity_set_event_handler(bc_tag_humidity_t *self, void (*event_handler)(bc_tag_humidity_t *, bc_tag_humidity_event_t, void *), void *event_param);
+void twr_tag_humidity_set_event_handler(twr_tag_humidity_t *self, void (*event_handler)(twr_tag_humidity_t *, twr_tag_humidity_event_t, void *), void *event_param);
 
 //! @brief Set measurement interval
 //! @param[in] self Instance
 //! @param[in] interval Measurement interval
 
-void bc_tag_humidity_set_update_interval(bc_tag_humidity_t *self, bc_tick_t interval);
+void twr_tag_humidity_set_update_interval(twr_tag_humidity_t *self, twr_tick_t interval);
 
 //! @brief Start measurement manually
 //! @param[in] self Instance
 //! @return true On success
 //! @return false When other measurement is in progress
 
-bool bc_tag_humidity_measure(bc_tag_humidity_t *self);
+bool twr_tag_humidity_measure(twr_tag_humidity_t *self);
 
 //! @brief Get measured temperature as raw value
 //! @param[in] self Instance
@@ -109,7 +109,7 @@ bool bc_tag_humidity_measure(bc_tag_humidity_t *self);
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_tag_humidity_get_temperature_raw(bc_tag_humidity_t *self, uint16_t *raw);
+bool twr_tag_humidity_get_temperature_raw(twr_tag_humidity_t *self, uint16_t *raw);
 
 //! @brief Get measured temperature in degrees of Celsius
 //! @param[in] self Instance
@@ -117,7 +117,7 @@ bool bc_tag_humidity_get_temperature_raw(bc_tag_humidity_t *self, uint16_t *raw)
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_tag_humidity_get_temperature_celsius(bc_tag_humidity_t *self, float *celsius);
+bool twr_tag_humidity_get_temperature_celsius(twr_tag_humidity_t *self, float *celsius);
 
 //! @brief Get measured humidity as raw value
 //! @param[in] self Instance
@@ -125,7 +125,7 @@ bool bc_tag_humidity_get_temperature_celsius(bc_tag_humidity_t *self, float *cel
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_tag_humidity_get_humidity_raw(bc_tag_humidity_t *self, uint16_t *raw);
+bool twr_tag_humidity_get_humidity_raw(twr_tag_humidity_t *self, uint16_t *raw);
 
 //! @brief Get measured humidity as percentage
 //! @param[in] self Instance
@@ -133,8 +133,8 @@ bool bc_tag_humidity_get_humidity_raw(bc_tag_humidity_t *self, uint16_t *raw);
 //! @return true When value is valid
 //! @return false When value is invalid
 
-bool bc_tag_humidity_get_humidity_percentage(bc_tag_humidity_t *self, float *percentage);
+bool twr_tag_humidity_get_humidity_percentage(twr_tag_humidity_t *self, float *percentage);
 
 //! @}
 
-#endif // _BC_TAG_HUMIDITY_H
+#endif // _TWR_TAG_HUMIDITY_H

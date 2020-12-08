@@ -1,8 +1,8 @@
-#include <bc_spirit1.h>
-#include <bc_scheduler.h>
-#include <bc_exti.h>
-#include <bc_system.h>
-#include <bc_timer.h>
+#include <twr_spirit1.h>
+#include <twr_scheduler.h>
+#include <twr_exti.h>
+#include <twr_system.h>
+#include <twr_timer.h>
 #include <stm32l0xx.h>
 #include "SPIRIT_Config.h"
 #include "SDK_Configuration_Common.h"
@@ -10,32 +10,32 @@
 
 typedef enum
 {
-    BC_SPIRIT1_STATE_INIT = 0,
-    BC_SPIRIT1_STATE_SLEEP = 1,
-    BC_SPIRIT1_STATE_TX = 2,
-    BC_SPIRIT1_STATE_RX = 3
+    TWR_SPIRIT1_STATE_INIT = 0,
+    TWR_SPIRIT1_STATE_SLEEP = 1,
+    TWR_SPIRIT1_STATE_TX = 2,
+    TWR_SPIRIT1_STATE_RX = 3
 
-} bc_spirit1_state_t;
+} twr_spirit1_state_t;
 
 typedef struct
 {
     int initialized_semaphore;
-    void (*event_handler)(bc_spirit1_event_t, void *);
+    void (*event_handler)(twr_spirit1_event_t, void *);
     void *event_param;
-    bc_scheduler_task_id_t task_id;
-    bc_spirit1_state_t desired_state;
-    bc_spirit1_state_t current_state;
-    uint8_t tx_buffer[BC_SPIRIT1_MAX_PACKET_SIZE];
+    twr_scheduler_task_id_t task_id;
+    twr_spirit1_state_t desired_state;
+    twr_spirit1_state_t current_state;
+    uint8_t tx_buffer[TWR_SPIRIT1_MAX_PACKET_SIZE];
     size_t tx_length;
-    uint8_t  rx_buffer[BC_SPIRIT1_MAX_PACKET_SIZE];
+    uint8_t  rx_buffer[TWR_SPIRIT1_MAX_PACKET_SIZE];
     size_t rx_length;
     int rx_rssi;
-    bc_tick_t rx_timeout;
-    bc_tick_t rx_tick_timeout;
+    twr_tick_t rx_timeout;
+    twr_tick_t rx_tick_timeout;
 
-} bc_spirit1_t;
+} twr_spirit1_t;
 
-static bc_spirit1_t _bc_spirit1;
+static twr_spirit1_t _twr_spirit1;
 
 #define XTAL_FREQUENCY 50000000
 
@@ -78,33 +78,33 @@ SGpioInit xGpioIRQ={
   SPIRIT_GPIO_DIG_OUT_IRQ
 };
 
-static void _bc_spirit1_enter_state_tx(void);
-static void _bc_spirit1_check_state_tx(void);
-static void _bc_spirit1_enter_state_rx(void);
-static void _bc_spirit1_check_state_rx(void);
-static void _bc_spirit1_enter_state_sleep(void);
+static void _twr_spirit1_enter_state_tx(void);
+static void _twr_spirit1_check_state_tx(void);
+static void _twr_spirit1_enter_state_rx(void);
+static void _twr_spirit1_check_state_rx(void);
+static void _twr_spirit1_enter_state_sleep(void);
 
-void bc_spirit1_hal_chip_select_low(void);
-void bc_spirit1_hal_chip_select_high(void);
-uint8_t bc_spirit1_hal_transfer_byte(uint8_t value);
-static void bc_spirit1_hal_init_gpio(void);
-static void bc_spirit1_hal_deinit_gpio(void);
-static void bc_spirit1_hal_init_spi(void);
-static void bc_spirit1_hal_deinit_spi(void);
+void twr_spirit1_hal_chip_select_low(void);
+void twr_spirit1_hal_chip_select_high(void);
+uint8_t twr_spirit1_hal_transfer_byte(uint8_t value);
+static void twr_spirit1_hal_init_gpio(void);
+static void twr_spirit1_hal_deinit_gpio(void);
+static void twr_spirit1_hal_init_spi(void);
+static void twr_spirit1_hal_deinit_spi(void);
 
-static void _bc_spirit1_task(void *param);
-static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param);
+static void _twr_spirit1_task(void *param);
+static void _twr_spirit1_interrupt(twr_exti_line_t line, void *param);
 
-bool bc_spirit1_init(void)
+bool twr_spirit1_init(void)
 {
-    if (_bc_spirit1.initialized_semaphore > 0)
+    if (_twr_spirit1.initialized_semaphore > 0)
     {
-        _bc_spirit1.initialized_semaphore++;
+        _twr_spirit1.initialized_semaphore++;
 
         return true;
     }
 
-    memset(&_bc_spirit1, 0, sizeof(_bc_spirit1));
+    memset(&_twr_spirit1, 0, sizeof(_twr_spirit1));
 
     SpiritRadioSetXtalFrequency(XTAL_FREQUENCY);
 
@@ -124,11 +124,11 @@ bool bc_spirit1_init(void)
     if (SpiritRadioInit(&xRadioInit) != 0)
     {
 
-        bc_spirit1_hal_shutdown_high();
+        twr_spirit1_hal_shutdown_high();
 
-        bc_spirit1_hal_deinit_spi();
+        twr_spirit1_hal_deinit_spi();
 
-        bc_spirit1_hal_deinit_gpio();
+        twr_spirit1_hal_deinit_gpio();
 
         return false;
     }
@@ -138,152 +138,152 @@ bool bc_spirit1_init(void)
 
     SpiritPktBasicAddressesInit(&xAddressInit);
 
-    _bc_spirit1.desired_state = BC_SPIRIT1_STATE_SLEEP;
+    _twr_spirit1.desired_state = TWR_SPIRIT1_STATE_SLEEP;
 
-    _bc_spirit1.task_id = bc_scheduler_register(_bc_spirit1_task, NULL, 0);
+    _twr_spirit1.task_id = twr_scheduler_register(_twr_spirit1_task, NULL, 0);
 
-    _bc_spirit1.initialized_semaphore++;
+    _twr_spirit1.initialized_semaphore++;
 
     return true;
 }
 
-bool bc_spirit1_deinit(void)
+bool twr_spirit1_deinit(void)
 {
-    if (--_bc_spirit1.initialized_semaphore != 0)
+    if (--_twr_spirit1.initialized_semaphore != 0)
     {
         return false;
     }
 
-    bc_spirit1_hal_shutdown_high();
+    twr_spirit1_hal_shutdown_high();
 
-    bc_spirit1_hal_deinit_spi();
+    twr_spirit1_hal_deinit_spi();
 
-    bc_spirit1_hal_deinit_gpio();
+    twr_spirit1_hal_deinit_gpio();
 
-    bc_scheduler_unregister(_bc_spirit1.task_id);
+    twr_scheduler_unregister(_twr_spirit1.task_id);
 
-    bc_exti_unregister(BC_EXTI_LINE_PA7);
+    twr_exti_unregister(TWR_EXTI_LINE_PA7);
 
     return true;
 }
 
-void bc_spirit1_set_event_handler(void (*event_handler)(bc_spirit1_event_t, void *), void *event_param)
+void twr_spirit1_set_event_handler(void (*event_handler)(twr_spirit1_event_t, void *), void *event_param)
 {
-    _bc_spirit1.event_handler = event_handler;
-    _bc_spirit1.event_param = event_param;
+    _twr_spirit1.event_handler = event_handler;
+    _twr_spirit1.event_param = event_param;
 }
 
-void *bc_spirit1_get_tx_buffer(void)
+void *twr_spirit1_get_tx_buffer(void)
 {
-    return _bc_spirit1.tx_buffer;
+    return _twr_spirit1.tx_buffer;
 }
 
-void bc_spirit1_set_tx_length(size_t length)
+void twr_spirit1_set_tx_length(size_t length)
 {
-    _bc_spirit1.tx_length = length;
+    _twr_spirit1.tx_length = length;
 }
 
-size_t bc_spirit1_get_tx_length(void)
+size_t twr_spirit1_get_tx_length(void)
 {
-    return _bc_spirit1.tx_length;
+    return _twr_spirit1.tx_length;
 }
 
-void *bc_spirit1_get_rx_buffer(void)
+void *twr_spirit1_get_rx_buffer(void)
 {
-    return _bc_spirit1.rx_buffer;
+    return _twr_spirit1.rx_buffer;
 }
 
-size_t bc_spirit1_get_rx_length(void)
+size_t twr_spirit1_get_rx_length(void)
 {
-    return _bc_spirit1.rx_length;
+    return _twr_spirit1.rx_length;
 }
 
-int bc_spirit1_get_rx_rssi(void)
+int twr_spirit1_get_rx_rssi(void)
 {
-    return _bc_spirit1.rx_rssi;
+    return _twr_spirit1.rx_rssi;
 }
 
-void bc_spirit1_set_rx_timeout(bc_tick_t timeout)
+void twr_spirit1_set_rx_timeout(twr_tick_t timeout)
 {
-    _bc_spirit1.rx_timeout = timeout;
+    _twr_spirit1.rx_timeout = timeout;
 
-    if (_bc_spirit1.current_state == BC_SPIRIT1_STATE_RX)
+    if (_twr_spirit1.current_state == TWR_SPIRIT1_STATE_RX)
     {
-        if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
+        if (_twr_spirit1.rx_timeout == TWR_TICK_INFINITY)
         {
-            _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
+            _twr_spirit1.rx_tick_timeout = TWR_TICK_INFINITY;
         }
         else
         {
-            _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
+            _twr_spirit1.rx_tick_timeout = twr_tick_get() + _twr_spirit1.rx_timeout;
         }
 
-        if (_bc_spirit1.initialized_semaphore > 0)
+        if (_twr_spirit1.initialized_semaphore > 0)
         {
-            bc_scheduler_plan_absolute(_bc_spirit1.task_id, _bc_spirit1.rx_tick_timeout);
+            twr_scheduler_plan_absolute(_twr_spirit1.task_id, _twr_spirit1.rx_tick_timeout);
         }
     }
 }
 
-void bc_spirit1_tx(void)
+void twr_spirit1_tx(void)
 {
-    _bc_spirit1.desired_state = BC_SPIRIT1_STATE_TX;
+    _twr_spirit1.desired_state = TWR_SPIRIT1_STATE_TX;
 
-    if (_bc_spirit1.initialized_semaphore > 0)
+    if (_twr_spirit1.initialized_semaphore > 0)
     {
-        bc_scheduler_plan_now(_bc_spirit1.task_id);
+        twr_scheduler_plan_now(_twr_spirit1.task_id);
     }
 }
 
-void bc_spirit1_rx(void)
+void twr_spirit1_rx(void)
 {
-    _bc_spirit1.desired_state = BC_SPIRIT1_STATE_RX;
+    _twr_spirit1.desired_state = TWR_SPIRIT1_STATE_RX;
 
-    if (_bc_spirit1.initialized_semaphore > 0)
+    if (_twr_spirit1.initialized_semaphore > 0)
     {
-        bc_scheduler_plan_now(_bc_spirit1.task_id);
+        twr_scheduler_plan_now(_twr_spirit1.task_id);
     }
 }
 
-void bc_spirit1_sleep(void)
+void twr_spirit1_sleep(void)
 {
-    _bc_spirit1.desired_state = BC_SPIRIT1_STATE_SLEEP;
+    _twr_spirit1.desired_state = TWR_SPIRIT1_STATE_SLEEP;
 
-    if (_bc_spirit1.initialized_semaphore > 0)
+    if (_twr_spirit1.initialized_semaphore > 0)
     {
-        bc_scheduler_plan_now(_bc_spirit1.task_id);
+        twr_scheduler_plan_now(_twr_spirit1.task_id);
     }
 }
 
-static void _bc_spirit1_task(void *param)
+static void _twr_spirit1_task(void *param)
 {
     (void) param;
 
-    if ((_bc_spirit1.current_state == BC_SPIRIT1_STATE_RX) && (bc_tick_get() >= _bc_spirit1.rx_tick_timeout))
+    if ((_twr_spirit1.current_state == TWR_SPIRIT1_STATE_RX) && (twr_tick_get() >= _twr_spirit1.rx_tick_timeout))
     {
-        if (_bc_spirit1.event_handler != NULL)
+        if (_twr_spirit1.event_handler != NULL)
         {
-            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_TIMEOUT, _bc_spirit1.event_param);
+            _twr_spirit1.event_handler(TWR_SPIRIT1_EVENT_RX_TIMEOUT, _twr_spirit1.event_param);
         }
     }
 
-    if (_bc_spirit1.desired_state != _bc_spirit1.current_state)
+    if (_twr_spirit1.desired_state != _twr_spirit1.current_state)
     {
-        if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_TX)
+        if (_twr_spirit1.desired_state == TWR_SPIRIT1_STATE_TX)
         {
-            _bc_spirit1_enter_state_tx();
+            _twr_spirit1_enter_state_tx();
 
             return;
         }
-        else if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_RX)
+        else if (_twr_spirit1.desired_state == TWR_SPIRIT1_STATE_RX)
         {
-            _bc_spirit1_enter_state_rx();
+            _twr_spirit1_enter_state_rx();
 
             return;
         }
-        else if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_SLEEP)
+        else if (_twr_spirit1.desired_state == TWR_SPIRIT1_STATE_SLEEP)
         {
-            _bc_spirit1_enter_state_sleep();
+            _twr_spirit1_enter_state_sleep();
 
             return;
         }
@@ -291,25 +291,25 @@ static void _bc_spirit1_task(void *param)
         return;
     }
 
-    if (_bc_spirit1.current_state == BC_SPIRIT1_STATE_TX)
+    if (_twr_spirit1.current_state == TWR_SPIRIT1_STATE_TX)
     {
-        _bc_spirit1_check_state_tx();
+        _twr_spirit1_check_state_tx();
 
         return;
     }
-    else if (_bc_spirit1.current_state == BC_SPIRIT1_STATE_RX)
+    else if (_twr_spirit1.current_state == TWR_SPIRIT1_STATE_RX)
     {
-        _bc_spirit1_check_state_rx();
+        _twr_spirit1_check_state_rx();
 
         return;
     }
 }
 
-static void _bc_spirit1_enter_state_tx(void)
+static void _twr_spirit1_enter_state_tx(void)
 {
     GPIOA->PUPDR |= GPIO_PUPDR_PUPD7_1;
 
-    _bc_spirit1.current_state = BC_SPIRIT1_STATE_TX;
+    _twr_spirit1.current_state = TWR_SPIRIT1_STATE_TX;
 
     SpiritCmdStrobeSabort();
     SpiritCmdStrobeReady();
@@ -319,19 +319,19 @@ static void _bc_spirit1_enter_state_tx(void)
     SpiritIrqClearStatus();
     SpiritIrq(TX_DATA_SENT, S_ENABLE);
 
-    SpiritPktBasicSetPayloadLength(_bc_spirit1.tx_length);
+    SpiritPktBasicSetPayloadLength(_twr_spirit1.tx_length);
 
     // TODO Why needed?
     SpiritPktBasicSetDestinationAddress(0x35);
 
-    SpiritSpiWriteLinearFifo(_bc_spirit1.tx_length, _bc_spirit1.tx_buffer);
+    SpiritSpiWriteLinearFifo(_twr_spirit1.tx_length, _twr_spirit1.tx_buffer);
 
-    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt, NULL);
+    twr_exti_register(TWR_EXTI_LINE_PA7, TWR_EXTI_EDGE_FALLING, _twr_spirit1_interrupt, NULL);
 
     SpiritCmdStrobeTx();
 }
 
-static void _bc_spirit1_check_state_tx(void)
+static void _twr_spirit1_check_state_tx(void)
 {
     SpiritIrqs xIrqStatus;
 
@@ -341,44 +341,44 @@ static void _bc_spirit1_check_state_tx(void)
     {
         SpiritIrqClearStatus();
 
-        _bc_spirit1.desired_state = BC_SPIRIT1_STATE_SLEEP;
+        _twr_spirit1.desired_state = TWR_SPIRIT1_STATE_SLEEP;
 
-        if (_bc_spirit1.event_handler != NULL)
+        if (_twr_spirit1.event_handler != NULL)
         {
-            _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_TX_DONE, _bc_spirit1.event_param);
+            _twr_spirit1.event_handler(TWR_SPIRIT1_EVENT_TX_DONE, _twr_spirit1.event_param);
         }
 
-        if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_RX)
+        if (_twr_spirit1.desired_state == TWR_SPIRIT1_STATE_RX)
         {
-            _bc_spirit1_enter_state_rx();
+            _twr_spirit1_enter_state_rx();
         }
-        else if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_SLEEP)
+        else if (_twr_spirit1.desired_state == TWR_SPIRIT1_STATE_SLEEP)
         {
-            _bc_spirit1_enter_state_sleep();
+            _twr_spirit1_enter_state_sleep();
         }
-        else if (_bc_spirit1.desired_state == BC_SPIRIT1_STATE_TX)
+        else if (_twr_spirit1.desired_state == TWR_SPIRIT1_STATE_TX)
         {
-            _bc_spirit1_enter_state_tx();
+            _twr_spirit1_enter_state_tx();
         }
     }
 }
 
-static void _bc_spirit1_enter_state_rx(void)
+static void _twr_spirit1_enter_state_rx(void)
 {
     GPIOA->PUPDR |= GPIO_PUPDR_PUPD7_1;
 
-    _bc_spirit1.current_state = BC_SPIRIT1_STATE_RX;
+    _twr_spirit1.current_state = TWR_SPIRIT1_STATE_RX;
 
-    if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
+    if (_twr_spirit1.rx_timeout == TWR_TICK_INFINITY)
     {
-        _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
+        _twr_spirit1.rx_tick_timeout = TWR_TICK_INFINITY;
     }
     else
     {
-        _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
+        _twr_spirit1.rx_tick_timeout = twr_tick_get() + _twr_spirit1.rx_timeout;
     }
 
-    bc_scheduler_plan_current_absolute(_bc_spirit1.rx_tick_timeout);
+    twr_scheduler_plan_current_absolute(_twr_spirit1.rx_tick_timeout);
 
     SpiritIrqs xIrqStatus;
 
@@ -400,13 +400,13 @@ static void _bc_spirit1_enter_state_rx(void)
     /* IRQ registers blanking */
     SpiritIrqClearStatus();
 
-    bc_exti_register(BC_EXTI_LINE_PA7, BC_EXTI_EDGE_FALLING, _bc_spirit1_interrupt, NULL);
+    twr_exti_register(TWR_EXTI_LINE_PA7, TWR_EXTI_EDGE_FALLING, _twr_spirit1_interrupt, NULL);
 
     /* RX command */
     SpiritCmdStrobeRx();
 }
 
-static void _bc_spirit1_check_state_rx(void)
+static void _twr_spirit1_check_state_rx(void)
 {
     SpiritIrqs xIrqStatus;
 
@@ -426,33 +426,33 @@ static void _bc_spirit1_check_state_rx(void)
         /* Get the RX FIFO size */
         uint8_t cRxData = SpiritLinearFifoReadNumElementsRxFifo();
 
-        if (cRxData <= BC_SPIRIT1_MAX_PACKET_SIZE)
+        if (cRxData <= TWR_SPIRIT1_MAX_PACKET_SIZE)
         {
             /* Read the RX FIFO */
-            SpiritSpiReadLinearFifo(cRxData, _bc_spirit1.rx_buffer);
+            SpiritSpiReadLinearFifo(cRxData, _twr_spirit1.rx_buffer);
 
-            _bc_spirit1.rx_length = cRxData;
+            _twr_spirit1.rx_length = cRxData;
 
             uint8_t rssi_level;
 
-            bc_spirit1_read(RSSI_LEVEL_BASE, &rssi_level, 1);
+            twr_spirit1_read(RSSI_LEVEL_BASE, &rssi_level, 1);
 
-            _bc_spirit1.rx_rssi = ((int) rssi_level) / 2 - 130;
+            _twr_spirit1.rx_rssi = ((int) rssi_level) / 2 - 130;
 
-            if (_bc_spirit1.rx_timeout == BC_TICK_INFINITY)
+            if (_twr_spirit1.rx_timeout == TWR_TICK_INFINITY)
             {
-                _bc_spirit1.rx_tick_timeout = BC_TICK_INFINITY;
+                _twr_spirit1.rx_tick_timeout = TWR_TICK_INFINITY;
             }
             else
             {
-                _bc_spirit1.rx_tick_timeout = bc_tick_get() + _bc_spirit1.rx_timeout;
+                _twr_spirit1.rx_tick_timeout = twr_tick_get() + _twr_spirit1.rx_timeout;
             }
 
-            bc_scheduler_plan_current_absolute(_bc_spirit1.rx_tick_timeout);
+            twr_scheduler_plan_current_absolute(_twr_spirit1.rx_tick_timeout);
 
-            if (_bc_spirit1.event_handler != NULL)
+            if (_twr_spirit1.event_handler != NULL)
             {
-                _bc_spirit1.event_handler(BC_SPIRIT1_EVENT_RX_DONE, _bc_spirit1.event_param);
+                _twr_spirit1.event_handler(TWR_SPIRIT1_EVENT_RX_DONE, _twr_spirit1.event_param);
             }
         }
     }
@@ -464,9 +464,9 @@ static void _bc_spirit1_check_state_rx(void)
     SpiritCmdStrobeRx();
 }
 
-static void _bc_spirit1_enter_state_sleep(void)
+static void _twr_spirit1_enter_state_sleep(void)
 {
-    _bc_spirit1.current_state = BC_SPIRIT1_STATE_SLEEP;
+    _twr_spirit1.current_state = TWR_SPIRIT1_STATE_SLEEP;
 
     SpiritCmdStrobeSabort();
     SpiritCmdStrobeReady();
@@ -477,108 +477,108 @@ static void _bc_spirit1_enter_state_sleep(void)
     GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD7_1;
 }
 
-bc_spirit_status_t bc_spirit1_command(uint8_t command)
+twr_spirit_status_t twr_spirit1_command(uint8_t command)
 {
     // Enable PLL
-    bc_system_pll_enable();
+    twr_system_pll_enable();
 
     // Set chip select low
-    bc_spirit1_hal_chip_select_low();
+    twr_spirit1_hal_chip_select_low();
 
     // Write header byte and read status bits (MSB)
-    uint16_t status = bc_spirit1_hal_transfer_byte(0x80) << 8;
+    uint16_t status = twr_spirit1_hal_transfer_byte(0x80) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= bc_spirit1_hal_transfer_byte(command);
+    status |= twr_spirit1_hal_transfer_byte(command);
 
     // Set chip select high
-    bc_spirit1_hal_chip_select_high();
+    twr_spirit1_hal_chip_select_high();
 
     // Disable PLL
-    bc_system_pll_disable();
+    twr_system_pll_disable();
 
     // TODO Why this cast?
-    return *((bc_spirit_status_t *) &status);
+    return *((twr_spirit_status_t *) &status);
 }
 
-bc_spirit_status_t bc_spirit1_write(uint8_t address, const void *buffer, size_t length)
+twr_spirit_status_t twr_spirit1_write(uint8_t address, const void *buffer, size_t length)
 {
     // Enable PLL
-    bc_system_pll_enable();
+    twr_system_pll_enable();
 
     // Set chip select low
-    bc_spirit1_hal_chip_select_low();
+    twr_spirit1_hal_chip_select_low();
 
     // Write header byte and read status bits (MSB)
-    uint16_t status = bc_spirit1_hal_transfer_byte(0) << 8;
+    uint16_t status = twr_spirit1_hal_transfer_byte(0) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= bc_spirit1_hal_transfer_byte(address);
+    status |= twr_spirit1_hal_transfer_byte(address);
 
     // Write buffer
     for (size_t i = 0; i < length; i++)
     {
         // Write data
-        bc_spirit1_hal_transfer_byte(*((uint8_t *) buffer + i));
+        twr_spirit1_hal_transfer_byte(*((uint8_t *) buffer + i));
     }
 
     // Set chip select high
-    bc_spirit1_hal_chip_select_high();
+    twr_spirit1_hal_chip_select_high();
 
     // Disable PLL
-    bc_system_pll_disable();
+    twr_system_pll_disable();
 
     // TODO Why this cast?
-    return *((bc_spirit_status_t *) &status);
+    return *((twr_spirit_status_t *) &status);
 }
 
-bc_spirit_status_t bc_spirit1_read(uint8_t address, void *buffer, size_t length)
+twr_spirit_status_t twr_spirit1_read(uint8_t address, void *buffer, size_t length)
 {
     // Enable PLL
-    bc_system_pll_enable();
+    twr_system_pll_enable();
 
     // Set chip select low
-    bc_spirit1_hal_chip_select_low();
+    twr_spirit1_hal_chip_select_low();
 
     // Write header byte and read status bits (MSB)
-    uint16_t status = bc_spirit1_hal_transfer_byte(1) << 8;
+    uint16_t status = twr_spirit1_hal_transfer_byte(1) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= bc_spirit1_hal_transfer_byte(address);
+    status |= twr_spirit1_hal_transfer_byte(address);
 
     // Read buffer
     for (size_t i = 0; i < length; i++)
     {
         // Write dummy byte and read data
-        *((uint8_t *) buffer + i) = bc_spirit1_hal_transfer_byte(0);
+        *((uint8_t *) buffer + i) = twr_spirit1_hal_transfer_byte(0);
     }
 
     // Set chip select high
-    bc_spirit1_hal_chip_select_high();
+    twr_spirit1_hal_chip_select_high();
 
     // Disable PLL
-    bc_system_pll_disable();
+    twr_system_pll_disable();
 
     // TODO Why this cast?
-    return *((bc_spirit_status_t *) &status);
+    return *((twr_spirit_status_t *) &status);
 }
 
-void bc_spirit1_hal_init(void)
+void twr_spirit1_hal_init(void)
 {
     // Initialize timer
-    bc_timer_init();
+    twr_timer_init();
 
     // Initialize GPIO
-    bc_spirit1_hal_init_gpio();
+    twr_spirit1_hal_init_gpio();
 
     // Initialize SPI
-    bc_spirit1_hal_init_spi();
+    twr_spirit1_hal_init_spi();
 
     // Activate shutdown (forces delay)
-    bc_spirit1_hal_shutdown_high();
+    twr_spirit1_hal_shutdown_high();
 }
 
-void bc_spirit1_hal_shutdown_low(void)
+void twr_spirit1_hal_shutdown_low(void)
 {
     // Output log. 0 on SDN pin
     GPIOB->BSRR = GPIO_BSRR_BR_7;
@@ -588,17 +588,17 @@ void bc_spirit1_hal_shutdown_low(void)
 
     // TODO This delay might not exist (maybe poll GPIO?)...
 
-    bc_timer_start();
+    twr_timer_start();
 
-    bc_timer_delay(10000);
+    twr_timer_delay(10000);
 
-    bc_timer_stop();
+    twr_timer_stop();
 }
 
-void bc_spirit1_hal_shutdown_high(void)
+void twr_spirit1_hal_shutdown_high(void)
 {
     // Enable PLL
-    bc_system_pll_enable();
+    twr_system_pll_enable();
 
     // Output log. 0 on CS pin
     GPIOA->BSRR = GPIO_BSRR_BR_15;
@@ -606,40 +606,40 @@ void bc_spirit1_hal_shutdown_high(void)
     // Output log. 1 on SDN pin
     GPIOB->BSRR = GPIO_BSRR_BS_7;
 
-    bc_timer_start();
+    twr_timer_start();
 
-    bc_timer_delay(50000);
+    twr_timer_delay(50000);
 
-    bc_timer_clear();
+    twr_timer_clear();
 
-    bc_timer_delay(50000);
+    twr_timer_delay(50000);
 
-    bc_timer_stop();
+    twr_timer_stop();
 
     // Disable PLL
-    bc_system_pll_disable();
+    twr_system_pll_disable();
 }
 
-void bc_spirit1_hal_chip_select_low(void)
+void twr_spirit1_hal_chip_select_low(void)
 {
     // Set CS pin to log. 0
     GPIOA->BSRR = GPIO_BSRR_BR_15;
 
-    bc_timer_start();
+    twr_timer_start();
 
-    while(bc_timer_get_microseconds() < 4)
+    while(twr_timer_get_microseconds() < 4)
     {
         continue;
     }
 
-    bc_timer_stop();
+    twr_timer_stop();
 }
 
-void bc_spirit1_hal_chip_select_high(void)
+void twr_spirit1_hal_chip_select_high(void)
 {
-    bc_timer_start();
+    twr_timer_start();
 
-    while(bc_timer_get_microseconds() < 4)
+    while(twr_timer_get_microseconds() < 4)
     {
         continue;
     }
@@ -647,15 +647,15 @@ void bc_spirit1_hal_chip_select_high(void)
     // Set CS pin to log. 1
     GPIOA->BSRR = GPIO_BSRR_BS_15;
 
-    while(bc_timer_get_microseconds() < 8)
+    while(twr_timer_get_microseconds() < 8)
     {
         continue;
     }
 
-    bc_timer_stop();
+    twr_timer_stop();
 }
 
-uint8_t bc_spirit1_hal_transfer_byte(uint8_t value)
+uint8_t twr_spirit1_hal_transfer_byte(uint8_t value)
 {
     // Wait until transmit buffer is empty
     while ((SPI1->SR & SPI_SR_TXE) == 0)
@@ -678,7 +678,7 @@ uint8_t bc_spirit1_hal_transfer_byte(uint8_t value)
     return value;
 }
 
-static void bc_spirit1_hal_init_gpio(void)
+static void twr_spirit1_hal_init_gpio(void)
 {
     // Enable clock for GPIOH, GPIOB and GPIOA
     RCC->IOPENR |= RCC_IOPENR_GPIOHEN | RCC_IOPENR_GPIOBEN | RCC_IOPENR_GPIOAEN;
@@ -714,7 +714,7 @@ static void bc_spirit1_hal_init_gpio(void)
     GPIOH->MODER &= ~(GPIO_MODER_MODE0_1 | GPIO_MODER_MODE0_0);
 }
 
-static void bc_spirit1_hal_deinit_gpio(void)
+static void twr_spirit1_hal_deinit_gpio(void)
 {
     // Low speed on CS pin
     GPIOA->OSPEEDR &= ~GPIO_OSPEEDER_OSPEED15_Msk;
@@ -744,7 +744,7 @@ static void bc_spirit1_hal_deinit_gpio(void)
     GPIOH->PUPDR &= ~GPIO_PUPDR_PUPD0_Msk;
 }
 
-static void bc_spirit1_hal_init_spi(void)
+static void twr_spirit1_hal_init_spi(void)
 {
     // Enable clock for SPI1
     RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
@@ -756,7 +756,7 @@ static void bc_spirit1_hal_init_spi(void)
     SPI1->CR1 |= SPI_CR1_SPE;
 }
 
-static void bc_spirit1_hal_deinit_spi(void)
+static void twr_spirit1_hal_deinit_spi(void)
 {
     // Disable SPI
     SPI1->CR1 = 0;
@@ -765,10 +765,10 @@ static void bc_spirit1_hal_deinit_spi(void)
     RCC->APB2ENR &= ~RCC_APB2ENR_SPI1EN;
 }
 
-static void _bc_spirit1_interrupt(bc_exti_line_t line, void *param)
+static void _twr_spirit1_interrupt(twr_exti_line_t line, void *param)
 {
     (void) line;
     (void) param;
 
-    bc_scheduler_plan_now(_bc_spirit1.task_id);
+    twr_scheduler_plan_now(_twr_spirit1.task_id);
 }

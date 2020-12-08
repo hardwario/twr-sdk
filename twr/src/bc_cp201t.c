@@ -1,64 +1,64 @@
-#include <bc_adc.h>
-#include <bc_cp201t.h>
+#include <twr_adc.h>
+#include <twr_cp201t.h>
 
 typedef struct
 {
-    bc_module_sensor_channel_t channel;
-    bc_adc_channel_t channel_adc;
-    bc_scheduler_task_id_t task_id_interval;
-    bc_scheduler_task_id_t task_id_measure;
-    void (*event_handler)(bc_module_sensor_channel_t, bc_cp201t_event_t, void *);
+    twr_module_sensor_channel_t channel;
+    twr_adc_channel_t channel_adc;
+    twr_scheduler_task_id_t task_id_interval;
+    twr_scheduler_task_id_t task_id_measure;
+    void (*event_handler)(twr_module_sensor_channel_t, twr_cp201t_event_t, void *);
     void *event_param;
     uint16_t thermistor_data;
     float temperature;
-    bc_tick_t update_interval;
+    twr_tick_t update_interval;
     bool initialized;
     bool measurement_active;
 
-} bc_cp201t_t;
+} twr_cp201t_t;
 
-static bc_cp201t_t _bc_cp201t[2] =
+static twr_cp201t_t _twr_cp201t[2] =
 {
     [0] =
     {
-        .channel = BC_MODULE_SENSOR_CHANNEL_A,
-        .channel_adc = BC_ADC_CHANNEL_A4,
+        .channel = TWR_MODULE_SENSOR_CHANNEL_A,
+        .channel_adc = TWR_ADC_CHANNEL_A4,
         .initialized = false,
     },
 
     [1] =
     {
-        .channel = BC_MODULE_SENSOR_CHANNEL_B,
-        .channel_adc = BC_ADC_CHANNEL_A5,
+        .channel = TWR_MODULE_SENSOR_CHANNEL_B,
+        .channel_adc = TWR_ADC_CHANNEL_A5,
         .initialized = false,
     }
 };
 
-static const uint16_t _bc_cp201t_lut[1024];
+static const uint16_t _twr_cp201t_lut[1024];
 
-static void _bc_cp201t_adc_event_handler(bc_adc_channel_t channel, bc_adc_event_t event, void *param);
+static void _twr_cp201t_adc_event_handler(twr_adc_channel_t channel, twr_adc_event_t event, void *param);
 
-static void _bc_cp201t_task_interval(void *param);
+static void _twr_cp201t_task_interval(void *param);
 
-static void _bc_cp201t_task_measure(void *param);
+static void _twr_cp201t_task_measure(void *param);
 
-bool bc_cp201t_init(bc_module_sensor_channel_t channel)
+bool twr_cp201t_init(twr_module_sensor_channel_t channel)
 {
-    bc_cp201t_t *cp201t = &_bc_cp201t[channel];
+    twr_cp201t_t *cp201t = &_twr_cp201t[channel];
 
     if (!cp201t->initialized)
     {
-        if (!bc_module_sensor_init())
+        if (!twr_module_sensor_init())
         {
             return false;
         }
 
         // Initialize ADC to measure voltage on CP-201T (temperature)
-        bc_adc_init();
-        bc_adc_set_event_handler(cp201t->channel_adc, _bc_cp201t_adc_event_handler, cp201t);
+        twr_adc_init();
+        twr_adc_set_event_handler(cp201t->channel_adc, _twr_cp201t_adc_event_handler, cp201t);
 
-        cp201t->task_id_interval = bc_scheduler_register(_bc_cp201t_task_interval, cp201t, BC_TICK_INFINITY);
-        cp201t->task_id_measure = bc_scheduler_register(_bc_cp201t_task_measure, cp201t, BC_TICK_INFINITY);
+        cp201t->task_id_interval = twr_scheduler_register(_twr_cp201t_task_interval, cp201t, TWR_TICK_INFINITY);
+        cp201t->task_id_measure = twr_scheduler_register(_twr_cp201t_task_measure, cp201t, TWR_TICK_INFINITY);
 
         cp201t->initialized = true;
     }
@@ -66,31 +66,31 @@ bool bc_cp201t_init(bc_module_sensor_channel_t channel)
     return true;
 }
 
-void bc_cp201t_set_event_handler(bc_module_sensor_channel_t channel, void (*event_handler)(bc_module_sensor_channel_t, bc_cp201t_event_t, void *), void *event_param)
+void twr_cp201t_set_event_handler(twr_module_sensor_channel_t channel, void (*event_handler)(twr_module_sensor_channel_t, twr_cp201t_event_t, void *), void *event_param)
 {
-    bc_cp201t_t *cp201t = &_bc_cp201t[channel];
+    twr_cp201t_t *cp201t = &_twr_cp201t[channel];
 
     cp201t->event_handler = event_handler;
     cp201t->event_param = event_param;
 }
 
-void bc_cp201t_set_update_interval(bc_module_sensor_channel_t channel, bc_tick_t interval)
+void twr_cp201t_set_update_interval(twr_module_sensor_channel_t channel, twr_tick_t interval)
 {
-    bc_cp201t_t *cp201t = &_bc_cp201t[channel];
+    twr_cp201t_t *cp201t = &_twr_cp201t[channel];
 
     cp201t->update_interval = interval;
 
-    if (cp201t->update_interval == BC_TICK_INFINITY)
+    if (cp201t->update_interval == TWR_TICK_INFINITY)
     {
-        bc_scheduler_plan_absolute(cp201t->task_id_interval, BC_TICK_INFINITY);
+        twr_scheduler_plan_absolute(cp201t->task_id_interval, TWR_TICK_INFINITY);
     }
     else
     {
-        bc_scheduler_plan_relative(cp201t->task_id_interval, cp201t->update_interval);
+        twr_scheduler_plan_relative(cp201t->task_id_interval, cp201t->update_interval);
     }
 }
 
-bool bc_cp201t_measure(bc_cp201t_t *self)
+bool twr_cp201t_measure(twr_cp201t_t *self)
 {
     if (self->measurement_active)
     {
@@ -99,27 +99,27 @@ bool bc_cp201t_measure(bc_cp201t_t *self)
 
     self->measurement_active = true;
 
-    bc_scheduler_plan_now(self->task_id_measure);
+    twr_scheduler_plan_now(self->task_id_measure);
 
     return true;
 }
 
-bool bc_cp201t_get_temperature_celsius(bc_module_sensor_channel_t channel, float *celsius)
+bool twr_cp201t_get_temperature_celsius(twr_module_sensor_channel_t channel, float *celsius)
 {
     float vdda_voltage;
     int16_t temp_code;
-    bc_cp201t_t *cp201t = &_bc_cp201t[channel];
+    twr_cp201t_t *cp201t = &_twr_cp201t[channel];
     uint16_t data = cp201t->thermistor_data;
 
     // Get actual VDDA and accurate data
-    bc_adc_get_vdda_voltage(&vdda_voltage);
+    twr_adc_get_vdda_voltage(&vdda_voltage);
     data *= 3.3f / vdda_voltage;
 
     // Software shuffle of pull-up and NTC with each other (So that the table can be used)
     data = 0xffff - data;
 
     // Find temperature in LUT
-    temp_code = _bc_cp201t_lut[data >> 6];
+    temp_code = _twr_cp201t_lut[data >> 6];
 
     // If temperature is valid...
     if (temp_code != 0x7fff)
@@ -135,51 +135,51 @@ bool bc_cp201t_get_temperature_celsius(bc_module_sensor_channel_t channel, float
     }
 }
 
-static void _bc_cp201t_task_interval(void *param)
+static void _twr_cp201t_task_interval(void *param)
 {
-    bc_cp201t_t *cp201t = param;
+    twr_cp201t_t *cp201t = param;
 
-    bc_cp201t_measure(cp201t);
+    twr_cp201t_measure(cp201t);
 
-    bc_scheduler_plan_current_relative(cp201t->update_interval);
+    twr_scheduler_plan_current_relative(cp201t->update_interval);
 }
 
-static void _bc_cp201t_task_measure(void *param)
+static void _twr_cp201t_task_measure(void *param)
 {
-    bc_cp201t_t *cp201t = param;
+    twr_cp201t_t *cp201t = param;
 
     // Connect pull-up
-    bc_module_sensor_set_pull(cp201t->channel, BC_MODULE_SENSOR_PULL_UP_4K7);
+    twr_module_sensor_set_pull(cp201t->channel, TWR_MODULE_SENSOR_PULL_UP_4K7);
 
     // Start another reading
-    bc_adc_async_measure(cp201t->channel_adc);
+    twr_adc_async_measure(cp201t->channel_adc);
 }
 
-static void _bc_cp201t_adc_event_handler(bc_adc_channel_t channel, bc_adc_event_t event, void *param)
+static void _twr_cp201t_adc_event_handler(twr_adc_channel_t channel, twr_adc_event_t event, void *param)
 {
     (void) channel;
 
-    bc_cp201t_t *cp201t = param;
+    twr_cp201t_t *cp201t = param;
 
     cp201t->measurement_active = false;
 
-    if (event == BC_ADC_EVENT_DONE)
+    if (event == TWR_ADC_EVENT_DONE)
     {
         // Disconnect pull-up
-        bc_module_sensor_set_pull(cp201t->channel, BC_MODULE_SENSOR_PULL_NONE);
+        twr_module_sensor_set_pull(cp201t->channel, TWR_MODULE_SENSOR_PULL_NONE);
 
-        bc_adc_async_get_value(cp201t->channel_adc, &cp201t->thermistor_data);
+        twr_adc_async_get_value(cp201t->channel_adc, &cp201t->thermistor_data);
 
-        cp201t->event_handler(cp201t->channel, BC_CP201T_EVENT_UPDATE, cp201t->event_param);
+        cp201t->event_handler(cp201t->channel, TWR_CP201T_EVENT_UPDATE, cp201t->event_param);
     }
     else
     {
-        cp201t->event_handler(cp201t->channel, BC_CP201T_EVENT_ERROR, cp201t->event_param);
+        cp201t->event_handler(cp201t->channel, TWR_CP201T_EVENT_ERROR, cp201t->event_param);
     }
 }
 
 // A value of 0x7FFF indicates out of range signal
-static const uint16_t _bc_cp201t_lut[] =
+static const uint16_t _twr_cp201t_lut[] =
 {
     0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff,
     0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff,

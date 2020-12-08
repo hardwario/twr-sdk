@@ -1,5 +1,5 @@
-#ifndef _BC_COMMON_H
-#define _BC_COMMON_H
+#ifndef _TWR_COMMON_H
+#define _TWR_COMMON_H
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -12,4 +12,4 @@
 #include <ctype.h>
 #include <math.h>
 
-#endif // _BC_COMMON_H
+#endif // _TWR_COMMON_H

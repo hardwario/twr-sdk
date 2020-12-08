@@ -1,12 +1,12 @@
-#include <bc_cmwx1zzabz.h>
-#include <bc_log.h>
+#include <twr_cmwx1zzabz.h>
+#include <twr_log.h>
 
-#define BC_CMWX1ZZABZ_DELAY_RUN 100
-#define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_RESET_H 100
-#define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND 100 // ! when using longer AT responses
-#define BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_RESPONSE 100
-#define BC_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE 3000
-#define BC_CMWX1ZZABZ_DELAY_JOIN_RESPONSE 8000
+#define TWR_CMWX1ZZABZ_DELAY_RUN 100
+#define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_RESET_H 100
+#define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND 100 // ! when using longer AT responses
+#define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_RESPONSE 100
+#define TWR_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE 3000
+#define TWR_CMWX1ZZABZ_DELAY_JOIN_RESPONSE 8000
 
 // Apply changes to the factory configuration
 const char *_init_commands[] =
@@ -30,54 +30,54 @@ const char *_init_commands[] =
     NULL
 };
 
-static void _bc_cmwx1zzabz_task(void *param);
+static void _twr_cmwx1zzabz_task(void *param);
 
-static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self);
+static bool _twr_cmwx1zzabz_read_response(twr_cmwx1zzabz_t *self);
 
-static void _bc_cmwx1zzabz_save_config(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_index_t config_index);
+static void _twr_cmwx1zzabz_save_config(twr_cmwx1zzabz_t *self, twr_cmwx1zzabz_config_index_t config_index);
 
-static void _uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void *param);
+static void _uart_event_handler(twr_uart_channel_t channel, twr_uart_event_t event, void *param);
 
-void bc_cmwx1zzabz_init(bc_cmwx1zzabz_t *self,  bc_uart_channel_t uart_channel)
+void twr_cmwx1zzabz_init(twr_cmwx1zzabz_t *self,  twr_uart_channel_t uart_channel)
 {
     memset(self, 0, sizeof(*self));
 
     self->_uart_channel = uart_channel;
     self->_tx_port = 2;
 
-    bc_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
-    bc_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
+    twr_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
+    twr_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
 
-    bc_uart_init(self->_uart_channel, BC_UART_BAUDRATE_9600, BC_UART_SETTING_8N1);
-    bc_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
-    bc_uart_async_read_start(self->_uart_channel, BC_TICK_INFINITY);
-    bc_uart_set_event_handler(self->_uart_channel, _uart_event_handler, self);
+    twr_uart_init(self->_uart_channel, TWR_UART_BAUDRATE_9600, TWR_UART_SETTING_8N1);
+    twr_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
+    twr_uart_async_read_start(self->_uart_channel, TWR_TICK_INFINITY);
+    twr_uart_set_event_handler(self->_uart_channel, _uart_event_handler, self);
 
-    self->_task_id = bc_scheduler_register(_bc_cmwx1zzabz_task, self, BC_CMWX1ZZABZ_DELAY_RUN);
-    self->_state = BC_CMWX1ZZABZ_STATE_INITIALIZE;
+    self->_task_id = twr_scheduler_register(_twr_cmwx1zzabz_task, self, TWR_CMWX1ZZABZ_DELAY_RUN);
+    self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE;
 }
 
-static void _uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void *param)
+static void _uart_event_handler(twr_uart_channel_t channel, twr_uart_event_t event, void *param)
 {
     (void) channel;
-    bc_cmwx1zzabz_t *self = (bc_cmwx1zzabz_t*)param;
+    twr_cmwx1zzabz_t *self = (twr_cmwx1zzabz_t*)param;
 
-    if (event == BC_UART_EVENT_ASYNC_READ_DATA && self->_state == BC_CMWX1ZZABZ_STATE_IDLE)
+    if (event == TWR_UART_EVENT_ASYNC_READ_DATA && self->_state == TWR_CMWX1ZZABZ_STATE_IDLE)
     {
-        bc_scheduler_plan_relative(self->_task_id, 100);
-        self->_state = BC_CMWX1ZZABZ_STATE_RECEIVE;
+        twr_scheduler_plan_relative(self->_task_id, 100);
+        self->_state = TWR_CMWX1ZZABZ_STATE_RECEIVE;
     }
 }
 
-void bc_cmwx1zzabz_set_event_handler(bc_cmwx1zzabz_t *self, void (*event_handler)(bc_cmwx1zzabz_t *, bc_cmwx1zzabz_event_t, void *), void *event_param)
+void twr_cmwx1zzabz_set_event_handler(twr_cmwx1zzabz_t *self, void (*event_handler)(twr_cmwx1zzabz_t *, twr_cmwx1zzabz_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
     self->_event_param = event_param;
 }
 
-bool bc_cmwx1zzabz_is_ready(bc_cmwx1zzabz_t *self)
+bool twr_cmwx1zzabz_is_ready(twr_cmwx1zzabz_t *self)
 {
-    if (self->_state == BC_CMWX1ZZABZ_STATE_IDLE)
+    if (self->_state == TWR_CMWX1ZZABZ_STATE_IDLE)
     {
         return true;
     }
@@ -85,9 +85,9 @@ bool bc_cmwx1zzabz_is_ready(bc_cmwx1zzabz_t *self)
     return false;
 }
 
-bool bc_cmwx1zzabz_send_message(bc_cmwx1zzabz_t *self, const void *buffer, size_t length)
+bool twr_cmwx1zzabz_send_message(twr_cmwx1zzabz_t *self, const void *buffer, size_t length)
 {
-    if (!bc_cmwx1zzabz_is_ready(self) || length == 0 || length > BC_CMWX1ZZABZ_TX_MAX_PACKET_SIZE)
+    if (!twr_cmwx1zzabz_is_ready(self) || length == 0 || length > TWR_CMWX1ZZABZ_TX_MAX_PACKET_SIZE)
     {
         return false;
     }
@@ -96,16 +96,16 @@ bool bc_cmwx1zzabz_send_message(bc_cmwx1zzabz_t *self, const void *buffer, size_
 
     memcpy(self->_message_buffer, buffer, self->_message_length);
 
-    self->_state = BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_COMMAND;
+    self->_state = TWR_CMWX1ZZABZ_STATE_SEND_MESSAGE_COMMAND;
 
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 
     return true;
 }
 
-bool bc_cmwx1zzabz_send_message_confirmed(bc_cmwx1zzabz_t *self, const void *buffer, size_t length)
+bool twr_cmwx1zzabz_send_message_confirmed(twr_cmwx1zzabz_t *self, const void *buffer, size_t length)
 {
-    if (!bc_cmwx1zzabz_is_ready(self) || length == 0 || length > BC_CMWX1ZZABZ_TX_MAX_PACKET_SIZE)
+    if (!twr_cmwx1zzabz_is_ready(self) || length == 0 || length > TWR_CMWX1ZZABZ_TX_MAX_PACKET_SIZE)
     {
         return false;
     }
@@ -114,70 +114,70 @@ bool bc_cmwx1zzabz_send_message_confirmed(bc_cmwx1zzabz_t *self, const void *buf
 
     memcpy(self->_message_buffer, buffer, self->_message_length);
 
-    self->_state = BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_CONFIRMED_COMMAND;
+    self->_state = TWR_CMWX1ZZABZ_STATE_SEND_MESSAGE_CONFIRMED_COMMAND;
 
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 
     return true;
 }
 
-void bc_cmwx1zzabz_set_debug(bc_cmwx1zzabz_t *self, bool debug)
+void twr_cmwx1zzabz_set_debug(twr_cmwx1zzabz_t *self, bool debug)
 {
     self->_debug = debug;
 }
 
-static size_t _bc_cmwx1zzabz_async_write(bc_cmwx1zzabz_t *self, bc_uart_channel_t channel, const void *buffer, size_t length)
+static size_t _twr_cmwx1zzabz_async_write(twr_cmwx1zzabz_t *self, twr_uart_channel_t channel, const void *buffer, size_t length)
 {
-    size_t ret = bc_uart_async_write(channel, buffer, length);
+    size_t ret = twr_uart_async_write(channel, buffer, length);
 
     if (self->_debug)
     {
-        bc_log_debug("LoRa TX: %s", (const char*)buffer);
+        twr_log_debug("LoRa TX: %s", (const char*)buffer);
     }
 
     return ret;
 }
 
-static void _bc_cmwx1zzabz_task(void *param)
+static void _twr_cmwx1zzabz_task(void *param)
 {
-    bc_cmwx1zzabz_t *self = param;
+    twr_cmwx1zzabz_t *self = param;
 
     while (true)
     {
         switch (self->_state)
         {
-            case BC_CMWX1ZZABZ_STATE_READY:
+            case TWR_CMWX1ZZABZ_STATE_READY:
             {
-                self->_state = BC_CMWX1ZZABZ_STATE_IDLE;
+                self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_READY, self->_event_param);
+                    self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_READY, self->_event_param);
                 }
 
                 continue;
             }
-            case BC_CMWX1ZZABZ_STATE_IDLE:
+            case TWR_CMWX1ZZABZ_STATE_IDLE:
             {
                 if (self->_save_config_mask != 0)
                 {
-                    self->_state = BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_SEND;
+                    self->_state = TWR_CMWX1ZZABZ_STATE_CONFIG_SAVE_SEND;
                     continue;
                 }
 
                 if(self->_join_command)
                 {
-                    self->_state = BC_CMWX1ZZABZ_STATE_JOIN_SEND;
+                    self->_state = TWR_CMWX1ZZABZ_STATE_JOIN_SEND;
                     continue;
                 }
 
                 return;
             }
-            case BC_CMWX1ZZABZ_STATE_RECEIVE:
+            case TWR_CMWX1ZZABZ_STATE_RECEIVE:
             {
-                self->_state = BC_CMWX1ZZABZ_STATE_IDLE;
+                self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
 
-                while (_bc_cmwx1zzabz_read_response(self))
+                while (_twr_cmwx1zzabz_read_response(self))
                 {
                     if (memcmp(self->_response, "+RECV=", 5) == 0)
                     {
@@ -194,7 +194,7 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                         // Dummy read three \r\n\r characters
                         char dummy[3];
-                        uint32_t bytes = bc_uart_async_read(self->_uart_channel, &dummy, 3);
+                        uint32_t bytes = twr_uart_async_read(self->_uart_channel, &dummy, 3);
                         if (bytes != 3)
                         {
                             continue;
@@ -207,7 +207,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                         }
 
                         // Read the received message
-                        bytes = bc_uart_async_read(self->_uart_channel, self->_message_buffer, self->_message_length);
+                        bytes = twr_uart_async_read(self->_uart_channel, self->_message_buffer, self->_message_length);
                         if (bytes != self->_message_length)
                         {
                             continue;
@@ -215,82 +215,82 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                         if (self->_event_handler != NULL)
                         {
-                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED, self->_event_param);
+                            self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_MESSAGE_RECEIVED, self->_event_param);
                         }
                     }
                     else if (memcmp(self->_response, "+ACK", 4) == 0)
                     {
                         if (self->_event_handler != NULL)
                         {
-                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_CONFIRMED, self->_event_param);
+                            self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_MESSAGE_CONFIRMED, self->_event_param);
                         }
                     }
                     else if (memcmp(self->_response, "+NOACK", 4) == 0)
                     {
                         if (self->_event_handler != NULL)
                         {
-                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED, self->_event_param);
+                            self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED, self->_event_param);
                         }
                     }
                     else if (memcmp(self->_response, "+EVENT=2,2", 10) == 0)
                     {
                         if (self->_event_handler != NULL)
                         {
-                            self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_MESSAGE_RETRANSMISSION, self->_event_param);
+                            self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_MESSAGE_RETRANSMISSION, self->_event_param);
                         }
                     }
                 }
 
                 return;
             }
-            case BC_CMWX1ZZABZ_STATE_ERROR:
+            case TWR_CMWX1ZZABZ_STATE_ERROR:
             {
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_ERROR, self->_event_param);
+                    self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_ERROR, self->_event_param);
                 }
 
-                self->_state = BC_CMWX1ZZABZ_STATE_INITIALIZE;
+                self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE;
 
                 continue;
             }
-            case BC_CMWX1ZZABZ_STATE_INITIALIZE:
+            case TWR_CMWX1ZZABZ_STATE_INITIALIZE:
             {
                 self->_init_command_index = 0;
-                self->_state = BC_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_SEND;
+                self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_SEND;
 
                 continue;
             }
 
-            case BC_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_SEND:
+            case TWR_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_SEND:
             {
-                self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
+                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
 
                 // Purge RX FIFO
                 char rx_character;
-                while (bc_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
+                while (twr_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
                 {
                 }
 
                 strcpy(self->_command, _init_commands[self->_init_command_index]);
                 size_t length = strlen(self->_command);
 
-                if (_bc_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_RESPONSE;
-                bc_scheduler_plan_current_from_now(BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND);
+                self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_RESPONSE;
+                twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND);
 
                 return;
             }
-            case BC_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_RESPONSE:
+            case TWR_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_RESPONSE:
             {
-                self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
+                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
                 uint8_t response_handled = 0;
 
-                if (!_bc_cmwx1zzabz_read_response(self))
+                if (!_twr_cmwx1zzabz_read_response(self))
                 {
                     continue;
                 }
@@ -305,7 +305,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 if (strcmp(last_command, "AT+DEVADDR?\r") == 0 && response_valid)
                 {
                     // Check if user did not filled this structure to save configuration, oterwise it would be overwritten
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR) == 0)
                     {
                         memcpy(self->_config.devaddr, response_string_value, 8);
                         self->_config.devaddr[8] = '\0';
@@ -314,7 +314,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+DEVEUI?\r") == 0 && response_valid)
                 {
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI) == 0)
                     {
                         memcpy(self->_config.deveui, response_string_value, 16);
                         self->_config.deveui[16] = '\0';
@@ -323,7 +323,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+APPEUI?\r") == 0 && response_valid)
                 {
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPEUI) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_APPEUI) == 0)
                     {
                         memcpy(self->_config.appeui, response_string_value, 16);
                         self->_config.appeui[16] = '\0';
@@ -332,7 +332,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+NWKSKEY?\r") == 0 && response_valid)
                 {
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY) == 0)
                     {
                         memcpy(self->_config.nwkskey, response_string_value, 32);
                         self->_config.nwkskey[32] = '\0';
@@ -341,7 +341,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+APPSKEY?\r") == 0 && response_valid)
                 {
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY) == 0)
                     {
                         memcpy(self->_config.appskey, response_string_value, 32);
                         self->_config.appskey[32] = '\0';
@@ -350,7 +350,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+APPKEY?\r") == 0 && response_valid)
                 {
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_APPKEY) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_APPKEY) == 0)
                     {
                         memcpy(self->_config.appkey, response_string_value, 32);
                         self->_config.appkey[32] = '\0';
@@ -359,7 +359,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+BAND?\r") == 0 && response_valid)
                 {
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_BAND) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_BAND) == 0)
                     {
                         self->_config.band = response_string_value[0] - '0';
                     }
@@ -367,7 +367,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+MODE?\r") == 0 && response_valid)
                 {
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_MODE) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_MODE) == 0)
                     {
                         self->_config.mode = response_string_value[0] - '0';
                     }
@@ -375,7 +375,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+CLASS?\r") == 0 && response_valid)
                 {
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_CLASS) == 0)
                     {
                         self->_config.class = response_string_value[0] - '0';
                     }
@@ -383,7 +383,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+RX2?\r") == 0 && response_valid)
                 {
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_RX2) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_RX2) == 0)
                     {
                         self->_config.rx2_frequency = atoi(response_string_value);
 
@@ -399,7 +399,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+NWK?\r") == 0 && response_valid)
                 {
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_NWK) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_NWK) == 0)
                     {
                         self->_config.nwk_public = response_string_value[0] - '0';
                     }
@@ -407,7 +407,7 @@ static void _bc_cmwx1zzabz_task(void *param)
                 }
                 else if (strcmp(last_command, "AT+DR?\r") == 0 && response_valid)
                 {
-                    if ((self->_save_config_mask & 1 << BC_CMWX1ZZABZ_CONFIG_INDEX_DATARATE) == 0)
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_DATARATE) == 0)
                     {
                         self->_config.datarate = atoi(response_string_value);
                     }
@@ -442,34 +442,34 @@ static void _bc_cmwx1zzabz_task(void *param)
                     // If configuration was changed and flag set, save them
                     if (self->_save_config_mask)
                     {
-                        self->_state = BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_SEND;
+                        self->_state = TWR_CMWX1ZZABZ_STATE_CONFIG_SAVE_SEND;
                         self->_save_command_index = 0;
                     }
                     else
                     {
-                        self->_state = BC_CMWX1ZZABZ_STATE_READY;
+                        self->_state = TWR_CMWX1ZZABZ_STATE_READY;
                     }
                 }
                 else
                 {
-                    self->_state = BC_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_SEND;
+                    self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_SEND;
                 }
 
                 continue;
             }
-            case BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_COMMAND:
-            case BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_CONFIRMED_COMMAND:
+            case TWR_CMWX1ZZABZ_STATE_SEND_MESSAGE_COMMAND:
+            case TWR_CMWX1ZZABZ_STATE_SEND_MESSAGE_CONFIRMED_COMMAND:
             {
-                if (self->_state == BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_CONFIRMED_COMMAND)
+                if (self->_state == TWR_CMWX1ZZABZ_STATE_SEND_MESSAGE_CONFIRMED_COMMAND)
                 {
-                    snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+PCTX %d,%d\r", self->_tx_port, self->_message_length);
+                    snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+PCTX %d,%d\r", self->_tx_port, self->_message_length);
                 }
                 else
                 {
-                    snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+PUTX %d,%d\r", self->_tx_port, self->_message_length);
+                    snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+PUTX %d,%d\r", self->_tx_port, self->_message_length);
                 }
 
-                self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
+                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
 
                 uint8_t command_length = strlen(self->_command);
 
@@ -483,27 +483,27 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 size_t length = command_length + self->_message_length + 1; // 1 for \n
 
-                if (_bc_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_RESPONSE;
+                self->_state = TWR_CMWX1ZZABZ_STATE_SEND_MESSAGE_RESPONSE;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_SEND_MESSAGE_START, self->_event_param);
+                    self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_SEND_MESSAGE_START, self->_event_param);
                 }
 
-                bc_scheduler_plan_current_from_now(BC_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE);
+                twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE);
 
                 return;
             }
-            case BC_CMWX1ZZABZ_STATE_SEND_MESSAGE_RESPONSE:
+            case TWR_CMWX1ZZABZ_STATE_SEND_MESSAGE_RESPONSE:
             {
-                self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
+                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
 
-                if (!_bc_cmwx1zzabz_read_response(self))
+                if (!_twr_cmwx1zzabz_read_response(self))
                 {
                     continue;
                 }
@@ -513,33 +513,33 @@ static void _bc_cmwx1zzabz_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_CMWX1ZZABZ_STATE_READY;
+                self->_state = TWR_CMWX1ZZABZ_STATE_READY;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_SEND_MESSAGE_DONE, self->_event_param);
+                    self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_SEND_MESSAGE_DONE, self->_event_param);
                 }
 
                 continue;
             }
-            case BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_SEND:
+            case TWR_CMWX1ZZABZ_STATE_CONFIG_SAVE_SEND:
             {
-                self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
+                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
 
                 // There are no more config items to send
                 if (self->_save_config_mask == 0)
                 {
                     if (self->_event_handler != NULL)
                     {
-                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_CONFIG_SAVE_DONE, self->_event_param);
+                        self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_CONFIG_SAVE_DONE, self->_event_param);
                     }
 
-                    self->_state = BC_CMWX1ZZABZ_STATE_READY;
+                    self->_state = TWR_CMWX1ZZABZ_STATE_READY;
                     continue;
                 }
 
                 // Find config item that has been changed
-                for (uint8_t i = 0; i < BC_CMWX1ZZABZ_CONFIG_INDEX_LAST_ITEM; i++)
+                for (uint8_t i = 0; i < TWR_CMWX1ZZABZ_CONFIG_INDEX_LAST_ITEM; i++)
                 {
                     if (self->_save_config_mask & 1 << i)
                     {
@@ -550,70 +550,70 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 // Purge RX FIFO
                 char rx_character;
-                while (bc_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
+                while (twr_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
                 {
                 }
 
                 switch (self->_save_command_index)
                 {
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DEVADDR=%s\r", self->_config.devaddr);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DEVADDR=%s\r", self->_config.devaddr);
                         break;
                     }
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DEVEUI=%s\r", self->_config.deveui);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DEVEUI=%s\r", self->_config.deveui);
                         break;
                     }
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_APPEUI:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_APPEUI:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPEUI=%s\r", self->_config.appeui);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPEUI=%s\r", self->_config.appeui);
                         break;
                     }
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+NWKSKEY=%s\r", self->_config.nwkskey);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+NWKSKEY=%s\r", self->_config.nwkskey);
                         break;
                     }
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPSKEY=%s\r", self->_config.appskey);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPSKEY=%s\r", self->_config.appskey);
                         break;
                     }
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_APPKEY:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_APPKEY:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPKEY=%s\r", self->_config.appkey);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+APPKEY=%s\r", self->_config.appkey);
                         break;
                     }
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_BAND:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_BAND:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+BAND=%d\r", self->_config.band);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+BAND=%d\r", self->_config.band);
                         break;
                     }
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_MODE:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_MODE:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+MODE=%d\r", self->_config.mode);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+MODE=%d\r", self->_config.mode);
                         break;
                     }
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_CLASS:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+CLASS=%d\r", self->_config.class);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+CLASS=%d\r", self->_config.class);
                         break;
                     }
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_RX2:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_RX2:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+RX2=%d,%d\r", (int) self->_config.rx2_frequency, self->_config.rx2_datarate);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+RX2=%d,%d\r", (int) self->_config.rx2_frequency, self->_config.rx2_datarate);
                         break;
                     }
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_NWK:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_NWK:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+NWK=%d\r", (int) self->_config.nwk_public);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+NWK=%d\r", (int) self->_config.nwk_public);
                         break;
                     }
-                    case BC_CMWX1ZZABZ_CONFIG_INDEX_DATARATE:
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_DATARATE:
                     {
-                        snprintf(self->_command, BC_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DR=%d\r", (int) self->_config.datarate);
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DR=%d\r", (int) self->_config.datarate);
                         break;
                     }
                     default:
@@ -624,21 +624,21 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (_bc_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_RESPONSE;
-                bc_scheduler_plan_current_from_now(BC_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND);
+                self->_state = TWR_CMWX1ZZABZ_STATE_CONFIG_SAVE_RESPONSE;
+                twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND);
                 return;
             }
 
-            case BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_RESPONSE:
+            case TWR_CMWX1ZZABZ_STATE_CONFIG_SAVE_RESPONSE:
             {
-                self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
+                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
 
-                if (!_bc_cmwx1zzabz_read_response(self))
+                if (!_twr_cmwx1zzabz_read_response(self))
                 {
                     continue;
                 }
@@ -652,36 +652,36 @@ static void _bc_cmwx1zzabz_task(void *param)
                 // Clean bit mask
                 self->_save_config_mask &= ~(1 << self->_save_command_index);
 
-                self->_state = BC_CMWX1ZZABZ_STATE_CONFIG_SAVE_SEND;
+                self->_state = TWR_CMWX1ZZABZ_STATE_CONFIG_SAVE_SEND;
                 continue;
 
             }
 
 
-            case BC_CMWX1ZZABZ_STATE_JOIN_SEND:
+            case TWR_CMWX1ZZABZ_STATE_JOIN_SEND:
             {
-                self->_state = BC_CMWX1ZZABZ_STATE_ERROR;
+                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
 
                 // Purge RX FIFO
                 char rx_character;
-                while (bc_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
+                while (twr_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
                 {
                 }
 
                 strcpy(self->_command, "AT+JOIN\r");
 
                 size_t length = strlen(self->_command);
-                if (_bc_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE;
-                bc_scheduler_plan_current_from_now(BC_CMWX1ZZABZ_DELAY_JOIN_RESPONSE);
+                self->_state = TWR_CMWX1ZZABZ_STATE_JOIN_RESPONSE;
+                twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_JOIN_RESPONSE);
                 return;
             }
 
-            case BC_CMWX1ZZABZ_STATE_JOIN_RESPONSE:
+            case TWR_CMWX1ZZABZ_STATE_JOIN_RESPONSE:
             {
                 bool join_successful = false;
                 // Clear join command flag
@@ -689,7 +689,7 @@ static void _bc_cmwx1zzabz_task(void *param)
 
                 while (true)
                 {
-                    if (!_bc_cmwx1zzabz_read_response(self))
+                    if (!_twr_cmwx1zzabz_read_response(self))
                     {
                         break;
                     }
@@ -706,18 +706,18 @@ static void _bc_cmwx1zzabz_task(void *param)
                 {
                     if (self->_event_handler != NULL)
                     {
-                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_JOIN_SUCCESS, self->_event_param);
+                        self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_JOIN_SUCCESS, self->_event_param);
                     }
                 }
                 else
                 {
                     if (self->_event_handler != NULL)
                     {
-                        self->_event_handler(self, BC_CMWX1ZZABZ_EVENT_JOIN_ERROR, self->_event_param);
+                        self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_JOIN_ERROR, self->_event_param);
                     }
                 }
 
-                self->_state = BC_CMWX1ZZABZ_STATE_IDLE;
+                self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
                 continue;
             }
 
@@ -729,141 +729,141 @@ static void _bc_cmwx1zzabz_task(void *param)
     }
 }
 
-void bc_cmwx1zzabz_join(bc_cmwx1zzabz_t *self)
+void twr_cmwx1zzabz_join(twr_cmwx1zzabz_t *self)
 {
     self->_join_command = true;
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 }
 
-void bc_cmwx1zzabz_set_port(bc_cmwx1zzabz_t *self, uint8_t port)
+void twr_cmwx1zzabz_set_port(twr_cmwx1zzabz_t *self, uint8_t port)
 {
     self->_tx_port = port;
 }
 
-uint8_t bc_cmwx1zzabz_get_port(bc_cmwx1zzabz_t *self)
+uint8_t twr_cmwx1zzabz_get_port(twr_cmwx1zzabz_t *self)
 {
     return self->_tx_port;
 }
 
-void bc_cmwx1zzabz_set_devaddr(bc_cmwx1zzabz_t *self, char *devaddr)
+void twr_cmwx1zzabz_set_devaddr(twr_cmwx1zzabz_t *self, char *devaddr)
 {
     strncpy(self->_config.devaddr, devaddr, 8+1);
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_DEVADDR);
 }
 
-void bc_cmwx1zzabz_get_devaddr(bc_cmwx1zzabz_t *self, char *devaddr)
+void twr_cmwx1zzabz_get_devaddr(twr_cmwx1zzabz_t *self, char *devaddr)
 {
     strncpy(devaddr, self->_config.devaddr, 8+1);
 }
 
-void bc_cmwx1zzabz_set_deveui(bc_cmwx1zzabz_t *self, char *deveui)
+void twr_cmwx1zzabz_set_deveui(twr_cmwx1zzabz_t *self, char *deveui)
 {
     strncpy(self->_config.deveui, deveui, 16+1);
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_DEVEUI);
 }
 
-void bc_cmwx1zzabz_get_deveui(bc_cmwx1zzabz_t *self, char *deveui)
+void twr_cmwx1zzabz_get_deveui(twr_cmwx1zzabz_t *self, char *deveui)
 {
     strncpy(deveui, self->_config.deveui, 16+1);
 }
 
-void bc_cmwx1zzabz_set_appeui(bc_cmwx1zzabz_t *self, char *appeui)
+void twr_cmwx1zzabz_set_appeui(twr_cmwx1zzabz_t *self, char *appeui)
 {
     strncpy(self->_config.appeui, appeui, 16+1);
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_APPEUI);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_APPEUI);
 }
 
-void bc_cmwx1zzabz_get_appeui(bc_cmwx1zzabz_t *self, char *appeui)
+void twr_cmwx1zzabz_get_appeui(twr_cmwx1zzabz_t *self, char *appeui)
 {
     strncpy(appeui, self->_config.appeui, 16+1);
 }
 
-void bc_cmwx1zzabz_set_nwkskey(bc_cmwx1zzabz_t *self, char *nwkskey)
+void twr_cmwx1zzabz_set_nwkskey(twr_cmwx1zzabz_t *self, char *nwkskey)
 {
     strncpy(self->_config.nwkskey, nwkskey, 32);
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_NWKSKEY);
 }
 
-void bc_cmwx1zzabz_get_nwkskey(bc_cmwx1zzabz_t *self, char *nwkskey)
+void twr_cmwx1zzabz_get_nwkskey(twr_cmwx1zzabz_t *self, char *nwkskey)
 {
     strncpy(nwkskey, self->_config.nwkskey, 32+1);
 }
 
-void bc_cmwx1zzabz_set_appskey(bc_cmwx1zzabz_t *self, char *appskey)
+void twr_cmwx1zzabz_set_appskey(twr_cmwx1zzabz_t *self, char *appskey)
 {
     strncpy(self->_config.appskey, appskey, 32);
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_APPSKEY);
 }
 
-void bc_cmwx1zzabz_get_appskey(bc_cmwx1zzabz_t *self, char *appskey)
+void twr_cmwx1zzabz_get_appskey(twr_cmwx1zzabz_t *self, char *appskey)
 {
     strncpy(appskey, self->_config.appskey, 32+1);
 }
 
-void bc_cmwx1zzabz_set_appkey(bc_cmwx1zzabz_t *self, char *appkey)
+void twr_cmwx1zzabz_set_appkey(twr_cmwx1zzabz_t *self, char *appkey)
 {
     strncpy(self->_config.appkey, appkey, 32+1);
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_APPKEY);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_APPKEY);
 }
 
-void bc_cmwx1zzabz_get_appkey(bc_cmwx1zzabz_t *self, char *appkey)
+void twr_cmwx1zzabz_get_appkey(twr_cmwx1zzabz_t *self, char *appkey)
 {
     strncpy(appkey, self->_config.appkey, 32+1);
 }
 
-void bc_cmwx1zzabz_set_band(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_band_t band)
+void twr_cmwx1zzabz_set_band(twr_cmwx1zzabz_t *self, twr_cmwx1zzabz_config_band_t band)
 {
     self->_config.band = band;
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_BAND);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_BAND);
 }
 
-bc_cmwx1zzabz_config_band_t bc_cmwx1zzabz_get_band(bc_cmwx1zzabz_t *self)
+twr_cmwx1zzabz_config_band_t twr_cmwx1zzabz_get_band(twr_cmwx1zzabz_t *self)
 {
     return self->_config.band;
 }
 
-void bc_cmwx1zzabz_set_mode(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_mode_t mode)
+void twr_cmwx1zzabz_set_mode(twr_cmwx1zzabz_t *self, twr_cmwx1zzabz_config_mode_t mode)
 {
     self->_config.mode = mode;
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_MODE);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_MODE);
 }
 
-bc_cmwx1zzabz_config_mode_t bc_cmwx1zzabz_get_mode(bc_cmwx1zzabz_t *self)
+twr_cmwx1zzabz_config_mode_t twr_cmwx1zzabz_get_mode(twr_cmwx1zzabz_t *self)
 {
     return self->_config.mode;
 }
 
-void bc_cmwx1zzabz_set_class(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_class_t class)
+void twr_cmwx1zzabz_set_class(twr_cmwx1zzabz_t *self, twr_cmwx1zzabz_config_class_t class)
 {
     self->_config.class = class;
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_CLASS);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_CLASS);
 }
 
-bc_cmwx1zzabz_config_class_t bc_cmwx1zzabz_get_class(bc_cmwx1zzabz_t *self)
+twr_cmwx1zzabz_config_class_t twr_cmwx1zzabz_get_class(twr_cmwx1zzabz_t *self)
 {
     return self->_config.class;
 }
 
-uint8_t bc_cmwx1zzabz_get_received_message_port(bc_cmwx1zzabz_t *self)
+uint8_t twr_cmwx1zzabz_get_received_message_port(twr_cmwx1zzabz_t *self)
 {
     return self->_message_port;
 }
 
-uint32_t bc_cmwx1zzabz_get_received_message_length(bc_cmwx1zzabz_t *self)
+uint32_t twr_cmwx1zzabz_get_received_message_length(twr_cmwx1zzabz_t *self)
 {
     return self->_message_length;
 }
 
-uint32_t bc_cmwx1zzabz_get_received_message_data(bc_cmwx1zzabz_t *self, uint8_t *buffer, uint32_t buffer_size)
+uint32_t twr_cmwx1zzabz_get_received_message_data(twr_cmwx1zzabz_t *self, uint8_t *buffer, uint32_t buffer_size)
 {
     if (self->_message_length > buffer_size)
     {
@@ -875,56 +875,56 @@ uint32_t bc_cmwx1zzabz_get_received_message_data(bc_cmwx1zzabz_t *self, uint8_t 
     return self->_message_length;
 }
 
-void bc_cmwx1zzabz_set_rx2(bc_cmwx1zzabz_t *self, uint32_t frequency, uint8_t datarate)
+void twr_cmwx1zzabz_set_rx2(twr_cmwx1zzabz_t *self, uint32_t frequency, uint8_t datarate)
 {
     self->_config.rx2_frequency = frequency;
 
     self->_config.rx2_datarate = datarate;
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_RX2);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_RX2);
 }
 
-void bc_cmwx1zzabz_get_rx2(bc_cmwx1zzabz_t *self, uint32_t *frequency, uint8_t *datarate)
+void twr_cmwx1zzabz_get_rx2(twr_cmwx1zzabz_t *self, uint32_t *frequency, uint8_t *datarate)
 {
     *frequency = self->_config.rx2_frequency;
     *datarate = self->_config.rx2_datarate;
 }
 
-void bc_cmwx1zzabz_set_nwk_public(bc_cmwx1zzabz_t *self, uint8_t public)
+void twr_cmwx1zzabz_set_nwk_public(twr_cmwx1zzabz_t *self, uint8_t public)
 {
     self->_config.nwk_public = public;
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_NWK);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_NWK);
 }
 
-uint8_t bc_cmwx1zzabz_get_nwk_public(bc_cmwx1zzabz_t *self)
+uint8_t twr_cmwx1zzabz_get_nwk_public(twr_cmwx1zzabz_t *self)
 {
     return self->_config.nwk_public;
 }
 
-void bc_cmwx1zzabz_set_datarate(bc_cmwx1zzabz_t *self, uint8_t datarate)
+void twr_cmwx1zzabz_set_datarate(twr_cmwx1zzabz_t *self, uint8_t datarate)
 {
     self->_config.datarate = datarate;
 
-    _bc_cmwx1zzabz_save_config(self, BC_CMWX1ZZABZ_CONFIG_INDEX_DATARATE);
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_DATARATE);
 }
 
-uint8_t bc_cmwx1zzabz_get_datarate(bc_cmwx1zzabz_t *self)
+uint8_t twr_cmwx1zzabz_get_datarate(twr_cmwx1zzabz_t *self)
 {
     return self->_config.datarate;
 }
 
-char *bc_cmwx1zzabz_get_error_command(bc_cmwx1zzabz_t *self)
+char *twr_cmwx1zzabz_get_error_command(twr_cmwx1zzabz_t *self)
 {
     return self->_command;
 }
 
-char *bc_cmwx1zzabz_get_error_response(bc_cmwx1zzabz_t *self)
+char *twr_cmwx1zzabz_get_error_response(twr_cmwx1zzabz_t *self)
 {
     return self->_response;
 }
 
-static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)
+static bool _twr_cmwx1zzabz_read_response(twr_cmwx1zzabz_t *self)
 {
     size_t length = 0;
 
@@ -932,7 +932,7 @@ static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)
     {
         char rx_character;
 
-        if (bc_uart_async_read(self->_uart_channel, &rx_character, 1) == 0)
+        if (twr_uart_async_read(self->_uart_channel, &rx_character, 1) == 0)
         {
             return false;
         }
@@ -966,18 +966,18 @@ static bool _bc_cmwx1zzabz_read_response(bc_cmwx1zzabz_t *self)
 
     if (self->_debug)
     {
-        bc_log_debug("LoRa RX: %s", (const char*)self->_response);
+        twr_log_debug("LoRa RX: %s", (const char*)self->_response);
     }
 
     return true;
 }
 
-static void _bc_cmwx1zzabz_save_config(bc_cmwx1zzabz_t *self, bc_cmwx1zzabz_config_index_t config_index)
+static void _twr_cmwx1zzabz_save_config(twr_cmwx1zzabz_t *self, twr_cmwx1zzabz_config_index_t config_index)
 {
     self->_save_config_mask |= 1 << config_index;
 
-    if (self->_state == BC_CMWX1ZZABZ_STATE_IDLE)
+    if (self->_state == TWR_CMWX1ZZABZ_STATE_IDLE)
     {
-        bc_scheduler_plan_now(self->_task_id);
+        twr_scheduler_plan_now(self->_task_id);
     }
 }

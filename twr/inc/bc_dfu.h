@@ -1,15 +1,15 @@
-#ifndef _BC_DFU_H
-#define _BC_DFU_H
+#ifndef _TWR_DFU_H
+#define _TWR_DFU_H
 
-#include <bc_common.h>
+#include <twr_common.h>
 
-//! @addtogroup bc_dfu bc_dfu
+//! @addtogroup twr_dfu twr_dfu
 //! @brief USB DFU Bootloader function
 //! @{
 
 //! @brief Reset the CPU and jump to the USB DFU bootloader.
-void bc_dfu_jump(void);
+void twr_dfu_jump(void);
 
 //! @}
 
-#endif // _BC_DFU_H
+#endif // _TWR_DFU_H

@@ -1,64 +1,64 @@
-#ifndef _BC_DATA_STREAM_H
-#define _BC_DATA_STREAM_H
+#ifndef _TWR_DATA_STREAM_H
+#define _TWR_DATA_STREAM_H
 
-#include <bc_common.h>
+#include <twr_common.h>
 
-//! @addtogroup bc_data_stream bc_data_stream
+//! @addtogroup twr_data_stream twr_data_stream
 //! @brief Library for computations on stream of data
 //! @{
 
 //! @brief Macro for float data stream buffer declaration
 
-#define BC_DATA_STREAM_FLOAT_BUFFER(NAME, NUMBER_OF_SAMPLES) \
+#define TWR_DATA_STREAM_FLOAT_BUFFER(NAME, NUMBER_OF_SAMPLES) \
     float NAME##_feed[NUMBER_OF_SAMPLES]; \
     float NAME##_sort[NUMBER_OF_SAMPLES]; \
-    bc_data_stream_buffer_t NAME = { \
+    twr_data_stream_buffer_t NAME = { \
             .feed = NAME##_feed, \
             .sort = NAME##_sort, \
             .number_of_samples = NUMBER_OF_SAMPLES, \
-            .type=BC_DATA_STREAM_TYPE_FLOAT \
+            .type=TWR_DATA_STREAM_TYPE_FLOAT \
     };
 
 //! @brief Macro for int data stream buffer declaration
 
-#define BC_DATA_STREAM_INT_BUFFER(NAME, NUMBER_OF_SAMPLES) \
+#define TWR_DATA_STREAM_INT_BUFFER(NAME, NUMBER_OF_SAMPLES) \
     int NAME##_feed[NUMBER_OF_SAMPLES]; \
     int NAME##_sort[NUMBER_OF_SAMPLES]; \
-    bc_data_stream_buffer_t NAME = { \
+    twr_data_stream_buffer_t NAME = { \
             .feed = NAME##_feed, \
             .sort = NAME##_sort, \
             .number_of_samples = NUMBER_OF_SAMPLES, \
-            .type=BC_DATA_STREAM_TYPE_INT \
+            .type=TWR_DATA_STREAM_TYPE_INT \
     };
 
 //! @brief Macro for float data stream array declaration
 
-#define BC_DATA_STREAM_FLOAT_ARRAY(NAME, COUNT, NUMBER_OF_SAMPLES) \
+#define TWR_DATA_STREAM_FLOAT_ARRAY(NAME, COUNT, NUMBER_OF_SAMPLES) \
     static float NAME##_feed[(COUNT)][(NUMBER_OF_SAMPLES)]; \
     static float NAME##_sort[(NUMBER_OF_SAMPLES)]; \
-    static bc_data_stream_buffer_t NAME##_buffer[(COUNT)]; \
-    static bc_data_stream_t NAME[(COUNT)];
+    static twr_data_stream_buffer_t NAME##_buffer[(COUNT)]; \
+    static twr_data_stream_t NAME[(COUNT)];
 
 //! @brief Macro for float data stream array initialization
 
-#define BC_DATA_STREAM_FLOAT_ARRAY_INIT(NAME, COUNT, MIN_NUMBER_OF_SAMPLES) \
+#define TWR_DATA_STREAM_FLOAT_ARRAY_INIT(NAME, COUNT, MIN_NUMBER_OF_SAMPLES) \
     for (size_t i = 0; i < (COUNT); i++) \
     { \
         NAME##_buffer[i].feed = NAME##_feed[i]; \
         NAME##_buffer[i].sort = NAME##_sort; \
         NAME##_buffer[i].number_of_samples = (sizeof(NAME##_feed[i]) / sizeof(float)); \
-        NAME##_buffer[i].type=BC_DATA_STREAM_TYPE_FLOAT; \
-        bc_data_stream_init(&NAME[i], (MIN_NUMBER_OF_SAMPLES), &NAME##_buffer[i]); \
+        NAME##_buffer[i].type=TWR_DATA_STREAM_TYPE_FLOAT; \
+        twr_data_stream_init(&NAME[i], (MIN_NUMBER_OF_SAMPLES), &NAME##_buffer[i]); \
     }
 
 //! @brief Data stream type
 
 typedef enum
 {
-    BC_DATA_STREAM_TYPE_FLOAT = 0,
-    BC_DATA_STREAM_TYPE_INT = 1
+    TWR_DATA_STREAM_TYPE_FLOAT = 0,
+    TWR_DATA_STREAM_TYPE_INT = 1
 
-} bc_data_stream_type_t;
+} twr_data_stream_type_t;
 
 //! @brief Buffer for data stream
 
@@ -67,20 +67,20 @@ typedef struct
     void *feed;
     void *sort;
     int number_of_samples;
-    bc_data_stream_type_t type;
+    twr_data_stream_type_t type;
 
-} bc_data_stream_buffer_t;
+} twr_data_stream_buffer_t;
 
 
 //! @brief Data stream instance
 
-typedef struct bc_data_stream_t bc_data_stream_t;
+typedef struct twr_data_stream_t twr_data_stream_t;
 
 //! @cond
 
-struct bc_data_stream_t
+struct twr_data_stream_t
 {
-    bc_data_stream_buffer_t *_buffer;
+    twr_data_stream_buffer_t *_buffer;
     int _counter;
     int _min_number_of_samples;
     int _feed_head;
@@ -94,34 +94,34 @@ struct bc_data_stream_t
 //! @param[in] buffer Buffer holding data stream content
 //! @param[in] buffer_size Size of buffer holding data stream content
 
-void bc_data_stream_init(bc_data_stream_t *self, int min_number_of_samples, bc_data_stream_buffer_t *buffer);
+void twr_data_stream_init(twr_data_stream_t *self, int min_number_of_samples, twr_data_stream_buffer_t *buffer);
 
 //! @brief Feed data into stream instance
 //! @param[in] self Instance
 //! @param[in] data Input data to be fed into data stream
 
-void bc_data_stream_feed(bc_data_stream_t *self, void *data);
+void twr_data_stream_feed(twr_data_stream_t *self, void *data);
 
 //! @brief Reset data stream
 //! @param[in] self Instance
 
-void bc_data_stream_reset(bc_data_stream_t *self);
+void twr_data_stream_reset(twr_data_stream_t *self);
 
 //! @brief Get counter
 
-int bc_data_stream_get_counter(bc_data_stream_t *self);
+int twr_data_stream_get_counter(twr_data_stream_t *self);
 
 //! @brief Get length
 
-int bc_data_stream_get_length(bc_data_stream_t *self);
+int twr_data_stream_get_length(twr_data_stream_t *self);
 
 //! @brief Get type
 
-bc_data_stream_type_t bc_data_stream_get_type(bc_data_stream_t *self);
+twr_data_stream_type_t twr_data_stream_get_type(twr_data_stream_t *self);
 
 //! @brief Get buffer number_of_samples
 
-int bc_data_stream_get_number_of_samples(bc_data_stream_t *self);
+int twr_data_stream_get_number_of_samples(twr_data_stream_t *self);
 
 //! @brief Get average value of data stream
 //! @param[in] self Instance
@@ -129,7 +129,7 @@ int bc_data_stream_get_number_of_samples(bc_data_stream_t *self);
 //! @return true On success (desired value is available)
 //! @return false On failure (desired value is not available)
 
-bool bc_data_stream_get_average(bc_data_stream_t *self, void *result);
+bool twr_data_stream_get_average(twr_data_stream_t *self, void *result);
 
 //! @brief Get median value of data stream
 //! @param[in] self Instance
@@ -137,7 +137,7 @@ bool bc_data_stream_get_average(bc_data_stream_t *self, void *result);
 //! @return true On success (desired value is available)
 //! @return false On failure (desired value is not available)
 
-bool bc_data_stream_get_median(bc_data_stream_t *self, void *result);
+bool twr_data_stream_get_median(twr_data_stream_t *self, void *result);
 
 //! @brief Get first value in data stream
 //! @param[in] self Instance
@@ -145,7 +145,7 @@ bool bc_data_stream_get_median(bc_data_stream_t *self, void *result);
 //! @return true On success (desired value is available)
 //! @return false On failure (desired value is not available)
 
-bool bc_data_stream_get_first(bc_data_stream_t *self, void *result);
+bool twr_data_stream_get_first(twr_data_stream_t *self, void *result);
 
 //! @brief Get last value in data stream
 //! @param[in] self Instance
@@ -153,7 +153,7 @@ bool bc_data_stream_get_first(bc_data_stream_t *self, void *result);
 //! @return true On success (desired value is available)
 //! @return false On failure (desired value is not available)
 
-bool bc_data_stream_get_last(bc_data_stream_t *self, void *result);
+bool twr_data_stream_get_last(twr_data_stream_t *self, void *result);
 
 //! @brief Get nth value in data stream
 //! @param[in] self Instance
@@ -162,7 +162,7 @@ bool bc_data_stream_get_last(bc_data_stream_t *self, void *result);
 //! @return true On success (desired value is available)
 //! @return false On failure (desired value is not available)
 
-bool bc_data_stream_get_nth(bc_data_stream_t *self, int n, void *result);
+bool twr_data_stream_get_nth(twr_data_stream_t *self, int n, void *result);
 
 //! @brief Get max value
 //! @param[in] self Instance
@@ -170,7 +170,7 @@ bool bc_data_stream_get_nth(bc_data_stream_t *self, int n, void *result);
 //! @return true On success (desired value is available)
 //! @return false On failure (desired value is not available)
 
-bool bc_data_stream_get_max(bc_data_stream_t *self, void *result);
+bool twr_data_stream_get_max(twr_data_stream_t *self, void *result);
 
 //! @brief Get min value
 //! @param[in] self Instance
@@ -178,8 +178,8 @@ bool bc_data_stream_get_max(bc_data_stream_t *self, void *result);
 //! @return true On success (desired value is available)
 //! @return false On failure (desired value is not available)
 
-bool bc_data_stream_get_min(bc_data_stream_t *self, void *result);
+bool twr_data_stream_get_min(twr_data_stream_t *self, void *result);
 
 //! @}
 
-#endif // _BC_DATA_STREAM_H
+#endif // _TWR_DATA_STREAM_H

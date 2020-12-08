@@ -1,15 +1,15 @@
-#include <bc_gpio.h>
-#include <bc_onewire_relay.h>
+#include <twr_gpio.h>
+#include <twr_onewire_relay.h>
 
-bool _bc_onewire_relay_read_state(bc_onewire_relay_t *self);
+bool _twr_onewire_relay_read_state(twr_onewire_relay_t *self);
 
-bool bc_onewire_relay_init(bc_onewire_relay_t *self, bc_onewire_t *onewire, uint64_t device_number)
+bool twr_onewire_relay_init(twr_onewire_relay_t *self, twr_onewire_t *onewire, uint64_t device_number)
 {
     memset(self, 0, sizeof(*self));
     self->_device_number = device_number;
     self->_onewire = onewire;
 
-    if (!_bc_onewire_relay_read_state(self))
+    if (!_twr_onewire_relay_read_state(self))
     {
         return false;
     }
@@ -17,14 +17,14 @@ bool bc_onewire_relay_init(bc_onewire_relay_t *self, bc_onewire_t *onewire, uint
     return true;
 }
 
-bool bc_onewire_relay_set_state(bc_onewire_relay_t *self, bc_onewire_relay_channel_t relay_channel, bool state)
+bool twr_onewire_relay_set_state(twr_onewire_relay_t *self, twr_onewire_relay_channel_t relay_channel, bool state)
 {
-    if (!self->_state_valid && !_bc_onewire_relay_read_state(self))
+    if (!self->_state_valid && !_twr_onewire_relay_read_state(self))
     {
         return false;
     }
 
-    if (!bc_onewire_reset(self->_onewire))
+    if (!twr_onewire_reset(self->_onewire))
     {
         return false;
     }
@@ -40,18 +40,18 @@ bool bc_onewire_relay_set_state(bc_onewire_relay_t *self, bc_onewire_relay_chann
         new_state &= ~(1 << relay_channel);
     }
 
-    bc_onewire_select(self->_onewire, &self->_device_number);
+    twr_onewire_select(self->_onewire, &self->_device_number);
 
     uint8_t buffer[] = { 0x5A, new_state, ~new_state };
 
-    bc_onewire_write(self->_onewire, buffer, sizeof(buffer));
+    twr_onewire_write(self->_onewire, buffer, sizeof(buffer));
 
-    if (bc_onewire_read_byte(self->_onewire) != 0xAA)
+    if (twr_onewire_read_byte(self->_onewire) != 0xAA)
     {
         return false;
     }
 
-    if (bc_onewire_read_byte(self->_onewire) != new_state)
+    if (twr_onewire_read_byte(self->_onewire) != new_state)
     {
         return false;
     }
@@ -61,7 +61,7 @@ bool bc_onewire_relay_set_state(bc_onewire_relay_t *self, bc_onewire_relay_chann
     return true;
 }
 
-bool bc_onewire_relay_get_state(bc_onewire_relay_t *self, bc_onewire_relay_channel_t relay_channel, bool *state)
+bool twr_onewire_relay_get_state(twr_onewire_relay_t *self, twr_onewire_relay_channel_t relay_channel, bool *state)
 {
     if (!self->_state_valid)
     {
@@ -73,20 +73,20 @@ bool bc_onewire_relay_get_state(bc_onewire_relay_t *self, bc_onewire_relay_chann
     return true;
 }
 
-bool _bc_onewire_relay_read_state(bc_onewire_relay_t *self)
+bool _twr_onewire_relay_read_state(twr_onewire_relay_t *self)
 {
     self->_state_valid = false;
 
-    if (!bc_onewire_reset(self->_onewire))
+    if (!twr_onewire_reset(self->_onewire))
     {
         return false;
     }
 
-    bc_onewire_select(self->_onewire, &self->_device_number);
+    twr_onewire_select(self->_onewire, &self->_device_number);
 
-    bc_onewire_write_byte(self->_onewire, 0xF5);
+    twr_onewire_write_byte(self->_onewire, 0xF5);
 
-    self->_state = bc_onewire_read_byte(self->_onewire);
+    self->_state = twr_onewire_read_byte(self->_onewire);
 
     self->_state_valid = true;
 

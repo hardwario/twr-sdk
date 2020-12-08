@@ -1,9 +1,9 @@
-#ifndef _BC_RAMP_H
-#define _BC_RAMP_H
+#ifndef _TWR_RAMP_H
+#define _TWR_RAMP_H
 
-#include <bc_tick.h>
+#include <twr_tick.h>
 
-//! @addtogroup bc_ramp bc_ramp
+//! @addtogroup twr_ramp twr_ramp
 //! @brief Ramping algorithm library (e.g. can be used for PWM up/down ramping for LED control, motor control, etc.)
 //! @{
 
@@ -13,16 +13,16 @@ typedef struct
 {
     bool _active;
 
-    bc_tick_t _duration;
+    twr_tick_t _duration;
 
     float _start;
     float _stop;
     float _now;
 
-    bc_tick_t _tick_start;
-    bc_tick_t _tick_end;
+    twr_tick_t _tick_start;
+    twr_tick_t _tick_end;
 
-} bc_ramp_t;
+} twr_ramp_t;
 
 //! @endcond
 
@@ -32,19 +32,19 @@ typedef struct
 //! @param[in] stop Stop point
 //! @param[in] duration Ramp duration in ticks
 
-void bc_ramp_init(bc_ramp_t *self, float start, float stop, bc_tick_t duration);
+void twr_ramp_init(twr_ramp_t *self, float start, float stop, twr_tick_t duration);
 
 //! @brief Start ramp sequence
 //! @param[in] self Instance
 
-void bc_ramp_start(bc_ramp_t *self);
+void twr_ramp_start(twr_ramp_t *self);
 
 //! @brief Get current ramp value
 //! @param[in] self Instance
 //! @return Ramp point
 
-float bc_ramp_get(bc_ramp_t *self);
+float twr_ramp_get(twr_ramp_t *self);
 
 //! @}
 
-#endif // _BC_RAMP_H
+#endif // _TWR_RAMP_H

@@ -1,9 +1,9 @@
-#ifndef _BC_QUEUE_H
-#define _BC_QUEUE_H
+#ifndef _TWR_QUEUE_H
+#define _TWR_QUEUE_H
 
-#include <bc_common.h>
+#include <twr_common.h>
 
-//! @addtogroup bc_queue bc_queue
+//! @addtogroup twr_queue twr_queue
 //! @brief Queue handling functions
 //! @{
 
@@ -15,7 +15,7 @@ typedef struct
     size_t _size;
     size_t _length;
 
-} bc_queue_t;
+} twr_queue_t;
 
 //! @endcond
 
@@ -24,7 +24,7 @@ typedef struct
 //! @param[in] buffer Buffer to store the queue
 //! @param[in] size Buffer size
 
-void bc_queue_init(bc_queue_t *queue, void *buffer, size_t size);
+void twr_queue_init(twr_queue_t *queue, void *buffer, size_t size);
 
 //! @brief Put buffer to queue
 //! @param[in] queue Instance
@@ -33,7 +33,7 @@ void bc_queue_init(bc_queue_t *queue, void *buffer, size_t size);
 //! @return true On success
 //! @return false On failure
 
-bool bc_queue_put(bc_queue_t *queue, const void *buffer, size_t length);
+bool twr_queue_put(twr_queue_t *queue, const void *buffer, size_t length);
 
 //! @brief Get queue to buffer
 //! @param[in] queue Instance
@@ -42,8 +42,8 @@ bool bc_queue_put(bc_queue_t *queue, const void *buffer, size_t length);
 //! @return true On success
 //! @return false On failure
 
-bool bc_queue_get(bc_queue_t *queue, void *buffer, size_t *length);
+bool twr_queue_get(twr_queue_t *queue, void *buffer, size_t *length);
 
 //! @}
 
-#endif // _BC_QUEUE_H
+#endif // _TWR_QUEUE_H

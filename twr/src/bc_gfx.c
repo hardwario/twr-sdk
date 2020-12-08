@@ -1,6 +1,6 @@
-#include <bc_gfx.h>
+#include <twr_gfx.h>
 
-void bc_gfx_init(bc_gfx_t *self, void *display, const bc_gfx_driver_t *driver)
+void twr_gfx_init(twr_gfx_t *self, void *display, const twr_gfx_driver_t *driver)
 {
     memset(self, 0, sizeof(*self));
     self->_display = display;
@@ -9,37 +9,37 @@ void bc_gfx_init(bc_gfx_t *self, void *display, const bc_gfx_driver_t *driver)
     self->_caps = driver->get_caps(self->_display);
 }
 
-bool bc_gfx_display_is_ready(bc_gfx_t *self)
+bool twr_gfx_display_is_ready(twr_gfx_t *self)
 {
     return self->_driver->is_ready(self->_display);
 }
 
-bc_gfx_caps_t bc_gfx_get_caps(bc_gfx_t *self)
+twr_gfx_caps_t twr_gfx_get_caps(twr_gfx_t *self)
 {
     return self->_caps;
 }
 
-void bc_gfx_clear(bc_gfx_t *self)
+void twr_gfx_clear(twr_gfx_t *self)
 {
     self->_driver->clear(self->_display);
 }
 
-void bc_gfx_set_font(bc_gfx_t *self, const bc_font_t *font)
+void twr_gfx_set_font(twr_gfx_t *self, const twr_font_t *font)
 {
     self->_font = font;
 }
 
-void bc_gfx_set_rotation(bc_gfx_t *self, bc_gfx_rotation_t rotation)
+void twr_gfx_set_rotation(twr_gfx_t *self, twr_gfx_rotation_t rotation)
 {
     self->_rotation = rotation;
 }
 
-bc_gfx_rotation_t bc_gfx_get_rotation(bc_gfx_t *self)
+twr_gfx_rotation_t twr_gfx_get_rotation(twr_gfx_t *self)
 {
     return self->_rotation;
 }
 
-void bc_gfx_draw_pixel(bc_gfx_t *self, int x, int y, uint32_t color)
+void twr_gfx_draw_pixel(twr_gfx_t *self, int x, int y, uint32_t color)
 {
     if (x >= self->_caps.width || y >= self->_caps.height || x < 0 || y < 0)
     {
@@ -50,27 +50,27 @@ void bc_gfx_draw_pixel(bc_gfx_t *self, int x, int y, uint32_t color)
 
     switch (self->_rotation)
     {
-        case BC_GFX_ROTATION_90:
+        case TWR_GFX_ROTATION_90:
         {
             tmp = x;
             x = self->_caps.height - 1 - y;
             y = tmp;
             break;
         }
-        case BC_GFX_ROTATION_180:
+        case TWR_GFX_ROTATION_180:
         {
             x = self->_caps.width - 1 - x;
             y = self->_caps.height - 1 - y;
             break;
         }
-        case BC_GFX_ROTATION_270:
+        case TWR_GFX_ROTATION_270:
         {
             tmp = y;
             y = self->_caps.width - 1 - x;
             x = tmp;
             break;
         }
-        case BC_GFX_ROTATION_0:
+        case TWR_GFX_ROTATION_0:
         {
             break;
         }
@@ -83,14 +83,14 @@ void bc_gfx_draw_pixel(bc_gfx_t *self, int x, int y, uint32_t color)
     self->_driver->draw_pixel(self->_display, x, y, color);
 }
 
-int bc_gfx_draw_char(bc_gfx_t *self, int left, int top, uint8_t ch, uint32_t color)
+int twr_gfx_draw_char(twr_gfx_t *self, int left, int top, uint8_t ch, uint32_t color)
 {
     if (!self->_font)
     {
         return 0;
     }
 
-    const bc_font_t *font = self->_font;
+    const twr_font_t *font = self->_font;
 
     int w = 0;
     uint8_t h = 0;
@@ -119,7 +119,7 @@ int bc_gfx_draw_char(bc_gfx_t *self, int left, int top, uint8_t ch, uint32_t col
 
                     if ((font->chars[i].image->image[byteIndex] & bitMask) == 0)
                     {
-                        bc_gfx_draw_pixel(self, left + x, top + y, color);
+                        twr_gfx_draw_pixel(self, left + x, top + y, color);
                     }
                 }
             }
@@ -129,14 +129,14 @@ int bc_gfx_draw_char(bc_gfx_t *self, int left, int top, uint8_t ch, uint32_t col
     return w;
 }
 
-int bc_gfx_calc_char_width(bc_gfx_t *self, uint8_t ch)
+int twr_gfx_calc_char_width(twr_gfx_t *self, uint8_t ch)
 {
     if (!self->_font)
     {
         return 0;
     }
 
-    const bc_font_t *font = self->_font;
+    const twr_font_t *font = self->_font;
 
     for (int i = 0; i < font->length; i++)
     {
@@ -149,28 +149,28 @@ int bc_gfx_calc_char_width(bc_gfx_t *self, uint8_t ch)
     return 0;
 }
 
-int bc_gfx_draw_string(bc_gfx_t *self, int left, int top, char *str, uint32_t color)
+int twr_gfx_draw_string(twr_gfx_t *self, int left, int top, char *str, uint32_t color)
 {
     while(*str)
     {
-        left += bc_gfx_draw_char(self, left, top, *str, color);
+        left += twr_gfx_draw_char(self, left, top, *str, color);
         str++;
     }
     return left;
 }
 
-int bc_gfx_calc_string_width(bc_gfx_t *self,  char *str)
+int twr_gfx_calc_string_width(twr_gfx_t *self,  char *str)
 {
     int width = 0;
     while(*str)
     {
-        width += bc_gfx_calc_char_width(self, *str);
+        width += twr_gfx_calc_char_width(self, *str);
         str++;
     }
     return width;
 }
 
-int bc_gfx_printf(bc_gfx_t *self, int left, int top, uint32_t color, char *format, ...)
+int twr_gfx_printf(twr_gfx_t *self, int left, int top, uint32_t color, char *format, ...)
 {
     va_list ap;
 
@@ -182,10 +182,10 @@ int bc_gfx_printf(bc_gfx_t *self, int left, int top, uint32_t color, char *forma
 
     va_end(ap);
 
-    return bc_gfx_draw_string(self, left, top, buffer, color);
+    return twr_gfx_draw_string(self, left, top, buffer, color);
 }
 
-void bc_gfx_draw_line(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color)
+void twr_gfx_draw_line(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color)
 {
     int tmp;
 
@@ -200,7 +200,7 @@ void bc_gfx_draw_line(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t c
 
         for (; x0 <= x1; x0++)
         {
-            bc_gfx_draw_pixel(self, x0, y0, color);
+            twr_gfx_draw_pixel(self, x0, y0, color);
         }
 
         return;
@@ -216,7 +216,7 @@ void bc_gfx_draw_line(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t c
 
         for (; y0 <= y1; y0++)
         {
-            bc_gfx_draw_pixel(self, x0, y0, color);
+            twr_gfx_draw_pixel(self, x0, y0, color);
         }
 
         return;
@@ -258,11 +258,11 @@ void bc_gfx_draw_line(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t c
     {
         if (step)
         {
-            bc_gfx_draw_pixel(self, y0, x0, color);
+            twr_gfx_draw_pixel(self, y0, x0, color);
         }
         else
         {
-            bc_gfx_draw_pixel(self, x0, y0, color);
+            twr_gfx_draw_pixel(self, x0, y0, color);
         }
 
         err -= dy;
@@ -275,27 +275,27 @@ void bc_gfx_draw_line(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t c
     }
 }
 
-void bc_gfx_draw_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color)
+void twr_gfx_draw_rectangle(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color)
 {
-    bc_gfx_draw_line(self, x0, y0, x0, y1, color);
-    bc_gfx_draw_line(self, x0, y1, x1, y1, color);
-    bc_gfx_draw_line(self, x1, y0, x1, y1, color);
-    bc_gfx_draw_line(self, x1, y0, x0, y0, color);
+    twr_gfx_draw_line(self, x0, y0, x0, y1, color);
+    twr_gfx_draw_line(self, x0, y1, x1, y1, color);
+    twr_gfx_draw_line(self, x1, y0, x1, y1, color);
+    twr_gfx_draw_line(self, x1, y0, x0, y0, color);
 }
 
-void bc_gfx_draw_fill_rectangle(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color)
+void twr_gfx_draw_fill_rectangle(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color)
 {
     int y;
     for (; x0 <= x1; x0++)
     {
         for (y = y0; y <= y1; y++)
         {
-            bc_gfx_draw_pixel(self, x0, y, color);
+            twr_gfx_draw_pixel(self, x0, y, color);
         }
     }
 }
 
-void bc_gfx_draw_fill_rectangle_dithering(bc_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color)
+void twr_gfx_draw_fill_rectangle_dithering(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color)
 {
     int y;
     for (; x0 <= x1; x0++)
@@ -305,12 +305,12 @@ void bc_gfx_draw_fill_rectangle_dithering(bc_gfx_t *self, int x0, int y0, int x1
             uint8_t dx = x0 % 4;
             uint8_t dy = y % 4;
             uint32_t d_color = color & (1 << (dx + 4*dy));
-            bc_gfx_draw_pixel(self, x0, y, d_color);
+            twr_gfx_draw_pixel(self, x0, y, d_color);
         }
     }
 }
 
-void bc_gfx_draw_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t color)
+void twr_gfx_draw_circle(twr_gfx_t *self, int x0, int y0, int radius, uint32_t color)
 {
     int x = radius-1;
     int y = 0;
@@ -321,14 +321,14 @@ void bc_gfx_draw_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t col
     while (x >= y)
     {
 
-        bc_gfx_draw_pixel(self, x0 - y, y0 + x, color);
-        bc_gfx_draw_pixel(self, x0 - x, y0 + y, color);
-        bc_gfx_draw_pixel(self, x0 - x, y0 - y, color);
-        bc_gfx_draw_pixel(self, x0 - y, y0 - x, color);
-        bc_gfx_draw_pixel(self, x0 + y, y0 - x, color);
-        bc_gfx_draw_pixel(self, x0 + x, y0 - y, color);
-        bc_gfx_draw_pixel(self, x0 + x, y0 + y, color);
-        bc_gfx_draw_pixel(self, x0 + y, y0 + x, color);
+        twr_gfx_draw_pixel(self, x0 - y, y0 + x, color);
+        twr_gfx_draw_pixel(self, x0 - x, y0 + y, color);
+        twr_gfx_draw_pixel(self, x0 - x, y0 - y, color);
+        twr_gfx_draw_pixel(self, x0 - y, y0 - x, color);
+        twr_gfx_draw_pixel(self, x0 + y, y0 - x, color);
+        twr_gfx_draw_pixel(self, x0 + x, y0 - y, color);
+        twr_gfx_draw_pixel(self, x0 + x, y0 + y, color);
+        twr_gfx_draw_pixel(self, x0 + y, y0 + x, color);
 
         if (err <= 0)
         {
@@ -345,7 +345,7 @@ void bc_gfx_draw_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t col
     }
 }
 
-void bc_gfx_draw_fill_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_t color)
+void twr_gfx_draw_fill_circle(twr_gfx_t *self, int x0, int y0, int radius, uint32_t color)
 {
     int x = radius-1;
     int y = 0;
@@ -355,10 +355,10 @@ void bc_gfx_draw_fill_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_
 
     while (x >= y)
     {
-        bc_gfx_draw_line(self, x0 - y, y0 - x, x0 + y, y0 - x, color);
-        bc_gfx_draw_line(self, x0 - x, y0 - y, x0 + x, y0 - y, color);
-        bc_gfx_draw_line(self, x0 - x, y0 + y, x0 + x, y0 + y, color);
-        bc_gfx_draw_line(self, x0 - y, y0 + x, x0 + y, y0 + x, color);
+        twr_gfx_draw_line(self, x0 - y, y0 - x, x0 + y, y0 - x, color);
+        twr_gfx_draw_line(self, x0 - x, y0 - y, x0 + x, y0 - y, color);
+        twr_gfx_draw_line(self, x0 - x, y0 + y, x0 + x, y0 + y, color);
+        twr_gfx_draw_line(self, x0 - y, y0 + x, x0 + y, y0 + x, color);
 
         if (err <= 0)
         {
@@ -375,7 +375,7 @@ void bc_gfx_draw_fill_circle(bc_gfx_t *self, int x0, int y0, int radius, uint32_
     }
 }
 
-void bc_gfx_draw_round_corner(bc_gfx_t *self, int x0, int y0, int radius, bc_gfx_round_corner_t corner, uint32_t color)
+void twr_gfx_draw_round_corner(twr_gfx_t *self, int x0, int y0, int radius, twr_gfx_round_corner_t corner, uint32_t color)
 {
     int x = radius-1;
     int y = 0;
@@ -385,77 +385,28 @@ void bc_gfx_draw_round_corner(bc_gfx_t *self, int x0, int y0, int radius, bc_gfx
 
     while (x >= y)
     {
-        if (corner & BC_GFX_ROUND_CORNER_RIGHT_TOP)
+        if (corner & TWR_GFX_ROUND_CORNER_RIGHT_TOP)
         {
-            bc_gfx_draw_pixel(self, x0 + y, y0 - x, color);
-            bc_gfx_draw_pixel(self, x0 + x, y0 - y, color);
+            twr_gfx_draw_pixel(self, x0 + y, y0 - x, color);
+            twr_gfx_draw_pixel(self, x0 + x, y0 - y, color);
         }
 
-        if (corner & BC_GFX_ROUND_CORNER_RIGHT_BOTTOM)
+        if (corner & TWR_GFX_ROUND_CORNER_RIGHT_BOTTOM)
         {
-            bc_gfx_draw_pixel(self, x0 + x, y0 + y, color);
-            bc_gfx_draw_pixel(self, x0 + y, y0 + x, color);
+            twr_gfx_draw_pixel(self, x0 + x, y0 + y, color);
+            twr_gfx_draw_pixel(self, x0 + y, y0 + x, color);
         }
 
-        if (corner & BC_GFX_ROUND_CORNER_LEFT_BOTTOM)
+        if (corner & TWR_GFX_ROUND_CORNER_LEFT_BOTTOM)
         {
-            bc_gfx_draw_pixel(self, x0 - y, y0 + x, color);
-            bc_gfx_draw_pixel(self, x0 - x, y0 + y, color);
+            twr_gfx_draw_pixel(self, x0 - y, y0 + x, color);
+            twr_gfx_draw_pixel(self, x0 - x, y0 + y, color);
         }
 
-        if (corner & BC_GFX_ROUND_CORNER_LEFT_TOP)
+        if (corner & TWR_GFX_ROUND_CORNER_LEFT_TOP)
         {
-            bc_gfx_draw_pixel(self, x0 - x, y0 - y, color);
-            bc_gfx_draw_pixel(self, x0 - y, y0 - x, color);
-        }
-
-        if (err <= 0)
-        {
-            y++;
-            err += dy;
-            dy += 2;
-        }
-        if (err > 0)
-        {
-            x--;
-            dx += 2;
-            err += (-radius << 1) + dx;
-        }
-    }
-}
-
-void bc_gfx_draw_fill_round_corner(bc_gfx_t *self, int x0, int y0, int radius, bc_gfx_round_corner_t corner, uint32_t color)
-{
-    int x = radius-1;
-    int y = 0;
-    int dx = 1;
-    int dy = 1;
-    int err = dx - (radius << 1);
-
-    while (x >= y)
-    {
-        if (corner & BC_GFX_ROUND_CORNER_RIGHT_TOP)
-        {
-            bc_gfx_draw_line(self, x0, y0 - x, x0 + y, y0 - x, color);
-            bc_gfx_draw_line(self, x0, y0 - y, x0 + x, y0 - y, color);
-        }
-
-        if (corner & BC_GFX_ROUND_CORNER_RIGHT_BOTTOM)
-        {
-            bc_gfx_draw_line(self, x0, y0 + y, x0 + x, y0 + y, color);
-            bc_gfx_draw_line(self, x0, y0 + x, x0 + y, y0 + x, color);
-        }
-
-        if (corner & BC_GFX_ROUND_CORNER_LEFT_BOTTOM)
-        {
-            bc_gfx_draw_line(self, x0 - y, y0 + x, x0, y0 + x, color);
-            bc_gfx_draw_line(self, x0 - x, y0 + y, x0, y0 + y, color);
-        }
-
-        if (corner & BC_GFX_ROUND_CORNER_LEFT_TOP)
-        {
-            bc_gfx_draw_line(self, x0 - x, y0 - y, x0, y0 - y, color);
-            bc_gfx_draw_line(self, x0 - y, y0 - x, x0, y0 - x, color);
+            twr_gfx_draw_pixel(self, x0 - x, y0 - y, color);
+            twr_gfx_draw_pixel(self, x0 - y, y0 - x, color);
         }
 
         if (err <= 0)
@@ -473,7 +424,56 @@ void bc_gfx_draw_fill_round_corner(bc_gfx_t *self, int x0, int y0, int radius, b
     }
 }
 
-bool bc_gfx_update(bc_gfx_t *self)
+void twr_gfx_draw_fill_round_corner(twr_gfx_t *self, int x0, int y0, int radius, twr_gfx_round_corner_t corner, uint32_t color)
+{
+    int x = radius-1;
+    int y = 0;
+    int dx = 1;
+    int dy = 1;
+    int err = dx - (radius << 1);
+
+    while (x >= y)
+    {
+        if (corner & TWR_GFX_ROUND_CORNER_RIGHT_TOP)
+        {
+            twr_gfx_draw_line(self, x0, y0 - x, x0 + y, y0 - x, color);
+            twr_gfx_draw_line(self, x0, y0 - y, x0 + x, y0 - y, color);
+        }
+
+        if (corner & TWR_GFX_ROUND_CORNER_RIGHT_BOTTOM)
+        {
+            twr_gfx_draw_line(self, x0, y0 + y, x0 + x, y0 + y, color);
+            twr_gfx_draw_line(self, x0, y0 + x, x0 + y, y0 + x, color);
+        }
+
+        if (corner & TWR_GFX_ROUND_CORNER_LEFT_BOTTOM)
+        {
+            twr_gfx_draw_line(self, x0 - y, y0 + x, x0, y0 + x, color);
+            twr_gfx_draw_line(self, x0 - x, y0 + y, x0, y0 + y, color);
+        }
+
+        if (corner & TWR_GFX_ROUND_CORNER_LEFT_TOP)
+        {
+            twr_gfx_draw_line(self, x0 - x, y0 - y, x0, y0 - y, color);
+            twr_gfx_draw_line(self, x0 - y, y0 - x, x0, y0 - x, color);
+        }
+
+        if (err <= 0)
+        {
+            y++;
+            err += dy;
+            dy += 2;
+        }
+        if (err > 0)
+        {
+            x--;
+            dx += 2;
+            err += (-radius << 1) + dx;
+        }
+    }
+}
+
+bool twr_gfx_update(twr_gfx_t *self)
 {
     return self->_driver->update(self->_display);
 }

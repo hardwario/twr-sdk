@@ -1,12 +1,12 @@
-#include <bc_esp8266.h>
-#include <bc_rtc.h>
+#include <twr_esp8266.h>
+#include <twr_rtc.h>
 
-#define _BC_ESP8266_DELAY_INITIALIZATION_AT_COMMAND 100
-#define _BC_ESP8266_DELAY_SEND_RESPONSE 100
-#define _BC_ESP8266_DELAY_WIFI_CONNECT 1000
-#define _BC_ESP8266_DELAY_SOCKET_CONNECT 300
-#define _BC_ESP8266_TIMEOUT_WIFI_CONNECT 20
-#define _BC_ESP8266_TIMEOUT_SOCKET_CONNECT 10
+#define _TWR_ESP8266_DELAY_INITIALIZATION_AT_COMMAND 100
+#define _TWR_ESP8266_DELAY_SEND_RESPONSE 100
+#define _TWR_ESP8266_DELAY_WIFI_CONNECT 1000
+#define _TWR_ESP8266_DELAY_SOCKET_CONNECT 300
+#define _TWR_ESP8266_TIMEOUT_WIFI_CONNECT 20
+#define _TWR_ESP8266_TIMEOUT_SOCKET_CONNECT 10
 
 // Apply changes to the factory configuration
 static const char *_esp8266_init_commands[] =
@@ -28,92 +28,92 @@ static const char *_esp8266_init_commands[] =
     NULL
 };
 
-static void _bc_esp8266_task(void *param);
-static bool _bc_esp8266_read_response(bc_esp8266_t *self);
-static bool _bc_esp8266_read_socket_data(bc_esp8266_t *self);
-static void _uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void *param);
-static void _bc_esp8266_set_rtc_time(char *str);
+static void _twr_esp8266_task(void *param);
+static bool _twr_esp8266_read_response(twr_esp8266_t *self);
+static bool _twr_esp8266_read_socket_data(twr_esp8266_t *self);
+static void _uart_event_handler(twr_uart_channel_t channel, twr_uart_event_t event, void *param);
+static void _twr_esp8266_set_rtc_time(char *str);
 
-void bc_esp8266_init(bc_esp8266_t *self,  bc_uart_channel_t uart_channel)
+void twr_esp8266_init(twr_esp8266_t *self,  twr_uart_channel_t uart_channel)
 {
     memset(self, 0, sizeof(*self));
 
     self->_uart_channel = uart_channel;
 
-    self->_config.mode = BC_ESP8266_CONFIG_MODE_STATION;
+    self->_config.mode = TWR_ESP8266_CONFIG_MODE_STATION;
     self->_config.ssid[0] = '\0';
     self->_config.password[0] = '\0';
     self->_config.sntp_enabled = 0;
 
     // CH_PD of ESP8266
-    bc_gpio_init(BC_GPIO_P8);
-    bc_gpio_set_mode(BC_GPIO_P8, BC_GPIO_MODE_OUTPUT);
-    bc_gpio_set_output(BC_GPIO_P8, 0);
+    twr_gpio_init(TWR_GPIO_P8);
+    twr_gpio_set_mode(TWR_GPIO_P8, TWR_GPIO_MODE_OUTPUT);
+    twr_gpio_set_output(TWR_GPIO_P8, 0);
 
     // RESET of ESP8266
-    bc_gpio_init(BC_GPIO_P6);
-    bc_gpio_set_mode(BC_GPIO_P6, BC_GPIO_MODE_OUTPUT);
-    bc_gpio_set_output(BC_GPIO_P6, 1);
+    twr_gpio_init(TWR_GPIO_P6);
+    twr_gpio_set_mode(TWR_GPIO_P6, TWR_GPIO_MODE_OUTPUT);
+    twr_gpio_set_output(TWR_GPIO_P6, 1);
 
-    bc_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
-    bc_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
+    twr_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
+    twr_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
 
-    self->_task_id = bc_scheduler_register(_bc_esp8266_task, self, BC_TICK_INFINITY);
-    self->_state = BC_ESP8266_STATE_DISCONNECTED;
+    self->_task_id = twr_scheduler_register(_twr_esp8266_task, self, TWR_TICK_INFINITY);
+    self->_state = TWR_ESP8266_STATE_DISCONNECTED;
 }
 
-static void _uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void *param)
+static void _uart_event_handler(twr_uart_channel_t channel, twr_uart_event_t event, void *param)
 {
     (void) channel;
-    bc_esp8266_t *self = (bc_esp8266_t*)param;
+    twr_esp8266_t *self = (twr_esp8266_t*)param;
 
-    if (event == BC_UART_EVENT_ASYNC_READ_DATA && self->_state == BC_ESP8266_STATE_IDLE)
+    if (event == TWR_UART_EVENT_ASYNC_READ_DATA && self->_state == TWR_ESP8266_STATE_IDLE)
     {
-        bc_scheduler_plan_relative(self->_task_id, 100);
-        self->_state = BC_ESP8266_STATE_RECEIVE;
+        twr_scheduler_plan_relative(self->_task_id, 100);
+        self->_state = TWR_ESP8266_STATE_RECEIVE;
     }
 }
 
-void _bc_esp8266_enable(bc_esp8266_t *self)
+void _twr_esp8266_enable(twr_esp8266_t *self)
 {
     // Initialize UART
-    bc_uart_init(self->_uart_channel, BC_UART_BAUDRATE_115200, BC_UART_SETTING_8N1);
-    bc_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
-    bc_uart_async_read_start(self->_uart_channel, BC_TICK_INFINITY);
-    bc_uart_set_event_handler(self->_uart_channel, _uart_event_handler, self);
+    twr_uart_init(self->_uart_channel, TWR_UART_BAUDRATE_115200, TWR_UART_SETTING_8N1);
+    twr_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
+    twr_uart_async_read_start(self->_uart_channel, TWR_TICK_INFINITY);
+    twr_uart_set_event_handler(self->_uart_channel, _uart_event_handler, self);
 
     // Enable CH_PD
-    bc_gpio_set_output(BC_GPIO_P8, 1);
+    twr_gpio_set_output(TWR_GPIO_P8, 1);
 }
 
-void _bc_esp8266_disable(bc_esp8266_t *self)
+void _twr_esp8266_disable(twr_esp8266_t *self)
 {
     // Disable CH_PD
-    bc_gpio_set_output(BC_GPIO_P8, 0);
+    twr_gpio_set_output(TWR_GPIO_P8, 0);
 
     // Deinitialize UART
-    bc_uart_deinit(self->_uart_channel);
+    twr_uart_deinit(self->_uart_channel);
 }
 
-void bc_esp8266_set_event_handler(bc_esp8266_t *self, void (*event_handler)(bc_esp8266_t *, bc_esp8266_event_t, void *), void *event_param)
+void twr_esp8266_set_event_handler(twr_esp8266_t *self, void (*event_handler)(twr_esp8266_t *, twr_esp8266_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
     self->_event_param = event_param;
 }
 
-void bc_esp8266_set_station_mode(bc_esp8266_t *self, char *ssid, char *password)
+void twr_esp8266_set_station_mode(twr_esp8266_t *self, char *ssid, char *password)
 {
-    self->_config.mode = BC_ESP8266_CONFIG_MODE_STATION;
+    self->_config.mode = TWR_ESP8266_CONFIG_MODE_STATION;
     strncpy(self->_config.ssid, ssid, 63);
     strncpy(self->_config.password, password, 63);
 }
 
-void bc_esp8266_set_sntp(bc_esp8266_t *self, int timezone)
+void twr_esp8266_set_sntp(twr_esp8266_t *self, int timezone)
 {
-    bc_esp8266_set_sntp_with_servers(self, timezone, NULL, NULL, NULL);
+    twr_esp8266_set_sntp_with_servers(self, timezone, NULL, NULL, NULL);
 }
 
-void bc_esp8266_set_sntp_with_servers(bc_esp8266_t *self, int timezone, char *sntp_server1, char *sntp_server2, char *sntp_server3)
+void twr_esp8266_set_sntp_with_servers(twr_esp8266_t *self, int timezone, char *sntp_server1, char *sntp_server2, char *sntp_server3)
 {
     self->_config.sntp_enabled = 1;
     self->_config.sntp_timezone = timezone;
@@ -143,9 +143,9 @@ void bc_esp8266_set_sntp_with_servers(bc_esp8266_t *self, int timezone, char *sn
     }
 }
 
-bool bc_esp8266_is_ready(bc_esp8266_t *self)
+bool twr_esp8266_is_ready(twr_esp8266_t *self)
 {
-    if (self->_state == BC_ESP8266_STATE_READY || self->_state == BC_ESP8266_STATE_IDLE)
+    if (self->_state == TWR_ESP8266_STATE_READY || self->_state == TWR_ESP8266_STATE_IDLE)
     {
         return true;
     }
@@ -153,78 +153,78 @@ bool bc_esp8266_is_ready(bc_esp8266_t *self)
     return false;
 }
 
-bool bc_esp8266_connect(bc_esp8266_t *self)
+bool twr_esp8266_connect(twr_esp8266_t *self)
 {
-    if (self->_state != BC_ESP8266_STATE_DISCONNECTED ||
+    if (self->_state != TWR_ESP8266_STATE_DISCONNECTED ||
         self->_config.ssid[0] == '\0' || self->_config.password[0] == '\0')
     {
         return false;
     }
 
-    _bc_esp8266_enable(self);
+    _twr_esp8266_enable(self);
 
-    self->_state = BC_ESP8266_STATE_INITIALIZE;
-    self->_state_after_init = BC_ESP8266_STATE_WIFI_CONNECT_COMMAND;
+    self->_state = TWR_ESP8266_STATE_INITIALIZE;
+    self->_state_after_init = TWR_ESP8266_STATE_WIFI_CONNECT_COMMAND;
 
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 
     return true;
 }
 
-bool bc_esp8266_disconnect(bc_esp8266_t *self)
+bool twr_esp8266_disconnect(twr_esp8266_t *self)
 {
-    _bc_esp8266_disable(self);
+    _twr_esp8266_disable(self);
 
-    self->_state = BC_ESP8266_STATE_DISCONNECTED;
+    self->_state = TWR_ESP8266_STATE_DISCONNECTED;
 
     if (self->_event_handler != NULL)
     {
-        self->_event_handler(self, BC_ESP8266_EVENT_DISCONNECTED, self->_event_param);
+        self->_event_handler(self, TWR_ESP8266_EVENT_DISCONNECTED, self->_event_param);
     }
 
     return true;
 }
 
-bool bc_esp8266_socket_connect(bc_esp8266_t *self, const char *type, const char *host, uint16_t port)
+bool twr_esp8266_socket_connect(twr_esp8266_t *self, const char *type, const char *host, uint16_t port)
 {
-    if (!bc_esp8266_is_ready(self) || host == NULL || port == 0 || strlen(host) == 0 ||
-        (strlen(host) + 15) > BC_ESP8266_TX_MAX_PACKET_SIZE)
+    if (!twr_esp8266_is_ready(self) || host == NULL || port == 0 || strlen(host) == 0 ||
+        (strlen(host) + 15) > TWR_ESP8266_TX_MAX_PACKET_SIZE)
     {
         return false;
     }
 
-    static char buffer[BC_ESP8266_TX_MAX_PACKET_SIZE];
+    static char buffer[TWR_ESP8266_TX_MAX_PACKET_SIZE];
     sprintf(buffer, "\"%s\",\"%s\",%d", type, host, port);
 
     self->_message_length = strlen(buffer);
 
     memcpy(self->_message_buffer, buffer, self->_message_length);
 
-    self->_state = BC_ESP8266_STATE_SOCKET_CONNECT_COMMAND;
+    self->_state = TWR_ESP8266_STATE_SOCKET_CONNECT_COMMAND;
 
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 
     return true;
 }
 
-bool bc_esp8266_tcp_connect(bc_esp8266_t *self, const char *host, uint16_t port)
+bool twr_esp8266_tcp_connect(twr_esp8266_t *self, const char *host, uint16_t port)
 {
-    return bc_esp8266_socket_connect(self, "TCP", host, port);
+    return twr_esp8266_socket_connect(self, "TCP", host, port);
 }
 
-bool bc_esp8266_udp_connect(bc_esp8266_t *self, const char *host, uint16_t port)
+bool twr_esp8266_udp_connect(twr_esp8266_t *self, const char *host, uint16_t port)
 {
-    return bc_esp8266_socket_connect(self, "UDP", host, port);
+    return twr_esp8266_socket_connect(self, "UDP", host, port);
 }
 
-bool bc_esp8266_ssl_connect(bc_esp8266_t *self, const char *host, uint16_t port)
+bool twr_esp8266_ssl_connect(twr_esp8266_t *self, const char *host, uint16_t port)
 {
-    return bc_esp8266_socket_connect(self, "SSL", host, port);
+    return twr_esp8266_socket_connect(self, "SSL", host, port);
 }
 
-bool bc_esp8266_send_data(bc_esp8266_t *self, const void *buffer, size_t length)
+bool twr_esp8266_send_data(twr_esp8266_t *self, const void *buffer, size_t length)
 {
-    if (!bc_esp8266_is_ready(self) || length == 0 || length > BC_ESP8266_TX_MAX_PACKET_SIZE)
+    if (!twr_esp8266_is_ready(self) || length == 0 || length > TWR_ESP8266_TX_MAX_PACKET_SIZE)
     {
         return false;
     }
@@ -233,42 +233,42 @@ bool bc_esp8266_send_data(bc_esp8266_t *self, const void *buffer, size_t length)
 
     memcpy(self->_message_buffer, buffer, self->_message_length);
 
-    self->_state = BC_ESP8266_STATE_SOCKET_SEND_COMMAND;
+    self->_state = TWR_ESP8266_STATE_SOCKET_SEND_COMMAND;
 
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 
     return true;
 }
 
-static void _bc_esp8266_task(void *param)
+static void _twr_esp8266_task(void *param)
 {
-    bc_esp8266_t *self = param;
+    twr_esp8266_t *self = param;
 
     while (true)
     {
         switch (self->_state)
         {
-            case BC_ESP8266_STATE_READY:
+            case TWR_ESP8266_STATE_READY:
             {
-                self->_state = BC_ESP8266_STATE_IDLE;
+                self->_state = TWR_ESP8266_STATE_IDLE;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_ESP8266_EVENT_READY, self->_event_param);
+                    self->_event_handler(self, TWR_ESP8266_EVENT_READY, self->_event_param);
                 }
 
                 continue;
             }
-            case BC_ESP8266_STATE_IDLE:
-            case BC_ESP8266_STATE_DISCONNECTED:
+            case TWR_ESP8266_STATE_IDLE:
+            case TWR_ESP8266_STATE_DISCONNECTED:
             {
                 return;
             }
-            case BC_ESP8266_STATE_RECEIVE:
+            case TWR_ESP8266_STATE_RECEIVE:
             {
-                self->_state = BC_ESP8266_STATE_IDLE;
+                self->_state = TWR_ESP8266_STATE_IDLE;
 
-                while (_bc_esp8266_read_response(self))
+                while (_twr_esp8266_read_response(self))
                 {
                     if (memcmp(self->_response, "+IPD", 4) == 0)
                     {
@@ -302,67 +302,67 @@ static void _bc_esp8266_task(void *param)
                             self->_message_length = sizeof(self->_message_buffer);
                         }
 
-                        self->_state = BC_ESP8266_STATE_SOCKET_RECEIVE;
+                        self->_state = TWR_ESP8266_STATE_SOCKET_RECEIVE;
 
-                        bc_scheduler_plan_current_now();
+                        twr_scheduler_plan_current_now();
                         return;
                     }
                 }
 
                 return;
             }
-            case BC_ESP8266_STATE_ERROR:
+            case TWR_ESP8266_STATE_ERROR:
             {
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_ESP8266_EVENT_ERROR, self->_event_param);
+                    self->_event_handler(self, TWR_ESP8266_EVENT_ERROR, self->_event_param);
                 }
 
-                self->_state = BC_ESP8266_STATE_INITIALIZE;
+                self->_state = TWR_ESP8266_STATE_INITIALIZE;
 
                 continue;
             }
-            case BC_ESP8266_STATE_INITIALIZE:
+            case TWR_ESP8266_STATE_INITIALIZE:
             {
                 self->_init_command_index = 0;
-                self->_state = BC_ESP8266_STATE_INITIALIZE_COMMAND_SEND;
+                self->_state = TWR_ESP8266_STATE_INITIALIZE_COMMAND_SEND;
 
                 continue;
             }
-            case BC_ESP8266_STATE_INITIALIZE_COMMAND_SEND:
+            case TWR_ESP8266_STATE_INITIALIZE_COMMAND_SEND:
             {
-                self->_state = BC_ESP8266_STATE_ERROR;
+                self->_state = TWR_ESP8266_STATE_ERROR;
 
                 // Purge RX FIFO
                 char rx_character;
-                while (bc_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
+                while (twr_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
                 {
                 }
 
                 strcpy(self->_command, _esp8266_init_commands[self->_init_command_index]);
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (twr_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_ESP8266_STATE_INITIALIZE_COMMAND_RESPONSE;
-                bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_INITIALIZATION_AT_COMMAND);
+                self->_state = TWR_ESP8266_STATE_INITIALIZE_COMMAND_RESPONSE;
+                twr_scheduler_plan_current_from_now(_TWR_ESP8266_DELAY_INITIALIZATION_AT_COMMAND);
 
                 return;
             }
-            case BC_ESP8266_STATE_INITIALIZE_COMMAND_RESPONSE:
+            case TWR_ESP8266_STATE_INITIALIZE_COMMAND_RESPONSE:
             {
-                self->_state = BC_ESP8266_STATE_ERROR;
+                self->_state = TWR_ESP8266_STATE_ERROR;
 
-                if (!_bc_esp8266_read_response(self))
+                if (!_twr_esp8266_read_response(self))
                 {
                     continue;
                 }
 
                 // repeated command, continue reading response
-                if (memcmp(self->_response, "AT", 2) == 0 && !_bc_esp8266_read_response(self))
+                if (memcmp(self->_response, "AT", 2) == 0 && !_twr_esp8266_read_response(self))
                 {
                     continue;
                 }
@@ -380,39 +380,39 @@ static void _bc_esp8266_task(void *param)
                 }
                 else
                 {
-                    self->_state = BC_ESP8266_STATE_INITIALIZE_COMMAND_SEND;
+                    self->_state = TWR_ESP8266_STATE_INITIALIZE_COMMAND_SEND;
                 }
 
                 continue;
             }
-            case BC_ESP8266_STATE_WIFI_CONNECT_COMMAND:
-            case BC_ESP8266_STATE_AP_AVAILABILITY_OPT_COMMAND:
-            case BC_ESP8266_STATE_AP_AVAILABILITY_COMMAND:
-            case BC_ESP8266_STATE_SNTP_CONFIG_COMMAND:
-            case BC_ESP8266_STATE_SNTP_TIME_COMMAND:
-            case BC_ESP8266_STATE_SOCKET_CONNECT_COMMAND:
-            case BC_ESP8266_STATE_SOCKET_SEND_COMMAND:
+            case TWR_ESP8266_STATE_WIFI_CONNECT_COMMAND:
+            case TWR_ESP8266_STATE_AP_AVAILABILITY_OPT_COMMAND:
+            case TWR_ESP8266_STATE_AP_AVAILABILITY_COMMAND:
+            case TWR_ESP8266_STATE_SNTP_CONFIG_COMMAND:
+            case TWR_ESP8266_STATE_SNTP_TIME_COMMAND:
+            case TWR_ESP8266_STATE_SOCKET_CONNECT_COMMAND:
+            case TWR_ESP8266_STATE_SOCKET_SEND_COMMAND:
             {
-                bc_esp8266_state_t response_state;
+                twr_esp8266_state_t response_state;
 
-                if (self->_state == BC_ESP8266_STATE_WIFI_CONNECT_COMMAND)
+                if (self->_state == TWR_ESP8266_STATE_WIFI_CONNECT_COMMAND)
                 {
                     sprintf(self->_command, "AT+CWJAP_CUR=\"%s\",\"%s\"\r\n", self->_config.ssid, self->_config.password);
-                    response_state = BC_ESP8266_STATE_WIFI_CONNECT_RESPONSE;
+                    response_state = TWR_ESP8266_STATE_WIFI_CONNECT_RESPONSE;
                 }
-                else if (self->_state == BC_ESP8266_STATE_AP_AVAILABILITY_OPT_COMMAND)
+                else if (self->_state == TWR_ESP8266_STATE_AP_AVAILABILITY_OPT_COMMAND)
                 {
                     strcpy(self->_command, "AT+CWLAPOPT=1,6\r\n");
-                    response_state = BC_ESP8266_STATE_AP_AVAILABILITY_OPT_RESPONSE;
+                    response_state = TWR_ESP8266_STATE_AP_AVAILABILITY_OPT_RESPONSE;
                 }
-                else if (self->_state == BC_ESP8266_STATE_AP_AVAILABILITY_COMMAND)
+                else if (self->_state == TWR_ESP8266_STATE_AP_AVAILABILITY_COMMAND)
                 {
                     strcpy(self->_command, "AT+CWLAP\r\n");
                     self->_rssi = 0;
                     self->_ap_available = false;
-                    response_state = BC_ESP8266_STATE_AP_AVAILABILITY_RESPONSE;
+                    response_state = TWR_ESP8266_STATE_AP_AVAILABILITY_RESPONSE;
                 }
-                else if (self->_state == BC_ESP8266_STATE_SNTP_CONFIG_COMMAND)
+                else if (self->_state == TWR_ESP8266_STATE_SNTP_CONFIG_COMMAND)
                 {
                     sprintf(self->_command, "AT+CIPSNTPCFG=%u,%d,\"%s\",\"%s\",\"%s\"\r\n",
                         self->_config.sntp_enabled,
@@ -420,30 +420,30 @@ static void _bc_esp8266_task(void *param)
                         self->_config.sntp_server1,
                         self->_config.sntp_server2,
                         self->_config.sntp_server3);
-                    response_state = BC_ESP8266_STATE_SNTP_CONFIG_RESPONSE;
+                    response_state = TWR_ESP8266_STATE_SNTP_CONFIG_RESPONSE;
                 }
-                else if (self->_state == BC_ESP8266_STATE_SNTP_TIME_COMMAND)
+                else if (self->_state == TWR_ESP8266_STATE_SNTP_TIME_COMMAND)
                 {
                     strcpy(self->_command, "AT+CIPSNTPTIME?\r\n");
-                    response_state = BC_ESP8266_STATE_SNTP_TIME_RESPONSE;
+                    response_state = TWR_ESP8266_STATE_SNTP_TIME_RESPONSE;
                 }
-                else if (self->_state == BC_ESP8266_STATE_SOCKET_CONNECT_COMMAND)
+                else if (self->_state == TWR_ESP8266_STATE_SOCKET_CONNECT_COMMAND)
                 {
                     strcpy(self->_command, "AT+CIPSTART=");
-                    response_state = BC_ESP8266_STATE_SOCKET_CONNECT_RESPONSE;
+                    response_state = TWR_ESP8266_STATE_SOCKET_CONNECT_RESPONSE;
                 }
                 else
                 {
                     sprintf(self->_command, "AT+CIPSEND=%d\r\n", self->_message_length);
-                    response_state = BC_ESP8266_STATE_SOCKET_SEND_DATA;
+                    response_state = TWR_ESP8266_STATE_SOCKET_SEND_DATA;
                 }
 
-                self->_state = BC_ESP8266_STATE_ERROR;
+                self->_state = TWR_ESP8266_STATE_ERROR;
 
                 uint8_t command_length = strlen(self->_command);
                 size_t length = command_length;
 
-                if (response_state == BC_ESP8266_STATE_SOCKET_CONNECT_RESPONSE)
+                if (response_state == TWR_ESP8266_STATE_SOCKET_CONNECT_RESPONSE)
                 {
                     for (size_t i = 0; i < self->_message_length; i++)
                     {
@@ -456,7 +456,7 @@ static void _bc_esp8266_task(void *param)
                     length = command_length + self->_message_length + 2;
                 }
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (twr_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -464,26 +464,26 @@ static void _bc_esp8266_task(void *param)
                 self->_state = response_state;
                 self->_timeout_cnt = 0;
 
-                bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SEND_RESPONSE);
+                twr_scheduler_plan_current_from_now(_TWR_ESP8266_DELAY_SEND_RESPONSE);
 
                 return;
             }
-            case BC_ESP8266_STATE_SOCKET_SEND_DATA:
+            case TWR_ESP8266_STATE_SOCKET_SEND_DATA:
             {
-                self->_state = BC_ESP8266_STATE_ERROR;
+                self->_state = TWR_ESP8266_STATE_ERROR;
 
-                if (bc_uart_async_write(self->_uart_channel, self->_message_buffer, self->_message_length) != self->_message_length)
+                if (twr_uart_async_write(self->_uart_channel, self->_message_buffer, self->_message_length) != self->_message_length)
                 {
                     continue;
                 }
 
-                self->_state = BC_ESP8266_STATE_SOCKET_SEND_RESPONSE;
+                self->_state = TWR_ESP8266_STATE_SOCKET_SEND_RESPONSE;
 
-                bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SEND_RESPONSE);
+                twr_scheduler_plan_current_from_now(_TWR_ESP8266_DELAY_SEND_RESPONSE);
 
                 return;
             }
-            case BC_ESP8266_STATE_WIFI_CONNECT_RESPONSE:
+            case TWR_ESP8266_STATE_WIFI_CONNECT_RESPONSE:
             {
                 /*
                 Success response:
@@ -495,15 +495,15 @@ static void _bc_esp8266_task(void *param)
                 */
 
                 self->_timeout_cnt++;
-                if (self->_timeout_cnt > _BC_ESP8266_TIMEOUT_WIFI_CONNECT)
+                if (self->_timeout_cnt > _TWR_ESP8266_TIMEOUT_WIFI_CONNECT)
                 {
-                    self->_state = BC_ESP8266_STATE_WIFI_CONNECT_ERROR;
+                    self->_state = TWR_ESP8266_STATE_WIFI_CONNECT_ERROR;
                     continue;
                 }
 
-                if (!_bc_esp8266_read_response(self))
+                if (!_twr_esp8266_read_response(self))
                 {
-                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_WIFI_CONNECT);
+                    twr_scheduler_plan_current_from_now(_TWR_ESP8266_DELAY_WIFI_CONNECT);
                     return;
                 }
 
@@ -511,45 +511,45 @@ static void _bc_esp8266_task(void *param)
                 {
                     if (self->_config.sntp_enabled)
                     {
-                        self->_state = BC_ESP8266_STATE_SNTP_CONFIG_COMMAND;
+                        self->_state = TWR_ESP8266_STATE_SNTP_CONFIG_COMMAND;
                     }
                     else
                     {
-                        self->_state = BC_ESP8266_STATE_READY;
+                        self->_state = TWR_ESP8266_STATE_READY;
                         if (self->_event_handler != NULL)
                         {
-                            self->_event_handler(self, BC_ESP8266_EVENT_WIFI_CONNECT_SUCCESS, self->_event_param);
+                            self->_event_handler(self, TWR_ESP8266_EVENT_WIFI_CONNECT_SUCCESS, self->_event_param);
                         }
                     }
                 }
                 else if (strcmp(self->_response, "FAIL\r") == 0)
                 {
-                    self->_state = BC_ESP8266_STATE_WIFI_CONNECT_ERROR;
+                    self->_state = TWR_ESP8266_STATE_WIFI_CONNECT_ERROR;
                 }
                 else
                 {
-                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_WIFI_CONNECT);
+                    twr_scheduler_plan_current_from_now(_TWR_ESP8266_DELAY_WIFI_CONNECT);
                     return;
                 }
 
                 continue;
             }
-            case BC_ESP8266_STATE_WIFI_CONNECT_ERROR:
+            case TWR_ESP8266_STATE_WIFI_CONNECT_ERROR:
             {
-                self->_state = BC_ESP8266_STATE_DISCONNECTED;
+                self->_state = TWR_ESP8266_STATE_DISCONNECTED;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_ESP8266_EVENT_WIFI_CONNECT_ERROR, self->_event_param);
+                    self->_event_handler(self, TWR_ESP8266_EVENT_WIFI_CONNECT_ERROR, self->_event_param);
                 }
 
                 continue;
             }
-            case BC_ESP8266_STATE_SNTP_CONFIG_RESPONSE:
+            case TWR_ESP8266_STATE_SNTP_CONFIG_RESPONSE:
             {
-                self->_state = BC_ESP8266_STATE_ERROR;
+                self->_state = TWR_ESP8266_STATE_ERROR;
 
-                if (!_bc_esp8266_read_response(self))
+                if (!_twr_esp8266_read_response(self))
                 {
                     continue;
                 }
@@ -559,11 +559,11 @@ static void _bc_esp8266_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_ESP8266_STATE_SNTP_TIME_COMMAND;
+                self->_state = TWR_ESP8266_STATE_SNTP_TIME_COMMAND;
 
                 continue;
             }
-            case BC_ESP8266_STATE_SNTP_TIME_RESPONSE:
+            case TWR_ESP8266_STATE_SNTP_TIME_RESPONSE:
             {
                 /*
                 Success response:
@@ -572,39 +572,39 @@ static void _bc_esp8266_task(void *param)
                 */
 
                 self->_timeout_cnt++;
-                if (self->_timeout_cnt > _BC_ESP8266_TIMEOUT_SOCKET_CONNECT)
+                if (self->_timeout_cnt > _TWR_ESP8266_TIMEOUT_SOCKET_CONNECT)
                 {
-                    self->_state = BC_ESP8266_STATE_WIFI_CONNECT_ERROR;
+                    self->_state = TWR_ESP8266_STATE_WIFI_CONNECT_ERROR;
                     continue;
                 }
 
-                if (!_bc_esp8266_read_response(self))
+                if (!_twr_esp8266_read_response(self))
                 {
-                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SOCKET_CONNECT);
+                    twr_scheduler_plan_current_from_now(_TWR_ESP8266_DELAY_SOCKET_CONNECT);
                     return;
                 }
 
                 if (strcmp(self->_response, "OK\r") == 0)
                 {
-                    self->_state = BC_ESP8266_STATE_READY;
+                    self->_state = TWR_ESP8266_STATE_READY;
                     if (self->_event_handler != NULL)
                     {
-                        self->_event_handler(self, BC_ESP8266_EVENT_WIFI_CONNECT_SUCCESS, self->_event_param);
+                        self->_event_handler(self, TWR_ESP8266_EVENT_WIFI_CONNECT_SUCCESS, self->_event_param);
                     }
                 }
                 else if (memcmp(self->_response, "+CIPSNTPTIME:", 13) == 0)
                 {
-                    _bc_esp8266_set_rtc_time(self->_response + 13);
+                    _twr_esp8266_set_rtc_time(self->_response + 13);
                 }
                 else
                 {
-                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SOCKET_CONNECT);
+                    twr_scheduler_plan_current_from_now(_TWR_ESP8266_DELAY_SOCKET_CONNECT);
                     return;
                 }
 
                 continue;
             }
-            case BC_ESP8266_STATE_SOCKET_CONNECT_RESPONSE:
+            case TWR_ESP8266_STATE_SOCKET_CONNECT_RESPONSE:
             {
                 /*
                 Success response:
@@ -614,54 +614,54 @@ static void _bc_esp8266_task(void *param)
                 */
 
                 self->_timeout_cnt++;
-                if (self->_timeout_cnt > _BC_ESP8266_TIMEOUT_SOCKET_CONNECT)
+                if (self->_timeout_cnt > _TWR_ESP8266_TIMEOUT_SOCKET_CONNECT)
                 {
-                    self->_state = BC_ESP8266_STATE_SOCKET_CONNECT_ERROR;
+                    self->_state = TWR_ESP8266_STATE_SOCKET_CONNECT_ERROR;
                     continue;
                 }
 
-                if (!_bc_esp8266_read_response(self))
+                if (!_twr_esp8266_read_response(self))
                 {
-                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SOCKET_CONNECT);
+                    twr_scheduler_plan_current_from_now(_TWR_ESP8266_DELAY_SOCKET_CONNECT);
                     return;
                 }
 
                 if (strcmp(self->_response, "OK\r") == 0)
                 {
-                    self->_state = BC_ESP8266_STATE_READY;
+                    self->_state = TWR_ESP8266_STATE_READY;
                     if (self->_event_handler != NULL)
                     {
-                        self->_event_handler(self, BC_ESP8266_EVENT_SOCKET_CONNECT_SUCCESS, self->_event_param);
+                        self->_event_handler(self, TWR_ESP8266_EVENT_SOCKET_CONNECT_SUCCESS, self->_event_param);
                     }
                 }
                 else if (strcmp(self->_response, "ERROR\r") == 0)
                 {
-                    self->_state = BC_ESP8266_STATE_SOCKET_CONNECT_ERROR;
+                    self->_state = TWR_ESP8266_STATE_SOCKET_CONNECT_ERROR;
                 }
                 else
                 {
-                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_SOCKET_CONNECT);
+                    twr_scheduler_plan_current_from_now(_TWR_ESP8266_DELAY_SOCKET_CONNECT);
                     return;
                 }
 
                 continue;
             }
-            case BC_ESP8266_STATE_SOCKET_CONNECT_ERROR:
+            case TWR_ESP8266_STATE_SOCKET_CONNECT_ERROR:
             {
-                self->_state = BC_ESP8266_STATE_READY;
+                self->_state = TWR_ESP8266_STATE_READY;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_ESP8266_EVENT_SOCKET_CONNECT_ERROR, self->_event_param);
+                    self->_event_handler(self, TWR_ESP8266_EVENT_SOCKET_CONNECT_ERROR, self->_event_param);
                 }
 
                 continue;
             }
-            case BC_ESP8266_STATE_SOCKET_SEND_RESPONSE:
+            case TWR_ESP8266_STATE_SOCKET_SEND_RESPONSE:
             {
-                self->_state = BC_ESP8266_STATE_SOCKET_SEND_ERROR;
+                self->_state = TWR_ESP8266_STATE_SOCKET_SEND_ERROR;
 
-                if (!_bc_esp8266_read_response(self))
+                if (!_twr_esp8266_read_response(self))
                 {
                     continue;
                 }
@@ -671,55 +671,55 @@ static void _bc_esp8266_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_ESP8266_STATE_RECEIVE;
+                self->_state = TWR_ESP8266_STATE_RECEIVE;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_ESP8266_EVENT_SOCKET_SEND_SUCCESS, self->_event_param);
+                    self->_event_handler(self, TWR_ESP8266_EVENT_SOCKET_SEND_SUCCESS, self->_event_param);
                 }
 
                 continue;
             }
-            case BC_ESP8266_STATE_SOCKET_SEND_ERROR:
+            case TWR_ESP8266_STATE_SOCKET_SEND_ERROR:
             {
-                self->_state = BC_ESP8266_STATE_READY;
+                self->_state = TWR_ESP8266_STATE_READY;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_ESP8266_EVENT_SOCKET_SEND_ERROR, self->_event_param);
+                    self->_event_handler(self, TWR_ESP8266_EVENT_SOCKET_SEND_ERROR, self->_event_param);
                 }
 
                 continue;
             }
-            case BC_ESP8266_STATE_SOCKET_RECEIVE:
+            case TWR_ESP8266_STATE_SOCKET_RECEIVE:
             {
-                if (!_bc_esp8266_read_socket_data(self))
+                if (!_twr_esp8266_read_socket_data(self))
                 {
                     continue;
                 }
 
-                self->_state = BC_ESP8266_STATE_READY;
+                self->_state = TWR_ESP8266_STATE_READY;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_ESP8266_EVENT_DATA_RECEIVED, self->_event_param);
+                    self->_event_handler(self, TWR_ESP8266_EVENT_DATA_RECEIVED, self->_event_param);
                 }
 
                 continue;
             }
-            case BC_ESP8266_STATE_AP_AVAILABILITY_OPT_RESPONSE:
+            case TWR_ESP8266_STATE_AP_AVAILABILITY_OPT_RESPONSE:
             {
-                if (!_bc_esp8266_read_response(self) || memcmp(self->_response, "OK", 2) != 0)
+                if (!_twr_esp8266_read_response(self) || memcmp(self->_response, "OK", 2) != 0)
                 {
-                    bc_esp8266_disconnect(self);
+                    twr_esp8266_disconnect(self);
                     return;
                 }
 
-                self->_state = BC_ESP8266_STATE_AP_AVAILABILITY_COMMAND;
+                self->_state = TWR_ESP8266_STATE_AP_AVAILABILITY_COMMAND;
 
                 continue;
             }
-            case BC_ESP8266_STATE_AP_AVAILABILITY_RESPONSE:
+            case TWR_ESP8266_STATE_AP_AVAILABILITY_RESPONSE:
             {
                 /*
                 Success response:
@@ -729,31 +729,31 @@ static void _bc_esp8266_task(void *param)
                 */
 
                 self->_timeout_cnt++;
-                if (self->_timeout_cnt > _BC_ESP8266_TIMEOUT_WIFI_CONNECT)
+                if (self->_timeout_cnt > _TWR_ESP8266_TIMEOUT_WIFI_CONNECT)
                 {
-                    bc_esp8266_disconnect(self);
+                    twr_esp8266_disconnect(self);
                     return;
                 }
 
-                if (!_bc_esp8266_read_response(self))
+                if (!_twr_esp8266_read_response(self))
                 {
-                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_WIFI_CONNECT);
+                    twr_scheduler_plan_current_from_now(_TWR_ESP8266_DELAY_WIFI_CONNECT);
                     return;
                 }
 
                 if (strcmp(self->_response, "OK\r") == 0)
                 {
-                    bc_esp8266_disconnect(self);
+                    twr_esp8266_disconnect(self);
 
                     if (self->_event_handler != NULL)
                     {
-                        self->_event_handler(self, BC_ESP8266_EVENT_AP_AVAILABILITY_RESULT, self->_event_param);
+                        self->_event_handler(self, TWR_ESP8266_EVENT_AP_AVAILABILITY_RESULT, self->_event_param);
                     }
                     return;
                 }
                 else if (strcmp(self->_response, "ERROR\r") == 0)
                 {
-                    bc_esp8266_disconnect(self);
+                    twr_esp8266_disconnect(self);
                     return;
                 }
                 else
@@ -773,7 +773,7 @@ static void _bc_esp8266_task(void *param)
                         }
                     }
 
-                    bc_scheduler_plan_current_from_now(_BC_ESP8266_DELAY_WIFI_CONNECT);
+                    twr_scheduler_plan_current_from_now(_TWR_ESP8266_DELAY_WIFI_CONNECT);
                     return;
                 }
 
@@ -787,12 +787,12 @@ static void _bc_esp8266_task(void *param)
     }
 }
 
-uint32_t bc_esp8266_get_received_message_length(bc_esp8266_t *self)
+uint32_t twr_esp8266_get_received_message_length(twr_esp8266_t *self)
 {
     return self->_message_length;
 }
 
-uint32_t bc_esp8266_get_received_message_data(bc_esp8266_t *self, uint8_t *buffer, uint32_t buffer_size)
+uint32_t twr_esp8266_get_received_message_data(twr_esp8266_t *self, uint8_t *buffer, uint32_t buffer_size)
 {
     if (self->_message_length > buffer_size)
     {
@@ -804,7 +804,7 @@ uint32_t bc_esp8266_get_received_message_data(bc_esp8266_t *self, uint8_t *buffe
     return self->_message_length;
 }
 
-static bool _bc_esp8266_read_response(bc_esp8266_t *self)
+static bool _twr_esp8266_read_response(twr_esp8266_t *self)
 {
     size_t length = 0;
 
@@ -812,7 +812,7 @@ static bool _bc_esp8266_read_response(bc_esp8266_t *self)
     {
         char rx_character;
 
-        if (bc_uart_async_read(self->_uart_channel, &rx_character, 1) == 0)
+        if (twr_uart_async_read(self->_uart_channel, &rx_character, 1) == 0)
         {
             return false;
         }
@@ -847,13 +847,13 @@ static bool _bc_esp8266_read_response(bc_esp8266_t *self)
     return true;
 }
 
-static bool _bc_esp8266_read_socket_data(bc_esp8266_t *self)
+static bool _twr_esp8266_read_socket_data(twr_esp8266_t *self)
 {
     while (true)
     {
         char rx_character;
 
-        if (bc_uart_async_read(self->_uart_channel, &rx_character, 1) == 0)
+        if (twr_uart_async_read(self->_uart_channel, &rx_character, 1) == 0)
         {
             return false;
         }
@@ -869,7 +869,7 @@ static bool _bc_esp8266_read_socket_data(bc_esp8266_t *self)
     return true;
 }
 
-static void _bc_esp8266_set_rtc_time(char *str)
+static void _twr_esp8266_set_rtc_time(char *str)
 {
     struct tm tm;
     char token[5];
@@ -973,48 +973,48 @@ static void _bc_esp8266_set_rtc_time(char *str)
             token[j++] = c;
         }
     }
-    bc_rtc_set_datetime(&tm, 0);
+    twr_rtc_set_datetime(&tm, 0);
 }
 
-bool bc_esp8266_check_ap_availability(bc_esp8266_t *self)
+bool twr_esp8266_check_ap_availability(twr_esp8266_t *self)
 {
-    if (self->_state != BC_ESP8266_STATE_DISCONNECTED || self->_config.ssid[0] == '\0')
+    if (self->_state != TWR_ESP8266_STATE_DISCONNECTED || self->_config.ssid[0] == '\0')
     {
         return false;
     }
 
-    _bc_esp8266_enable(self);
+    _twr_esp8266_enable(self);
 
-    self->_state = BC_ESP8266_STATE_INITIALIZE;
-    self->_state_after_init = BC_ESP8266_STATE_AP_AVAILABILITY_OPT_COMMAND;
+    self->_state = TWR_ESP8266_STATE_INITIALIZE;
+    self->_state_after_init = TWR_ESP8266_STATE_AP_AVAILABILITY_OPT_COMMAND;
 
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 
     return true;
 }
 
-void bc_esp8266_get_ap_availability(bc_esp8266_t *self, bool *available, int *rssi)
+void twr_esp8266_get_ap_availability(twr_esp8266_t *self, bool *available, int *rssi)
 {
     *available = self->_ap_available;
     *rssi = self->_rssi;
 }
 
-void bc_esp8266_get_ssid(bc_esp8266_t *self, char *ssid)
+void twr_esp8266_get_ssid(twr_esp8266_t *self, char *ssid)
 {
     strncpy(ssid, self->_config.ssid, 64);
 }
 
-void bc_esp8266_set_ssid(bc_esp8266_t *self, char *ssid)
+void twr_esp8266_set_ssid(twr_esp8266_t *self, char *ssid)
 {
     strncpy(self->_config.ssid, ssid, 64);
 }
 
-void bc_esp8266_get_password(bc_esp8266_t *self, char *password)
+void twr_esp8266_get_password(twr_esp8266_t *self, char *password)
 {
     strncpy(password, self->_config.password, 64);
 }
 
-void bc_esp8266_set_password(bc_esp8266_t *self, char *password)
+void twr_esp8266_set_password(twr_esp8266_t *self, char *password)
 {
     strncpy(self->_config.password, password, 64);
 }

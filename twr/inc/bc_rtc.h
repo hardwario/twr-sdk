@@ -1,24 +1,24 @@
-#ifndef _BC_RTC_H
-#define _BC_RTC_H
+#ifndef _TWR_RTC_H
+#define _TWR_RTC_H
 
 #include <time.h>
 #include <stm32l0xx.h>
-#include "bc_common.h"
+#include "twr_common.h"
 
-//! @addtogroup bc_rtc bc_rtc
+//! @addtogroup twr_rtc twr_rtc
 //! @brief Driver for real-time clock
 //! @{
 
-// Note: For performance reasons, the BC_RTC_PREDIV_S value should be a power of
+// Note: For performance reasons, the TWR_RTC_PREDIV_S value should be a power of
 // two.
-#define BC_RTC_PREDIV_S 256
-#define BC_RTC_PREDIV_A 128
+#define TWR_RTC_PREDIV_S 256
+#define TWR_RTC_PREDIV_A 128
 
 //! @brief Initialize real-time clock
 
-extern int _bc_rtc_writable_semaphore;
+extern int _twr_rtc_writable_semaphore;
 
-void bc_rtc_init(void);
+void twr_rtc_init(void);
 
 /**
  * Obtain current date and time from RTC
@@ -48,7 +48,7 @@ void bc_rtc_init(void);
  *
  * @param[out] tm A pointer to target struct tm variable to hold the result
  */
-void bc_rtc_get_datetime(struct tm *tm);
+void twr_rtc_get_datetime(struct tm *tm);
 
 /**
  * Obtain current UNIX time from RTC
@@ -79,7 +79,7 @@ void bc_rtc_get_datetime(struct tm *tm);
  * The function uses most recent value memoization and pre-computed conversion
  * tables to amortize the run time across successive invocations.
  */
-void bc_rtc_get_timestamp(struct timespec *tv);
+void twr_rtc_get_timestamp(struct timespec *tv);
 
 /**
  * Set date and time in RTC
@@ -93,33 +93,33 @@ void bc_rtc_get_timestamp(struct timespec *tv);
  * @param[in] ms Sub-second time (number of milliseconds, 0 if unknown)
  * @return 0 on success, a negative number on error
  */
-int bc_rtc_set_datetime(struct tm *tm, int ms);
+int twr_rtc_set_datetime(struct tm *tm, int ms);
 
 //! @brief Convert date and time to UNIX timestamp
 //! @param[in] tm Pointer to the date and time structure
 //! @return unix timestamp
 
-uint32_t bc_rtc_datetime_to_timestamp(struct tm *tm);
+uint32_t twr_rtc_datetime_to_timestamp(struct tm *tm);
 
 //! @brief Enable RTC write protection
 //
-// This function supports nested invocations. If bc_rtc_enable_write has been
+// This function supports nested invocations. If twr_rtc_enable_write has been
 // called repeatedly, calling this function repeatedly will only lock the RTC
-// again after all calls to bc_rtc_enable_write have been unrolled.
+// again after all calls to twr_rtc_enable_write have been unrolled.
 
-static inline void bc_rtc_disable_write()
+static inline void twr_rtc_disable_write()
 {
-	if (--_bc_rtc_writable_semaphore <= 0) {
-		_bc_rtc_writable_semaphore = 0;
+	if (--_twr_rtc_writable_semaphore <= 0) {
+		_twr_rtc_writable_semaphore = 0;
 		RTC->WPR = 0xff;
 	}
 }
 
 //! @brief Disable RTC write protection
 
-static inline void bc_rtc_enable_write()
+static inline void twr_rtc_enable_write()
 {
-	++_bc_rtc_writable_semaphore;
+	++_twr_rtc_writable_semaphore;
 	RTC->WPR = 0xca;
 	RTC->WPR = 0x53;
 }
@@ -130,11 +130,11 @@ static inline void bc_rtc_enable_write()
  * This function blocks until the RTC shadow registers have been initialized,
  * i.e., until the RSF bit in RTC->ISR is set. This function needs to be called
  * after waking up from Stop or Standby modes, before other functions that read
- * the shadow registers such as bc_rt_get_datetime.
+ * the shadow registers such as twr_rt_get_datetime.
  *
  * It takes up to two RTCClk cycles for the shadow registers to initialize.
  */
-static inline void bc_rtc_wait()
+static inline void twr_rtc_wait()
 {
 	while(!(RTC->ISR & RTC_ISR_RSF));
 }
@@ -143,8 +143,8 @@ static inline void bc_rtc_wait()
 //! @brief Enable or disable RTC initialization mode
 //! @param[in] state Enable when true, disable when false
 
-void bc_rtc_set_init(bool state);
+void twr_rtc_set_init(bool state);
 
 //! @}
 
-#endif // _BC_RTC_H
+#endif // _TWR_RTC_H

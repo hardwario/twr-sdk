@@ -1,38 +1,38 @@
-#include <bc_dice.h>
+#include <twr_dice.h>
 
-#define _BC_DICE_THRESHOLD 0.4f
+#define _TWR_DICE_THRESHOLD 0.4f
 
-const int8_t _bc_dice_vectors[][3] =
+const int8_t _twr_dice_vectors[][3] =
 {
-    [BC_DICE_FACE_UNKNOWN] = { 0, 0, 0 },
+    [TWR_DICE_FACE_UNKNOWN] = { 0, 0, 0 },
 
-    [BC_DICE_FACE_1] = { 0, 0, 1 },
-    [BC_DICE_FACE_2] = { 1, 0, 0 },
-    [BC_DICE_FACE_3] = { 0, 1, 0 },
-    [BC_DICE_FACE_4] = { 0, -1, 0 },
-    [BC_DICE_FACE_5] = { -1, 0, 0 },
-    [BC_DICE_FACE_6] = { 0, 0, -1 }
+    [TWR_DICE_FACE_1] = { 0, 0, 1 },
+    [TWR_DICE_FACE_2] = { 1, 0, 0 },
+    [TWR_DICE_FACE_3] = { 0, 1, 0 },
+    [TWR_DICE_FACE_4] = { 0, -1, 0 },
+    [TWR_DICE_FACE_5] = { -1, 0, 0 },
+    [TWR_DICE_FACE_6] = { 0, 0, -1 }
 };
 
-void bc_dice_init(bc_dice_t *self, bc_dice_face_t start)
+void twr_dice_init(twr_dice_t *self, twr_dice_face_t start)
 {
     memset(self, 0, sizeof(*self));
 
     self->_face = start;
 
-    self->_threshold = _BC_DICE_THRESHOLD;
+    self->_threshold = _TWR_DICE_THRESHOLD;
 }
 
-void bc_dice_set_threshold(bc_dice_t *self, float threshold)
+void twr_dice_set_threshold(twr_dice_t *self, float threshold)
 {
     self->_threshold = threshold;
 }
 
-void bc_dice_feed_vectors(bc_dice_t *self, float x_axis, float y_axis, float z_axis)
+void twr_dice_feed_vectors(twr_dice_t *self, float x_axis, float y_axis, float z_axis)
 {
-    int8_t vector_x = _bc_dice_vectors[self->_face][0];
-    int8_t vector_y = _bc_dice_vectors[self->_face][1];
-    int8_t vector_z = _bc_dice_vectors[self->_face][2];
+    int8_t vector_x = _twr_dice_vectors[self->_face][0];
+    int8_t vector_y = _twr_dice_vectors[self->_face][1];
+    int8_t vector_z = _twr_dice_vectors[self->_face][2];
 
     bool update = false;
 
@@ -61,9 +61,9 @@ void bc_dice_feed_vectors(bc_dice_t *self, float x_axis, float y_axis, float z_a
     {
         for (size_t i = 1; i <= 6; i++)
         {
-            float delta_x = _bc_dice_vectors[i][0] - x_axis;
-            float delta_y = _bc_dice_vectors[i][1] - y_axis;
-            float delta_z = _bc_dice_vectors[i][2] - z_axis;
+            float delta_x = _twr_dice_vectors[i][0] - x_axis;
+            float delta_y = _twr_dice_vectors[i][1] - y_axis;
+            float delta_z = _twr_dice_vectors[i][2] - z_axis;
 
             if (delta_x < 0.f) { delta_x = -delta_x; }
             if (delta_y < 0.f) { delta_y = -delta_y; }
@@ -79,7 +79,7 @@ void bc_dice_feed_vectors(bc_dice_t *self, float x_axis, float y_axis, float z_a
     }
 }
 
-bc_dice_face_t bc_dice_get_face(bc_dice_t *self)
+twr_dice_face_t twr_dice_get_face(twr_dice_t *self)
 {
     return self->_face;
 }

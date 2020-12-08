@@ -1,81 +1,81 @@
-#include <bc_soil_sensor.h>
-#include <bc_module_sensor.h>
-#include <bc_timer.h>
-#include <bc_i2c.h>
-#include <bc_system.h>
-#include <bc_tick.h>
+#include <twr_soil_sensor.h>
+#include <twr_module_sensor.h>
+#include <twr_timer.h>
+#include <twr_i2c.h>
+#include <twr_system.h>
+#include <twr_tick.h>
 
-#define _BC_SOIL_SENSOR_TMP112_ADDRESS   0x48
-#define _BC_SOIL_SENSOR_ZSSC3123_ADDRESS 0x28
-#define _BC_SOIL_SENSOR_EEPROM_ADDRESS   0x51
-#define _BC_SOIL_SENSOR_EEPROM_BANK_A    0x000
-#define _BC_SOIL_SENSOR_EEPROM_BANK_B    0x080
-#define _BC_SOIL_SENSOR_EEPROM_BANK_C    0x100
+#define _TWR_SOIL_SENSOR_TMP112_ADDRESS   0x48
+#define _TWR_SOIL_SENSOR_ZSSC3123_ADDRESS 0x28
+#define _TWR_SOIL_SENSOR_EEPROM_ADDRESS   0x51
+#define _TWR_SOIL_SENSOR_EEPROM_BANK_A    0x000
+#define _TWR_SOIL_SENSOR_EEPROM_BANK_B    0x080
+#define _TWR_SOIL_SENSOR_EEPROM_BANK_C    0x100
 
-static void _bc_soil_sensor_task_interval(void *param);
-static void _bc_soil_sensor_error(bc_soil_sensor_t *self, bc_soil_sensor_error_t error);
-static void _bc_soil_sensor_task_measure(void *param);
-static bool _bc_soil_sensor_tmp112_init(bc_ds28e17_t *ds28e17);
-static bool _bc_soil_sensor_tmp112_measurement_request(bc_ds28e17_t *ds28e17);
-static bool _bc_soil_sensor_tmp112_data_fetch(bc_soil_sensor_sensor_t *sensor);
-static bool _bc_soil_sensor_zssc3123_measurement_request(bc_ds28e17_t *ds28e17);
-static bool _bc_soil_sensor_zssc3123_data_fetch(bc_soil_sensor_sensor_t *sensor);
-static bc_soil_sensor_error_t _bc_soil_sensor_eeprom_load(bc_soil_sensor_sensor_t *sensor);
-static void _bc_soil_sensor_eeprom_fill(bc_soil_sensor_sensor_t *sensor);
-static bool _bc_soil_sensor_eeprom_save(bc_soil_sensor_sensor_t *sensor);
-static bool _bc_soil_sensor_eeprom_read(bc_soil_sensor_sensor_t *sensor, uint8_t address, void *buffer, size_t length);
-static bool _bc_soil_sensor_eeprom_write(bc_soil_sensor_sensor_t *sensor, uint8_t address, const void *buffer, size_t length);
+static void _twr_soil_sensor_task_interval(void *param);
+static void _twr_soil_sensor_error(twr_soil_sensor_t *self, twr_soil_sensor_error_t error);
+static void _twr_soil_sensor_task_measure(void *param);
+static bool _twr_soil_sensor_tmp112_init(twr_ds28e17_t *ds28e17);
+static bool _twr_soil_sensor_tmp112_measurement_request(twr_ds28e17_t *ds28e17);
+static bool _twr_soil_sensor_tmp112_data_fetch(twr_soil_sensor_sensor_t *sensor);
+static bool _twr_soil_sensor_zssc3123_measurement_request(twr_ds28e17_t *ds28e17);
+static bool _twr_soil_sensor_zssc3123_data_fetch(twr_soil_sensor_sensor_t *sensor);
+static twr_soil_sensor_error_t _twr_soil_sensor_eeprom_load(twr_soil_sensor_sensor_t *sensor);
+static void _twr_soil_sensor_eeprom_fill(twr_soil_sensor_sensor_t *sensor);
+static bool _twr_soil_sensor_eeprom_save(twr_soil_sensor_sensor_t *sensor);
+static bool _twr_soil_sensor_eeprom_read(twr_soil_sensor_sensor_t *sensor, uint8_t address, void *buffer, size_t length);
+static bool _twr_soil_sensor_eeprom_write(twr_soil_sensor_sensor_t *sensor, uint8_t address, const void *buffer, size_t length);
 
-void bc_soil_sensor_init(bc_soil_sensor_t *self)
+void twr_soil_sensor_init(twr_soil_sensor_t *self)
 {
-    static bc_soil_sensor_sensor_t sensor[1];
+    static twr_soil_sensor_sensor_t sensor[1];
 
-    bc_soil_sensor_init_multiple(self, sensor, 1);
+    twr_soil_sensor_init_multiple(self, sensor, 1);
 }
 
-void bc_soil_sensor_init_multiple(bc_soil_sensor_t *self, bc_soil_sensor_sensor_t *sensors, int sensor_count)
+void twr_soil_sensor_init_multiple(twr_soil_sensor_t *self, twr_soil_sensor_sensor_t *sensors, int sensor_count)
 {
     memset(self, 0, sizeof(*self));
 
-    self->_onewire = bc_module_sensor_get_onewire();
-    bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
+    self->_onewire = twr_module_sensor_get_onewire();
+    twr_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
 
     self->_sensor = sensors;
     self->_sensor_count = sensor_count;
 
-    self->_task_id_interval = bc_scheduler_register(_bc_soil_sensor_task_interval, self, BC_TICK_INFINITY);
-    self->_task_id_measure = bc_scheduler_register(_bc_soil_sensor_task_measure, self, 10);
+    self->_task_id_interval = twr_scheduler_register(_twr_soil_sensor_task_interval, self, TWR_TICK_INFINITY);
+    self->_task_id_measure = twr_scheduler_register(_twr_soil_sensor_task_measure, self, 10);
 }
 
-void bc_soil_sensor_set_event_handler(bc_soil_sensor_t *self, void (*event_handler)(bc_soil_sensor_t *, uint64_t device_address, bc_soil_sensor_event_t, void *), void *event_param)
+void twr_soil_sensor_set_event_handler(twr_soil_sensor_t *self, void (*event_handler)(twr_soil_sensor_t *, uint64_t device_address, twr_soil_sensor_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
 
     self->_event_param = event_param;
 }
 
-void bc_soil_sensor_set_update_interval(bc_soil_sensor_t *self, bc_tick_t interval)
+void twr_soil_sensor_set_update_interval(twr_soil_sensor_t *self, twr_tick_t interval)
 {
     self->_update_interval = interval;
 
-    if (self->_update_interval == BC_TICK_INFINITY)
+    if (self->_update_interval == TWR_TICK_INFINITY)
     {
-        bc_scheduler_plan_absolute(self->_task_id_interval, BC_TICK_INFINITY);
+        twr_scheduler_plan_absolute(self->_task_id_interval, TWR_TICK_INFINITY);
     }
     else
     {
-        bc_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
+        twr_scheduler_plan_relative(self->_task_id_interval, self->_update_interval);
 
-        bc_soil_sensor_measure(self);
+        twr_soil_sensor_measure(self);
     }
 }
 
-int bc_soil_sensor_get_sensor_found(bc_soil_sensor_t *self)
+int twr_soil_sensor_get_sensor_found(twr_soil_sensor_t *self)
 {
     return self->_sensor_found;
 }
 
-bool bc_soil_sensor_measure(bc_soil_sensor_t *self)
+bool twr_soil_sensor_measure(twr_soil_sensor_t *self)
 {
     if (self->_measurement_active)
     {
@@ -84,14 +84,14 @@ bool bc_soil_sensor_measure(bc_soil_sensor_t *self)
 
     self->_measurement_active = true;
 
-    bc_scheduler_plan_now(self->_task_id_measure);
+    twr_scheduler_plan_now(self->_task_id_measure);
 
     return true;
 }
 
-bool bc_soil_sensor_get_temperature_raw(bc_soil_sensor_t *self, uint64_t device_address, int16_t *raw)
+bool twr_soil_sensor_get_temperature_raw(twr_soil_sensor_t *self, uint64_t device_address, int16_t *raw)
 {
-    int i = bc_soil_sensor_get_index_by_device_address(self, device_address);
+    int i = twr_soil_sensor_get_index_by_device_address(self, device_address);
 
     if (i == -1)
     {
@@ -108,11 +108,11 @@ bool bc_soil_sensor_get_temperature_raw(bc_soil_sensor_t *self, uint64_t device_
     return true;
 }
 
-bool bc_soil_sensor_get_temperature_celsius(bc_soil_sensor_t *self, uint64_t device_address, float *celsius)
+bool twr_soil_sensor_get_temperature_celsius(twr_soil_sensor_t *self, uint64_t device_address, float *celsius)
 {
     int16_t raw;
 
-    if (!bc_soil_sensor_get_temperature_raw(self, device_address, &raw))
+    if (!twr_soil_sensor_get_temperature_raw(self, device_address, &raw))
     {
         *celsius = NAN;
 
@@ -124,11 +124,11 @@ bool bc_soil_sensor_get_temperature_celsius(bc_soil_sensor_t *self, uint64_t dev
     return true;
 }
 
-bool bc_soil_sensor_get_temperature_fahrenheit(bc_soil_sensor_t *self, uint64_t device_address, float *fahrenheit)
+bool twr_soil_sensor_get_temperature_fahrenheit(twr_soil_sensor_t *self, uint64_t device_address, float *fahrenheit)
 {
     float celsius;
 
-    if (!bc_soil_sensor_get_temperature_celsius(self, device_address, &celsius))
+    if (!twr_soil_sensor_get_temperature_celsius(self, device_address, &celsius))
     {
         return false;
     }
@@ -138,11 +138,11 @@ bool bc_soil_sensor_get_temperature_fahrenheit(bc_soil_sensor_t *self, uint64_t 
     return true;
 }
 
-bool bc_soil_sensor_get_temperature_kelvin(bc_soil_sensor_t *self, uint64_t device_address, float *kelvin)
+bool twr_soil_sensor_get_temperature_kelvin(twr_soil_sensor_t *self, uint64_t device_address, float *kelvin)
 {
     float celsius;
 
-    if (!bc_soil_sensor_get_temperature_celsius(self, device_address, &celsius))
+    if (!twr_soil_sensor_get_temperature_celsius(self, device_address, &celsius))
     {
         return false;
     }
@@ -157,9 +157,9 @@ bool bc_soil_sensor_get_temperature_kelvin(bc_soil_sensor_t *self, uint64_t devi
     return true;
 }
 
-bool bc_soil_sensor_get_cap_raw(bc_soil_sensor_t *self, uint64_t device_address, uint16_t *raw)
+bool twr_soil_sensor_get_cap_raw(twr_soil_sensor_t *self, uint64_t device_address, uint16_t *raw)
 {
-    int i = bc_soil_sensor_get_index_by_device_address(self, device_address);
+    int i = twr_soil_sensor_get_index_by_device_address(self, device_address);
 
     if (i == -1)
     {
@@ -176,9 +176,9 @@ bool bc_soil_sensor_get_cap_raw(bc_soil_sensor_t *self, uint64_t device_address,
     return true;
 }
 
-bool bc_soil_sensor_get_moisture(bc_soil_sensor_t *self, uint64_t device_address, int *moisture)
+bool twr_soil_sensor_get_moisture(twr_soil_sensor_t *self, uint64_t device_address, int *moisture)
 {
-    int i = bc_soil_sensor_get_index_by_device_address(self, device_address);
+    int i = twr_soil_sensor_get_index_by_device_address(self, device_address);
 
     if (i == -1)
     {
@@ -215,7 +215,7 @@ bool bc_soil_sensor_get_moisture(bc_soil_sensor_t *self, uint64_t device_address
     return true;
 }
 
-int bc_soil_sensor_get_index_by_device_address(bc_soil_sensor_t *self, uint64_t device_address)
+int twr_soil_sensor_get_index_by_device_address(twr_soil_sensor_t *self, uint64_t device_address)
 {
     for (int i = 0; i < self->_sensor_found; i++)
     {
@@ -228,7 +228,7 @@ int bc_soil_sensor_get_index_by_device_address(bc_soil_sensor_t *self, uint64_t 
     return -1;
 }
 
-uint64_t bc_soil_sensor_get_device_address_by_index(bc_soil_sensor_t *self, int index)
+uint64_t twr_soil_sensor_get_device_address_by_index(twr_soil_sensor_t *self, int index)
 {
     if (index >= self->_sensor_found)
     {
@@ -238,9 +238,9 @@ uint64_t bc_soil_sensor_get_device_address_by_index(bc_soil_sensor_t *self, int 
     return self->_sensor[index]._ds28e17._device_number;
 }
 
-char *bc_soil_sensor_get_label(bc_soil_sensor_t *self, uint64_t device_address)
+char *twr_soil_sensor_get_label(twr_soil_sensor_t *self, uint64_t device_address)
 {
-    int i = bc_soil_sensor_get_index_by_device_address(self, device_address);
+    int i = twr_soil_sensor_get_index_by_device_address(self, device_address);
 
     if (i == -1)
     {
@@ -250,9 +250,9 @@ char *bc_soil_sensor_get_label(bc_soil_sensor_t *self, uint64_t device_address)
     return self->_sensor[i]._eeprom.label;
 }
 
-bool bc_soil_sensor_set_label(bc_soil_sensor_t *self, uint64_t device_address, const char *label)
+bool twr_soil_sensor_set_label(twr_soil_sensor_t *self, uint64_t device_address, const char *label)
 {
-    int i = bc_soil_sensor_get_index_by_device_address(self, device_address);
+    int i = twr_soil_sensor_get_index_by_device_address(self, device_address);
 
     if (i == -1)
     {
@@ -264,9 +264,9 @@ bool bc_soil_sensor_set_label(bc_soil_sensor_t *self, uint64_t device_address, c
     return true;
 }
 
-bool bc_soil_sensor_calibration_set_point(bc_soil_sensor_t *self, uint64_t device_address, uint8_t point, uint16_t value)
+bool twr_soil_sensor_calibration_set_point(twr_soil_sensor_t *self, uint64_t device_address, uint8_t point, uint16_t value)
 {
-    int i = bc_soil_sensor_get_index_by_device_address(self, device_address);
+    int i = twr_soil_sensor_get_index_by_device_address(self, device_address);
 
     if (i == -1)
     {
@@ -285,48 +285,48 @@ bool bc_soil_sensor_calibration_set_point(bc_soil_sensor_t *self, uint64_t devic
     return true;
 }
 
-bool bc_soil_sensor_eeprom_save(bc_soil_sensor_t *self, uint64_t device_address)
+bool twr_soil_sensor_eeprom_save(twr_soil_sensor_t *self, uint64_t device_address)
 {
-    int i = bc_soil_sensor_get_index_by_device_address(self, device_address);
+    int i = twr_soil_sensor_get_index_by_device_address(self, device_address);
 
     if (i == -1)
     {
         return false;
     }
 
-    return _bc_soil_sensor_eeprom_save(&self->_sensor[i]);
+    return _twr_soil_sensor_eeprom_save(&self->_sensor[i]);
 }
 
-bc_soil_sensor_error_t bc_soil_sensor_get_error(bc_soil_sensor_t *self)
+twr_soil_sensor_error_t twr_soil_sensor_get_error(twr_soil_sensor_t *self)
 {
     return self->_error;
 }
 
-static void _bc_soil_sensor_task_interval(void *param)
+static void _twr_soil_sensor_task_interval(void *param)
 {
-    bc_soil_sensor_t *self = param;
+    twr_soil_sensor_t *self = param;
 
-    bc_soil_sensor_measure(self);
+    twr_soil_sensor_measure(self);
 
-    bc_scheduler_plan_current_relative(self->_update_interval);
+    twr_scheduler_plan_current_relative(self->_update_interval);
 }
 
-static void _bc_soil_sensor_error(bc_soil_sensor_t *self, bc_soil_sensor_error_t error)
+static void _twr_soil_sensor_error(twr_soil_sensor_t *self, twr_soil_sensor_error_t error)
 {
     self->_error = error;
-    self->_state = BC_SOIL_SENSOR_STATE_ERROR;
-    bc_scheduler_plan_current_now();
+    self->_state = TWR_SOIL_SENSOR_STATE_ERROR;
+    twr_scheduler_plan_current_now();
 }
 
-static void _bc_soil_sensor_task_measure(void *param)
+static void _twr_soil_sensor_task_measure(void *param)
 {
-    bc_soil_sensor_t *self = param;
+    twr_soil_sensor_t *self = param;
 
     switch (self->_state)
     {
-        case BC_SOIL_SENSOR_STATE_ERROR:
+        case TWR_SOIL_SENSOR_STATE_ERROR:
         {
-            bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
+            twr_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
 
             for (int i = 0; i < self->_sensor_found; i++)
             {
@@ -336,74 +336,74 @@ static void _bc_soil_sensor_task_measure(void *param)
 
             self->_measurement_active = false;
 
-            bc_module_sensor_onewire_power_down();
+            twr_module_sensor_onewire_power_down();
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, 0, BC_SOIL_SENSOR_EVENT_ERROR, self->_event_param);
+                self->_event_handler(self, 0, TWR_SOIL_SENSOR_EVENT_ERROR, self->_event_param);
             }
 
-            self->_state = BC_SOIL_SENSOR_STATE_PREINITIALIZE;
+            self->_state = TWR_SOIL_SENSOR_STATE_PREINITIALIZE;
 
             return;
         }
-        case BC_SOIL_SENSOR_STATE_PREINITIALIZE:
+        case TWR_SOIL_SENSOR_STATE_PREINITIALIZE:
         {
-            if (!bc_module_sensor_init())
+            if (!twr_module_sensor_init())
             {
-                _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_SENSOR_MODULE_INITIALIZE);
+                _twr_soil_sensor_error(self, TWR_SOIL_SENSOR_ERROR_SENSOR_MODULE_INITIALIZE);
 
                 return;
             }
 
-            if (!bc_module_sensor_onewire_power_up())
+            if (!twr_module_sensor_onewire_power_up())
             {
-                _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_SENSOR_MODULE_POWER_UP);
+                _twr_soil_sensor_error(self, TWR_SOIL_SENSOR_ERROR_SENSOR_MODULE_POWER_UP);
 
                 return;
             }
 
-            self->_state = BC_SOIL_SENSOR_STATE_INITIALIZE;
+            self->_state = TWR_SOIL_SENSOR_STATE_INITIALIZE;
 
-            bc_scheduler_plan_current_from_now(750);
+            twr_scheduler_plan_current_from_now(750);
 
             return;
         }
-        case BC_SOIL_SENSOR_STATE_INITIALIZE:
+        case TWR_SOIL_SENSOR_STATE_INITIALIZE:
         {
             uint64_t device_address = 0;
 
             self->_sensor_found = 0;
 
-            bc_onewire_transaction_start(self->_onewire);
+            twr_onewire_transaction_start(self->_onewire);
 
-            bc_onewire_reset(self->_onewire);
+            twr_onewire_reset(self->_onewire);
 
-            bc_onewire_search_start(self->_onewire, 0x19);
+            twr_onewire_search_start(self->_onewire, 0x19);
 
-            while ((self->_sensor_found < self->_sensor_count) && bc_onewire_search_next(self->_onewire, &device_address))
+            while ((self->_sensor_found < self->_sensor_count) && twr_onewire_search_next(self->_onewire, &device_address))
             {
-                bc_ds28e17_init(&self->_sensor[self->_sensor_found]._ds28e17, self->_onewire, device_address);
+                twr_ds28e17_init(&self->_sensor[self->_sensor_found]._ds28e17, self->_onewire, device_address);
 
                 self->_sensor_found++;
             }
 
-            bc_onewire_transaction_stop(self->_onewire);
+            twr_onewire_transaction_stop(self->_onewire);
 
             if (self->_sensor_found == 0)
             {
-                _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_NO_SENSOR_FOUND);
+                _twr_soil_sensor_error(self, TWR_SOIL_SENSOR_ERROR_NO_SENSOR_FOUND);
 
                 return;
             }
 
-            bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, false);
+            twr_onewire_auto_ds28e17_sleep_mode(self->_onewire, false);
 
             for (int i = 0; i < self->_sensor_found; i++)
             {
-                if (!_bc_soil_sensor_tmp112_init(&self->_sensor[i]._ds28e17))
+                if (!_twr_soil_sensor_tmp112_init(&self->_sensor[i]._ds28e17))
                 {
-                    _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_TMP112_INITIALIZE);
+                    _twr_soil_sensor_error(self, TWR_SOIL_SENSOR_ERROR_TMP112_INITIALIZE);
 
                     return;
                 }
@@ -411,18 +411,18 @@ static void _bc_soil_sensor_task_measure(void *param)
 
             for (int i = 0; i < self->_sensor_found; i++)
             {
-                bc_soil_sensor_error_t error = _bc_soil_sensor_eeprom_load(&self->_sensor[i]);
+                twr_soil_sensor_error_t error = _twr_soil_sensor_eeprom_load(&self->_sensor[i]);
 
                 if (error)
                 {
-                    if (error == BC_SOIL_SENSOR_ERROR_EEPROM_HEADER_READ)
+                    if (error == TWR_SOIL_SENSOR_ERROR_EEPROM_HEADER_READ)
                     {
-                        _bc_soil_sensor_eeprom_fill(&self->_sensor[i]);
+                        _twr_soil_sensor_eeprom_fill(&self->_sensor[i]);
 
                         continue;
                     }
 
-                    _bc_soil_sensor_error(self, error);
+                    _twr_soil_sensor_error(self, error);
 
                     return;
                 }
@@ -432,163 +432,163 @@ static void _bc_soil_sensor_task_measure(void *param)
             {
                 if (i + 1 == self->_sensor_found) // last sensor
                 {
-                    bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
+                    twr_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
                 }
 
-                _bc_soil_sensor_zssc3123_data_fetch(&self->_sensor[i]);
+                _twr_soil_sensor_zssc3123_data_fetch(&self->_sensor[i]);
 
                 self->_sensor[i]._cap_valid = false;
             }
 
-            self->_state = BC_SOIL_SENSOR_STATE_READY;
+            self->_state = TWR_SOIL_SENSOR_STATE_READY;
 
             if (self->_measurement_active)
             {
-                bc_scheduler_plan_current_now();
+                twr_scheduler_plan_current_now();
             }
 
             return;
         }
-        case BC_SOIL_SENSOR_STATE_READY:
+        case TWR_SOIL_SENSOR_STATE_READY:
         {
-            self->_state = BC_SOIL_SENSOR_STATE_MEASURE;
+            self->_state = TWR_SOIL_SENSOR_STATE_MEASURE;
 
-            bc_scheduler_plan_current_now();
+            twr_scheduler_plan_current_now();
 
             return;
         }
-        case BC_SOIL_SENSOR_STATE_MEASURE:
+        case TWR_SOIL_SENSOR_STATE_MEASURE:
         {
-            bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, false);
+            twr_onewire_auto_ds28e17_sleep_mode(self->_onewire, false);
 
             for (int i = 0; i < self->_sensor_found; i++)
             {
-                if (!_bc_soil_sensor_zssc3123_measurement_request(&self->_sensor[i]._ds28e17))
+                if (!_twr_soil_sensor_zssc3123_measurement_request(&self->_sensor[i]._ds28e17))
                 {
-                    _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_ZSSC3123_MEASUREMENT_REQUEST);
+                    _twr_soil_sensor_error(self, TWR_SOIL_SENSOR_ERROR_ZSSC3123_MEASUREMENT_REQUEST);
 
                     return;
                 }
 
                 if (i + 1 == self->_sensor_found) // last sensor
                 {
-                    bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
+                    twr_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
                 }
 
-                if (!_bc_soil_sensor_tmp112_measurement_request(&self->_sensor[i]._ds28e17))
+                if (!_twr_soil_sensor_tmp112_measurement_request(&self->_sensor[i]._ds28e17))
                 {
-                    _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_TMP112_MEASUREMENT_REQUEST);
+                    _twr_soil_sensor_error(self, TWR_SOIL_SENSOR_ERROR_TMP112_MEASUREMENT_REQUEST);
 
                     return;
                 }
 
             }
 
-            self->_state = BC_SOIL_SENSOR_STATE_READ;
+            self->_state = TWR_SOIL_SENSOR_STATE_READ;
 
-            bc_scheduler_plan_current_from_now(50);
+            twr_scheduler_plan_current_from_now(50);
 
             return;
         }
-        case BC_SOIL_SENSOR_STATE_READ:
+        case TWR_SOIL_SENSOR_STATE_READ:
         {
-            bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, false);
+            twr_onewire_auto_ds28e17_sleep_mode(self->_onewire, false);
 
             for (int i = 0; i < self->_sensor_found; i++)
             {
-                if (!_bc_soil_sensor_tmp112_data_fetch(&self->_sensor[i]))
+                if (!_twr_soil_sensor_tmp112_data_fetch(&self->_sensor[i]))
                 {
-                    _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_TMP112_DATA_FETCH);
+                    _twr_soil_sensor_error(self, TWR_SOIL_SENSOR_ERROR_TMP112_DATA_FETCH);
 
                     return;
                 }
 
                 if (i + 1 == self->_sensor_found) // last sensor
                 {
-                    bc_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
+                    twr_onewire_auto_ds28e17_sleep_mode(self->_onewire, true);
                 }
 
-                if (!_bc_soil_sensor_zssc3123_data_fetch(&self->_sensor[i]))
+                if (!_twr_soil_sensor_zssc3123_data_fetch(&self->_sensor[i]))
                 {
-                    _bc_soil_sensor_error(self, BC_SOIL_SENSOR_ERROR_ZSSC3123_DATA_FETCH);
+                    _twr_soil_sensor_error(self, TWR_SOIL_SENSOR_ERROR_ZSSC3123_DATA_FETCH);
 
                     return;
                 }
             }
 
-            self->_state = BC_SOIL_SENSOR_STATE_UPDATE;
+            self->_state = TWR_SOIL_SENSOR_STATE_UPDATE;
 
-            bc_scheduler_plan_current_now();
+            twr_scheduler_plan_current_now();
 
             return;
         }
-        case BC_SOIL_SENSOR_STATE_UPDATE:
+        case TWR_SOIL_SENSOR_STATE_UPDATE:
         {
             self->_measurement_active = false;
 
-            self->_error = BC_SOIL_SENSOR_ERROR_NONE;
+            self->_error = TWR_SOIL_SENSOR_ERROR_NONE;
 
             if (self->_event_handler != NULL)
             {
                 for (int i = 0; i < self->_sensor_found; i++)
                 {
-                    self->_event_handler(self, self->_sensor[i]._ds28e17._device_number, BC_SOIL_SENSOR_EVENT_UPDATE, self->_event_param);
+                    self->_event_handler(self, self->_sensor[i]._ds28e17._device_number, TWR_SOIL_SENSOR_EVENT_UPDATE, self->_event_param);
                 }
             }
 
-            self->_state = BC_SOIL_SENSOR_STATE_READY;
+            self->_state = TWR_SOIL_SENSOR_STATE_READY;
 
             return;
         }
         default:
         {
-            self->_state = BC_SOIL_SENSOR_STATE_ERROR;
+            self->_state = TWR_SOIL_SENSOR_STATE_ERROR;
 
             return;
         }
     }
 }
 
-static bool _bc_soil_sensor_tmp112_init(bc_ds28e17_t *ds28e17)
+static bool _twr_soil_sensor_tmp112_init(twr_ds28e17_t *ds28e17)
 {
     const uint8_t buffer[] = { 0x01, 0x80 };
 
-    bc_i2c_memory_transfer_t memory_transfer = {
-        .device_address = _BC_SOIL_SENSOR_TMP112_ADDRESS,
+    twr_i2c_memory_transfer_t memory_transfer = {
+        .device_address = _TWR_SOIL_SENSOR_TMP112_ADDRESS,
         .memory_address = 0x01,
         .buffer = (void *) buffer,
         .length = sizeof(buffer)
     };
 
-    return bc_ds28e17_memory_write(ds28e17, &memory_transfer);
+    return twr_ds28e17_memory_write(ds28e17, &memory_transfer);
 }
 
-static bool _bc_soil_sensor_tmp112_measurement_request(bc_ds28e17_t *ds28e17)
+static bool _twr_soil_sensor_tmp112_measurement_request(twr_ds28e17_t *ds28e17)
 {
     const uint8_t buffer[] = { 0x81 };
 
-    bc_i2c_memory_transfer_t memory_transfer = {
-        .device_address = _BC_SOIL_SENSOR_TMP112_ADDRESS,
+    twr_i2c_memory_transfer_t memory_transfer = {
+        .device_address = _TWR_SOIL_SENSOR_TMP112_ADDRESS,
         .memory_address = 0x01,
         .buffer = (void *) buffer,
         .length = sizeof(buffer)
     };
 
-    return bc_ds28e17_memory_write(ds28e17, &memory_transfer);
+    return twr_ds28e17_memory_write(ds28e17, &memory_transfer);
 }
 
-static bool _bc_soil_sensor_tmp112_data_fetch(bc_soil_sensor_sensor_t *sensor)
+static bool _twr_soil_sensor_tmp112_data_fetch(twr_soil_sensor_sensor_t *sensor)
 {
     uint8_t buffer[2];
 
-    bc_i2c_memory_transfer_t memory_transfer = {
-        .device_address = _BC_SOIL_SENSOR_TMP112_ADDRESS,
+    twr_i2c_memory_transfer_t memory_transfer = {
+        .device_address = _TWR_SOIL_SENSOR_TMP112_ADDRESS,
         .memory_address = 0x01,
         .buffer = buffer,
         .length = 1
     };
 
-    if (!bc_ds28e17_memory_read(&sensor->_ds28e17, &memory_transfer))
+    if (!twr_ds28e17_memory_read(&sensor->_ds28e17, &memory_transfer))
     {
         return false;
     }
@@ -601,7 +601,7 @@ static bool _bc_soil_sensor_tmp112_data_fetch(bc_soil_sensor_sensor_t *sensor)
     memory_transfer.memory_address = 0x00;
     memory_transfer.length = 2;
 
-    if (!bc_ds28e17_memory_read(&sensor->_ds28e17, &memory_transfer))
+    if (!twr_ds28e17_memory_read(&sensor->_ds28e17, &memory_transfer))
     {
         return false;
     }
@@ -612,30 +612,30 @@ static bool _bc_soil_sensor_tmp112_data_fetch(bc_soil_sensor_sensor_t *sensor)
     return true;
 }
 
-static bool _bc_soil_sensor_zssc3123_measurement_request(bc_ds28e17_t *ds28e17)
+static bool _twr_soil_sensor_zssc3123_measurement_request(twr_ds28e17_t *ds28e17)
 {
-    const uint8_t buffer[] = { _BC_SOIL_SENSOR_ZSSC3123_ADDRESS << 1 };
+    const uint8_t buffer[] = { _TWR_SOIL_SENSOR_ZSSC3123_ADDRESS << 1 };
 
-    bc_i2c_transfer_t transfer = {
-        .device_address = _BC_SOIL_SENSOR_ZSSC3123_ADDRESS,
+    twr_i2c_transfer_t transfer = {
+        .device_address = _TWR_SOIL_SENSOR_ZSSC3123_ADDRESS,
         .buffer = (void *) buffer,
         .length = sizeof(buffer)
     };
 
-    return bc_ds28e17_write(ds28e17, &transfer);
+    return twr_ds28e17_write(ds28e17, &transfer);
 }
 
-static bool _bc_soil_sensor_zssc3123_data_fetch(bc_soil_sensor_sensor_t *sensor)
+static bool _twr_soil_sensor_zssc3123_data_fetch(twr_soil_sensor_sensor_t *sensor)
 {
     uint8_t buffer[2];
 
-    bc_i2c_transfer_t transfer = {
-        .device_address = _BC_SOIL_SENSOR_ZSSC3123_ADDRESS,
+    twr_i2c_transfer_t transfer = {
+        .device_address = _TWR_SOIL_SENSOR_ZSSC3123_ADDRESS,
         .buffer = buffer,
         .length = sizeof(buffer)
     };
 
-    if (!bc_ds28e17_read(&sensor->_ds28e17, &transfer))
+    if (!twr_ds28e17_read(&sensor->_ds28e17, &transfer))
     {
         return false;
     }
@@ -650,44 +650,44 @@ static bool _bc_soil_sensor_zssc3123_data_fetch(bc_soil_sensor_sensor_t *sensor)
     return true;
 }
 
-static bc_soil_sensor_error_t _bc_soil_sensor_eeprom_load(bc_soil_sensor_sensor_t *sensor)
+static twr_soil_sensor_error_t _twr_soil_sensor_eeprom_load(twr_soil_sensor_sensor_t *sensor)
 {
-    bc_soil_sensor_eeprom_header_t header;
+    twr_soil_sensor_eeprom_header_t header;
 
-    if (!_bc_soil_sensor_eeprom_read(sensor, 0, &header, sizeof(header)))
+    if (!_twr_soil_sensor_eeprom_read(sensor, 0, &header, sizeof(header)))
     {
-        return BC_SOIL_SENSOR_ERROR_EEPROM_HEADER_READ;
+        return TWR_SOIL_SENSOR_ERROR_EEPROM_HEADER_READ;
     }
 
     if (header.signature != 0xdeadbeef)
     {
-        return BC_SOIL_SENSOR_ERROR_EEPROM_SIGNATURE;
+        return TWR_SOIL_SENSOR_ERROR_EEPROM_SIGNATURE;
     }
 
     if (header.version != 1)
     {
-        return BC_SOIL_SENSOR_ERROR_EEPROM_VERSION;
+        return TWR_SOIL_SENSOR_ERROR_EEPROM_VERSION;
     }
 
-    if (header.length != sizeof(bc_soil_sensor_eeprom_t))
+    if (header.length != sizeof(twr_soil_sensor_eeprom_t))
     {
-        return BC_SOIL_SENSOR_ERROR_EEPROM_PAYLOAD_LENGTH;
+        return TWR_SOIL_SENSOR_ERROR_EEPROM_PAYLOAD_LENGTH;
     }
 
-    if (!_bc_soil_sensor_eeprom_read(sensor, sizeof(header), &sensor->_eeprom, sizeof(bc_soil_sensor_eeprom_t)))
+    if (!_twr_soil_sensor_eeprom_read(sensor, sizeof(header), &sensor->_eeprom, sizeof(twr_soil_sensor_eeprom_t)))
     {
-        return BC_SOIL_SENSOR_ERROR_EEPROM_PAYLOAD_READ;
+        return TWR_SOIL_SENSOR_ERROR_EEPROM_PAYLOAD_READ;
     }
 
-    if (header.crc != bc_onewire_crc16(&sensor->_eeprom, sizeof(bc_soil_sensor_eeprom_t), 0))
+    if (header.crc != twr_onewire_crc16(&sensor->_eeprom, sizeof(twr_soil_sensor_eeprom_t), 0))
     {
-        return BC_SOIL_SENSOR_ERROR_EEPROM_PAYLOAD_CRC;
+        return TWR_SOIL_SENSOR_ERROR_EEPROM_PAYLOAD_CRC;
     }
 
-    return BC_SOIL_SENSOR_ERROR_NONE;
+    return TWR_SOIL_SENSOR_ERROR_NONE;
 }
 
-static void _bc_soil_sensor_eeprom_fill(bc_soil_sensor_sensor_t *sensor)
+static void _twr_soil_sensor_eeprom_fill(twr_soil_sensor_sensor_t *sensor)
 {
     sensor->_eeprom.product = 0;
     sensor->_eeprom.revision = 0x0104;
@@ -705,21 +705,21 @@ static void _bc_soil_sensor_eeprom_fill(bc_soil_sensor_sensor_t *sensor)
     memset(sensor->_eeprom.label, 0, sizeof(sensor->_eeprom.label));
 }
 
-static bool _bc_soil_sensor_eeprom_save(bc_soil_sensor_sensor_t *sensor)
+static bool _twr_soil_sensor_eeprom_save(twr_soil_sensor_sensor_t *sensor)
 {
-    bc_soil_sensor_eeprom_header_t header = {
+    twr_soil_sensor_eeprom_header_t header = {
         .signature = 0xdeadbeef,
         .version = 1,
-        .length = sizeof(bc_soil_sensor_eeprom_t),
-        .crc = bc_onewire_crc16(&sensor->_eeprom, sizeof(bc_soil_sensor_eeprom_t), 0)
+        .length = sizeof(twr_soil_sensor_eeprom_t),
+        .crc = twr_onewire_crc16(&sensor->_eeprom, sizeof(twr_soil_sensor_eeprom_t), 0)
     };
 
-    if (!_bc_soil_sensor_eeprom_write(sensor, 0, &header, sizeof(header)))
+    if (!_twr_soil_sensor_eeprom_write(sensor, 0, &header, sizeof(header)))
     {
         return false;
     }
 
-    if (!_bc_soil_sensor_eeprom_write(sensor, sizeof(header), &sensor->_eeprom, sizeof(bc_soil_sensor_eeprom_t)))
+    if (!_twr_soil_sensor_eeprom_write(sensor, sizeof(header), &sensor->_eeprom, sizeof(twr_soil_sensor_eeprom_t)))
     {
         return false;
     }
@@ -727,19 +727,19 @@ static bool _bc_soil_sensor_eeprom_save(bc_soil_sensor_sensor_t *sensor)
     return true;
 }
 
-static bool _bc_soil_sensor_eeprom_read(bc_soil_sensor_sensor_t *sensor, uint8_t address, void *buffer, size_t length)
+static bool _twr_soil_sensor_eeprom_read(twr_soil_sensor_sensor_t *sensor, uint8_t address, void *buffer, size_t length)
 {
     uint8_t a[8];
     uint8_t b[sizeof(a)];
     uint8_t c[sizeof(a)];
 
-    if ((_BC_SOIL_SENSOR_EEPROM_BANK_A + address + length) >= _BC_SOIL_SENSOR_EEPROM_BANK_B)
+    if ((_TWR_SOIL_SENSOR_EEPROM_BANK_A + address + length) >= _TWR_SOIL_SENSOR_EEPROM_BANK_B)
     {
         return false;
     }
 
-    bc_i2c_memory_transfer_t memory_transfer = {
-        .device_address = _BC_SOIL_SENSOR_EEPROM_ADDRESS,
+    twr_i2c_memory_transfer_t memory_transfer = {
+        .device_address = _TWR_SOIL_SENSOR_EEPROM_ADDRESS,
     };
 
     size_t j = 0;
@@ -749,26 +749,26 @@ static bool _bc_soil_sensor_eeprom_read(bc_soil_sensor_sensor_t *sensor, uint8_t
     {
         memory_transfer.length = length - i > sizeof(a) ? sizeof(a) : length - i;
 
-        memory_transfer.memory_address = address + i + _BC_SOIL_SENSOR_EEPROM_BANK_A;
+        memory_transfer.memory_address = address + i + _TWR_SOIL_SENSOR_EEPROM_BANK_A;
         memory_transfer.buffer = a;
 
-        if (!bc_ds28e17_memory_read(&sensor->_ds28e17, &memory_transfer))
+        if (!twr_ds28e17_memory_read(&sensor->_ds28e17, &memory_transfer))
         {
             return false;
         }
 
-        memory_transfer.memory_address = address + i + _BC_SOIL_SENSOR_EEPROM_BANK_B;
+        memory_transfer.memory_address = address + i + _TWR_SOIL_SENSOR_EEPROM_BANK_B;
         memory_transfer.buffer = b;
 
-        if (!bc_ds28e17_memory_read(&sensor->_ds28e17, &memory_transfer))
+        if (!twr_ds28e17_memory_read(&sensor->_ds28e17, &memory_transfer))
         {
             return false;
         }
 
-        memory_transfer.memory_address = address + i + _BC_SOIL_SENSOR_EEPROM_BANK_C;
+        memory_transfer.memory_address = address + i + _TWR_SOIL_SENSOR_EEPROM_BANK_C;
         memory_transfer.buffer = c;
 
-        if (!bc_ds28e17_memory_read(&sensor->_ds28e17, &memory_transfer))
+        if (!twr_ds28e17_memory_read(&sensor->_ds28e17, &memory_transfer))
         {
             return false;
         }
@@ -782,7 +782,7 @@ static bool _bc_soil_sensor_eeprom_read(bc_soil_sensor_sensor_t *sensor, uint8_t
     return true;
 }
 
-static bool _bc_soil_sensor_eeprom_write_chunk(bc_ds28e17_t *ds28e17, bc_i2c_memory_transfer_t *memory_transfer, void *test_buffer)
+static bool _twr_soil_sensor_eeprom_write_chunk(twr_ds28e17_t *ds28e17, twr_i2c_memory_transfer_t *memory_transfer, void *test_buffer)
 {
     uint8_t *original_buffer = memory_transfer->buffer;
 
@@ -790,7 +790,7 @@ static bool _bc_soil_sensor_eeprom_write_chunk(bc_ds28e17_t *ds28e17, bc_i2c_mem
     {
         memory_transfer->buffer = test_buffer;
 
-        if (!bc_ds28e17_memory_read(ds28e17, memory_transfer))
+        if (!twr_ds28e17_memory_read(ds28e17, memory_transfer))
         {
             return false;
         }
@@ -807,7 +807,7 @@ static bool _bc_soil_sensor_eeprom_write_chunk(bc_ds28e17_t *ds28e17, bc_i2c_mem
             break;
         }
 
-        if (!bc_ds28e17_memory_write(ds28e17, memory_transfer))
+        if (!twr_ds28e17_memory_write(ds28e17, memory_transfer))
         {
             return false;
         }
@@ -816,15 +816,15 @@ static bool _bc_soil_sensor_eeprom_write_chunk(bc_ds28e17_t *ds28e17, bc_i2c_mem
     return false;
 }
 
-static bool _bc_soil_sensor_eeprom_write(bc_soil_sensor_sensor_t *sensor, uint8_t address, const void *buffer, size_t length)
+static bool _twr_soil_sensor_eeprom_write(twr_soil_sensor_sensor_t *sensor, uint8_t address, const void *buffer, size_t length)
 {
-    if ((_BC_SOIL_SENSOR_EEPROM_BANK_A + address + length) >= _BC_SOIL_SENSOR_EEPROM_BANK_B)
+    if ((_TWR_SOIL_SENSOR_EEPROM_BANK_A + address + length) >= _TWR_SOIL_SENSOR_EEPROM_BANK_B)
     {
         return false;
     }
 
-    bc_i2c_memory_transfer_t memory_transfer = {
-        .device_address = _BC_SOIL_SENSOR_EEPROM_ADDRESS,
+    twr_i2c_memory_transfer_t memory_transfer = {
+        .device_address = _TWR_SOIL_SENSOR_EEPROM_ADDRESS,
     };
 
     uint8_t test[2];
@@ -832,24 +832,24 @@ static bool _bc_soil_sensor_eeprom_write(bc_soil_sensor_sensor_t *sensor, uint8_
     for (size_t i = 0; i < length; i += sizeof(test))
     {
         memory_transfer.length = length - i > sizeof(test) ? sizeof(test) : length - i;
-        memory_transfer.memory_address = address + i + _BC_SOIL_SENSOR_EEPROM_BANK_A;
+        memory_transfer.memory_address = address + i + _TWR_SOIL_SENSOR_EEPROM_BANK_A;
         memory_transfer.buffer = (uint8_t *) buffer + i;
 
-        if (!_bc_soil_sensor_eeprom_write_chunk(&sensor->_ds28e17, &memory_transfer, test))
+        if (!_twr_soil_sensor_eeprom_write_chunk(&sensor->_ds28e17, &memory_transfer, test))
         {
             return false;
         }
 
-        memory_transfer.memory_address = address + i + _BC_SOIL_SENSOR_EEPROM_BANK_B;
+        memory_transfer.memory_address = address + i + _TWR_SOIL_SENSOR_EEPROM_BANK_B;
 
-        if (!_bc_soil_sensor_eeprom_write_chunk(&sensor->_ds28e17, &memory_transfer, test))
+        if (!_twr_soil_sensor_eeprom_write_chunk(&sensor->_ds28e17, &memory_transfer, test))
         {
             return false;
         }
 
-        memory_transfer.memory_address = address + i + _BC_SOIL_SENSOR_EEPROM_BANK_C;
+        memory_transfer.memory_address = address + i + _TWR_SOIL_SENSOR_EEPROM_BANK_C;
 
-        if (!_bc_soil_sensor_eeprom_write_chunk(&sensor->_ds28e17, &memory_transfer, test))
+        if (!_twr_soil_sensor_eeprom_write_chunk(&sensor->_ds28e17, &memory_transfer, test))
         {
             return false;
         }

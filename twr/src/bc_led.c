@@ -1,32 +1,32 @@
-#include <bc_led.h>
+#include <twr_led.h>
 
-#define _BC_LED_DEFAULT_SLOT_INTERVAL 100
+#define _TWR_LED_DEFAULT_SLOT_INTERVAL 100
 
-static void _bc_led_gpio_init(bc_led_t *self)
+static void _twr_led_gpio_init(twr_led_t *self)
 {
-    bc_gpio_init(self->_channel.gpio);
+    twr_gpio_init(self->_channel.gpio);
 }
 
-static void _bc_led_gpio_on(bc_led_t *self)
+static void _twr_led_gpio_on(twr_led_t *self)
 {
-    bc_gpio_set_output(self->_channel.gpio, self->_idle_state ? 0 : 1);
+    twr_gpio_set_output(self->_channel.gpio, self->_idle_state ? 0 : 1);
 }
 
-static void _bc_led_gpio_off(bc_led_t *self)
+static void _twr_led_gpio_off(twr_led_t *self)
 {
-    bc_gpio_set_output(self->_channel.gpio, self->_idle_state ? 1 : 0);
+    twr_gpio_set_output(self->_channel.gpio, self->_idle_state ? 1 : 0);
 }
 
-static const bc_led_driver_t _bc_led_driver_gpio =
+static const twr_led_driver_t _twr_led_driver_gpio =
 {
-    .init = _bc_led_gpio_init,
-    .on = _bc_led_gpio_on,
-    .off = _bc_led_gpio_off
+    .init = _twr_led_gpio_init,
+    .on = _twr_led_gpio_on,
+    .off = _twr_led_gpio_off
 };
 
-static void _bc_led_task(void *param)
+static void _twr_led_task(void *param)
 {
-    bc_led_t *self = param;
+    twr_led_t *self = param;
 
     if (self->_pulse_active)
     {
@@ -35,7 +35,7 @@ static void _bc_led_task(void *param)
         self->_pulse_active = false;
         self->_selector = 0;
 
-        bc_scheduler_plan_current_relative(self->_slot_interval);
+        twr_scheduler_plan_current_relative(self->_slot_interval);
 
         return;
     }
@@ -69,10 +69,10 @@ static void _bc_led_task(void *param)
         }
     }
 
-    bc_scheduler_plan_current_relative(self->_slot_interval);
+    twr_scheduler_plan_current_relative(self->_slot_interval);
 }
 
-void bc_led_init(bc_led_t *self, bc_gpio_channel_t gpio_channel, bool open_drain_output, int idle_state)
+void twr_led_init(twr_led_t *self, twr_gpio_channel_t gpio_channel, bool open_drain_output, int idle_state)
 {
     memset(self, 0, sizeof(*self));
 
@@ -82,25 +82,25 @@ void bc_led_init(bc_led_t *self, bc_gpio_channel_t gpio_channel, bool open_drain
 
     self->_idle_state = idle_state;
 
-    self->_driver = &_bc_led_driver_gpio;
+    self->_driver = &_twr_led_driver_gpio;
     self->_driver->init(self);
     self->_driver->off(self);
 
     if (self->_open_drain_output)
     {
-        bc_gpio_set_mode(self->_channel.gpio, BC_GPIO_MODE_OUTPUT_OD);
+        twr_gpio_set_mode(self->_channel.gpio, TWR_GPIO_MODE_OUTPUT_OD);
     }
     else
     {
-        bc_gpio_set_mode(self->_channel.gpio, BC_GPIO_MODE_OUTPUT);
+        twr_gpio_set_mode(self->_channel.gpio, TWR_GPIO_MODE_OUTPUT);
     }
 
-    self->_slot_interval = _BC_LED_DEFAULT_SLOT_INTERVAL;
+    self->_slot_interval = _TWR_LED_DEFAULT_SLOT_INTERVAL;
 
-    self->_task_id = bc_scheduler_register(_bc_led_task, self, BC_TICK_INFINITY);
+    self->_task_id = twr_scheduler_register(_twr_led_task, self, TWR_TICK_INFINITY);
 }
 
-void bc_led_init_virtual(bc_led_t *self, int channel, const bc_led_driver_t *driver, int idle_state)
+void twr_led_init_virtual(twr_led_t *self, int channel, const twr_led_driver_t *driver, int idle_state)
 {
     memset(self, 0, sizeof(*self));
 
@@ -112,23 +112,23 @@ void bc_led_init_virtual(bc_led_t *self, int channel, const bc_led_driver_t *dri
     self->_driver->init(self);
     self->_driver->off(self);
 
-    self->_slot_interval = _BC_LED_DEFAULT_SLOT_INTERVAL;
+    self->_slot_interval = _TWR_LED_DEFAULT_SLOT_INTERVAL;
 
-    self->_task_id = bc_scheduler_register(_bc_led_task, self, BC_TICK_INFINITY);
+    self->_task_id = twr_scheduler_register(_twr_led_task, self, TWR_TICK_INFINITY);
 }
 
-void bc_led_set_slot_interval(bc_led_t *self, bc_tick_t interval)
+void twr_led_set_slot_interval(twr_led_t *self, twr_tick_t interval)
 {
     self->_slot_interval = interval;
 }
 
-void bc_led_set_mode(bc_led_t *self, bc_led_mode_t mode)
+void twr_led_set_mode(twr_led_t *self, twr_led_mode_t mode)
 {
     uint32_t pattern = self->_pattern;
 
     switch (mode)
     {
-        case BC_LED_MODE_TOGGLE:
+        case TWR_LED_MODE_TOGGLE:
         {
             if (pattern == 0)
             {
@@ -150,7 +150,7 @@ void bc_led_set_mode(bc_led_t *self, bc_led_mode_t mode)
 
             return;
         }
-        case BC_LED_MODE_OFF:
+        case TWR_LED_MODE_OFF:
         {
             self->_pattern = 0x00000000;
             self->_count = 0;
@@ -162,7 +162,7 @@ void bc_led_set_mode(bc_led_t *self, bc_led_mode_t mode)
 
             return;
         }
-        case BC_LED_MODE_ON:
+        case TWR_LED_MODE_ON:
         {
             self->_pattern = 0xffffffff;
             self->_count = 0;
@@ -174,25 +174,25 @@ void bc_led_set_mode(bc_led_t *self, bc_led_mode_t mode)
 
             return;
         }
-        case BC_LED_MODE_BLINK:
+        case TWR_LED_MODE_BLINK:
         {
             pattern = 0xf0f0f0f0;
 
             break;
         }
-        case BC_LED_MODE_BLINK_SLOW:
+        case TWR_LED_MODE_BLINK_SLOW:
         {
             pattern = 0xffff0000;
 
             break;
         }
-        case BC_LED_MODE_BLINK_FAST:
+        case TWR_LED_MODE_BLINK_FAST:
         {
             pattern = 0xaaaaaaaa;
 
             break;
         }
-        case BC_LED_MODE_FLASH:
+        case TWR_LED_MODE_FLASH:
         {
             pattern = 0x80000000;
 
@@ -211,32 +211,32 @@ void bc_led_set_mode(bc_led_t *self, bc_led_mode_t mode)
         self->_count = 0;
     }
 
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 }
 
-void bc_led_set_pattern(bc_led_t *self, uint32_t pattern)
+void twr_led_set_pattern(twr_led_t *self, uint32_t pattern)
 {
     self->_pattern = pattern;
     self->_selector = 0;
 
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 }
 
-void bc_led_set_count(bc_led_t *self, int count)
+void twr_led_set_count(twr_led_t *self, int count)
 {
     self->_count = count;
 }
 
-void bc_led_blink(bc_led_t *self, int count)
+void twr_led_blink(twr_led_t *self, int count)
 {
     self->_pattern = 0xf0f0f0f0;
     self->_selector = 0;
     self->_count = count * 8;
 
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 }
 
-void bc_led_pulse(bc_led_t *self, bc_tick_t duration)
+void twr_led_pulse(twr_led_t *self, twr_tick_t duration)
 {
     if (!self->_pulse_active)
     {
@@ -245,10 +245,10 @@ void bc_led_pulse(bc_led_t *self, bc_tick_t duration)
         self->_pulse_active = true;
     }
 
-    bc_scheduler_plan_from_now(self->_task_id, duration);
+    twr_scheduler_plan_from_now(self->_task_id, duration);
 }
 
-bool bc_led_is_pulse(bc_led_t *self)
+bool twr_led_is_pulse(twr_led_t *self)
 {
     return self->_pulse_active;
 }

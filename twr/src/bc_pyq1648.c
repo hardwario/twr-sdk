@@ -1,46 +1,46 @@
-#include <bc_pyq1648.h>
-#include <bc_irq.h>
-#include <bc_gpio.h>
-#include <bc_system.h>
-#include <bc_timer.h>
+#include <twr_pyq1648.h>
+#include <twr_irq.h>
+#include <twr_gpio.h>
+#include <twr_system.h>
+#include <twr_timer.h>
 #include <stm32l0xx.h>
 
-#define BC_PYQ1648_BPF 0x00
-#define BC_PYQ1648_LPF 0x01
-#define BC_PYQ1648_WAKE_UP_MODE 0x02
+#define TWR_PYQ1648_BPF 0x00
+#define TWR_PYQ1648_LPF 0x01
+#define TWR_PYQ1648_WAKE_UP_MODE 0x02
 
-#define BC_PYQ1648_DELAY_RUN 50
-#define BC_PYQ1648_DELAY_INITIALIZATION 10
-#define BC_PYQ1648_UPDATE_INTERVAL 100
+#define TWR_PYQ1648_DELAY_RUN 50
+#define TWR_PYQ1648_DELAY_INITIALIZATION 10
+#define TWR_PYQ1648_UPDATE_INTERVAL 100
 
-static inline void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl);
-static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self);
-static inline void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self);
-static void _bc_pyq1648_task(void *param);
+static inline void _twr_pyq1648_msp_init(twr_gpio_channel_t gpio_channel_serin, twr_gpio_channel_t gpio_channel_dl);
+static inline void _twr_pyq1648_dev_init(twr_pyq1648_t *self);
+static inline void _twr_pyq1648_compose_event_unit_config(twr_pyq1648_t *self);
+static void _twr_pyq1648_task(void *param);
 
-static const uint8_t _bc_pyq1648_sensitivity_table[4] =
+static const uint8_t _twr_pyq1648_sensitivity_table[4] =
 {
-    [BC_PYQ1648_SENSITIVITY_LOW] = 150,
-    [BC_PYQ1648_SENSITIVITY_MEDIUM] = 70,
-    [BC_PYQ1648_SENSITIVITY_HIGH] = 20,
-    [BC_PYQ1648_SENSITIVITY_VERY_HIGH] = 9
+    [TWR_PYQ1648_SENSITIVITY_LOW] = 150,
+    [TWR_PYQ1648_SENSITIVITY_MEDIUM] = 70,
+    [TWR_PYQ1648_SENSITIVITY_HIGH] = 20,
+    [TWR_PYQ1648_SENSITIVITY_VERY_HIGH] = 9
 };
 
-extern GPIO_TypeDef * bc_gpio_port[];
-extern uint16_t bc_gpio_16_bit_mask[];
-extern uint32_t bc_gpio_32_bit_upper_mask[];
+extern GPIO_TypeDef * twr_gpio_port[];
+extern uint16_t twr_gpio_16_bit_mask[];
+extern uint32_t twr_gpio_32_bit_upper_mask[];
 
-static GPIO_TypeDef **_pyq1648_gpiox_table = bc_gpio_port;
-static uint16_t *_pyq1648_set_mask = bc_gpio_16_bit_mask;
-static uint32_t *_pyq1648_reset_mask = bc_gpio_32_bit_upper_mask;
+static GPIO_TypeDef **_pyq1648_gpiox_table = twr_gpio_port;
+static uint16_t *_pyq1648_set_mask = twr_gpio_16_bit_mask;
+static uint32_t *_pyq1648_reset_mask = twr_gpio_32_bit_upper_mask;
 
-void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl)
+void twr_pyq1648_init(twr_pyq1648_t *self, twr_gpio_channel_t gpio_channel_serin, twr_gpio_channel_t gpio_channel_dl)
 {
     // Initialize structure
     memset(self, 0, sizeof(*self));
 
     // Initialize default values
-    self->_sensitivity = _bc_pyq1648_sensitivity_table[BC_PYQ1648_SENSITIVITY_HIGH];
+    self->_sensitivity = _twr_pyq1648_sensitivity_table[TWR_PYQ1648_SENSITIVITY_HIGH];
     self->_blank_period = 1000;
 
     // Initialize actually used pins
@@ -48,15 +48,15 @@ void bc_pyq1648_init(bc_pyq1648_t *self, bc_gpio_channel_t gpio_channel_serin, b
     self->_gpio_channel_dl = gpio_channel_dl;
 
     // Initialize event_unit_configuration register value
-    // _bc_pyq1648_compose_event_unit_config(self);
+    // _twr_pyq1648_compose_event_unit_config(self);
 
     // Register task
-    self->_task_id = bc_scheduler_register(_bc_pyq1648_task, self, BC_PYQ1648_DELAY_RUN);
+    self->_task_id = twr_scheduler_register(_twr_pyq1648_task, self, TWR_PYQ1648_DELAY_RUN);
 
-    bc_timer_init();
+    twr_timer_init();
 }
 
-void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_pyq1648_t *, bc_pyq1648_event_t, void *), void *event_param)
+void twr_pyq1648_set_event_handler(twr_pyq1648_t *self, void (*event_handler)(twr_pyq1648_t *, twr_pyq1648_event_t, void *), void *event_param)
 {
     // Set event handler
     self->_event_handler = event_handler;
@@ -65,23 +65,23 @@ void bc_pyq1648_set_event_handler(bc_pyq1648_t *self, void (*event_handler)(bc_p
     self->_event_param = event_param;
 }
 
-void bc_pyq1648_set_sensitivity(bc_pyq1648_t *self, bc_pyq1648_sensitivity_t sensitivity)
+void twr_pyq1648_set_sensitivity(twr_pyq1648_t *self, twr_pyq1648_sensitivity_t sensitivity)
 {
     // Set sensitivity to desired value
-    self->_sensitivity = _bc_pyq1648_sensitivity_table[sensitivity];
+    self->_sensitivity = _twr_pyq1648_sensitivity_table[sensitivity];
 
-    self->_state = BC_PYQ1648_STATE_INITIALIZE;
+    self->_state = TWR_PYQ1648_STATE_INITIALIZE;
 
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 }
 
-void bc_pyq1648_set_blank_period(bc_pyq1648_t *self, bc_tick_t blank_period)
+void twr_pyq1648_set_blank_period(twr_pyq1648_t *self, twr_tick_t blank_period)
 {
     // Set blank period
     self->_blank_period = blank_period;
 }
 
-void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self)
+void _twr_pyq1648_compose_event_unit_config(twr_pyq1648_t *self)
 {
     //  --------------------------------------------------------------------------------------------------------------------------------------
     // |                                                         Event unit configuration                                                     |
@@ -92,37 +92,37 @@ void _bc_pyq1648_compose_event_unit_config(bc_pyq1648_t *self)
     //  --------------------------------------------------------------------------------------------------------------------------------------
 
     self->_config = 0x00000000;
-    self->_config |= (self->_sensitivity << 17) | (BC_PYQ1648_WAKE_UP_MODE << 7) | (BC_PYQ1648_BPF << 5) |0x10;
+    self->_config |= (self->_sensitivity << 17) | (TWR_PYQ1648_WAKE_UP_MODE << 7) | (TWR_PYQ1648_BPF << 5) |0x10;
 }
 
-static inline void _bc_pyq1648_msp_init(bc_gpio_channel_t gpio_channel_serin, bc_gpio_channel_t gpio_channel_dl)
+static inline void _twr_pyq1648_msp_init(twr_gpio_channel_t gpio_channel_serin, twr_gpio_channel_t gpio_channel_dl)
 {
     // Initialize SerialIn (SERIN) GPIO pin
-    bc_gpio_init(gpio_channel_serin);
-    bc_gpio_set_mode(gpio_channel_serin, BC_GPIO_MODE_OUTPUT);
+    twr_gpio_init(gpio_channel_serin);
+    twr_gpio_set_mode(gpio_channel_serin, TWR_GPIO_MODE_OUTPUT);
 
     // Initialize DirectLink (DL) GPIO pin
-    bc_gpio_init(gpio_channel_dl);
-    bc_gpio_set_mode(gpio_channel_dl, BC_GPIO_MODE_INPUT);
-    bc_gpio_set_pull(gpio_channel_dl, BC_GPIO_PULL_DOWN);
+    twr_gpio_init(gpio_channel_dl);
+    twr_gpio_set_mode(gpio_channel_dl, TWR_GPIO_MODE_INPUT);
+    twr_gpio_set_pull(gpio_channel_dl, TWR_GPIO_PULL_DOWN);
 }
 
-static void _bc_pyq1648_clear_event(bc_pyq1648_t *self)
+static void _twr_pyq1648_clear_event(twr_pyq1648_t *self)
 {
     // Clear event by pull down DL
-    bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_OUTPUT);
-    bc_gpio_set_output(self->_gpio_channel_dl, 0);
-    bc_gpio_set_mode(self->_gpio_channel_dl, BC_GPIO_MODE_INPUT);
+    twr_gpio_set_mode(self->_gpio_channel_dl, TWR_GPIO_MODE_OUTPUT);
+    twr_gpio_set_output(self->_gpio_channel_dl, 0);
+    twr_gpio_set_mode(self->_gpio_channel_dl, TWR_GPIO_MODE_INPUT);
 }
 
 // TODO Consider using "OneWire"
-static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
+static inline void _twr_pyq1648_dev_init(twr_pyq1648_t *self)
 {
     // Disable interrupts
-    bc_irq_disable();
+    twr_irq_disable();
 
     // Enable PLL
-    bc_system_pll_enable();
+    twr_system_pll_enable();
 
     // Load desired event unit configuration
     uint32_t regval = self->_config;
@@ -139,7 +139,7 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
     volatile uint32_t *GPIOx_BSRR = &GPIOx->BSRR;
 
     // Low level pin initialization
-    _bc_pyq1648_msp_init(self->_gpio_channel_serin, self->_gpio_channel_dl);
+    _twr_pyq1648_msp_init(self->_gpio_channel_serin, self->_gpio_channel_dl);
 
     // Transmit event unit configuration
     for (int i = 0; i < 25; i++)
@@ -147,133 +147,133 @@ static inline void _bc_pyq1648_dev_init(bc_pyq1648_t *self)
         next_bit = (regval & regmask) != 0 ? true : false;
         regmask >>= 1;
 
-        bc_timer_start();
+        twr_timer_start();
 
         *GPIOx_BSRR = bsrr_mask[0];
 
-        while (bc_timer_get_microseconds() < 1)
+        while (twr_timer_get_microseconds() < 1)
         {
             continue;
         }
 
         *GPIOx_BSRR = bsrr_mask[1];
 
-        while (bc_timer_get_microseconds() < 2)
+        while (twr_timer_get_microseconds() < 2)
         {
             continue;
         }
 
         *GPIOx_BSRR = bsrr_mask[next_bit];
 
-        while (bc_timer_get_microseconds() < 83)
+        while (twr_timer_get_microseconds() < 83)
         {
             continue;
         }
 
-        bc_timer_stop();
+        twr_timer_stop();
     }
 
-    bc_gpio_set_output(self->_gpio_channel_serin, 0);
+    twr_gpio_set_output(self->_gpio_channel_serin, 0);
 
     // Disable PLL
-    bc_system_pll_disable();
+    twr_system_pll_disable();
 
     // Enable interrupts
-    bc_irq_enable();
+    twr_irq_enable();
 }
 
-static void _bc_pyq1648_task(void *param)
+static void _twr_pyq1648_task(void *param)
 {
-    bc_pyq1648_t *self = param;
+    twr_pyq1648_t *self = param;
 
 start:
 
     switch (self->_state)
     {
-        case BC_PYQ1648_STATE_ERROR:
+        case TWR_PYQ1648_STATE_ERROR:
         {
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_PYQ1648_EVENT_ERROR, self->_event_param);
+                self->_event_handler(self, TWR_PYQ1648_EVENT_ERROR, self->_event_param);
             }
 
-            self->_state = BC_PYQ1648_STATE_INITIALIZE;
+            self->_state = TWR_PYQ1648_STATE_INITIALIZE;
 
-            bc_scheduler_plan_current_relative(BC_PYQ1648_UPDATE_INTERVAL);
-
-            return;
-        }
-        case BC_PYQ1648_STATE_INITIALIZE:
-        {
-            self->_state = BC_PYQ1648_STATE_ERROR;
-
-            _bc_pyq1648_compose_event_unit_config(self);
-
-            _bc_pyq1648_dev_init(self);
-
-            self->_state = BC_PYQ1648_STATE_IGNORE;
-
-            bc_scheduler_plan_current_relative(BC_PYQ1648_DELAY_INITIALIZATION);
+            twr_scheduler_plan_current_relative(TWR_PYQ1648_UPDATE_INTERVAL);
 
             return;
         }
-        case BC_PYQ1648_STATE_IGNORE:
+        case TWR_PYQ1648_STATE_INITIALIZE:
         {
-            self->_state = BC_PYQ1648_STATE_ERROR;
+            self->_state = TWR_PYQ1648_STATE_ERROR;
+
+            _twr_pyq1648_compose_event_unit_config(self);
+
+            _twr_pyq1648_dev_init(self);
+
+            self->_state = TWR_PYQ1648_STATE_IGNORE;
+
+            twr_scheduler_plan_current_relative(TWR_PYQ1648_DELAY_INITIALIZATION);
+
+            return;
+        }
+        case TWR_PYQ1648_STATE_IGNORE:
+        {
+            self->_state = TWR_PYQ1648_STATE_ERROR;
 
             if (self->_ignore_untill == 0)
             {
                 // TODO ... acquire !!!
-                self->_ignore_untill = bc_tick_get() + (75000 / 15);
+                self->_ignore_untill = twr_tick_get() + (75000 / 15);
             }
 
-            if (bc_gpio_get_input(self->_gpio_channel_dl) != 0)
+            if (twr_gpio_get_input(self->_gpio_channel_dl) != 0)
             {
-                _bc_pyq1648_clear_event(self);
+                _twr_pyq1648_clear_event(self);
             }
 
-            if (bc_tick_get() >= self->_ignore_untill)
+            if (twr_tick_get() >= self->_ignore_untill)
             {
-                self->_state = BC_PYQ1648_STATE_CHECK;
+                self->_state = TWR_PYQ1648_STATE_CHECK;
             }
             else
             {
-                self->_state = BC_PYQ1648_STATE_IGNORE;
+                self->_state = TWR_PYQ1648_STATE_IGNORE;
             }
 
-            bc_scheduler_plan_current_relative(BC_PYQ1648_UPDATE_INTERVAL);
+            twr_scheduler_plan_current_relative(TWR_PYQ1648_UPDATE_INTERVAL);
 
             return;
         }
-        case BC_PYQ1648_STATE_CHECK:
+        case TWR_PYQ1648_STATE_CHECK:
         {
-            bc_tick_t tick_now = bc_tick_get();
+            twr_tick_t tick_now = twr_tick_get();
 
-            self->_state = BC_PYQ1648_STATE_ERROR;
+            self->_state = TWR_PYQ1648_STATE_ERROR;
 
-            if (bc_gpio_get_input(self->_gpio_channel_dl) != 0)
+            if (twr_gpio_get_input(self->_gpio_channel_dl) != 0)
             {
                 if (tick_now >= self->_aware_time)
                 {
                     if (self->_event_handler != NULL)
                     {
-                        self->_event_handler(self, BC_PYQ1648_EVENT_MOTION, self->_event_param);
+                        self->_event_handler(self, TWR_PYQ1648_EVENT_MOTION, self->_event_param);
                     }
 
                     self->_aware_time = tick_now + self->_blank_period;
                 }
-                _bc_pyq1648_clear_event(self);
+                _twr_pyq1648_clear_event(self);
             }
 
-            self->_state = BC_PYQ1648_STATE_CHECK;
+            self->_state = TWR_PYQ1648_STATE_CHECK;
 
-            bc_scheduler_plan_current_relative(BC_PYQ1648_UPDATE_INTERVAL);
+            twr_scheduler_plan_current_relative(TWR_PYQ1648_UPDATE_INTERVAL);
 
             return;
         }
         default:
         {
-            self->_state = BC_PYQ1648_STATE_ERROR;
+            self->_state = TWR_PYQ1648_STATE_ERROR;
 
             goto start;
         }

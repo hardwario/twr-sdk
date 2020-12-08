@@ -1,17 +1,17 @@
-#ifndef _BC_DELAY_H
-#define _BC_DELAY_H
+#ifndef _TWR_DELAY_H
+#define _TWR_DELAY_H
 
-#include <bc_common.h>
+#include <twr_common.h>
 
-//! @addtogroup bc_delay bc_delay
+//! @addtogroup twr_delay twr_delay
 //! @brief Library for delay
 //! @{
 
 //! @brief Delay us
 //! @param[in] microseconds Time to delay in us
 
-void bc_delay_us(uint16_t microseconds);
+void twr_delay_us(uint16_t microseconds);
 
 //! @}
 
-#endif // _BC_DELAY_H
+#endif // _TWR_DELAY_H

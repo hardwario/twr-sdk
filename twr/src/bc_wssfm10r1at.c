@@ -1,59 +1,59 @@
-#include <bc_wssfm10r1at.h>
+#include <twr_wssfm10r1at.h>
 
-#define BC_WSSFM10R1AT_DELAY_RUN 100
-#define BC_WSSFM10R1AT_DELAY_INITIALIZATION_RESET_H 100
-#define BC_WSSFM10R1AT_DELAY_INITIALIZATION_AT_COMMAND 100
-#define BC_WSSFM10R1AT_DELAY_INITIALIZATION_AT_RESPONSE 100
-#define BC_WSSFM10R1AT_DELAY_SET_POWER_RESPONSE 100
-#define BC_WSSFM10R1AT_DELAY_SEND_RF_FRAME_RESPONSE 12000
-#define BC_WSSFM10R1AT_DELAY_READ_ID_RESPONSE 100
-#define BC_WSSFM10R1AT_DELAY_READ_PAC_RESPONSE 100
-#define BC_WSSFM10R1AT_DELAY_CONTINUOUS_WAVE_RESPONSE 2000
-#define BC_WSSFM10R1AT_DELAY_DEEP_SLEEP_RESPONSE 100
+#define TWR_WSSFM10R1AT_DELAY_RUN 100
+#define TWR_WSSFM10R1AT_DELAY_INITIALIZATION_RESET_H 100
+#define TWR_WSSFM10R1AT_DELAY_INITIALIZATION_AT_COMMAND 100
+#define TWR_WSSFM10R1AT_DELAY_INITIALIZATION_AT_RESPONSE 100
+#define TWR_WSSFM10R1AT_DELAY_SET_POWER_RESPONSE 100
+#define TWR_WSSFM10R1AT_DELAY_SEND_RF_FRAME_RESPONSE 12000
+#define TWR_WSSFM10R1AT_DELAY_READ_ID_RESPONSE 100
+#define TWR_WSSFM10R1AT_DELAY_READ_PAC_RESPONSE 100
+#define TWR_WSSFM10R1AT_DELAY_CONTINUOUS_WAVE_RESPONSE 2000
+#define TWR_WSSFM10R1AT_DELAY_DEEP_SLEEP_RESPONSE 100
 
-static void _bc_wssfm10r1at_task(void *param);
+static void _twr_wssfm10r1at_task(void *param);
 
-static void _bc_wssfm10r1at_set_state(bc_wssfm10r1at_t *self, bc_wssfm10r1at_state_t state);
+static void _twr_wssfm10r1at_set_state(twr_wssfm10r1at_t *self, twr_wssfm10r1at_state_t state);
 
-static bool _bc_wssfm10r1at_read_response(bc_wssfm10r1at_t *self);
+static bool _twr_wssfm10r1at_read_response(twr_wssfm10r1at_t *self);
 
-void bc_wssfm10r1at_init(bc_wssfm10r1at_t *self, bc_gpio_channel_t reset_signal, bc_uart_channel_t uart_channel)
+void twr_wssfm10r1at_init(twr_wssfm10r1at_t *self, twr_gpio_channel_t reset_signal, twr_uart_channel_t uart_channel)
 {
     memset(self, 0, sizeof(*self));
 
     self->_reset_signal = reset_signal;
     self->_uart_channel = uart_channel;
 
-    bc_gpio_init(self->_reset_signal);
-    bc_gpio_set_output(self->_reset_signal, 0);
-    bc_gpio_set_mode(self->_reset_signal, BC_GPIO_MODE_OUTPUT);
+    twr_gpio_init(self->_reset_signal);
+    twr_gpio_set_output(self->_reset_signal, 0);
+    twr_gpio_set_mode(self->_reset_signal, TWR_GPIO_MODE_OUTPUT);
 
-    bc_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
-    bc_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
+    twr_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
+    twr_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
 
-    bc_uart_init(self->_uart_channel, BC_UART_BAUDRATE_9600, BC_UART_SETTING_8N1);
-    bc_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
-    bc_uart_async_read_start(self->_uart_channel, BC_TICK_INFINITY);
+    twr_uart_init(self->_uart_channel, TWR_UART_BAUDRATE_9600, TWR_UART_SETTING_8N1);
+    twr_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
+    twr_uart_async_read_start(self->_uart_channel, TWR_TICK_INFINITY);
 
-    self->_task_id = bc_scheduler_register(_bc_wssfm10r1at_task, self, BC_WSSFM10R1AT_DELAY_RUN);
+    self->_task_id = twr_scheduler_register(_twr_wssfm10r1at_task, self, TWR_WSSFM10R1AT_DELAY_RUN);
 
-    self->_state = BC_WSSFM10R1AT_STATE_INITIALIZE;
+    self->_state = TWR_WSSFM10R1AT_STATE_INITIALIZE;
 }
 
-void bc_wssfm10r1at_set_event_handler(bc_wssfm10r1at_t *self, void (*event_handler)(bc_wssfm10r1at_t *, bc_wssfm10r1at_event_t, void *), void *event_param)
+void twr_wssfm10r1at_set_event_handler(twr_wssfm10r1at_t *self, void (*event_handler)(twr_wssfm10r1at_t *, twr_wssfm10r1at_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
     self->_event_param = event_param;
 }
 
-bool bc_wssfm10r1at_is_ready(bc_wssfm10r1at_t *self)
+bool twr_wssfm10r1at_is_ready(twr_wssfm10r1at_t *self)
 {
-    if (self->_state == BC_WSSFM10R1AT_STATE_READY)
+    if (self->_state == TWR_WSSFM10R1AT_STATE_READY)
     {
         return true;
     }
 
-    if (self->_state == BC_WSSFM10R1AT_STATE_DEEP_SLEEP)
+    if (self->_state == TWR_WSSFM10R1AT_STATE_DEEP_SLEEP)
     {
         return true;
     }
@@ -61,9 +61,9 @@ bool bc_wssfm10r1at_is_ready(bc_wssfm10r1at_t *self)
     return false;
 }
 
-bool bc_wssfm10r1at_send_rf_frame(bc_wssfm10r1at_t *self, const void *buffer, size_t length)
+bool twr_wssfm10r1at_send_rf_frame(twr_wssfm10r1at_t *self, const void *buffer, size_t length)
 {
-    if (!bc_wssfm10r1at_is_ready(self) || length == 0 || length > 12)
+    if (!twr_wssfm10r1at_is_ready(self) || length == 0 || length > 12)
     {
         return false;
     }
@@ -72,31 +72,31 @@ bool bc_wssfm10r1at_send_rf_frame(bc_wssfm10r1at_t *self, const void *buffer, si
 
     memcpy(self->_message_buffer, buffer, self->_message_length);
 
-    _bc_wssfm10r1at_set_state(self, BC_WSSFM10R1AT_STATE_SEND_RF_FRAME_COMMAND);
+    _twr_wssfm10r1at_set_state(self, TWR_WSSFM10R1AT_STATE_SEND_RF_FRAME_COMMAND);
 
     return true;
 }
 
-bool bc_wssfm10r1at_read_device_id(bc_wssfm10r1at_t *self)
+bool twr_wssfm10r1at_read_device_id(twr_wssfm10r1at_t *self)
 {
-    if (!bc_wssfm10r1at_is_ready(self))
+    if (!twr_wssfm10r1at_is_ready(self))
     {
         return false;
     }
 
-    _bc_wssfm10r1at_set_state(self, BC_WSSFM10R1AT_STATE_READ_DEVICE_ID_COMMAND);
+    _twr_wssfm10r1at_set_state(self, TWR_WSSFM10R1AT_STATE_READ_DEVICE_ID_COMMAND);
 
     return true;
 }
 
-bool bc_wssfm10r1at_get_device_id(bc_wssfm10r1at_t *self, char *buffer, size_t buffer_size)
+bool twr_wssfm10r1at_get_device_id(twr_wssfm10r1at_t *self, char *buffer, size_t buffer_size)
 {
     if (buffer_size < 8 + 1)
     {
         return false;
     }
 
-    if (self->_state != BC_WSSFM10R1AT_STATE_READ_DEVICE_ID_RESPONSE)
+    if (self->_state != TWR_WSSFM10R1AT_STATE_READ_DEVICE_ID_RESPONSE)
     {
         return false;
     }
@@ -113,26 +113,26 @@ bool bc_wssfm10r1at_get_device_id(bc_wssfm10r1at_t *self, char *buffer, size_t b
     return true;
 }
 
-bool bc_wssfm10r1at_read_device_pac(bc_wssfm10r1at_t *self)
+bool twr_wssfm10r1at_read_device_pac(twr_wssfm10r1at_t *self)
 {
-    if (!bc_wssfm10r1at_is_ready(self))
+    if (!twr_wssfm10r1at_is_ready(self))
     {
         return false;
     }
 
-    _bc_wssfm10r1at_set_state(self, BC_WSSFM10R1AT_STATE_READ_DEVICE_PAC_COMMAND);
+    _twr_wssfm10r1at_set_state(self, TWR_WSSFM10R1AT_STATE_READ_DEVICE_PAC_COMMAND);
 
     return true;
 }
 
-bool bc_wssfm10r1at_get_device_pac(bc_wssfm10r1at_t *self, char *buffer, size_t buffer_size)
+bool twr_wssfm10r1at_get_device_pac(twr_wssfm10r1at_t *self, char *buffer, size_t buffer_size)
 {
     if (buffer_size < 16 + 1)
     {
         return false;
     }
 
-    if (self->_state != BC_WSSFM10R1AT_STATE_READ_DEVICE_PAC_RESPONSE)
+    if (self->_state != TWR_WSSFM10R1AT_STATE_READ_DEVICE_PAC_RESPONSE)
     {
         return false;
     }
@@ -149,27 +149,27 @@ bool bc_wssfm10r1at_get_device_pac(bc_wssfm10r1at_t *self, char *buffer, size_t 
     return true;
 }
 
-bool bc_wssfm10r1at_continuous_wave(bc_wssfm10r1at_t *self)
+bool twr_wssfm10r1at_continuous_wave(twr_wssfm10r1at_t *self)
 {
-    if (!bc_wssfm10r1at_is_ready(self))
+    if (!twr_wssfm10r1at_is_ready(self))
     {
         return false;
     }
 
-    _bc_wssfm10r1at_set_state(self, BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_COMMAND);
+    _twr_wssfm10r1at_set_state(self, TWR_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_COMMAND);
 
     return true;
 }
 
-static void _bc_wssfm10r1at_task(void *param)
+static void _twr_wssfm10r1at_task(void *param)
 {
-    bc_wssfm10r1at_t *self = param;
+    twr_wssfm10r1at_t *self = param;
 
     while (true)
     {
         switch (self->_state)
         {
-            case BC_WSSFM10R1AT_STATE_READY:
+            case TWR_WSSFM10R1AT_STATE_READY:
             {
                 if (self->_deep_sleep)
                 {
@@ -182,58 +182,58 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_WSSFM10R1AT_EVENT_READY, self->_event_param);
+                    self->_event_handler(self, TWR_WSSFM10R1AT_EVENT_READY, self->_event_param);
                 }
 
-                if (self->_state == BC_WSSFM10R1AT_STATE_READY)
+                if (self->_state == TWR_WSSFM10R1AT_STATE_READY)
                 {
-                    self->_state = BC_WSSFM10R1AT_STATE_DEEP_SLEEP_COMMAND;
+                    self->_state = TWR_WSSFM10R1AT_STATE_DEEP_SLEEP_COMMAND;
                 }
 
                 continue;
             }
-            case BC_WSSFM10R1AT_STATE_ERROR:
+            case TWR_WSSFM10R1AT_STATE_ERROR:
             {
                 self->_deep_sleep = false;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_WSSFM10R1AT_EVENT_ERROR, self->_event_param);
+                    self->_event_handler(self, TWR_WSSFM10R1AT_EVENT_ERROR, self->_event_param);
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_INITIALIZE;
+                self->_state = TWR_WSSFM10R1AT_STATE_INITIALIZE;
 
                 continue;
             }
-            case BC_WSSFM10R1AT_STATE_INITIALIZE:
+            case TWR_WSSFM10R1AT_STATE_INITIALIZE:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_INITIALIZE_RESET_L;
+                self->_state = TWR_WSSFM10R1AT_STATE_INITIALIZE_RESET_L;
 
                 continue;
             }
-            case BC_WSSFM10R1AT_STATE_INITIALIZE_RESET_L:
+            case TWR_WSSFM10R1AT_STATE_INITIALIZE_RESET_L:
             {
-                bc_gpio_set_output(self->_reset_signal, 0);
+                twr_gpio_set_output(self->_reset_signal, 0);
 
-                self->_state = BC_WSSFM10R1AT_STATE_INITIALIZE_RESET_H;
+                self->_state = TWR_WSSFM10R1AT_STATE_INITIALIZE_RESET_H;
 
-                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_INITIALIZATION_RESET_H);
+                twr_scheduler_plan_current_from_now(TWR_WSSFM10R1AT_DELAY_INITIALIZATION_RESET_H);
 
                 return;
             }
-            case BC_WSSFM10R1AT_STATE_INITIALIZE_RESET_H:
+            case TWR_WSSFM10R1AT_STATE_INITIALIZE_RESET_H:
             {
-                bc_gpio_set_output(self->_reset_signal, 1);
+                twr_gpio_set_output(self->_reset_signal, 1);
 
-                self->_state = BC_WSSFM10R1AT_STATE_INITIALIZE_AT_COMMAND;
+                self->_state = TWR_WSSFM10R1AT_STATE_INITIALIZE_AT_COMMAND;
 
-                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_INITIALIZATION_AT_COMMAND);
+                twr_scheduler_plan_current_from_now(TWR_WSSFM10R1AT_DELAY_INITIALIZATION_AT_COMMAND);
 
                 return;
             }
-            case BC_WSSFM10R1AT_STATE_INITIALIZE_AT_COMMAND:
+            case TWR_WSSFM10R1AT_STATE_INITIALIZE_AT_COMMAND:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
                 // TODO Purge RX FIFO
 
@@ -241,24 +241,24 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (twr_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                bc_gpio_set_output(self->_reset_signal, 1);
+                twr_gpio_set_output(self->_reset_signal, 1);
 
-                self->_state = BC_WSSFM10R1AT_STATE_INITIALIZE_AT_RESPONSE;
+                self->_state = TWR_WSSFM10R1AT_STATE_INITIALIZE_AT_RESPONSE;
 
-                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_INITIALIZATION_AT_RESPONSE);
+                twr_scheduler_plan_current_from_now(TWR_WSSFM10R1AT_DELAY_INITIALIZATION_AT_RESPONSE);
 
                 return;
             }
-            case BC_WSSFM10R1AT_STATE_INITIALIZE_AT_RESPONSE:
+            case TWR_WSSFM10R1AT_STATE_INITIALIZE_AT_RESPONSE:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
-                if (!_bc_wssfm10r1at_read_response(self))
+                if (!_twr_wssfm10r1at_read_response(self))
                 {
                     continue;
                 }
@@ -268,34 +268,34 @@ static void _bc_wssfm10r1at_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_SET_POWER_COMMAND;
+                self->_state = TWR_WSSFM10R1AT_STATE_SET_POWER_COMMAND;
 
                 continue;
             }
-            case BC_WSSFM10R1AT_STATE_SET_POWER_COMMAND:
+            case TWR_WSSFM10R1AT_STATE_SET_POWER_COMMAND:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
                 strcpy(self->_command, "ATS302=15\r");
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (twr_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_SET_POWER_RESPONSE;
+                self->_state = TWR_WSSFM10R1AT_STATE_SET_POWER_RESPONSE;
 
-                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_SET_POWER_RESPONSE);
+                twr_scheduler_plan_current_from_now(TWR_WSSFM10R1AT_DELAY_SET_POWER_RESPONSE);
 
                 return;
             }
-            case BC_WSSFM10R1AT_STATE_SET_POWER_RESPONSE:
+            case TWR_WSSFM10R1AT_STATE_SET_POWER_RESPONSE:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
-                if (!_bc_wssfm10r1at_read_response(self))
+                if (!_twr_wssfm10r1at_read_response(self))
                 {
                     continue;
                 }
@@ -305,13 +305,13 @@ static void _bc_wssfm10r1at_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_READY;
+                self->_state = TWR_WSSFM10R1AT_STATE_READY;
 
                 continue;
             }
-            case BC_WSSFM10R1AT_STATE_SEND_RF_FRAME_COMMAND:
+            case TWR_WSSFM10R1AT_STATE_SEND_RF_FRAME_COMMAND:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
                 static const char *hex_lookup_table[] =
                 {
@@ -344,27 +344,27 @@ static void _bc_wssfm10r1at_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (twr_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_SEND_RF_FRAME_RESPONSE;
+                self->_state = TWR_WSSFM10R1AT_STATE_SEND_RF_FRAME_RESPONSE;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_WSSFM10R1AT_EVENT_SEND_RF_FRAME_START, self->_event_param);
+                    self->_event_handler(self, TWR_WSSFM10R1AT_EVENT_SEND_RF_FRAME_START, self->_event_param);
                 }
 
-                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_SEND_RF_FRAME_RESPONSE);
+                twr_scheduler_plan_current_from_now(TWR_WSSFM10R1AT_DELAY_SEND_RF_FRAME_RESPONSE);
 
                 return;
             }
-            case BC_WSSFM10R1AT_STATE_SEND_RF_FRAME_RESPONSE:
+            case TWR_WSSFM10R1AT_STATE_SEND_RF_FRAME_RESPONSE:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
-                if (!_bc_wssfm10r1at_read_response(self))
+                if (!_twr_wssfm10r1at_read_response(self))
                 {
                     continue;
                 }
@@ -374,113 +374,113 @@ static void _bc_wssfm10r1at_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_READY;
+                self->_state = TWR_WSSFM10R1AT_STATE_READY;
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_WSSFM10R1AT_EVENT_SEND_RF_FRAME_DONE, self->_event_param);
+                    self->_event_handler(self, TWR_WSSFM10R1AT_EVENT_SEND_RF_FRAME_DONE, self->_event_param);
                 }
 
                 continue;
             }
-            case BC_WSSFM10R1AT_STATE_READ_DEVICE_ID_COMMAND:
+            case TWR_WSSFM10R1AT_STATE_READ_DEVICE_ID_COMMAND:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
                 strcpy(self->_command, "AT$I=10\r");
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (twr_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_READ_DEVICE_ID_RESPONSE;
+                self->_state = TWR_WSSFM10R1AT_STATE_READ_DEVICE_ID_RESPONSE;
 
-                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_READ_PAC_RESPONSE);
+                twr_scheduler_plan_current_from_now(TWR_WSSFM10R1AT_DELAY_READ_PAC_RESPONSE);
 
                 return;
             }
-            case BC_WSSFM10R1AT_STATE_READ_DEVICE_ID_RESPONSE:
+            case TWR_WSSFM10R1AT_STATE_READ_DEVICE_ID_RESPONSE:
             {
-                if (!_bc_wssfm10r1at_read_response(self))
+                if (!_twr_wssfm10r1at_read_response(self))
                 {
-                    self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                    self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
                     continue;
                 }
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_WSSFM10R1AT_EVENT_READ_DEVICE_ID, self->_event_param);
+                    self->_event_handler(self, TWR_WSSFM10R1AT_EVENT_READ_DEVICE_ID, self->_event_param);
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_READY;
+                self->_state = TWR_WSSFM10R1AT_STATE_READY;
 
                 continue;
             }
-            case BC_WSSFM10R1AT_STATE_READ_DEVICE_PAC_COMMAND:
+            case TWR_WSSFM10R1AT_STATE_READ_DEVICE_PAC_COMMAND:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
                 strcpy(self->_command, "AT$I=11\r");
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (twr_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_READ_DEVICE_PAC_RESPONSE;
+                self->_state = TWR_WSSFM10R1AT_STATE_READ_DEVICE_PAC_RESPONSE;
 
-                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_READ_PAC_RESPONSE);
+                twr_scheduler_plan_current_from_now(TWR_WSSFM10R1AT_DELAY_READ_PAC_RESPONSE);
 
                 return;
             }
-            case BC_WSSFM10R1AT_STATE_READ_DEVICE_PAC_RESPONSE:
+            case TWR_WSSFM10R1AT_STATE_READ_DEVICE_PAC_RESPONSE:
             {
-                if (!_bc_wssfm10r1at_read_response(self))
+                if (!_twr_wssfm10r1at_read_response(self))
                 {
-                    self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                    self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
                     continue;
                 }
 
                 if (self->_event_handler != NULL)
                 {
-                    self->_event_handler(self, BC_WSSFM10R1AT_EVENT_READ_DEVICE_PAC, self->_event_param);
+                    self->_event_handler(self, TWR_WSSFM10R1AT_EVENT_READ_DEVICE_PAC, self->_event_param);
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_READY;
+                self->_state = TWR_WSSFM10R1AT_STATE_READY;
 
                 continue;
             }
-            case BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_COMMAND:
+            case TWR_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_COMMAND:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
                 strcpy(self->_command, "AT$CW=868130000,1,15\r");
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (twr_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_RESPONSE;
+                self->_state = TWR_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_RESPONSE;
 
-                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_CONTINUOUS_WAVE_RESPONSE);
+                twr_scheduler_plan_current_from_now(TWR_WSSFM10R1AT_DELAY_CONTINUOUS_WAVE_RESPONSE);
 
                 return;
             }
-            case BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_RESPONSE:
+            case TWR_WSSFM10R1AT_STATE_CONTINUOUS_WAVE_RESPONSE:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
-                if (!_bc_wssfm10r1at_read_response(self))
+                if (!_twr_wssfm10r1at_read_response(self))
                 {
                     continue;
                 }
@@ -490,38 +490,38 @@ static void _bc_wssfm10r1at_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE;
+                self->_state = TWR_WSSFM10R1AT_STATE_CONTINUOUS_WAVE;
 
                 continue;
             }
-            case BC_WSSFM10R1AT_STATE_CONTINUOUS_WAVE:
+            case TWR_WSSFM10R1AT_STATE_CONTINUOUS_WAVE:
             {
                 return;
             }
-            case BC_WSSFM10R1AT_STATE_DEEP_SLEEP_COMMAND:
+            case TWR_WSSFM10R1AT_STATE_DEEP_SLEEP_COMMAND:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
                 strcpy(self->_command, "AT$P=2\r");
 
                 size_t length = strlen(self->_command);
 
-                if (bc_uart_async_write(self->_uart_channel, self->_command, length) != length)
+                if (twr_uart_async_write(self->_uart_channel, self->_command, length) != length)
                 {
                     continue;
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_DEEP_SLEEP_RESPONSE;
+                self->_state = TWR_WSSFM10R1AT_STATE_DEEP_SLEEP_RESPONSE;
 
-                bc_scheduler_plan_current_from_now(BC_WSSFM10R1AT_DELAY_DEEP_SLEEP_RESPONSE);
+                twr_scheduler_plan_current_from_now(TWR_WSSFM10R1AT_DELAY_DEEP_SLEEP_RESPONSE);
 
                 return;
             }
-            case BC_WSSFM10R1AT_STATE_DEEP_SLEEP_RESPONSE:
+            case TWR_WSSFM10R1AT_STATE_DEEP_SLEEP_RESPONSE:
             {
-                self->_state = BC_WSSFM10R1AT_STATE_ERROR;
+                self->_state = TWR_WSSFM10R1AT_STATE_ERROR;
 
-                if (!_bc_wssfm10r1at_read_response(self))
+                if (!_twr_wssfm10r1at_read_response(self))
                 {
                     continue;
                 }
@@ -531,11 +531,11 @@ static void _bc_wssfm10r1at_task(void *param)
                     continue;
                 }
 
-                self->_state = BC_WSSFM10R1AT_STATE_DEEP_SLEEP;
+                self->_state = TWR_WSSFM10R1AT_STATE_DEEP_SLEEP;
 
                 continue;
             }
-            case BC_WSSFM10R1AT_STATE_DEEP_SLEEP:
+            case TWR_WSSFM10R1AT_STATE_DEEP_SLEEP:
             {
                 self->_deep_sleep = true;
 
@@ -549,11 +549,11 @@ static void _bc_wssfm10r1at_task(void *param)
     }
 }
 
-static void _bc_wssfm10r1at_set_state(bc_wssfm10r1at_t *self, bc_wssfm10r1at_state_t state)
+static void _twr_wssfm10r1at_set_state(twr_wssfm10r1at_t *self, twr_wssfm10r1at_state_t state)
 {
     if (self->_deep_sleep)
     {
-        self->_state = BC_WSSFM10R1AT_STATE_INITIALIZE;
+        self->_state = TWR_WSSFM10R1AT_STATE_INITIALIZE;
 
         self->_state_after_sleep = state;
     }
@@ -562,10 +562,10 @@ static void _bc_wssfm10r1at_set_state(bc_wssfm10r1at_t *self, bc_wssfm10r1at_sta
         self->_state = state;
     }
 
-    bc_scheduler_plan_now(self->_task_id);
+    twr_scheduler_plan_now(self->_task_id);
 }
 
-static bool _bc_wssfm10r1at_read_response(bc_wssfm10r1at_t *self)
+static bool _twr_wssfm10r1at_read_response(twr_wssfm10r1at_t *self)
 {
     size_t length = 0;
 
@@ -573,7 +573,7 @@ static bool _bc_wssfm10r1at_read_response(bc_wssfm10r1at_t *self)
     {
         char rx_character;
 
-        if (bc_uart_async_read(self->_uart_channel, &rx_character, 1) == 0)
+        if (twr_uart_async_read(self->_uart_channel, &rx_character, 1) == 0)
         {
             return false;
         }

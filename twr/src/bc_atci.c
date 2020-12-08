@@ -1,51 +1,51 @@
-#include <bc_atci.h>
-#include <bc_scheduler.h>
-#include <bc_system.h>
+#include <twr_atci.h>
+#include <twr_scheduler.h>
+#include <twr_system.h>
 
-static void _bc_atci_uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void  *event_param);
-static void _bc_atci_uart_active_test(void);
-static void _bc_atci_uart_active_test_task(void  *param);
+static void _twr_atci_uart_event_handler(twr_uart_channel_t channel, twr_uart_event_t event, void  *event_param);
+static void _twr_atci_uart_active_test(void);
+static void _twr_atci_uart_active_test_task(void  *param);
 
 static struct
 {
-    const bc_atci_command_t *commands;
+    const twr_atci_command_t *commands;
     size_t commands_length;
     char tx_buffer[256];
     char rx_buffer[256];
     size_t rx_length;
     bool rx_error;
     uint8_t read_fifo_buffer[128];
-    bc_fifo_t read_fifo;
-    bc_scheduler_task_id_t vbus_sense_test_task_id;
+    twr_fifo_t read_fifo;
+    twr_scheduler_task_id_t vbus_sense_test_task_id;
     bool ready;
     bool (*uart_active_callback)(void);
-    bc_tick_t scan_interval;
+    twr_tick_t scan_interval;
     bool write_response;
 
-} _bc_atci;
+} _twr_atci;
 
-void bc_atci_init(const bc_atci_command_t *commands, int length)
+void twr_atci_init(const twr_atci_command_t *commands, int length)
 {
-    memset(&_bc_atci, 0, sizeof(_bc_atci));
+    memset(&_twr_atci, 0, sizeof(_twr_atci));
 
-    _bc_atci.commands = commands;
+    _twr_atci.commands = commands;
 
-    _bc_atci.commands_length = length;
+    _twr_atci.commands_length = length;
 
-    _bc_atci.rx_length = 0;
+    _twr_atci.rx_length = 0;
 
-    _bc_atci.rx_error = false;
+    _twr_atci.rx_error = false;
 
-    _bc_atci.write_response = true;
+    _twr_atci.write_response = true;
 
-    bc_fifo_init(&_bc_atci.read_fifo, _bc_atci.read_fifo_buffer, sizeof(_bc_atci.read_fifo_buffer));
+    twr_fifo_init(&_twr_atci.read_fifo, _twr_atci.read_fifo_buffer, sizeof(_twr_atci.read_fifo_buffer));
 
-    bc_atci_set_uart_active_callback(bc_system_get_vbus_sense, 200);
+    twr_atci_set_uart_active_callback(twr_system_get_vbus_sense, 200);
 }
 
-void bc_atci_printf(const char *format, ...)
+void twr_atci_printf(const char *format, ...)
 {
-    if (!_bc_atci.ready)
+    if (!_twr_atci.ready)
     {
         return;
     }
@@ -56,76 +56,76 @@ void bc_atci_printf(const char *format, ...)
 
     va_start(ap, format);
 
-    length = vsnprintf(_bc_atci.tx_buffer, sizeof(_bc_atci.tx_buffer) - 2, format, ap);
+    length = vsnprintf(_twr_atci.tx_buffer, sizeof(_twr_atci.tx_buffer) - 2, format, ap);
 
     va_end(ap);
 
-    _bc_atci.tx_buffer[length++] = '\r';
-    _bc_atci.tx_buffer[length++] = '\n';
+    _twr_atci.tx_buffer[length++] = '\r';
+    _twr_atci.tx_buffer[length++] = '\n';
 
-    bc_uart_write(BC_ATCI_UART, _bc_atci.tx_buffer, length);
+    twr_uart_write(TWR_ATCI_UART, _twr_atci.tx_buffer, length);
 }
 
-bool bc_atci_skip_response(void)
+bool twr_atci_skip_response(void)
 {
-    _bc_atci.write_response = false;
+    _twr_atci.write_response = false;
 
     return true;
 }
 
-void bc_atci_write_ok(void)
+void twr_atci_write_ok(void)
 {
-    bc_uart_write(BC_ATCI_UART, "OK\r\n", 4);
+    twr_uart_write(TWR_ATCI_UART, "OK\r\n", 4);
 }
 
-void bc_atci_write_error(void)
+void twr_atci_write_error(void)
 {
-    bc_uart_write(BC_ATCI_UART, "ERROR\r\n", 7);
+    twr_uart_write(TWR_ATCI_UART, "ERROR\r\n", 7);
 }
 
-bool bc_atci_clac_action(void)
+bool twr_atci_clac_action(void)
 {
-    for (size_t i = 0; i < _bc_atci.commands_length; i++)
+    for (size_t i = 0; i < _twr_atci.commands_length; i++)
     {
-        bc_atci_printf("AT%s", _bc_atci.commands[i].command);
+        twr_atci_printf("AT%s", _twr_atci.commands[i].command);
     }
     return true;
 }
 
-bool bc_atci_help_action(void)
+bool twr_atci_help_action(void)
 {
-    for (size_t i = 0; i < _bc_atci.commands_length; i++)
+    for (size_t i = 0; i < _twr_atci.commands_length; i++)
     {
-        bc_atci_printf("AT%s %s", _bc_atci.commands[i].command, _bc_atci.commands[i].hint);
+        twr_atci_printf("AT%s %s", _twr_atci.commands[i].command, _twr_atci.commands[i].hint);
     }
     return true;
 }
 
-static bool _bc_atci_process_line(void)
+static bool _twr_atci_process_line(void)
 {
-    if (_bc_atci.rx_length < 2 || _bc_atci.rx_buffer[0] != 'A' || _bc_atci.rx_buffer[1] != 'T')
+    if (_twr_atci.rx_length < 2 || _twr_atci.rx_buffer[0] != 'A' || _twr_atci.rx_buffer[1] != 'T')
     {
         return false;
     }
 
-    if (_bc_atci.rx_length == 2)
+    if (_twr_atci.rx_length == 2)
     {
         return true;
     }
 
-    _bc_atci.rx_buffer[_bc_atci.rx_length] = 0;
+    _twr_atci.rx_buffer[_twr_atci.rx_length] = 0;
 
-    char *line = _bc_atci.rx_buffer + 2;
+    char *line = _twr_atci.rx_buffer + 2;
 
-    size_t length = _bc_atci.rx_length - 2;
+    size_t length = _twr_atci.rx_length - 2;
 
     size_t command_len;
 
-    const bc_atci_command_t *command;
+    const twr_atci_command_t *command;
 
-    for (size_t i = 0; i < _bc_atci.commands_length; i++)
+    for (size_t i = 0; i < _twr_atci.commands_length; i++)
     {
-        command = _bc_atci.commands + i;
+        command = _twr_atci.commands + i;
 
         command_len = strlen(command->command);
 
@@ -158,7 +158,7 @@ static bool _bc_atci_process_line(void)
 
             if (command->set != NULL)
             {
-                bc_atci_param_t param = {
+                twr_atci_param_t param = {
                         .txt = line + command_len + 1,
                         .length = length - command_len - 1,
                         .offset = 0
@@ -185,37 +185,37 @@ static bool _bc_atci_process_line(void)
     return false;
 }
 
-static void _bc_atci_process_character(char character)
+static void _twr_atci_process_character(char character)
 {
     if (character == '\n')
     {
-        if (!_bc_atci.rx_error && _bc_atci.rx_length > 0)
+        if (!_twr_atci.rx_error && _twr_atci.rx_length > 0)
         {
-            bool response = _bc_atci_process_line();
+            bool response = _twr_atci_process_line();
 
-            if (_bc_atci.write_response)
+            if (_twr_atci.write_response)
             {
                 if (response)
                 {
-                    bc_atci_write_ok();
+                    twr_atci_write_ok();
                 }
                 else
                 {
-                    bc_atci_write_error();
+                    twr_atci_write_error();
                 }
             }
             else
             {
-                _bc_atci.write_response = true;
+                _twr_atci.write_response = true;
             }
         }
-        else if (_bc_atci.rx_error)
+        else if (_twr_atci.rx_error)
         {
-            bc_atci_write_error();
+            twr_atci_write_error();
         }
 
-        _bc_atci.rx_length = 0;
-        _bc_atci.rx_error = false;
+        _twr_atci.rx_length = 0;
+        _twr_atci.rx_error = false;
     }
     else if (character == '\r')
     {
@@ -223,31 +223,31 @@ static void _bc_atci_process_character(char character)
     }
     else if (character == '\x1b')
     {
-        _bc_atci.rx_length = 0;
-        _bc_atci.rx_error = false;
+        _twr_atci.rx_length = 0;
+        _twr_atci.rx_error = false;
     }
-    else if (_bc_atci.rx_length == sizeof(_bc_atci.rx_buffer) - 1)
+    else if (_twr_atci.rx_length == sizeof(_twr_atci.rx_buffer) - 1)
     {
-        _bc_atci.rx_error = true;
+        _twr_atci.rx_error = true;
     }
-    else if (!_bc_atci.rx_error)
+    else if (!_twr_atci.rx_error)
     {
-        _bc_atci.rx_buffer[_bc_atci.rx_length++] = character;
+        _twr_atci.rx_buffer[_twr_atci.rx_length++] = character;
     }
 }
 
-static void _bc_atci_uart_event_handler(bc_uart_channel_t channel, bc_uart_event_t event, void  *event_param)
+static void _twr_atci_uart_event_handler(twr_uart_channel_t channel, twr_uart_event_t event, void  *event_param)
 {
     (void) channel;
     (void) event_param;
 
-    if (event == BC_UART_EVENT_ASYNC_READ_DATA)
+    if (event == TWR_UART_EVENT_ASYNC_READ_DATA)
     {
         while (true)
         {
             static uint8_t buffer[16];
 
-            size_t length = bc_uart_async_read(BC_ATCI_UART, buffer, sizeof(buffer));
+            size_t length = twr_uart_async_read(TWR_ATCI_UART, buffer, sizeof(buffer));
 
             if (length == 0)
             {
@@ -256,13 +256,13 @@ static void _bc_atci_uart_event_handler(bc_uart_channel_t channel, bc_uart_event
 
             for (size_t i = 0; i < length; i++)
             {
-                _bc_atci_process_character((char) buffer[i]);
+                _twr_atci_process_character((char) buffer[i]);
             }
         }
     }
 }
 
-bool bc_atci_get_uint(bc_atci_param_t *param, uint32_t *value)
+bool twr_atci_get_uint(twr_atci_param_t *param, uint32_t *value)
 {
     char c;
 
@@ -292,7 +292,7 @@ bool bc_atci_get_uint(bc_atci_param_t *param, uint32_t *value)
     return true;
 }
 
-bool bc_atci_get_string(bc_atci_param_t *param, char *str, size_t length)
+bool twr_atci_get_string(twr_atci_param_t *param, char *str, size_t length)
 {
     if (((param->length - param->offset) < 2) || (length < 1) || (str == NULL))
     {
@@ -329,7 +329,7 @@ bool bc_atci_get_string(bc_atci_param_t *param, char *str, size_t length)
     return false;
 }
 
-bool bc_atci_get_buffer_from_hex_string(bc_atci_param_t *param, void *buffer, size_t *length)
+bool twr_atci_get_buffer_from_hex_string(twr_atci_param_t *param, void *buffer, size_t *length)
 {
     if (((param->length - param->offset) < 2) || (*length < 1) || (buffer == NULL))
     {
@@ -393,76 +393,76 @@ bool bc_atci_get_buffer_from_hex_string(bc_atci_param_t *param, void *buffer, si
     return false;
 }
 
-bool bc_atci_is_comma(bc_atci_param_t *param)
+bool twr_atci_is_comma(twr_atci_param_t *param)
 {
     return param->txt[param->offset++] == ',';
 }
 
-bool bc_atci_is_quotation_mark(bc_atci_param_t *param)
+bool twr_atci_is_quotation_mark(twr_atci_param_t *param)
 {
     return param->txt[param->offset++] == '"';
 }
 
-void bc_atci_set_uart_active_callback(bool(*callback)(void), bc_tick_t scan_interval)
+void twr_atci_set_uart_active_callback(bool(*callback)(void), twr_tick_t scan_interval)
 {
-    _bc_atci.uart_active_callback = callback;
-    _bc_atci.scan_interval = scan_interval;
+    _twr_atci.uart_active_callback = callback;
+    _twr_atci.scan_interval = scan_interval;
 
     if (callback == NULL)
     {
-        if (_bc_atci.vbus_sense_test_task_id)
+        if (_twr_atci.vbus_sense_test_task_id)
         {
-            bc_scheduler_unregister(_bc_atci.vbus_sense_test_task_id);
+            twr_scheduler_unregister(_twr_atci.vbus_sense_test_task_id);
 
-            _bc_atci.vbus_sense_test_task_id = 0;
+            _twr_atci.vbus_sense_test_task_id = 0;
         }
     }
     else
     {
-        if (_bc_atci.vbus_sense_test_task_id == 0)
+        if (_twr_atci.vbus_sense_test_task_id == 0)
         {
-            _bc_atci.vbus_sense_test_task_id = bc_scheduler_register(_bc_atci_uart_active_test_task, NULL, scan_interval);
+            _twr_atci.vbus_sense_test_task_id = twr_scheduler_register(_twr_atci_uart_active_test_task, NULL, scan_interval);
         }
     }
 
-    _bc_atci_uart_active_test();
+    _twr_atci_uart_active_test();
 }
 
-static void _bc_atci_uart_active_test(void)
+static void _twr_atci_uart_active_test(void)
 {
-    if ((_bc_atci.uart_active_callback == NULL) || _bc_atci.uart_active_callback())
+    if ((_twr_atci.uart_active_callback == NULL) || _twr_atci.uart_active_callback())
     {
-        if (!_bc_atci.ready)
+        if (!_twr_atci.ready)
         {
-            bc_uart_init(BC_ATCI_UART, BC_UART_BAUDRATE_115200, BC_UART_SETTING_8N1);
+            twr_uart_init(TWR_ATCI_UART, TWR_UART_BAUDRATE_115200, TWR_UART_SETTING_8N1);
 
-            bc_uart_set_async_fifo(BC_ATCI_UART, NULL, &_bc_atci.read_fifo);
+            twr_uart_set_async_fifo(TWR_ATCI_UART, NULL, &_twr_atci.read_fifo);
 
-            bc_uart_set_event_handler(BC_ATCI_UART, _bc_atci_uart_event_handler, NULL);
+            twr_uart_set_event_handler(TWR_ATCI_UART, _twr_atci_uart_event_handler, NULL);
 
-            bc_uart_async_read_start(BC_ATCI_UART, 1000);
+            twr_uart_async_read_start(TWR_ATCI_UART, 1000);
 
-            _bc_atci.ready = true;
+            _twr_atci.ready = true;
 
-            bc_uart_write(BC_ATCI_UART, "\r\n", 2);
+            twr_uart_write(TWR_ATCI_UART, "\r\n", 2);
         }
     }
     else
     {
-        if (_bc_atci.ready)
+        if (_twr_atci.ready)
         {
-            _bc_atci.ready = false;
+            _twr_atci.ready = false;
 
-            bc_uart_deinit(BC_ATCI_UART);
+            twr_uart_deinit(TWR_ATCI_UART);
         }
     }
 }
 
-static void _bc_atci_uart_active_test_task(void *param)
+static void _twr_atci_uart_active_test_task(void *param)
 {
     (void) param;
 
-    _bc_atci_uart_active_test();
+    _twr_atci_uart_active_test();
 
-    bc_scheduler_plan_current_relative(_bc_atci.scan_interval);
+    twr_scheduler_plan_current_relative(_twr_atci.scan_interval);
 }

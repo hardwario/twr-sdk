@@ -1,10 +1,10 @@
-#ifndef _BC_SC16IS740_H
-#define _BC_SC16IS740_H
+#ifndef _TWR_SC16IS740_H
+#define _TWR_SC16IS740_H
 
-#include <bc_i2c.h>
-#include <bc_tick.h>
+#include <twr_i2c.h>
+#include <twr_tick.h>
 
-//! @addtogroup bc_sc16is740 bc_sc16is740
+//! @addtogroup twr_sc16is740 twr_sc16is740
 //! @brief Driver for SC16IS740 single UART with I2C-bus interface, 64 bytes of transmit and receive FIFOs
 //! @{
 
@@ -12,22 +12,22 @@
 
 typedef enum
 {
-    BC_SC16IS740_FIFO_RX = 0x02,
-    BC_SC16IS740_FIFO_TX = 0x04
+    TWR_SC16IS740_FIFO_RX = 0x02,
+    TWR_SC16IS740_FIFO_TX = 0x04
 
-} bc_sc16is740_fifo_t;
+} twr_sc16is740_fifo_t;
 
 //! @brief Baudrates
 
 typedef enum
 {
-    BC_SC16IS740_BAUDRATE_9600 = 88,
-    BC_SC16IS740_BAUDRATE_19200 = 44,
-    BC_SC16IS740_BAUDRATE_38400 = 22,
-    BC_SC16IS740_BAUDRATE_57600 = 15,
-    BC_SC16IS740_BAUDRATE_115200 = 7
+    TWR_SC16IS740_BAUDRATE_9600 = 88,
+    TWR_SC16IS740_BAUDRATE_19200 = 44,
+    TWR_SC16IS740_BAUDRATE_38400 = 22,
+    TWR_SC16IS740_BAUDRATE_57600 = 15,
+    TWR_SC16IS740_BAUDRATE_115200 = 7
 
-} bc_sc16is740_baudrate_t;
+} twr_sc16is740_baudrate_t;
 
 //! @brief SC16IS740 instance
 
@@ -35,10 +35,10 @@ typedef enum
 
 typedef struct
 {
-    bc_i2c_channel_t _i2c_channel;
+    twr_i2c_channel_t _i2c_channel;
     uint8_t _i2c_address;
 
-} bc_sc16is740_t;
+} twr_sc16is740_t;
 
 //! @endcond
 
@@ -49,7 +49,7 @@ typedef struct
 //! @return true On success
 //! @return false On failure
 
-bool bc_sc16is740_init(bc_sc16is740_t *self, bc_i2c_channel_t i2c_channel, uint8_t i2c_address);
+bool twr_sc16is740_init(twr_sc16is740_t *self, twr_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
 //! @brief Reset FIFO
 //! @param[in] self Instance
@@ -57,7 +57,7 @@ bool bc_sc16is740_init(bc_sc16is740_t *self, bc_i2c_channel_t i2c_channel, uint8
 //! @return true On success
 //! @return false On failure
 
-bool bc_sc16is740_reset_fifo(bc_sc16is740_t *self, bc_sc16is740_fifo_t fifo);
+bool twr_sc16is740_reset_fifo(twr_sc16is740_t *self, twr_sc16is740_fifo_t fifo);
 
 //! @brief Get TX FIXO space available
 //! @param[in] self Instance
@@ -65,7 +65,7 @@ bool bc_sc16is740_reset_fifo(bc_sc16is740_t *self, bc_sc16is740_fifo_t fifo);
 //! @return true On success
 //! @return false On failure
 
-bool bc_sc16is740_get_spaces_available(bc_sc16is740_t *self, size_t *spaces_available);
+bool twr_sc16is740_get_spaces_available(twr_sc16is740_t *self, size_t *spaces_available);
 
 //! @brief Write
 //! @param[in] self Instance
@@ -73,7 +73,7 @@ bool bc_sc16is740_get_spaces_available(bc_sc16is740_t *self, size_t *spaces_avai
 //! @param[in] length Number of bytes to be written
 //! @return Number of bytes written
 
-size_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, size_t length);
+size_t twr_sc16is740_write(twr_sc16is740_t *self, uint8_t *buffer, size_t length);
 
 //! @brief Get RX FIXO available data
 //! @param[in] self Instance
@@ -81,7 +81,7 @@ size_t bc_sc16is740_write(bc_sc16is740_t *self, uint8_t *buffer, size_t length);
 //! @return true On success
 //! @return false On failure
 
-bool bc_sc16is740_available(bc_sc16is740_t *self, size_t *available);
+bool twr_sc16is740_available(twr_sc16is740_t *self, size_t *available);
 
 //! @brief Read
 //! @param[in] self Instance
@@ -90,7 +90,7 @@ bool bc_sc16is740_available(bc_sc16is740_t *self, size_t *available);
 //! @param[in] timeout Write operation timeout in ticks
 //! @return Number of bytes read
 
-size_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, size_t length, bc_tick_t timeout);
+size_t twr_sc16is740_read(twr_sc16is740_t *self, uint8_t *buffer, size_t length, twr_tick_t timeout);
 
 //! @brief Set baudrate
 //! @param[in] self Instance
@@ -98,8 +98,8 @@ size_t bc_sc16is740_read(bc_sc16is740_t *self, uint8_t *buffer, size_t length, b
 //! @return true On success
 //! @return false On failure
 
-bool bc_sc16is740_set_baudrate(bc_sc16is740_t *self, bc_sc16is740_baudrate_t baudrate);
+bool twr_sc16is740_set_baudrate(twr_sc16is740_t *self, twr_sc16is740_baudrate_t baudrate);
 
 //! @}
 
-#endif // _BC_SC16IS740_H
+#endif // _TWR_SC16IS740_H

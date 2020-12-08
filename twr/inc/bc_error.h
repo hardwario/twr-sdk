@@ -1,17 +1,17 @@
-#ifndef _BC_ERROR_H
-#define _BC_ERROR_H
+#ifndef _TWR_ERROR_H
+#define _TWR_ERROR_H
 
-#include <bc_common.h>
+#include <twr_common.h>
 
 typedef enum
 {
-    BC_ERROR_NOT_ENOUGH_TASKS = 0,
-    BC_ERROR_LOG_NOT_INITIALIZED = 1,
-    BC_ERROR_ERROR_UNLOCK = 2,
-    BC_ERROR_CALLBACK = 3,
+    TWR_ERROR_NOT_ENOUGH_TASKS = 0,
+    TWR_ERROR_LOG_NOT_INITIALIZED = 1,
+    TWR_ERROR_ERROR_UNLOCK = 2,
+    TWR_ERROR_CALLBACK = 3,
 
-} bc_error_t;
+} twr_error_t;
 
-void bc_error(bc_error_t code);
+void twr_error(twr_error_t code);
 
-#endif // _BC_ERROR_H
+#endif // _TWR_ERROR_H

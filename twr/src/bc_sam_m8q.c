@@ -1,63 +1,63 @@
-#include <bc_sam_m8q.h>
-#include <bc_gpio.h>
+#include <twr_sam_m8q.h>
+#include <twr_gpio.h>
 #include <minmea.h>
 
-static void _bc_sam_m8q_task(void *param);
-static bool _bc_sam_m8q_parse(bc_sam_m8q_t *self, const char *line);
-static bool _bc_sam_m8q_feed(bc_sam_m8q_t *self, char c);
-static void _bc_sam_m8q_clear(bc_sam_m8q_t *self);
-static bool _bc_sam_m8q_enable(bc_sam_m8q_t *self);
-static bool _bc_sam_m8q_disable(bc_sam_m8q_t *self);
-static bool _bc_sam_m8q_send_config(bc_sam_m8q_t *self);
+static void _twr_sam_m8q_task(void *param);
+static bool _twr_sam_m8q_parse(twr_sam_m8q_t *self, const char *line);
+static bool _twr_sam_m8q_feed(twr_sam_m8q_t *self, char c);
+static void _twr_sam_m8q_clear(twr_sam_m8q_t *self);
+static bool _twr_sam_m8q_enable(twr_sam_m8q_t *self);
+static bool _twr_sam_m8q_disable(twr_sam_m8q_t *self);
+static bool _twr_sam_m8q_send_config(twr_sam_m8q_t *self);
 
-void bc_sam_m8q_init(bc_sam_m8q_t *self, bc_i2c_channel_t channel, uint8_t i2c_address, const bc_sam_m8q_driver_t *driver)
+void twr_sam_m8q_init(twr_sam_m8q_t *self, twr_i2c_channel_t channel, uint8_t i2c_address, const twr_sam_m8q_driver_t *driver)
 {
-    memset(self, 0, sizeof(bc_sam_m8q_t));
+    memset(self, 0, sizeof(twr_sam_m8q_t));
 
-    bc_i2c_init(BC_I2C_I2C0, BC_I2C_SPEED_100_KHZ);
+    twr_i2c_init(TWR_I2C_I2C0, TWR_I2C_SPEED_100_KHZ);
 
     self->_i2c_channel = channel;
     self->_i2c_address = i2c_address;
     self->_driver = driver;
 
-    self->_task_id = bc_scheduler_register(_bc_sam_m8q_task, self, BC_TICK_INFINITY);
+    self->_task_id = twr_scheduler_register(_twr_sam_m8q_task, self, TWR_TICK_INFINITY);
 }
 
-void bc_sam_m8q_set_event_handler(bc_sam_m8q_t *self, bc_sam_m8q_event_handler_t event_handler, void *event_param)
+void twr_sam_m8q_set_event_handler(twr_sam_m8q_t *self, twr_sam_m8q_event_handler_t event_handler, void *event_param)
 {
     self->_event_handler = event_handler;
     self->_event_param = event_param;
 }
 
-void bc_sam_m8q_start(bc_sam_m8q_t *self)
+void twr_sam_m8q_start(twr_sam_m8q_t *self)
 {
     if (!self->_running)
     {
         self->_running = true;
         self->_configured = false;
 
-        bc_scheduler_plan_now(self->_task_id);
+        twr_scheduler_plan_now(self->_task_id);
     }
 }
 
-void bc_sam_m8q_stop(bc_sam_m8q_t *self)
+void twr_sam_m8q_stop(twr_sam_m8q_t *self)
 {
     if (self->_running)
     {
         self->_running = false;
 
-        bc_scheduler_plan_now(self->_task_id);
+        twr_scheduler_plan_now(self->_task_id);
     }
 }
 
-void bc_sam_m8q_invalidate(bc_sam_m8q_t *self)
+void twr_sam_m8q_invalidate(twr_sam_m8q_t *self)
 {
     self->_rmc.valid = false;
     self->_gga.valid = false;
     self->_pubx.valid = false;
 }
 
-bool bc_sam_m8q_get_time(bc_sam_m8q_t *self, bc_sam_m8q_time_t *time)
+bool twr_sam_m8q_get_time(twr_sam_m8q_t *self, twr_sam_m8q_time_t *time)
 {
     memset(time, 0, sizeof(*time));
 
@@ -76,7 +76,7 @@ bool bc_sam_m8q_get_time(bc_sam_m8q_t *self, bc_sam_m8q_time_t *time)
     return true;
 }
 
-bool bc_sam_m8q_get_position(bc_sam_m8q_t *self, bc_sam_m8q_position_t *position)
+bool twr_sam_m8q_get_position(twr_sam_m8q_t *self, twr_sam_m8q_position_t *position)
 {
     memset(position, 0, sizeof(*position));
 
@@ -91,7 +91,7 @@ bool bc_sam_m8q_get_position(bc_sam_m8q_t *self, bc_sam_m8q_position_t *position
     return true;
 }
 
-bool bc_sam_m8q_get_altitude(bc_sam_m8q_t *self, bc_sam_m8q_altitude_t *altitude)
+bool twr_sam_m8q_get_altitude(twr_sam_m8q_t *self, twr_sam_m8q_altitude_t *altitude)
 {
     memset(altitude, 0, sizeof(*altitude));
 
@@ -106,7 +106,7 @@ bool bc_sam_m8q_get_altitude(bc_sam_m8q_t *self, bc_sam_m8q_altitude_t *altitude
     return true;
 }
 
-bool bc_sam_m8q_get_quality(bc_sam_m8q_t *self, bc_sam_m8q_quality_t *quality)
+bool twr_sam_m8q_get_quality(twr_sam_m8q_t *self, twr_sam_m8q_quality_t *quality)
 {
     memset(quality, 0, sizeof(*quality));
 
@@ -121,7 +121,7 @@ bool bc_sam_m8q_get_quality(bc_sam_m8q_t *self, bc_sam_m8q_quality_t *quality)
     return true;
 }
 
-bool bc_sam_m8q_get_accuracy(bc_sam_m8q_t *self, bc_sam_m8q_accuracy_t *accuracy)
+bool twr_sam_m8q_get_accuracy(twr_sam_m8q_t *self, twr_sam_m8q_accuracy_t *accuracy)
 {
     memset(accuracy, 0, sizeof(*accuracy));
 
@@ -136,64 +136,64 @@ bool bc_sam_m8q_get_accuracy(bc_sam_m8q_t *self, bc_sam_m8q_accuracy_t *accuracy
     return true;
 }
 
-static void _bc_sam_m8q_task(void *param)
+static void _twr_sam_m8q_task(void *param)
 {
-    bc_sam_m8q_t *self = param;
+    twr_sam_m8q_t *self = param;
 
     if (!self->_running)
     {
-        self->_state = BC_SAM_M8Q_STATE_STOP;
+        self->_state = TWR_SAM_M8Q_STATE_STOP;
     }
 
-    if (self->_running && self->_state == BC_SAM_M8Q_STATE_STOP)
+    if (self->_running && self->_state == TWR_SAM_M8Q_STATE_STOP)
     {
-        self->_state = BC_SAM_M8Q_STATE_START;
+        self->_state = TWR_SAM_M8Q_STATE_START;
     }
 
 start:
 
     switch (self->_state)
     {
-        case BC_SAM_M8Q_STATE_ERROR:
+        case TWR_SAM_M8Q_STATE_ERROR:
         {
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_SAM_M8Q_EVENT_ERROR, self->_event_param);
+                self->_event_handler(self, TWR_SAM_M8Q_EVENT_ERROR, self->_event_param);
             }
 
-            self->_state = BC_SAM_M8Q_STATE_STOP;
+            self->_state = TWR_SAM_M8Q_STATE_STOP;
 
             goto start;
         }
-        case BC_SAM_M8Q_STATE_START:
+        case TWR_SAM_M8Q_STATE_START:
         {
-            if (!_bc_sam_m8q_enable(self))
+            if (!_twr_sam_m8q_enable(self))
             {
-                self->_state = BC_SAM_M8Q_STATE_ERROR;
+                self->_state = TWR_SAM_M8Q_STATE_ERROR;
 
                 goto start;
             }
 
-            _bc_sam_m8q_clear(self);
+            _twr_sam_m8q_clear(self);
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_SAM_M8Q_EVENT_START, self->_event_param);
+                self->_event_handler(self, TWR_SAM_M8Q_EVENT_START, self->_event_param);
             }
 
-            self->_state = BC_SAM_M8Q_STATE_READ;
+            self->_state = TWR_SAM_M8Q_STATE_READ;
 
-            bc_scheduler_plan_current_relative(2000);
+            twr_scheduler_plan_current_relative(2000);
 
             break;
         }
-        case BC_SAM_M8Q_STATE_READ:
+        case TWR_SAM_M8Q_STATE_READ:
         {
             uint16_t bytes_available;
 
-            if (!bc_i2c_memory_read_16b(self->_i2c_channel, self->_i2c_address, 0xfd, &bytes_available))
+            if (!twr_i2c_memory_read_16b(self->_i2c_channel, self->_i2c_address, 0xfd, &bytes_available))
             {
-                self->_state = BC_SAM_M8Q_STATE_ERROR;
+                self->_state = TWR_SAM_M8Q_STATE_ERROR;
 
                 goto start;
             }
@@ -209,81 +209,81 @@ start:
 
                 memset(self->_ddc_buffer, 0, sizeof(self->_ddc_buffer));
 
-                bc_i2c_memory_transfer_t transfer;
+                twr_i2c_memory_transfer_t transfer;
 
                 transfer.device_address = self->_i2c_address;
                 transfer.memory_address = 0xff;
                 transfer.buffer = self->_ddc_buffer;
                 transfer.length = self->_ddc_length;
 
-                if (!bc_i2c_memory_read(self->_i2c_channel, &transfer))
+                if (!twr_i2c_memory_read(self->_i2c_channel, &transfer))
                 {
-                    self->_state = BC_SAM_M8Q_STATE_ERROR;
+                    self->_state = TWR_SAM_M8Q_STATE_ERROR;
 
                     goto start;
                 }
 
                 for (size_t i = 0; i < self->_ddc_length; i++)
                 {
-                    if (_bc_sam_m8q_feed(self, self->_ddc_buffer[i]))
+                    if (_twr_sam_m8q_feed(self, self->_ddc_buffer[i]))
                     {
-                        self->_state = BC_SAM_M8Q_STATE_UPDATE;
+                        self->_state = TWR_SAM_M8Q_STATE_UPDATE;
                     }
                 }
 
                 bytes_available -= self->_ddc_length;
             }
 
-            if (self->_state == BC_SAM_M8Q_STATE_UPDATE)
+            if (self->_state == TWR_SAM_M8Q_STATE_UPDATE)
             {
                 goto start;
             }
 
-            bc_scheduler_plan_current_relative(100);
+            twr_scheduler_plan_current_relative(100);
 
             break;
         }
-        case BC_SAM_M8Q_STATE_UPDATE:
+        case TWR_SAM_M8Q_STATE_UPDATE:
         {
-            self->_state = BC_SAM_M8Q_STATE_READ;
+            self->_state = TWR_SAM_M8Q_STATE_READ;
 
-            bc_scheduler_plan_current_relative(100);
+            twr_scheduler_plan_current_relative(100);
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_SAM_M8Q_EVENT_UPDATE, self->_event_param);
+                self->_event_handler(self, TWR_SAM_M8Q_EVENT_UPDATE, self->_event_param);
             }
 
             goto start;
         }
-        case BC_SAM_M8Q_STATE_STOP:
+        case TWR_SAM_M8Q_STATE_STOP:
         {
             self->_running = false;
 
-            if (!_bc_sam_m8q_disable(self))
+            if (!_twr_sam_m8q_disable(self))
             {
-                self->_state = BC_SAM_M8Q_STATE_ERROR;
+                self->_state = TWR_SAM_M8Q_STATE_ERROR;
 
                 goto start;
             }
 
             if (self->_event_handler != NULL)
             {
-                self->_event_handler(self, BC_SAM_M8Q_EVENT_STOP, self->_event_param);
+                self->_event_handler(self, TWR_SAM_M8Q_EVENT_STOP, self->_event_param);
             }
 
             break;
         }
         default:
         {
-            self->_state = BC_SAM_M8Q_STATE_ERROR;
+            self->_state = TWR_SAM_M8Q_STATE_ERROR;
 
             goto start;
         }
     }
 }
 
-static bool _bc_sam_m8q_parse(bc_sam_m8q_t *self, const char *line)
+static bool _twr_sam_m8q_parse(twr_sam_m8q_t *self, const char *line)
 {
     bool ret = false;
 
@@ -345,7 +345,7 @@ static bool _bc_sam_m8q_parse(bc_sam_m8q_t *self, const char *line)
     return ret;
 }
 
-static bool _bc_sam_m8q_feed(bc_sam_m8q_t *self, char c)
+static bool _twr_sam_m8q_feed(twr_sam_m8q_t *self, char c)
 {
     bool ret = false;
 
@@ -355,17 +355,17 @@ static bool _bc_sam_m8q_feed(bc_sam_m8q_t *self, char c)
         {
             if (!self->_line_clipped)
             {
-                if (_bc_sam_m8q_parse(self, self->_line_buffer))
+                if (_twr_sam_m8q_parse(self, self->_line_buffer))
                 {
                     ret = true;
                 }
             }
 
-            _bc_sam_m8q_clear(self);
+            _twr_sam_m8q_clear(self);
 
             if (!self->_configured)
             {
-                if (_bc_sam_m8q_send_config(self))
+                if (_twr_sam_m8q_send_config(self))
                 {
                     self->_configured = true;
                 }
@@ -387,7 +387,7 @@ static bool _bc_sam_m8q_feed(bc_sam_m8q_t *self, char c)
     return ret;
 }
 
-static void _bc_sam_m8q_clear(bc_sam_m8q_t *self)
+static void _twr_sam_m8q_clear(twr_sam_m8q_t *self)
 {
     memset(self->_line_buffer, 0, sizeof(self->_line_buffer));
 
@@ -395,7 +395,7 @@ static void _bc_sam_m8q_clear(bc_sam_m8q_t *self)
     self->_line_length = 0;
 }
 
-static bool _bc_sam_m8q_enable(bc_sam_m8q_t *self)
+static bool _twr_sam_m8q_enable(twr_sam_m8q_t *self)
 {
     if (self->_driver != NULL)
     {
@@ -408,7 +408,7 @@ static bool _bc_sam_m8q_enable(bc_sam_m8q_t *self)
     return true;
 }
 
-static bool _bc_sam_m8q_disable(bc_sam_m8q_t *self)
+static bool _twr_sam_m8q_disable(twr_sam_m8q_t *self)
 {
     if (self->_driver != NULL)
     {
@@ -421,20 +421,20 @@ static bool _bc_sam_m8q_disable(bc_sam_m8q_t *self)
     return true;
 }
 
-static bool _bc_sam_m8q_send_config(bc_sam_m8q_t *self)
+static bool _twr_sam_m8q_send_config(twr_sam_m8q_t *self)
 {
     // Enable PUBX POSITION message
     uint8_t config_msg_pubx[] = {
         0xb5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xf1, 0x00,
         0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x04, 0x3b
     };
-    bc_i2c_transfer_t transfer;
+    twr_i2c_transfer_t transfer;
 
     transfer.device_address = self->_i2c_address;
     transfer.buffer = config_msg_pubx;
     transfer.length = sizeof(config_msg_pubx);
 
-    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    if (!twr_i2c_write(self->_i2c_channel, &transfer))
     {
         return false;
     }
@@ -449,7 +449,7 @@ static bool _bc_sam_m8q_send_config(bc_sam_m8q_t *self)
     transfer.buffer = config_msg_gsa;
     transfer.length = sizeof(config_msg_gsa);
 
-    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    if (!twr_i2c_write(self->_i2c_channel, &transfer))
     {
         return false;
     }
@@ -464,7 +464,7 @@ static bool _bc_sam_m8q_send_config(bc_sam_m8q_t *self)
     transfer.buffer = config_msg_gsv;
     transfer.length = sizeof(config_msg_gsv);
 
-    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    if (!twr_i2c_write(self->_i2c_channel, &transfer))
     {
         return false;
     }
@@ -486,7 +486,7 @@ static bool _bc_sam_m8q_send_config(bc_sam_m8q_t *self)
     transfer.buffer = config_gnss;
     transfer.length = sizeof(config_gnss);
 
-    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    if (!twr_i2c_write(self->_i2c_channel, &transfer))
     {
         return false;
     }
@@ -503,7 +503,7 @@ static bool _bc_sam_m8q_send_config(bc_sam_m8q_t *self)
     transfer.buffer = config_nmea;
     transfer.length = sizeof(config_nmea);
 
-    if (!bc_i2c_write(self->_i2c_channel, &transfer))
+    if (!twr_i2c_write(self->_i2c_channel, &transfer))
     {
         return false;
     }

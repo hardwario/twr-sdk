@@ -1,6 +1,6 @@
-#include <bc_queue.h>
+#include <twr_queue.h>
 
-void bc_queue_init(bc_queue_t *queue, void *buffer, size_t size)
+void twr_queue_init(twr_queue_t *queue, void *buffer, size_t size)
 {
     memset(queue, 0, sizeof(*queue));
 
@@ -8,7 +8,7 @@ void bc_queue_init(bc_queue_t *queue, void *buffer, size_t size)
     queue->_size = size;
 }
 
-bool bc_queue_put(bc_queue_t *queue, const void *buffer, size_t length)
+bool twr_queue_put(twr_queue_t *queue, const void *buffer, size_t length)
 {
     if (length == 0)
     {
@@ -42,7 +42,7 @@ bool bc_queue_put(bc_queue_t *queue, const void *buffer, size_t length)
     return true;
 }
 
-bool bc_queue_get(bc_queue_t *queue, void *buffer, size_t *length)
+bool twr_queue_get(twr_queue_t *queue, void *buffer, size_t *length)
 {
     if (queue->_length == 0)
     {
