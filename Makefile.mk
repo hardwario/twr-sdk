@@ -57,24 +57,27 @@ LINKER_SCRIPT ?= $(SDK_DIR)/sys/lkr/stm32l083cz.ld
 ################################################################################
 
 INC_DIR += $(APP_DIR)
+INC_DIR += $(SDK_DIR)/twr/inc
+INC_DIR += $(SDK_DIR)/twr/stm/inc
 INC_DIR += $(SDK_DIR)/bcl/inc
-INC_DIR += $(SDK_DIR)/bcl/stm/inc
 INC_DIR += $(SDK_DIR)/stm/hal/inc
 INC_DIR += $(SDK_DIR)/stm/spirit1/inc
 INC_DIR += $(SDK_DIR)/stm/usb/inc
 INC_DIR += $(SDK_DIR)/sys/inc
+INC_DIR += $(SDK_DIR)/lib/inc
 
 ################################################################################
 # Source directories                                                           #
 ################################################################################
 
 SRC_DIR += $(APP_DIR)
-SRC_DIR += $(SDK_DIR)/bcl/src
-SRC_DIR += $(SDK_DIR)/bcl/stm/src
+SRC_DIR += $(SDK_DIR)/twr/src
+SRC_DIR += $(SDK_DIR)/twr/stm/src
 SRC_DIR += $(SDK_DIR)/stm/hal/src
 SRC_DIR += $(SDK_DIR)/stm/spirit1/src
 SRC_DIR += $(SDK_DIR)/stm/usb/src
 SRC_DIR += $(SDK_DIR)/sys/src
+SRC_DIR += $(SDK_DIR)/lib/src
 
 ################################################################################
 # Toolchain                                                                    #
@@ -122,7 +125,7 @@ CFLAGS += -D'BAND=$(BAND)'
 
 SCHEDULER_INTERVAL ?=
 ifneq ($(SCHEDULER_INTERVAL),)
-  CFLAGS += -D'BC_SCHEDULER_INTERVAL_MS=$(SCHEDULER_INTERVAL)'
+  CFLAGS += -D'TWR_SCHEDULER_INTERVAL_MS=$(SCHEDULER_INTERVAL)'
 endif
 
 ################################################################################
