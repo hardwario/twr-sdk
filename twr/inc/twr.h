@@ -65,6 +65,7 @@
 #include <twr_module_co2.h>
 #include <twr_module_sensor.h>
 #include <twr_module_infra_grid.h>
+#include <twr_module_x1.h>
 
 // Other
 
@@ -90,7 +91,9 @@
 #include <twr_onewire.h>
 #include <twr_onewire_gpio.h>
 #include <twr_onewire_ds2484.h>
+#include <twr_onewire_relay.h>
 #include <twr_delay.h>
+#include <twr_usb_cdc.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
