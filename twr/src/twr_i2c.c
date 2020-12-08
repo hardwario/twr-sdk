@@ -4,6 +4,8 @@
 #include <twr_scheduler.h>
 #include <twr_ds28e17.h>
 #include <twr_module_sensor.h>
+#include <twr_module_x1.h>
+#include <twr_onewire.h>
 #include <twr_system.h>
 
 #define _TWR_I2C_TX_TIMEOUT_ADJUST_FACTOR 1.5
@@ -110,9 +112,16 @@ void twr_i2c_init(twr_i2c_channel_t channel, twr_i2c_speed_t speed)
     }
     else if (channel == TWR_I2C_I2C_1W)
     {
-        twr_module_sensor_init();
+        twr_onewire_t *onewire;
 
+        #if TWR_USE_X1_FOR_I2C_1W != 1
+        twr_module_sensor_init();
         twr_module_sensor_onewire_power_up();
+        onewire = twr_module_sensor_get_onewire();
+        #else
+        twr_module_x1_init();
+        onewire = twr_module_x1_get_onewire();
+        #endif
 
         twr_tick_t t_timeout = twr_tick_get() + 500;
 
@@ -121,7 +130,7 @@ void twr_i2c_init(twr_i2c_channel_t channel, twr_i2c_speed_t speed)
             continue;
         }
 
-        twr_ds28e17_init(&ds28e17, twr_module_sensor_get_onewire(), 0x00);
+        twr_ds28e17_init(&ds28e17, onewire, 0x00);
 
         twr_i2c_set_speed(channel, speed);
     }
