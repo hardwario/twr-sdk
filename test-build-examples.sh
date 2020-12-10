@@ -19,6 +19,8 @@ cd "$TEST_DIR"
 mkdir sdk
 cd sdk
 ln -s ../../bcl
+ln -s ../../twr
+ln -s ../../lib
 ln -s ../../fonts
 ln -s ../../stm
 ln -s ../../sys
@@ -28,7 +30,7 @@ cd ..
 echo """
 SDK_DIR ?= sdk
 
-CFLAGS += -D'BC_SCHEDULER_MAX_TASKS=64'
+CFLAGS += -D'HIO_SCHEDULER_MAX_TASKS=64'
 
 -include sdk/Makefile.mk
 """ > Makefile

@@ -2,71 +2,77 @@
 
 // Example for Button on core module
 
-bc_switch_t button;
+twr_switch_t button;
 
 // Example for Magnetic Contact Reed Switch Window Door Sensor
 
-bc_switch_t door_sensor;
+twr_switch_t door_sensor;
 
 // Example for button between P0 and Vdd
 
-bc_switch_t p0;
+twr_switch_t p0;
 
-void button_event_handler(bc_switch_t *self, bc_switch_event_t event, void *event_param)
+void button_event_handler(twr_switch_t *self, twr_switch_event_t event, void *event_param)
 {
-    if (event == BC_SWITCH_EVENT_OPENED)
+    (void) event_param;
+
+    if (event == TWR_SWITCH_EVENT_OPENED)
     {
-        bc_log_info("Button BC_SWITCH_EVENT_OPENED");
+        twr_log_info("Button TWR_SWITCH_EVENT_OPENED");
     }
-    else if (event == BC_SWITCH_EVENT_CLOSED)
+    else if (event == TWR_SWITCH_EVENT_CLOSED)
     {
-        bc_log_info("Button BC_SWITCH_EVENT_CLOSED");
+        twr_log_info("Button TWR_SWITCH_EVENT_CLOSED");
     }
 
-    bc_log_debug("Button state %s", bc_switch_get_state(self) ? "OPEN" : "CLOSE");
+    twr_log_debug("Button state %s", twr_switch_get_state(self) ? "OPEN" : "CLOSE");
 }
 
-void door_sensor_event_handler(bc_switch_t *self, bc_switch_event_t event, void *event_param)
+void door_sensor_event_handler(twr_switch_t *self, twr_switch_event_t event, void *event_param)
 {
-    if (event == BC_SWITCH_EVENT_OPENED)
+    (void) event_param;
+
+    if (event == TWR_SWITCH_EVENT_OPENED)
     {
-        bc_log_info("Door BC_SWITCH_EVENT_OPENED");
+        twr_log_info("Door TWR_SWITCH_EVENT_OPENED");
     }
-    else if (event == BC_SWITCH_EVENT_CLOSED)
+    else if (event == TWR_SWITCH_EVENT_CLOSED)
     {
-        bc_log_info("Door BC_SWITCH_EVENT_CLOSED");
+        twr_log_info("Door TWR_SWITCH_EVENT_CLOSED");
     }
 
-    bc_log_debug("Door state %s", bc_switch_get_state(self) ? "OPEN" : "CLOSE");
+    twr_log_debug("Door state %s", twr_switch_get_state(self) ? "OPEN" : "CLOSE");
 }
 
-void p0_event_handler(bc_switch_t *self, bc_switch_event_t event, void *event_param)
+void p0_event_handler(twr_switch_t *self, twr_switch_event_t event, void *event_param)
 {
-    if (event == BC_SWITCH_EVENT_OPENED)
+    (void) event_param;
+
+    if (event == TWR_SWITCH_EVENT_OPENED)
     {
-        bc_log_info("P0 BC_SWITCH_EVENT_OPENED");
+        twr_log_info("P0 TWR_SWITCH_EVENT_OPENED");
     }
-    else if (event == BC_SWITCH_EVENT_CLOSED)
+    else if (event == TWR_SWITCH_EVENT_CLOSED)
     {
-        bc_log_info("P0 BC_SWITCH_EVENT_CLOSED");
+        twr_log_info("P0 TWR_SWITCH_EVENT_CLOSED");
     }
 
-    bc_log_debug("P0 state %s", bc_switch_get_state(self) ? "OPEN" : "CLOSE");
+    twr_log_debug("P0 state %s", twr_switch_get_state(self) ? "OPEN" : "CLOSE");
 }
 
 void application_init(void)
 {
-    bc_log_init(BC_LOG_LEVEL_DEBUG, BC_LOG_TIMESTAMP_ABS);
+    twr_log_init(TWR_LOG_LEVEL_DEBUG, TWR_LOG_TIMESTAMP_ABS);
 
-    bc_switch_init(&button, BC_GPIO_BUTTON, BC_SWITCH_TYPE_NO, BC_SWITCH_PULL_NONE);
+    twr_switch_init(&button, TWR_GPIO_BUTTON, TWR_SWITCH_TYPE_NO, TWR_SWITCH_PULL_NONE);
 
-    bc_switch_set_event_handler(&button, button_event_handler, NULL);
+    twr_switch_set_event_handler(&button, button_event_handler, NULL);
 
-    bc_switch_init(&door_sensor, BC_GPIO_P4, BC_SWITCH_TYPE_NC, BC_SWITCH_PULL_UP_DYNAMIC);
+    twr_switch_init(&door_sensor, TWR_GPIO_P4, TWR_SWITCH_TYPE_NC, TWR_SWITCH_PULL_UP_DYNAMIC);
 
-    bc_switch_set_event_handler(&door_sensor, door_sensor_event_handler, NULL);
+    twr_switch_set_event_handler(&door_sensor, door_sensor_event_handler, NULL);
 
-    bc_switch_init(&p0, BC_GPIO_P0, BC_SWITCH_TYPE_NO, BC_SWITCH_PULL_DOWN);
+    twr_switch_init(&p0, TWR_GPIO_P0, TWR_SWITCH_TYPE_NO, TWR_SWITCH_PULL_DOWN);
 
-    bc_switch_set_event_handler(&p0, p0_event_handler, NULL);
+    twr_switch_set_event_handler(&p0, p0_event_handler, NULL);
 }

@@ -1,7 +1,7 @@
 # LED On/Off Example
 
 
-This example demonstrates simple use of bc_led and bc_button API.
+This example demonstrates simple use of twr_led and twr_button API.
 
 
 ## Requirements
