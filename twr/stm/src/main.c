@@ -56,17 +56,16 @@ __attribute__((weak)) void application_error(twr_error_t code)
 
     twr_log_init(TWR_LOG_LEVEL_DEBUG, TWR_LOG_TIMESTAMP_ABS);
 
-    twr_led_t led;
-
     twr_tick_t timeout = 0;
 
     int cnt = 0;
 
-    twr_led_init(&led, TWR_GPIO_LED, false, false);
+    twr_gpio_set_mode(TWR_GPIO_LED, TWR_GPIO_MODE_OUTPUT);
+    twr_gpio_set_output(TWR_GPIO_LED, 0);
 
     while (true)
     {
-        if (cnt == 0)
+        if (cnt % 3 == 0)
         {
             switch (code)
             {
@@ -97,7 +96,7 @@ __attribute__((weak)) void application_error(twr_error_t code)
             }
         }
 
-        twr_led_set_mode(&led, TWR_LED_MODE_ON);
+        twr_gpio_set_output(TWR_GPIO_LED, 1);
 
         timeout = twr_tick_get() + ((cnt > 1 && cnt < 5) ? 1000 : 300);
 
@@ -106,7 +105,7 @@ __attribute__((weak)) void application_error(twr_error_t code)
             continue;
         }
 
-        twr_led_set_mode(&led, TWR_LED_MODE_OFF);
+        twr_gpio_set_output(TWR_GPIO_LED, 0);
 
         timeout = twr_tick_get() + (cnt == 7 ? 2000 : 300);
 
