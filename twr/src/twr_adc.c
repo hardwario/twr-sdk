@@ -266,7 +266,7 @@ bool twr_adc_async_measure(twr_adc_channel_t channel)
     // Begin internal reference reading
     ADC1->CR |= ADC_CR_ADSTART;
 
-    twr_scheduler_disable_sleep();
+    twr_sleep_disable();
 
     return true;
 }
