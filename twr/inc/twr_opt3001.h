@@ -61,6 +61,11 @@ struct twr_opt3001_t
 
 void twr_opt3001_init(twr_opt3001_t *self, twr_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
+//! @brief Deinitialize OPT3001 driver
+//! @param[in] self Instance
+
+void twr_opt3001_deinit(twr_opt3001_t *self);
+
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address

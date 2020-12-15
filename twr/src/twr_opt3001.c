@@ -23,6 +23,15 @@ void twr_opt3001_init(twr_opt3001_t *self, twr_i2c_channel_t i2c_channel, uint8_
     twr_i2c_init(self->_i2c_channel, TWR_I2C_SPEED_400_KHZ);
 }
 
+void twr_opt3001_deinit(twr_opt3001_t *self)
+{
+    twr_i2c_memory_write_16b(self->_i2c_channel, self->_i2c_address, 0x01, 0xc810);
+
+    twr_scheduler_unregister(self->_task_id_interval);
+
+    twr_scheduler_unregister(self->_task_id_measure);
+}
+
 void twr_opt3001_set_event_handler(twr_opt3001_t *self, void (*event_handler)(twr_opt3001_t *, twr_opt3001_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
