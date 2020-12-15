@@ -180,7 +180,7 @@ start:
                 goto start;
             }
 
-            if (reg_status != 0x0e)
+            if ((reg_status & 0x04) == 0)
             {
                 goto start;
             }
@@ -247,7 +247,7 @@ start:
                 goto start;
             }
 
-            if (reg_status != 0x0e)
+            if ((reg_status & 0x04) == 0)
             {
                 goto start;
             }
