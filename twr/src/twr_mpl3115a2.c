@@ -18,9 +18,18 @@ void twr_mpl3115a2_init(twr_mpl3115a2_t *self, twr_i2c_channel_t i2c_channel, ui
     self->_task_id_interval = twr_scheduler_register(_twr_mpl3115a2_task_interval, self, TWR_TICK_INFINITY);
     self->_task_id_measure = twr_scheduler_register(_twr_mpl3115a2_task_measure, self, _TWR_MPL3115A2_DELAY_RUN);
 
-    self->_tick_ready = _TWR_MPL3115A2_DELAY_RUN;
+    self->_tick_ready = twr_tick_get() + _TWR_MPL3115A2_DELAY_RUN;
 
     twr_i2c_init(self->_i2c_channel, TWR_I2C_SPEED_400_KHZ);
+}
+
+void twr_mpl3115a2_deinit(twr_mpl3115a2_t *self)
+{
+    twr_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x26, 0x04);
+
+    twr_scheduler_unregister(self->_task_id_interval);
+
+    twr_scheduler_unregister(self->_task_id_measure);
 }
 
 void twr_mpl3115a2_set_event_handler(twr_mpl3115a2_t *self, void (*event_handler)(twr_mpl3115a2_t *, twr_mpl3115a2_event_t, void *), void *event_param)
