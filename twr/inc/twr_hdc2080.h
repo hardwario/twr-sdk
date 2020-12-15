@@ -63,6 +63,11 @@ struct twr_hdc2080_t
 
 void twr_hdc2080_init(twr_hdc2080_t *self, twr_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
+//! @brief Deinitialize HDC2080
+//! @param[in] self Instance
+
+void twr_hdc2080_deinit(twr_hdc2080_t *self);
+
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address

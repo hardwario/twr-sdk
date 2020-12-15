@@ -24,6 +24,15 @@ void twr_hdc2080_init(twr_hdc2080_t *self, twr_i2c_channel_t i2c_channel, uint8_
     twr_i2c_init(self->_i2c_channel, TWR_I2C_SPEED_400_KHZ);
 }
 
+void twr_hdc2080_deinit(twr_hdc2080_t *self)
+{
+    twr_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, 0x0e, 0x80);
+
+    twr_scheduler_unregister(self->_task_id_interval);
+
+    twr_scheduler_unregister(self->_task_id_measure);
+}
+
 void twr_hdc2080_set_event_handler(twr_hdc2080_t *self, void (*event_handler)(twr_hdc2080_t *, twr_hdc2080_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
