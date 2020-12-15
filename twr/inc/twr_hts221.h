@@ -64,6 +64,11 @@ struct twr_hts221_t
 
 void twr_hts221_init(twr_hts221_t *self, twr_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
+//! @brief Deinitialize HTS221
+//! @param[in] self Instance
+
+void twr_hts221_deinit(twr_hts221_t *self);
+
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address

@@ -68,6 +68,19 @@ void twr_hts221_init(twr_hts221_t *self, twr_i2c_channel_t i2c_channel, uint8_t 
     _twr_hts221_load_calibration(self);
 }
 
+void twr_hts221_deinit(twr_hts221_t *self)
+{
+    uint8_t ctrl_reg1;
+    if (!twr_i2c_memory_read_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, &ctrl_reg1))
+    {
+        ctrl_reg1 &= ~HTS221_BIT_PD;
+        twr_i2c_memory_write_8b(self->_i2c_channel, self->_i2c_address, HTS221_CTRL_REG1, ctrl_reg1);
+    }
+
+    twr_scheduler_unregister(self->_task_id_interval);
+    twr_scheduler_unregister(self->_task_id_measure);
+}
+
 void twr_hts221_set_event_handler(twr_hts221_t *self, void (*event_handler)(twr_hts221_t *, twr_hts221_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;
