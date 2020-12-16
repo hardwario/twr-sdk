@@ -152,6 +152,7 @@ LDFLAGS += -Wl,-lm
 LDFLAGS += -static
 LDFLAGS += -Wl,-Map=$(MAP)
 LDFLAGS += -Wl,--gc-sections
+LDFLAGS += -Wl,--print-memory-usage
 LDFLAGS += -Wl,-u,__errno
 LDFLAGS += --specs=nosys.specs
 
