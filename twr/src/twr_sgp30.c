@@ -29,6 +29,13 @@ void twr_sgp30_init(twr_sgp30_t *self, twr_i2c_channel_t i2c_channel, uint8_t i2
     twr_i2c_init(self->_i2c_channel, TWR_I2C_SPEED_100_KHZ);
 }
 
+void twr_sgp30_deinit(twr_sgp30_t *self)
+{
+    twr_scheduler_unregister(self->_task_id_interval);
+
+    twr_scheduler_unregister(self->_task_id_measure);
+}
+
 void twr_sgp30_set_event_handler(twr_sgp30_t *self, void (*event_handler)(twr_sgp30_t *, twr_sgp30_event_t, void *), void *event_param)
 {
     self->_event_handler = event_handler;

@@ -67,6 +67,11 @@ struct twr_sgp30_t
 
 void twr_sgp30_init(twr_sgp30_t *self, twr_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
+//! @brief Deinitialize SGP30
+//! @param[in] self Instance
+
+void twr_sgp30_deinit(twr_sgp30_t *self);
+
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address
