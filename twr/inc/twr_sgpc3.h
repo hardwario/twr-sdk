@@ -67,6 +67,11 @@ struct twr_sgpc3_t
 
 void twr_sgpc3_init(twr_sgpc3_t *self, twr_i2c_channel_t i2c_channel, uint8_t i2c_address);
 
+//! @brief Deinitialize SGPC3
+//! @param[in] self Instance
+
+void twr_sgpc3_deinit(twr_sgpc3_t *self);
+
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address
