@@ -11,28 +11,28 @@
 
 typedef enum
 {
-    //! @brief GPIO channel P0
+    //! @brief GPIO channel P0, A0, TXD0
     TWR_GPIO_P0 = 0,
 
-    //! @brief GPIO channel P1
+    //! @brief GPIO channel P1, A1, RXD0
     TWR_GPIO_P1 = 1,
 
-    //! @brief GPIO channel P2
+    //! @brief GPIO channel P2, A2, TXD1
     TWR_GPIO_P2 = 2,
 
-    //! @brief GPIO channel P3
+    //! @brief GPIO channel P3, A3, RXD1
     TWR_GPIO_P3 = 3,
 
-    //! @brief GPIO channel P4
+    //! @brief GPIO channel P4, A4, DAC0
     TWR_GPIO_P4 = 4,
 
-    //! @brief GPIO channel P5
+    //! @brief GPIO channel P5, A5, DAC1
     TWR_GPIO_P5 = 5,
 
     //! @brief GPIO channel P6
     TWR_GPIO_P6 = 6,
 
-    //! @brief GPIO channel P7
+    //! @brief GPIO channel P7, A6
     TWR_GPIO_P7 = 7,
 
     //! @brief GPIO channel P8
@@ -41,28 +41,28 @@ typedef enum
     //! @brief GPIO channel P9
     TWR_GPIO_P9 = 9,
 
-    //! @brief GPIO channel P10
+    //! @brief GPIO channel P10, RXD2
     TWR_GPIO_P10 = 10,
 
-    //! @brief GPIO channel P11
+    //! @brief GPIO channel P11, TXD2
     TWR_GPIO_P11 = 11,
 
-    //! @brief GPIO channel P12
+    //! @brief GPIO channel P12, MISO
     TWR_GPIO_P12 = 12,
 
-    //! @brief GPIO channel P13
+    //! @brief GPIO channel P13, MOSI
     TWR_GPIO_P13 = 13,
 
-    //! @brief GPIO channel P14
+    //! @brief GPIO channel P14, SCLK
     TWR_GPIO_P14 = 14,
 
-    //! @brief GPIO channel P15
+    //! @brief GPIO channel P15, CS
     TWR_GPIO_P15 = 15,
 
-    //! @brief GPIO channel P16
+    //! @brief GPIO channel P16, SCL1
     TWR_GPIO_P16 = 16,
 
-    //! @brief GPIO channel P17
+    //! @brief GPIO channel P17, SDA1
     TWR_GPIO_P17 = 17,
 
     //! @brief GPIO channel LED
@@ -71,8 +71,14 @@ typedef enum
     //! @brief GPIO channel BUTTON
     TWR_GPIO_BUTTON = 19,
 
-    //! @brief GPIO channel BUTTON
-    TWR_GPIO_INT = 20
+    //! @brief GPIO channel INT
+    TWR_GPIO_INT = 20,
+
+    //! @brief GPIO channel SCL0
+    TWR_GPIO_SCL0 = 21,
+
+    //! @brief GPIO channel SDA0
+    TWR_GPIO_SDA0 = 22
 
 } twr_gpio_channel_t;
 

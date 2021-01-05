@@ -2,7 +2,7 @@
 #include <twr_irq.h>
 #include <stm32l0xx.h>
 
-#define TWR_GPIO_CHANNEL_COUNT 21
+#define TWR_GPIO_CHANNEL_COUNT 23
 
 #define TWR_GPIO_PORT_P0 GPIOA
 #define TWR_GPIO_PORT_P1 GPIOA
@@ -25,6 +25,8 @@
 #define TWR_GPIO_PORT_LED GPIOH
 #define TWR_GPIO_PORT_BUTTON GPIOA
 #define TWR_GPIO_PORT_INT GPIOC
+#define TWR_GPIO_PORT_SCL0 GPIOB
+#define TWR_GPIO_PORT_SDA0 GPIOB
 
 #define TWR_GPIO_POS_P0 0
 #define TWR_GPIO_POS_P1 1
@@ -47,6 +49,8 @@
 #define TWR_GPIO_POS_LED 1
 #define TWR_GPIO_POS_BUTTON 8
 #define TWR_GPIO_POS_INT 13
+#define TWR_GPIO_POS_SCL0 10
+#define TWR_GPIO_POS_SDA0 11
 
 #define _TWR_GPIO_MODE_MASK 0xf
 #define _TWR_GPIO_MODE_AF_POS 4
@@ -74,7 +78,9 @@ GPIO_TypeDef * const twr_gpio_port[TWR_GPIO_CHANNEL_COUNT] =
     TWR_GPIO_PORT_P17,
     TWR_GPIO_PORT_LED,
     TWR_GPIO_PORT_BUTTON,
-    TWR_GPIO_PORT_INT
+    TWR_GPIO_PORT_INT,
+    TWR_GPIO_PORT_SCL0,
+    TWR_GPIO_PORT_SDA0
 };
 
 static const uint8_t _twr_gpio_iopenr_mask[TWR_GPIO_CHANNEL_COUNT] =
@@ -99,7 +105,9 @@ static const uint8_t _twr_gpio_iopenr_mask[TWR_GPIO_CHANNEL_COUNT] =
     RCC_IOPENR_GPIOBEN, // P17
     RCC_IOPENR_GPIOHEN, // LED
     RCC_IOPENR_GPIOAEN, // BUTTON
-    RCC_IOPENR_GPIOCEN  // INT
+    RCC_IOPENR_GPIOCEN, // INT
+    RCC_IOPENR_GPIOBEN, // SCL0
+    RCC_IOPENR_GPIOBEN, // SDA0
 };
 
 static const uint16_t _twr_gpio_16_bit_pos[TWR_GPIO_CHANNEL_COUNT] =
@@ -124,7 +132,9 @@ static const uint16_t _twr_gpio_16_bit_pos[TWR_GPIO_CHANNEL_COUNT] =
     TWR_GPIO_POS_P17,
     TWR_GPIO_POS_LED,
     TWR_GPIO_POS_BUTTON,
-    TWR_GPIO_POS_INT
+    TWR_GPIO_POS_INT,
+    TWR_GPIO_POS_SCL0,
+    TWR_GPIO_POS_SDA0
 };
 
 static const uint16_t _twr_gpio_32_bit_pos[TWR_GPIO_CHANNEL_COUNT] =
@@ -149,7 +159,9 @@ static const uint16_t _twr_gpio_32_bit_pos[TWR_GPIO_CHANNEL_COUNT] =
     2 * TWR_GPIO_POS_P17,
     2 * TWR_GPIO_POS_LED,
     2 * TWR_GPIO_POS_BUTTON,
-    2 * TWR_GPIO_POS_INT
+    2 * TWR_GPIO_POS_INT,
+    2 * TWR_GPIO_POS_SCL0,
+    2 * TWR_GPIO_POS_SDA0
 };
 
 const uint16_t twr_gpio_16_bit_mask[TWR_GPIO_CHANNEL_COUNT] =
@@ -174,7 +186,9 @@ const uint16_t twr_gpio_16_bit_mask[TWR_GPIO_CHANNEL_COUNT] =
     1 << TWR_GPIO_POS_P17,
     1 << TWR_GPIO_POS_LED,
     1 << TWR_GPIO_POS_BUTTON,
-    1 << TWR_GPIO_POS_INT
+    1 << TWR_GPIO_POS_INT,
+    1 << TWR_GPIO_POS_SCL0,
+    1 << TWR_GPIO_POS_SDA0
 };
 
 static const uint32_t _twr_gpio_32_bit_mask[4][TWR_GPIO_CHANNEL_COUNT] =
@@ -200,7 +214,9 @@ static const uint32_t _twr_gpio_32_bit_mask[4][TWR_GPIO_CHANNEL_COUNT] =
         0UL,
         0UL,
         0UL,
-        0UL
+        0UL,
+        0UL,
+        0UL,
     },
     {
         1UL << (2 * TWR_GPIO_POS_P0),
@@ -223,7 +239,9 @@ static const uint32_t _twr_gpio_32_bit_mask[4][TWR_GPIO_CHANNEL_COUNT] =
         1UL << (2 * TWR_GPIO_POS_P17),
         1UL << (2 * TWR_GPIO_POS_LED),
         1UL << (2 * TWR_GPIO_POS_BUTTON),
-        1UL << (2 * TWR_GPIO_POS_INT)
+        1UL << (2 * TWR_GPIO_POS_INT),
+        1UL << (2 * TWR_GPIO_POS_SCL0),
+        1UL << (2 * TWR_GPIO_POS_SDA0)
     },
     {
         2UL << (2 * TWR_GPIO_POS_P0),
@@ -246,7 +264,9 @@ static const uint32_t _twr_gpio_32_bit_mask[4][TWR_GPIO_CHANNEL_COUNT] =
         2UL << (2 * TWR_GPIO_POS_P17),
         2UL << (2 * TWR_GPIO_POS_LED),
         2UL << (2 * TWR_GPIO_POS_BUTTON),
-        2UL << (2 * TWR_GPIO_POS_INT)
+        2UL << (2 * TWR_GPIO_POS_INT),
+        2UL << (2 * TWR_GPIO_POS_SCL0),
+        2UL << (2 * TWR_GPIO_POS_SDA0)
     },
     {
         3UL << (2 * TWR_GPIO_POS_P0),
@@ -269,7 +289,9 @@ static const uint32_t _twr_gpio_32_bit_mask[4][TWR_GPIO_CHANNEL_COUNT] =
         3UL << (2 * TWR_GPIO_POS_P17),
         3UL << (2 * TWR_GPIO_POS_LED),
         3UL << (2 * TWR_GPIO_POS_BUTTON),
-        3UL << (2 * TWR_GPIO_POS_INT)
+        3UL << (2 * TWR_GPIO_POS_INT),
+        3UL << (2 * TWR_GPIO_POS_SCL0),
+        3UL << (2 * TWR_GPIO_POS_SDA0)
     }
 };
 
@@ -295,7 +317,9 @@ const uint32_t twr_gpio_32_bit_upper_mask[TWR_GPIO_CHANNEL_COUNT] =
     (1UL << 16) << TWR_GPIO_POS_P17,
     (1UL << 16) << TWR_GPIO_POS_LED,
     (1UL << 16) << TWR_GPIO_POS_BUTTON,
-    (1UL << 16) << TWR_GPIO_POS_INT
+    (1UL << 16) << TWR_GPIO_POS_INT,
+    (1UL << 16) << TWR_GPIO_POS_SCL0,
+    (1UL << 16) << TWR_GPIO_POS_SDA0
 };
 
 void twr_gpio_init(twr_gpio_channel_t channel)
@@ -305,6 +329,9 @@ void twr_gpio_init(twr_gpio_channel_t channel)
 
     // Enable GPIO clock
     RCC->IOPENR |= _twr_gpio_iopenr_mask[channel];
+
+    // Errata workaround
+    RCC->IOPENR;
 
     // Enable interrupts
     twr_irq_enable();
