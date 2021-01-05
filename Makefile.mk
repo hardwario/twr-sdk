@@ -64,7 +64,8 @@ INC_DIR += $(SDK_DIR)/stm/hal/inc
 INC_DIR += $(SDK_DIR)/stm/spirit1/inc
 INC_DIR += $(SDK_DIR)/stm/usb/inc
 INC_DIR += $(SDK_DIR)/sys/inc
-INC_DIR += $(SDK_DIR)/lib/inc
+INC_DIR += $(SDK_DIR)/lib/jsmn
+INC_DIR += $(SDK_DIR)/lib/minmea
 
 ################################################################################
 # Source directories                                                           #
@@ -77,7 +78,8 @@ SRC_DIR += $(SDK_DIR)/stm/hal/src
 SRC_DIR += $(SDK_DIR)/stm/spirit1/src
 SRC_DIR += $(SDK_DIR)/stm/usb/src
 SRC_DIR += $(SDK_DIR)/sys/src
-SRC_DIR += $(SDK_DIR)/lib/src
+SRC_DIR += $(SDK_DIR)/lib/jsmn
+SRC_DIR += $(SDK_DIR)/lib/minmea
 
 ################################################################################
 # Toolchain                                                                    #
