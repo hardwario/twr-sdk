@@ -7,6 +7,7 @@
 #include <twr_module_x1.h>
 #include <twr_onewire.h>
 #include <twr_system.h>
+#include <twr_gpio.h>
 
 #define _TWR_I2C_TX_TIMEOUT_ADJUST_FACTOR 1.5
 #define _TWR_I2C_RX_TIMEOUT_ADJUST_FACTOR 1.5
@@ -62,17 +63,16 @@ void twr_i2c_init(twr_i2c_channel_t channel, twr_i2c_speed_t speed)
 
     if (channel == TWR_I2C_I2C0)
     {
-        // Initialize I2C2 pins
-        RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
+        twr_gpio_init(TWR_GPIO_SCL0);
+        twr_gpio_init(TWR_GPIO_SDA0);
 
-        // Errata workaround
-        RCC->IOPENR;
+        twr_gpio_set_pull(TWR_GPIO_SCL0, TWR_GPIO_PULL_UP);
+        twr_gpio_set_pull(TWR_GPIO_SDA0, TWR_GPIO_PULL_UP);
 
-        GPIOB->MODER &= ~(GPIO_MODER_MODE10_0 | GPIO_MODER_MODE11_0);
-        GPIOB->OTYPER |= GPIO_OTYPER_OT_10 | GPIO_OTYPER_OT_11;
+        twr_gpio_set_mode(TWR_GPIO_SCL0, TWR_GPIO_MODE_ALTERNATE_6);
+        twr_gpio_set_mode(TWR_GPIO_SDA0, TWR_GPIO_MODE_ALTERNATE_6);
+
         GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEED10 | GPIO_OSPEEDER_OSPEED11;
-        GPIOB->PUPDR |= GPIO_PUPDR_PUPD10_0 | GPIO_PUPDR_PUPD11_0;
-        GPIOB->AFR[1] |= 6 << GPIO_AFRH_AFRH3_Pos | 6 << GPIO_AFRH_AFRH2_Pos;
 
         // Enable I2C2 peripheral clock
         RCC->APB1ENR |= RCC_APB1ENR_I2C2EN;
@@ -87,17 +87,16 @@ void twr_i2c_init(twr_i2c_channel_t channel, twr_i2c_speed_t speed)
     }
     else if (channel == TWR_I2C_I2C1)
     {
-        // Initialize I2C1 pins
-        RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
+        twr_gpio_init(TWR_GPIO_P16);
+        twr_gpio_init(TWR_GPIO_P17);
 
-        // Errata workaround
-        RCC->IOPENR;
+        twr_gpio_set_pull(TWR_GPIO_P16, TWR_GPIO_PULL_UP);
+        twr_gpio_set_pull(TWR_GPIO_P17, TWR_GPIO_PULL_UP);
 
-        GPIOB->MODER &= ~(GPIO_MODER_MODE8_0 | GPIO_MODER_MODE9_0);
-        GPIOB->OTYPER |= GPIO_OTYPER_OT_8 | GPIO_OTYPER_OT_9;
+        twr_gpio_set_mode(TWR_GPIO_P16, TWR_GPIO_MODE_ALTERNATE_4);
+        twr_gpio_set_mode(TWR_GPIO_P17, TWR_GPIO_MODE_ALTERNATE_4);
+
         GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEED8 | GPIO_OSPEEDER_OSPEED9;
-        GPIOB->PUPDR |= GPIO_PUPDR_PUPD8_0 | GPIO_PUPDR_PUPD9_0;
-        GPIOB->AFR[1] |= 4 << GPIO_AFRH_AFRH1_Pos | 4 << GPIO_AFRH_AFRH0_Pos;
 
         // Enable I2C1 peripheral clock
         RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
@@ -146,7 +145,7 @@ void twr_i2c_deinit(twr_i2c_channel_t channel)
     if (channel == TWR_I2C_I2C0)
     {
         // Disable I2C2 peripheral
-        I2C2->CR1 |= I2C_CR1_PE;
+        I2C2->CR1 &= ~I2C_CR1_PE;
 
         // Disable I2C2 peripheral clock
         RCC->APB1ENR &= ~RCC_APB1ENR_I2C2EN;
@@ -154,11 +153,13 @@ void twr_i2c_deinit(twr_i2c_channel_t channel)
         // Errata workaround
         RCC->APB1ENR;
 
-        GPIOB->AFR[1] &= ~(GPIO_AFRH_AFRH3_Msk | GPIO_AFRH_AFRH2_Msk);
         GPIOB->OSPEEDR &= ~(GPIO_OSPEEDER_OSPEED10_Msk | GPIO_OSPEEDER_OSPEED11_Msk);
-        GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_10 | GPIO_OTYPER_OT_11);
-        GPIOB->MODER |= GPIO_MODER_MODE10_Msk | GPIO_MODER_MODE11_Msk;
 
+        twr_gpio_set_pull(TWR_GPIO_SCL0, TWR_GPIO_PULL_NONE);
+        twr_gpio_set_pull(TWR_GPIO_SDA0, TWR_GPIO_PULL_NONE);
+
+        twr_gpio_set_mode(TWR_GPIO_SCL0, TWR_GPIO_MODE_ANALOG);
+        twr_gpio_set_mode(TWR_GPIO_SDA0, TWR_GPIO_MODE_ANALOG);
     }
     else if (channel == TWR_I2C_I2C1)
     {
@@ -171,10 +172,13 @@ void twr_i2c_deinit(twr_i2c_channel_t channel)
         // Errata workaround
         RCC->APB1ENR;
 
-        GPIOB->AFR[1] &= ~(GPIO_AFRH_AFRH1_Msk | GPIO_AFRH_AFRH0_Msk);
         GPIOB->OSPEEDR &= ~(GPIO_OSPEEDER_OSPEED8_Msk | GPIO_OSPEEDER_OSPEED9_Msk);
-        GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_8 | GPIO_OTYPER_OT_9);
-        GPIOB->MODER |= GPIO_MODER_MODE8_Msk | GPIO_MODER_MODE9_Msk;
+
+        twr_gpio_set_pull(TWR_GPIO_P16, TWR_GPIO_PULL_NONE);
+        twr_gpio_set_pull(TWR_GPIO_P17, TWR_GPIO_PULL_NONE);
+
+        twr_gpio_set_mode(TWR_GPIO_P16, TWR_GPIO_MODE_ANALOG);
+        twr_gpio_set_mode(TWR_GPIO_P17, TWR_GPIO_MODE_ANALOG);
     }
     else if (channel == TWR_I2C_I2C_1W)
     {
