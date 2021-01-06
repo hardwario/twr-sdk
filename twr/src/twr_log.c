@@ -7,8 +7,7 @@ typedef struct
     twr_log_level_t level;
     twr_log_timestamp_t timestamp;
     twr_tick_t tick_last;
-
-    char buffer[256];
+    char buffer[TWR_LOG_BUFFER_SIZE];
 
 } twr_log_t;
 
@@ -218,7 +217,15 @@ static void _twr_log_message(twr_log_level_t level, char id, const char *format,
         offset = 6;
     }
 
-    offset += vsnprintf(&_twr_log.buffer[offset], sizeof(_twr_log.buffer) - offset - 3, format, ap);
+    offset += vsnprintf(&_twr_log.buffer[offset], sizeof(_twr_log.buffer) - offset - 1, format, ap);
+
+    if (offset >= sizeof(_twr_log.buffer))
+    {
+        offset = sizeof(_twr_log.buffer) - 3 - 3; // space for ...\r\n
+        _twr_log.buffer[offset++] = '.';
+        _twr_log.buffer[offset++] = '.';
+        _twr_log.buffer[offset++] = '.';
+    }
 
     _twr_log.buffer[offset++] = '\r';
     _twr_log.buffer[offset++] = '\n';
