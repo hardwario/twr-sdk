@@ -72,6 +72,7 @@ void twr_i2c_init(twr_i2c_channel_t channel, twr_i2c_speed_t speed)
         twr_gpio_set_mode(TWR_GPIO_SCL0, TWR_GPIO_MODE_ALTERNATE_6);
         twr_gpio_set_mode(TWR_GPIO_SDA0, TWR_GPIO_MODE_ALTERNATE_6);
 
+        GPIOB->OTYPER |= GPIO_OTYPER_OT_10 | GPIO_OTYPER_OT_11; // Set open-drain output
         GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEED10 | GPIO_OSPEEDER_OSPEED11;
 
         // Enable I2C2 peripheral clock
@@ -96,6 +97,7 @@ void twr_i2c_init(twr_i2c_channel_t channel, twr_i2c_speed_t speed)
         twr_gpio_set_mode(TWR_GPIO_P16, TWR_GPIO_MODE_ALTERNATE_4);
         twr_gpio_set_mode(TWR_GPIO_P17, TWR_GPIO_MODE_ALTERNATE_4);
 
+        GPIOB->OTYPER |= GPIO_OTYPER_OT_8 | GPIO_OTYPER_OT_9; // Set open-drain output
         GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEED8 | GPIO_OSPEEDER_OSPEED9;
 
         // Enable I2C1 peripheral clock
