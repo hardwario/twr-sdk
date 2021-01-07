@@ -1,7 +1,9 @@
 #include <twr_sht30.h>
+#include <twr_crc.h>
+#include <twr_log.h>
 
 #define _TWR_SHT30_DELAY_RUN 20
-#define _TWR_SHT30_DELAY_INITIALIZATION 20
+#define _TWR_SHT30_DELAY_INITIALIZATION 50
 #define _TWR_SHT30_DELAY_MEASUREMENT 20
 
 static void _twr_sht30_task_interval(void *param);
@@ -243,6 +245,11 @@ start:
             transfer.length = sizeof(buffer);
 
             if (!twr_i2c_read(self->_i2c_channel, &transfer))
+            {
+                goto start;
+            }
+
+            if ((twr_crc8(0x31, buffer, 2, 0xff) != buffer[2]) || (twr_crc8(0x31, buffer + 3, 2, 0xff) != buffer[5]))
             {
                 goto start;
             }
