@@ -1,0 +1,26 @@
+{
+    "name": "twr-sdk",
+    "version": "1.0.0",
+    "build": {
+        "includeDir": ".",
+        "srcDir": ".",
+        "srcFilter": [
+            "+<twr/src>",
+            "+<twr/stm/src>",
+            "+<stm/spirit1/src>",
+            "+<stm/usb/src>",
+            "+<lib/jsmn>",
+            "+<lib/minmea>"
+        ],
+        "flags": [
+            "-Itwr/inc",
+            "-Ibcl/inc",
+            "-Itwr/stm/inc",
+            "-Istm/spirit1/inc",
+            "-Istm/usb/inc",
+            "-Ilib/jsmn",
+            "-Ilib/minmea",
+            "-Wl,-u_printf_float"
+        ]
+    }
+}

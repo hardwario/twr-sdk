@@ -1,7 +1,6 @@
 #include <twr_scheduler.h>
 #include <twr_system.h>
 #include <twr_error.h>
-#include <main.h>
 
 static struct
 {
@@ -19,6 +18,7 @@ static struct
 
 } _twr_scheduler;
 
+void application_idle();
 void application_error(twr_error_t code);
 
 void twr_scheduler_init(void)

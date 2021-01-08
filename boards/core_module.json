@@ -1,0 +1,43 @@
+{
+  "build": {
+    "cpu": "cortex-m0plus",
+    "extra_flags": "-DSTM32L083xx",
+    "f_cpu": "32000000L",
+    "hwids": [
+      [
+        "0x0483",
+        "0xdf11"
+      ],
+      [
+        "0x0403",
+        "0x6015"
+      ]
+    ],
+    "mcu": "stm32l083cz",
+    "product_line": "STM32L083xx"
+  },
+  "debug": {
+    "default_tools": [
+      "jlink"
+    ],
+    "jlink_device": "STM32L083CZ",
+    "openocd_target": "stm32l0"
+  },
+  "frameworks": [
+    "stm32cube"
+  ],
+  "name": "Core Module",
+  "upload": {
+    "maximum_ram_size": 20480,
+    "maximum_size": 196608,
+    "protocol": "serial",
+    "protocols": [
+      "dfu",
+      "jlink",
+      "serial",
+      "stlink"
+    ]
+  },
+  "url": "https://shop.hardwario.com/core-module/",
+  "vendor": "HARDWARIO"
+}

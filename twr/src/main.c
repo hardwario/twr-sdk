@@ -122,3 +122,21 @@ __attribute__((weak)) void application_error(twr_error_t code)
 
 #endif
 }
+
+void NMI_Handler(void)
+{
+}
+
+void SVC_Handler(void)
+{
+}
+
+void PendSV_Handler(void)
+{
+}
+
+void SysTick_Handler(void)
+{
+  HAL_IncTick();
+  HAL_SYSTICK_IRQHandler();
+}

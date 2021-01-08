@@ -12,6 +12,10 @@
 #define TWR_LOG_UART       TWR_UART_UART2
 #endif
 
+#ifndef TWR_LOG_BUFFER_SIZE
+#define TWR_LOG_BUFFER_SIZE 256
+#endif
+
 #define TWR_LOG_DUMP_WIDTH 8
 
 //! @brief Log level

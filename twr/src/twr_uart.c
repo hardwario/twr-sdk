@@ -4,6 +4,7 @@
 #include <twr_system.h>
 #include <stm32l0xx.h>
 #include <twr_dma.h>
+#include <twr_gpio.h>
 
 typedef struct
 {
@@ -58,20 +59,15 @@ void twr_uart_init(twr_uart_channel_t channel, twr_uart_baudrate_t baudrate, twr
     {
         case TWR_UART_UART0:
         {
-            // Enable GPIOA clock
-            RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
-
-            // Errata workaround
-            RCC->IOPENR;
+            twr_gpio_init(TWR_GPIO_P0); // TXD0
+            twr_gpio_init(TWR_GPIO_P1); // RXD0
 
             // Enable pull-up on RXD0 pin
-            GPIOA->PUPDR |= GPIO_PUPDR_PUPD1_0;
+            twr_gpio_set_pull(TWR_GPIO_P1, TWR_GPIO_PULL_UP);
 
             // Select AF6 alternate function for TXD0 and RXD0 pins
-            GPIOA->AFR[0] |= 6 << GPIO_AFRL_AFRL1_Pos | 6 << GPIO_AFRL_AFRL0_Pos;
-
-            // Configure TXD0 and RXD0 pins as alternate function
-            GPIOA->MODER &= ~(1 << GPIO_MODER_MODE1_Pos | 1 << GPIO_MODER_MODE0_Pos);
+            twr_gpio_set_mode(TWR_GPIO_P0, TWR_GPIO_MODE_ALTERNATE_6);
+            twr_gpio_set_mode(TWR_GPIO_P1, TWR_GPIO_MODE_ALTERNATE_6);
 
             // Enable clock for USART4
             RCC->APB1ENR |= RCC_APB1ENR_USART4EN;
@@ -96,22 +92,18 @@ void twr_uart_init(twr_uart_channel_t channel, twr_uart_baudrate_t baudrate, twr
         }
         case TWR_UART_UART1:
         {
-            // Enable GPIOA clock
-            RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
 
-            // Errata workaround
-            RCC->IOPENR;
+            twr_gpio_init(TWR_GPIO_P2); // TXD1
+            twr_gpio_init(TWR_GPIO_P3); // RXD1
 
             // Enable pull-up on RXD1 pin
-            GPIOA->PUPDR |= GPIO_PUPDR_PUPD3_0;
+            twr_gpio_set_pull(TWR_GPIO_P3, TWR_GPIO_PULL_UP);
 
             if (baudrate <= TWR_UART_BAUDRATE_9600)
             {
                 // Select AF6 alternate function for TXD1 and RXD1 pins
-                GPIOA->AFR[0] |= 6 << GPIO_AFRL_AFRL3_Pos | 6 << GPIO_AFRL_AFRL2_Pos;
-
-                // Configure TXD1 and RXD1 pins as alternate function
-                GPIOA->MODER &= ~(1 << GPIO_MODER_MODE3_Pos | 1 << GPIO_MODER_MODE2_Pos);
+                twr_gpio_set_mode(TWR_GPIO_P2, TWR_GPIO_MODE_ALTERNATE_6);
+                twr_gpio_set_mode(TWR_GPIO_P3, TWR_GPIO_MODE_ALTERNATE_6);
 
                 // Set LSE as LPUART1 clock source
                 RCC->CCIPR |= RCC_CCIPR_LPUART1SEL_1 | RCC_CCIPR_LPUART1SEL_0;
@@ -138,10 +130,8 @@ void twr_uart_init(twr_uart_channel_t channel, twr_uart_baudrate_t baudrate, twr
             else
             {
                 // Select AF4 alternate function for TXD1 and RXD1 pins
-                GPIOA->AFR[0] |= 4 << GPIO_AFRL_AFRL3_Pos | 4 << GPIO_AFRL_AFRL2_Pos;
-
-                // Configure TXD1 and RXD1 pins as alternate function
-                GPIOA->MODER &= ~(1 << GPIO_MODER_MODE3_Pos | 1 << GPIO_MODER_MODE2_Pos);
+                twr_gpio_set_mode(TWR_GPIO_P2, TWR_GPIO_MODE_ALTERNATE_4);
+                twr_gpio_set_mode(TWR_GPIO_P3, TWR_GPIO_MODE_ALTERNATE_4);
 
                 // Enable clock for USART2
                 RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
@@ -167,20 +157,15 @@ void twr_uart_init(twr_uart_channel_t channel, twr_uart_baudrate_t baudrate, twr
         }
         case TWR_UART_UART2:
         {
-            // Enable GPIOA clock
-            RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
-
-            // Errata workaround
-            RCC->IOPENR;
+            twr_gpio_init(TWR_GPIO_P11); // TXD2
+            twr_gpio_init(TWR_GPIO_P10); // RXD2
 
             // Enable pull-up on RXD2 pin
-            GPIOA->PUPDR |= GPIO_PUPDR_PUPD10_0;
+            twr_gpio_set_pull(TWR_GPIO_P10, TWR_GPIO_PULL_UP);
 
-            // Select AF4 alternate function for TXD2 and RXD2 pins
-            GPIOA->AFR[1] |= 4 << GPIO_AFRH_AFRH2_Pos | 4 << GPIO_AFRH_AFRH1_Pos;
-
-            // Configure TXD2 and RXD2 pins as alternate function
-            GPIOA->MODER &= ~(1 << GPIO_MODER_MODE10_Pos | 1 << GPIO_MODER_MODE9_Pos);
+            // Select AF6 alternate function for TXD0 and RXD0 pins
+            twr_gpio_set_mode(TWR_GPIO_P11, TWR_GPIO_MODE_ALTERNATE_4);
+            twr_gpio_set_mode(TWR_GPIO_P10, TWR_GPIO_MODE_ALTERNATE_4);
 
             // Enable clock for USART1
             RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
@@ -261,15 +246,12 @@ void twr_uart_deinit(twr_uart_channel_t channel)
             // Disable clock for USART4
             RCC->APB1ENR &= ~RCC_APB1ENR_USART4EN;
 
-            // Configure TXD0 and RXD0 pins as Analog
-            GPIOA->MODER |= (GPIO_MODER_MODE1_Msk | GPIO_MODER_MODE0_Msk);
-
-            // Clear alternate function for TXD0 and RXD0 pins
-            GPIOA->AFR[0] &= ~(GPIO_AFRL_AFRL1_Msk | GPIO_AFRL_AFRL0_Msk);
-
             // Disable pull-up on RXD0 pin
-            GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD1_Msk;
+            twr_gpio_set_pull(TWR_GPIO_P1, TWR_GPIO_PULL_NONE);
 
+            // Configure TXD0 and RXD0 pins as Analog
+            twr_gpio_set_mode(TWR_GPIO_P0, TWR_GPIO_MODE_ANALOG);
+            twr_gpio_set_mode(TWR_GPIO_P1, TWR_GPIO_MODE_ANALOG);
             break;
         }
         case TWR_UART_UART1:
@@ -289,15 +271,12 @@ void twr_uart_deinit(twr_uart_channel_t channel)
                 RCC->APB1ENR &= ~RCC_APB1ENR_USART2EN;
             }
 
-            // Configure TXD1 and RXD1 pins as Analog
-            GPIOA->MODER |= (GPIO_MODER_MODE3_Msk | GPIO_MODER_MODE2_Msk);
-
-            // Clear alternate function for TXD1 and RXD1 pins
-            GPIOA->AFR[0] &= ~(GPIO_AFRL_AFRL3_Msk | GPIO_AFRL_AFRL2_Msk);
-
             // Disable pull-up on RXD1 pin
-            GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD3_Msk;
+            twr_gpio_set_pull(TWR_GPIO_P3, TWR_GPIO_PULL_NONE);
 
+            // Configure TXD1 and RXD1 pins as Analog
+            twr_gpio_set_mode(TWR_GPIO_P2, TWR_GPIO_MODE_ANALOG);
+            twr_gpio_set_mode(TWR_GPIO_P3, TWR_GPIO_MODE_ANALOG);
             break;
         }
         case TWR_UART_UART2:
@@ -307,15 +286,12 @@ void twr_uart_deinit(twr_uart_channel_t channel)
             // Disable clock for USART1
             RCC->APB2ENR &= ~RCC_APB2ENR_USART1EN_Msk;
 
-            // Configure TXD2 and RXD2 pins as Analog
-            GPIOA->MODER |= (GPIO_MODER_MODE10_Msk | GPIO_MODER_MODE9_Msk);
-
-            // Clear alternate function for TXD2 and RXD2 pins
-            GPIOA->AFR[1] &= ~(GPIO_AFRH_AFRH2_Msk | GPIO_AFRH_AFRH1_Msk);
-
             // Disable pull-up on RXD2 pin
-            GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD10_Msk;
+            twr_gpio_set_pull(TWR_GPIO_P10, TWR_GPIO_PULL_NONE);
 
+            // Configure TXD2 and RXD2 pins as Analog
+            twr_gpio_set_mode(TWR_GPIO_P11, TWR_GPIO_MODE_ANALOG);
+            twr_gpio_set_mode(TWR_GPIO_P10, TWR_GPIO_MODE_ANALOG);
             break;
         }
         default:

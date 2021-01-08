@@ -2,9 +2,9 @@
 
 # HARDWARIO Firmware SDK
 
-[![Travis](https://img.shields.io/travis/bigclownlabs/bcf-sdk/master.svg)](https://travis-ci.org/bigclownlabs/bcf-sdk)
-[![Release](https://img.shields.io/github/release/bigclownlabs/bcf-sdk.svg)](https://github.com/bigclownlabs/bcf-sdk/releases)
-[![License](https://img.shields.io/github/license/bigclownlabs/bcf-sdk.svg)](https://github.com/bigclownlabs/bcf-sdk/blob/master/LICENSE)
+[![Travis](https://img.shields.io/travis/hardwario/twr-sdk/master.svg)](https://travis-ci.org/hardwario/twr-sdk)
+[![Release](https://img.shields.io/github/release/hardwario/twr-sdk.svg)](https://github.com/hardwario/twr-sdk/releases)
+[![License](https://img.shields.io/github/license/hardwario/twr-sdk.svg)](https://github.com/hardwario/twr-sdk/blob/master/LICENSE)
 [![Twitter](https://img.shields.io/twitter/follow/hardwario_en.svg?style=social&label=Follow)](https://twitter.com/hardwario_en)
 
 This repository contains firmware SDK for:
