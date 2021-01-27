@@ -165,11 +165,12 @@ void twr_radio_node_decode(uint64_t *id, uint8_t *buffer, size_t length)
         bool *pstate;
 
         twr_radio_bool_from_buffer(pbuffer + 1, &state, &pstate);
-
+        twr_radio_id_from_buffer(buffer + 1, &for_id);
         twr_radio_node_on_state_set(&for_id, pbuffer[0], pstate);
     }
     else if (buffer[0] == TWR_RADIO_HEADER_NODE_STATE_GET)
     {
+        twr_radio_id_from_buffer(buffer + 1, &for_id);
         twr_radio_node_on_state_get(&for_id, pbuffer[0]);
     }
     else if (buffer[0] == TWR_RADIO_HEADER_NODE_BUFFER)
