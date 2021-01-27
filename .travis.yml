@@ -4,7 +4,6 @@ sudo: false
 
 env:
   global:
-    - GH_PAGES_CNAME: sdk.hardwario.com
     - DOXYFILE: $TRAVIS_BUILD_DIR/Doxyfile
     - HTML_DIR: $TRAVIS_BUILD_DIR/doc/html
 
