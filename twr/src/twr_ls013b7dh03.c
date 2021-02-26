@@ -20,7 +20,7 @@ void twr_ls013b7dh03_init(twr_ls013b7dh03_t *self, bool (*pin_cs_set)(bool state
     // Address lines
     uint8_t line;
     uint32_t offs;
-    for (line = 0x01, offs = 1; line <= 128; line++, offs += 18)
+    for (line = 0x01, offs = 1; line <= 240; line++, offs += (50 + 2)) // 128; 18
     {
         // Fill the gate line addresses on the exact place in the buffer
         self->_framebuffer[offs] = _twr_ls013b7dh03_reverse(line);
@@ -52,7 +52,7 @@ void twr_ls013b7dh03_clear(twr_ls013b7dh03_t *self)
     uint8_t line;
     uint32_t offs;
     uint8_t col;
-    for (line = 0x01, offs = 2; line <= 128; line++, offs += 18)
+    for (line = 0x01, offs = 2; line <= 240; line++, offs += (50+2))
     {
         for (col = 0; col < 16; col++)
         {
@@ -66,7 +66,7 @@ void twr_ls013b7dh03_draw_pixel(twr_ls013b7dh03_t *self, int x, int y, uint32_t 
     // Skip mode byte + addr byte
     uint32_t byteIndex = 2;
     // Skip lines
-    byteIndex += y * 18;
+    byteIndex += y * (50+2);
     // Select column byte
     byteIndex += x / 8;
 
@@ -87,7 +87,7 @@ uint32_t twr_ls013b7dh03_get_pixel(twr_ls013b7dh03_t *self, int x, int y)
     // Skip mode byte + addr byte
     uint32_t byteIndex = 2;
     // Skip lines
-    byteIndex += y * 18;
+    byteIndex += y * (50+2);
     // Select column byte
     byteIndex += x / 8;
 

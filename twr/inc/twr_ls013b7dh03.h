@@ -13,9 +13,9 @@
 // See app note https://www.silabs.com/documents/public/application-notes/AN0048.pdf
 // Figure 3.1
 // 1B mode | 1B addr + 16B data + 1B dummy | 1B dummy END
-#define TWR_LS013B7DH03_FRAMEBUFFER_SIZE (1 + ((1+16+1) * 128) + 1)
-#define TWR_LS013B7DH03_WIDTH 128
-#define TWR_LS013B7DH03_HEIGHT 128
+#define TWR_LS013B7DH03_FRAMEBUFFER_SIZE (1 + ((1+50+1) * 240) + 1)
+#define TWR_LS013B7DH03_WIDTH 400
+#define TWR_LS013B7DH03_HEIGHT 240
 
 //! @brief Instance
 
