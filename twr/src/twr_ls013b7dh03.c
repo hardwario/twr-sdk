@@ -56,7 +56,7 @@ void twr_ls013b7dh03_clear(twr_ls013b7dh03_t *self)
     uint8_t col;
     for (line = 0x01, offs = 2; line <= TWR_LS013B7DH03_HEIGHT; line++, offs += _TWR_LS013B7DH03_LINE_INCREMENT)
     {
-        for (col = 0; col < 16; col++)
+        for (col = 0; col < (TWR_LS013B7DH03_WIDTH / 8); col++)
         {
             self->_framebuffer[offs + col] = 0xff;
         }
