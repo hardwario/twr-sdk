@@ -12,10 +12,19 @@
 // https://www.embeddedartists.com/sites/default/files/support/datasheet/Memory_LCD_Programming.pdf
 // See app note https://www.silabs.com/documents/public/application-notes/AN0048.pdf
 // Figure 3.1
+
+#if TWR_LS013B7DH03_400x200 == 1
+    // For SHARP LS027B7DH01A bigger display
+    #define TWR_LS013B7DH03_WIDTH 400
+    #define TWR_LS013B7DH03_HEIGHT 240
+#else
+    #define TWR_LS013B7DH03_WIDTH 128
+    #define TWR_LS013B7DH03_HEIGHT 128
+#endif
+
 // 1B mode | 1B addr + 16B data + 1B dummy | 1B dummy END
-#define TWR_LS013B7DH03_FRAMEBUFFER_SIZE (1 + ((1+50+1) * 240) + 1)
-#define TWR_LS013B7DH03_WIDTH 400
-#define TWR_LS013B7DH03_HEIGHT 240
+#define TWR_LS013B7DH03_FRAMEBUFFER_SIZE (1 + ((1+(TWR_LS013B7DH03_WIDTH / 8)+1) * TWR_LS013B7DH03_HEIGHT) + 1)
+
 
 //! @brief Instance
 
