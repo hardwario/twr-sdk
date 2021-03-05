@@ -124,14 +124,9 @@ void twr_radio_listen(twr_tick_t timeout)
 
 void twr_radio_pairing_request(const char *firmware, const char *version)
 {
-    if ((_twr_radio.firmware != NULL) || (_twr_radio.firmware_version != NULL))
-    {
-        return;
-    }
+    _twr_radio.firmware = firmware == NULL ? "" : firmware;
 
-    _twr_radio.firmware = firmware;
-
-    _twr_radio.firmware_version = version;
+    _twr_radio.firmware_version = version == NULL ? "" : version;
 
     _twr_radio.pairing_request_to_gateway = true;
 
