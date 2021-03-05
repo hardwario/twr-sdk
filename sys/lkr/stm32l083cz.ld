@@ -7,17 +7,33 @@ _estack = 0x20005000;    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0x80;  /* required amount of heap  */
 _Min_Stack_Size = 0x400; /* required amount of stack */
+_PIB_LEN = 128;
 
 /* Specify the memory areas */
 MEMORY
 {
-  FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 192K
-  RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 20K
+RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 20K
+FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 192K - _PIB_LEN
+PIB (r)        : ORIGIN = ORIGIN(FLASH) + LENGTH(FLASH), LENGTH = _PIB_LEN
 }
 
 /* Define output sections */
 SECTIONS
 {
+  .info (NOLOAD) : ALIGN(4) SUBALIGN(4)
+  {
+    KEEP(*(.pib_signature))
+    KEEP(*(.pib_version))
+    KEEP(*(.pib_size))
+    KEEP(*(.pib_serial_number))
+    KEEP(*(.pib_hw_revision))
+    KEEP(*(.pib_hw_variant))
+    KEEP(*(.pib_vendor_name))
+    KEEP(*(.pib_product_name))
+    KEEP(*(.pib_rf_offset))
+    KEEP(*(.pib_crc))
+  } >PIB
+
   /* The startup code goes first into FLASH */
   .isr_vector :
   {
