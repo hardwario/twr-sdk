@@ -13,7 +13,7 @@
 
 #define TWR_ATCI_COMMANDS_LENGTH(COMMANDS) (sizeof(COMMANDS) / sizeof(COMMANDS[0]))
 
-#define TWR_ATCI_COMMAND_CLAC {"+CLAC", twr_atci_clac_action, NULL, NULL, NULL, ""}
+#define TWR_ATCI_COMMAND_CLAC {"+CLAC", twr_atci_clac_action, NULL, NULL, NULL, "List all available AT commands"}
 #define TWR_ATCI_COMMAND_HELP {"$HELP", twr_atci_help_action, NULL, NULL, NULL, "This help"}
 
 typedef struct
