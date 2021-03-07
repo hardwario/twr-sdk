@@ -44,6 +44,11 @@ bool twr_queue_put(twr_queue_t *queue, const void *buffer, size_t length);
 
 bool twr_queue_get(twr_queue_t *queue, void *buffer, size_t *length);
 
+//! @brief Clear queue
+//! @param[in] queue Instance
+
+void twr_queue_clear(twr_queue_t *queue);
+
 //! @}
 
 #endif // _TWR_QUEUE_H
