@@ -269,6 +269,11 @@ bool twr_radio_pub_queue_put(const void *buffer, size_t length)
     return true;
 }
 
+void twr_radio_pub_queue_clear()
+{
+    twr_queue_clear(&_twr_radio.pub_queue);
+}
+
 void twr_radio_set_subs(twr_radio_sub_t *subs, int length)
 {
     _twr_radio.subs = subs;
@@ -1079,6 +1084,7 @@ static bool _twr_radio_peer_device_remove(uint64_t id)
         if (id == _twr_radio.peer_devices[i].id)
         {
             _twr_radio.peer_devices_length--;
+            _twr_radio.peer_devices[i].id = 0;
 
             if (i != _twr_radio.peer_devices_length)
             {
