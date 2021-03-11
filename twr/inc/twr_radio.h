@@ -176,6 +176,10 @@ bool twr_radio_is_peer_device(uint64_t id);
 
 bool twr_radio_pub_queue_put(const void *buffer, size_t length);
 
+//! @brief Clear the publish message queue
+
+void twr_radio_pub_queue_clear();
+
 void twr_radio_set_subs(twr_radio_sub_t *subs, int length);
 
 bool twr_radio_send_sub_data(uint64_t *id, uint8_t order, void *payload, size_t size);

@@ -16,7 +16,7 @@ void OnProjectLoad (void) {
   Project.SetRootPath("../../../");
   Project.AddSvdFile ("Cortex-M0.svd");
   Project.AddSvdFile ("sdk/sys/svd/stm32l0x3.svd");
-  File.Open ("../../../out/debug/firmware.elf");
+  File.Open ("./out/debug/firmware.elf");
   Debug.Start ();
 }
 

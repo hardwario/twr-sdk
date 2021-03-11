@@ -66,3 +66,8 @@ bool twr_queue_get(twr_queue_t *queue, void *buffer, size_t *length)
 
     return true;
 }
+
+void twr_queue_clear(twr_queue_t *queue)
+{
+    queue->_length = 0;
+}

@@ -124,14 +124,9 @@ void twr_radio_listen(twr_tick_t timeout)
 
 void twr_radio_pairing_request(const char *firmware, const char *version)
 {
-    if ((_twr_radio.firmware != NULL) || (_twr_radio.firmware_version != NULL))
-    {
-        return;
-    }
+    _twr_radio.firmware = firmware == NULL ? "" : firmware;
 
-    _twr_radio.firmware = firmware;
-
-    _twr_radio.firmware_version = version;
+    _twr_radio.firmware_version = version == NULL ? "" : version;
 
     _twr_radio.pairing_request_to_gateway = true;
 
@@ -272,6 +267,11 @@ bool twr_radio_pub_queue_put(const void *buffer, size_t length)
     twr_scheduler_plan_now(_twr_radio.task_id);
 
     return true;
+}
+
+void twr_radio_pub_queue_clear()
+{
+    twr_queue_clear(&_twr_radio.pub_queue);
 }
 
 void twr_radio_set_subs(twr_radio_sub_t *subs, int length)
@@ -1084,6 +1084,7 @@ static bool _twr_radio_peer_device_remove(uint64_t id)
         if (id == _twr_radio.peer_devices[i].id)
         {
             _twr_radio.peer_devices_length--;
+            _twr_radio.peer_devices[i].id = 0;
 
             if (i != _twr_radio.peer_devices_length)
             {
