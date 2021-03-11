@@ -698,23 +698,27 @@ static void _twr_cmwx1zzabz_task(void *param)
             case TWR_CMWX1ZZABZ_STATE_JOIN_RESPONSE:
             {
                 bool join_successful = false;
+
+                if (!_twr_cmwx1zzabz_read_response(self))
+                {
+                    twr_scheduler_plan_current_from_now(50);
+                    return;
+                }
+
+                if (memcmp(self->_response, "+OK", 3) == 0)
+                {
+                    twr_scheduler_plan_current_now();
+                    return;
+                }
+
+                // Response EVENT=1,1 means JOIN was successful
+                if (memcmp(self->_response, "+EVENT=1,1", 10) == 0)
+                {
+                    join_successful = true;
+                }
+
                 // Clear join command flag
                 self->_join_command = false;
-
-                while (true)
-                {
-                    if (!_twr_cmwx1zzabz_read_response(self))
-                    {
-                        break;
-                    }
-
-                    // Response EVENT=1,1 means JOIN was successful
-                    if (memcmp(self->_response, "+EVENT=1,1", 10) == 0)
-                    {
-                        join_successful = true;
-                        break;
-                    }
-                }
 
                 if (join_successful)
                 {
