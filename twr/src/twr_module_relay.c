@@ -9,6 +9,9 @@ static void _twr_module_relay_task(void *param);
 
 static bool _twr_module_relay_hardware_init(twr_module_relay_t *self)
 {
+    // Relay is bi-stable, in the begining we don't know the default state
+    self->_relay_state = TWR_MODULE_RELAY_STATE_UNKNOWN;
+
     // Init i2C expander driver
     if (!twr_tca9534a_init(&self->_tca9534a, TWR_I2C_I2C0, self->_i2c_address))
     {
@@ -18,8 +21,6 @@ static bool _twr_module_relay_hardware_init(twr_module_relay_t *self)
     twr_tca9534a_write_port(&(self->_tca9534a), TWR_MODULE_RELAY_POLARITY_NONE);
     // Enable outputs
     twr_tca9534a_set_port_direction(&self->_tca9534a, 0x00); // inverted: 0 = output
-    // Relay is bi-stable, in the begining we don't know the default state
-    self->_relay_state = TWR_MODULE_RELAY_STATE_UNKNOWN;
 
     return true;
 }
@@ -31,7 +32,6 @@ bool twr_module_relay_init(twr_module_relay_t *self, uint8_t i2c_address)
     self->_i2c_address = i2c_address;
     return _twr_module_relay_hardware_init(self);
 }
-
 
 static void twr_module_relay_scheduler_unregister(twr_module_relay_t *self)
 {
