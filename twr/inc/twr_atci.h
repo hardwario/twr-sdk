@@ -51,11 +51,38 @@ void twr_atci_write_ok(void);
 
 void twr_atci_write_error(void);
 
+//! @brief Print message
+//! @param[in] message Message
+//! @return Number of bytes written
+
+size_t twr_atci_print(const char *message);
+
+//! @brief Print message and add CR LF
+//! @param[in] message Message
+//! @return Number of bytes written
+
+size_t twr_atci_println(const char *message);
+
+//! @brief Prinf message
+//! @param[in] format Format string (printf style)
+//! @param[in] ... Optional format arguments
+//! @return Number of bytes written
+
+size_t twr_atci_printf(const char *format, ...);
+
 //! @brief Prinf message and add CR LF
 //! @param[in] format Format string (printf style)
 //! @param[in] ... Optional format arguments
+//! @return Number of bytes written
 
-void twr_atci_printf(const char *format, ...);
+size_t twr_atci_printfln(const char *format, ...);
+
+//! @brief Print buffer as HEX string
+//! @param[in] buffer Pointer to source buffer
+//! @param[in] length Number of bytes to be written
+//! @return Number of bytes written
+
+size_t twr_atci_print_buffer_as_hex(const void *buffer, size_t length);
 
 //! @brief Skip response, use in callback in twr_atci_command_t
 

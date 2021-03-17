@@ -43,27 +43,85 @@ void twr_atci_init(const twr_atci_command_t *commands, int length)
     twr_atci_set_uart_active_callback(twr_system_get_vbus_sense, 200);
 }
 
-void twr_atci_printf(const char *format, ...)
+size_t twr_atci_print(const char *message)
+{
+    return twr_uart_write(TWR_ATCI_UART, message, strlen(message));
+}
+
+size_t twr_atci_println(const char *message)
+{
+    size_t len = twr_uart_write(TWR_ATCI_UART, message, strlen(message));
+    return twr_uart_write(TWR_ATCI_UART, "\r\n", 2) + len;
+}
+
+static size_t _twr_atci_printf(const char *format, va_list ap, size_t maxlen)
+{
+    size_t length = vsnprintf(_twr_atci.tx_buffer, maxlen, format, ap);
+
+    if (length > maxlen) {
+        length = maxlen;
+    }
+
+    return length;
+}
+
+size_t twr_atci_printf(const char *format, ...)
 {
     if (!_twr_atci.ready)
     {
-        return;
+        return 0;
     }
 
     va_list ap;
 
-    size_t length;
+    va_start(ap, format);
+    size_t length = _twr_atci_printf(format, ap, sizeof(_twr_atci.tx_buffer));
+    va_end(ap);
+
+    return twr_uart_write(TWR_ATCI_UART, _twr_atci.tx_buffer, length);
+}
+
+size_t twr_atci_printfln(const char *format, ...)
+{
+    if (!_twr_atci.ready)
+    {
+        return 0;
+    }
+
+    va_list ap;
 
     va_start(ap, format);
-
-    length = vsnprintf(_twr_atci.tx_buffer, sizeof(_twr_atci.tx_buffer) - 2, format, ap);
-
+    size_t length = _twr_atci_printf(format, ap, sizeof(_twr_atci.tx_buffer) - 2);
     va_end(ap);
 
     _twr_atci.tx_buffer[length++] = '\r';
     _twr_atci.tx_buffer[length++] = '\n';
 
-    twr_uart_write(TWR_ATCI_UART, _twr_atci.tx_buffer, length);
+    return twr_uart_write(TWR_ATCI_UART, _twr_atci.tx_buffer, length);
+}
+
+size_t twr_atci_print_buffer_as_hex(const void *buffer, size_t length)
+{
+    if (!_twr_atci.ready)
+    {
+        return 0;
+    }
+
+    char byte;
+    size_t on_write = 0;
+
+    for (size_t i = 0; i < length; i++)
+    {
+        byte = ((char *)buffer)[i];
+
+        char upper = (byte >> 4) & 0xf;
+        char lower = byte & 0x0f;
+
+        _twr_atci.tx_buffer[on_write++] = upper < 10 ? upper + '0' : upper - 10 + 'A';
+        _twr_atci.tx_buffer[on_write++] = lower < 10 ? lower + '0' : lower - 10 + 'A';
+    }
+
+    return twr_uart_write(TWR_ATCI_UART, _twr_atci.tx_buffer, on_write);
 }
 
 bool twr_atci_skip_response(void)
@@ -87,7 +145,7 @@ bool twr_atci_clac_action(void)
 {
     for (size_t i = 0; i < _twr_atci.commands_length; i++)
     {
-        twr_atci_printf("AT%s", _twr_atci.commands[i].command);
+        twr_atci_printfln("AT%s", _twr_atci.commands[i].command);
     }
     return true;
 }
@@ -96,7 +154,7 @@ bool twr_atci_help_action(void)
 {
     for (size_t i = 0; i < _twr_atci.commands_length; i++)
     {
-        twr_atci_printf("AT%s %s", _twr_atci.commands[i].command, _twr_atci.commands[i].hint);
+        twr_atci_printfln("AT%s %s", _twr_atci.commands[i].command, _twr_atci.commands[i].hint);
     }
     return true;
 }
