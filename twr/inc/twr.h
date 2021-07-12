@@ -73,6 +73,7 @@
 #include <twr_analog_sensor.h>
 #include <twr_atci.h>
 #include <twr_base64.h>
+#include <twr_chester_a.h>
 #include <twr_config.h>
 #include <twr_data_stream.h>
 #include <twr_delay.h>
@@ -88,6 +89,7 @@
 #include <twr_onewire_relay.h>
 #include <twr_onewire.h>
 #include <twr_pulse_counter.h>
+#include <twr_queue.h>
 #include <twr_ramp.h>
 #include <twr_sha256.h>
 #include <twr_soil_sensor.h>
