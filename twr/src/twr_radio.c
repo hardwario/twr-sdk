@@ -555,6 +555,11 @@ static void _twr_radio_send_ack(void)
 
 static void _twr_radio_go_to_state_rx_or_sleep(void)
 {
+    if (_twr_radio.state == TWR_RADIO_STATE_TX)
+    {
+        return;
+    }
+    
     if (_twr_radio.mode == TWR_RADIO_MODE_NODE_SLEEPING)
     {
         twr_tick_t now = twr_tick_get();
