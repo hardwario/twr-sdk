@@ -45,6 +45,8 @@ void application_init(void)
 {
     twr_log_init(TWR_LOG_LEVEL_DEBUG, TWR_LOG_TIMESTAMP_ABS);
 
+    twr_module_sensor_init();
+
     twr_ds18b20_init_single(&ds18b20, TWR_DS18B20_RESOLUTION_BITS_12);
     twr_ds18b20_set_event_handler(&ds18b20, ds18b20_event_handler, NULL);
     twr_ds18b20_set_update_interval(&ds18b20, 5 * 1000);
