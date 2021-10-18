@@ -7,6 +7,7 @@
 #define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_RESPONSE 100
 #define TWR_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE 3000
 #define TWR_CMWX1ZZABZ_DELAY_JOIN_RESPONSE 8000
+#define TWR_CMWX1ZZABZ_DELAY_LINK_CHECK_RESPONSE 4000
 #define TWR_CMWX1ZZABZ_DELAY_CUSTOM_COMMAND_RESPONSE 100
 
 // Apply changes to the factory configuration
@@ -16,6 +17,7 @@ const char *_init_commands[] =
     "AT+VER?\r",
     "AT+DFORMAT=0\r",
     "AT+DUTYCYCLE=0\r",
+    "AT+JOINDC=0\r",
     "AT+DEVADDR?\r",
     "AT+DEVEUI?\r",
     "AT+APPEUI?\r",
@@ -176,6 +178,12 @@ static void _twr_cmwx1zzabz_task(void *param)
                 if(self->_custom_command)
                 {
                     self->_state = TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_SEND;
+                    continue;
+                }
+
+                if(self->_link_check_command)
+                {
+                    self->_state = TWR_CMWX1ZZABZ_STATE_LINK_CHECK_SEND;
                     continue;
                 }
 
@@ -678,7 +686,6 @@ static void _twr_cmwx1zzabz_task(void *param)
 
             }
 
-
             case TWR_CMWX1ZZABZ_STATE_JOIN_SEND:
             {
                 self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
@@ -769,6 +776,89 @@ static void _twr_cmwx1zzabz_task(void *param)
                 self->_state = TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_RESPONSE;
                 twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_CUSTOM_COMMAND_RESPONSE);
                 return;
+            }
+
+            case TWR_CMWX1ZZABZ_STATE_LINK_CHECK_SEND:
+            {
+                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+
+                // Purge RX FIFO
+                char rx_character;
+                while (twr_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
+                {
+                }
+
+                strcpy(self->_command, "AT+LNCHECK\r");
+
+                size_t length = strlen(self->_command);
+                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                {
+                    continue;
+                }
+
+                self->_link_check_command = false;
+
+                self->_state = TWR_CMWX1ZZABZ_STATE_LINK_CHECK_RESPONSE;
+                twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_LINK_CHECK_RESPONSE);
+                return;
+            }
+
+            case TWR_CMWX1ZZABZ_STATE_LINK_CHECK_RESPONSE:
+            {
+                if (!_twr_cmwx1zzabz_read_response(self))
+                {
+                    twr_scheduler_plan_current_from_now(10);
+                    return;
+                }
+
+                //self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+
+                if (memcmp(self->_response, "+OK", 3) == 0)
+                {
+                    twr_scheduler_plan_current_now();
+                    return;
+                }
+
+                // Check for response event
+                if (strstr(self->_response, "EVENT=2,") > 0)
+                {
+                    // MAC answer
+                    char *event_str = strchr(self->_response, ',');
+                    event_str++;
+
+                    self->_cmd_link_check_event = atoi(event_str);
+
+                    // Read empty line
+                    _twr_cmwx1zzabz_read_response(self);
+
+                    // Try to read new line with ANS
+                    if (_twr_cmwx1zzabz_read_response(self))
+                    {
+
+                        // Search for ANS
+                        char *ans = strstr(self->_response, "+ANS=2,");
+
+                        if (ans)
+                        {
+                            ans += 7; // skip "+ANS=2,"
+                            self->_cmd_link_check_margin = atoi(ans);
+
+                            // MAC answer
+                            char *gwcnt_str = strchr(ans, ',');
+                            gwcnt_str++;
+
+                            self->_cmd_link_check_gwcnt = atoi(gwcnt_str);
+                        }
+                    }
+                }
+
+                if (self->_event_handler != NULL)
+                {
+                    self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_LINK_CHECK, self->_event_param);
+                }
+
+                self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
+                continue;
             }
 
             case TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_RESPONSE:
@@ -1083,6 +1173,29 @@ bool twr_cmwx1zzabz_get_frame_counter(twr_cmwx1zzabz_t *self, uint32_t *uplink, 
 {
     *uplink = self->_cmd_frmcnt_uplink;
     *downlink = self->_cmd_frmcnt_downlink;
+
+    return true;
+}
+
+bool twr_cmwx1zzabz_link_check(twr_cmwx1zzabz_t *self)
+{
+    if (self->_state != TWR_CMWX1ZZABZ_STATE_IDLE)
+    {
+        return false;
+    }
+
+    self->_link_check_command = true;
+
+    twr_scheduler_plan_now(self->_task_id);
+
+    return true;
+}
+
+bool twr_cmwx1zzabz_get_link_check(twr_cmwx1zzabz_t *self, uint8_t *mac_response, uint8_t *margin, uint8_t *gateway_count)
+{
+    *mac_response = self->_cmd_link_check_event;
+    *margin = self->_cmd_link_check_margin;
+    *gateway_count = self->_cmd_link_check_gwcnt;
 
     return true;
 }
