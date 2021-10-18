@@ -172,6 +172,12 @@ static void _twr_cmwx1zzabz_task(void *param)
                     continue;
                 }
 
+                if(self->_custom_command)
+                {
+                    self->_state = TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_SEND;
+                    continue;
+                }
+
                 return;
             }
             case TWR_CMWX1ZZABZ_STATE_RECEIVE:
@@ -739,6 +745,67 @@ static void _twr_cmwx1zzabz_task(void *param)
                 continue;
             }
 
+            case TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_SEND:
+            {
+                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+
+                // Purge RX FIFO
+                char rx_character;
+                while (twr_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
+                {
+                }
+
+                strcpy(self->_command, self->_custom_command_buf);
+
+                size_t length = strlen(self->_command);
+                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                {
+                    continue;
+                }
+
+                self->_state = TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_RESPONSE;
+                twr_scheduler_plan_current_from_now(10);
+                return;
+            }
+
+            case TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_RESPONSE:
+            {
+                if (!_twr_cmwx1zzabz_read_response(self))
+                {
+                    twr_scheduler_plan_current_from_now(50);
+                    return;
+                }
+
+                if (memcmp(self->_response, "+OK=", 4) == 0)
+                {
+                    twr_scheduler_plan_current_now();
+                    return;
+                }
+
+                if (strcmp(self->_custom_command_buf, "AT+RFQ?\r") == 0)
+                {
+                    // RFQ request
+                    char *rssi_str = strchr(self->_response, '=');
+                    rssi_str++;
+
+                    char *snr_str = strchr(self->_response, '=');
+                    snr_str++;
+
+                    self->_cmd_rfq_rssi = atoi(rssi_str);
+                    self->_cmd_rfq_snr = atoi(snr_str);
+
+                }
+
+                if (self->_event_handler != NULL)
+                {
+                    self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_RFQ, self->_event_param);
+                }
+
+
+                self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
+                continue;
+            }
+
             default:
             {
                 break;
@@ -952,6 +1019,19 @@ char *twr_cmwx1zzabz_get_error_command(twr_cmwx1zzabz_t *self)
 char *twr_cmwx1zzabz_get_error_response(twr_cmwx1zzabz_t *self)
 {
     return self->_response;
+}
+
+bool twr_cmwx1zzabz_get_rfq(twr_cmwx1zzabz_t *self)
+{
+    if (self->_custom_command)
+    {
+        return false;
+    }
+
+    self->_custom_command = true;
+    strncpy(self->_custom_command_buf, TWR_CMWX1ZZABZ_CUSTOM_COMMAND_BUFFER_SIZE, "AT+RFQ?\r");
+
+    return true;
 }
 
 static bool _twr_cmwx1zzabz_read_response(twr_cmwx1zzabz_t *self)

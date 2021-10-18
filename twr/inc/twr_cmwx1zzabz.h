@@ -15,6 +15,7 @@
 
 #define TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE (TWR_CMWX1ZZABZ_TX_MAX_PACKET_SIZE + 25)
 #define TWR_CMWX1ZZABZ_RX_FIFO_BUFFER_SIZE 64
+#define TWR_CMWX1ZZABZ_CUSTOM_COMMAND_BUFFER_SIZE 32
 
 //! @endcond
 
@@ -53,7 +54,10 @@ typedef enum
     TWR_CMWX1ZZABZ_EVENT_MESSAGE_CONFIRMED = 9,
 
     //! @brief Sent message not confirmed
-    TWR_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED = 10
+    TWR_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED = 10,
+
+    //! @brief Sent message not confirmed
+    TWR_CMWX1ZZABZ_EVENT_RFQ = 11,
 
 } twr_cmwx1zzabz_event_t;
 
@@ -214,7 +218,10 @@ typedef enum
     TWR_CMWX1ZZABZ_STATE_JOIN_SEND = 12,
     TWR_CMWX1ZZABZ_STATE_JOIN_RESPONSE = 13,
 
-    TWR_CMWX1ZZABZ_STATE_RECEIVE = 14
+    TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_SEND = 14,
+    TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_RESPONSE = 15,
+
+    TWR_CMWX1ZZABZ_STATE_RECEIVE = 16
 
 } twr_cmwx1zzabz_state_t;
 
@@ -260,8 +267,13 @@ struct twr_cmwx1zzabz_t
     uint32_t _save_config_mask;
     twr_cmwx1zzabz_config _config;
     bool _join_command;
+    bool _custom_command;
+    char _custom_command_buf[TWR_CMWX1ZZABZ_CUSTOM_COMMAND_BUFFER_SIZE];
     uint8_t _tx_port;
     bool _debug;
+
+    int32_t _cmd_rfq_rssi;
+    int32_t _cmd_rfq_snr;
 };
 
 //! @endcond
