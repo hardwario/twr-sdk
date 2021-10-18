@@ -56,8 +56,11 @@ typedef enum
     //! @brief Sent message not confirmed
     TWR_CMWX1ZZABZ_EVENT_MESSAGE_NOT_CONFIRMED = 10,
 
-    //! @brief Sent message not confirmed
+    //! @brief RF quality response
     TWR_CMWX1ZZABZ_EVENT_RFQ = 11,
+
+    //! @brief Frame counter response
+    TWR_CMWX1ZZABZ_EVENT_FRAME_COUNTER = 12,
 
 } twr_cmwx1zzabz_event_t;
 
@@ -274,6 +277,9 @@ struct twr_cmwx1zzabz_t
 
     int32_t _cmd_rfq_rssi;
     int32_t _cmd_rfq_snr;
+
+    uint32_t _cmd_frmcnt_uplink;
+    uint32_t _cmd_frmcnt_downlink;
 };
 
 //! @endcond
@@ -530,6 +536,33 @@ char *twr_cmwx1zzabz_get_error_command(twr_cmwx1zzabz_t *self);
 //! @return Buffer char* containing last modem response
 
 char *twr_cmwx1zzabz_get_error_response(twr_cmwx1zzabz_t *self);
+
+//! @brief Request RF quality of the last received packet (JOIN, LNPARAM, confirmed message)
+//! @param[in] self Instance
+
+bool twr_cmwx1zzabz_rfq(twr_cmwx1zzabz_t *self);
+
+//! @brief Get RF quality values in callback
+//! @param[in] self Instance
+//! @param[out] rssi RSSI
+//! @param[out] snr SNR
+//! @return true
+
+bool twr_cmwx1zzabz_get_rfq(twr_cmwx1zzabz_t *self, int32_t *rssi, int32_t *snr);
+
+//! @brief Request frame counter value
+//! @param[in] self Instance
+
+bool twr_cmwx1zzabz_frame_counter(twr_cmwx1zzabz_t *self);
+
+//! @brief Get frame counter value
+//! @param[in] self Instance
+//! @param[out] uplink Uplink frame counter
+//! @param[out] downlink Downlink frame counter
+//! @return true
+
+bool twr_cmwx1zzabz_get_frame_counter(twr_cmwx1zzabz_t *self, uint32_t *uplink, uint32_t *downlink);
+
 
 
 //! @}
