@@ -62,6 +62,8 @@ typedef enum
     //! @brief Frame counter response
     TWR_CMWX1ZZABZ_EVENT_FRAME_COUNTER = 12,
 
+    TWR_CMWX1ZZABZ_EVENT_LINK_CHECK = 13,
+
 } twr_cmwx1zzabz_event_t;
 
 //! @brief CMWX1ZZABZ instance
@@ -224,7 +226,10 @@ typedef enum
     TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_SEND = 14,
     TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_RESPONSE = 15,
 
-    TWR_CMWX1ZZABZ_STATE_RECEIVE = 16
+    TWR_CMWX1ZZABZ_STATE_LINK_CHECK_SEND = 16,
+    TWR_CMWX1ZZABZ_STATE_LINK_CHECK_RESPONSE = 17,
+
+    TWR_CMWX1ZZABZ_STATE_RECEIVE = 18
 
 } twr_cmwx1zzabz_state_t;
 
@@ -270,6 +275,7 @@ struct twr_cmwx1zzabz_t
     uint32_t _save_config_mask;
     twr_cmwx1zzabz_config _config;
     bool _join_command;
+    bool _link_check_command;
     bool _custom_command;
     char _custom_command_buf[TWR_CMWX1ZZABZ_CUSTOM_COMMAND_BUFFER_SIZE];
     uint8_t _tx_port;
@@ -280,6 +286,10 @@ struct twr_cmwx1zzabz_t
 
     uint32_t _cmd_frmcnt_uplink;
     uint32_t _cmd_frmcnt_downlink;
+
+    uint8_t _cmd_link_check_event;
+    uint8_t _cmd_link_check_margin;
+    uint8_t _cmd_link_check_gwcnt;
 };
 
 //! @endcond
@@ -563,6 +573,9 @@ bool twr_cmwx1zzabz_frame_counter(twr_cmwx1zzabz_t *self);
 
 bool twr_cmwx1zzabz_get_frame_counter(twr_cmwx1zzabz_t *self, uint32_t *uplink, uint32_t *downlink);
 
+bool twr_cmwx1zzabz_link_check(twr_cmwx1zzabz_t *self);
+
+bool twr_cmwx1zzabz_get_link_check(twr_cmwx1zzabz_t *self, uint8_t *mac_response, uint8_t *margin, uint8_t *gateway_count);
 
 
 //! @}
