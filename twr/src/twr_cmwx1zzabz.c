@@ -7,6 +7,7 @@
 #define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_RESPONSE 100
 #define TWR_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE 3000
 #define TWR_CMWX1ZZABZ_DELAY_JOIN_RESPONSE 8000
+#define TWR_CMWX1ZZABZ_DELAY_CUSTOM_COMMAND_RESPONSE 100
 
 // Apply changes to the factory configuration
 const char *_init_commands[] =
@@ -763,8 +764,10 @@ static void _twr_cmwx1zzabz_task(void *param)
                     continue;
                 }
 
+                self->_custom_command = false;
+
                 self->_state = TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_RESPONSE;
-                twr_scheduler_plan_current_from_now(10);
+                twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_CUSTOM_COMMAND_RESPONSE);
                 return;
             }
 
@@ -779,26 +782,43 @@ static void _twr_cmwx1zzabz_task(void *param)
                 if (memcmp(self->_response, "+OK=", 4) == 0)
                 {
                     twr_scheduler_plan_current_now();
-                    return;
-                }
 
-                if (strcmp(self->_custom_command_buf, "AT+RFQ?\r") == 0)
-                {
-                    // RFQ request
-                    char *rssi_str = strchr(self->_response, '=');
-                    rssi_str++;
+                    twr_cmwx1zzabz_event_t event = TWR_CMWX1ZZABZ_EVENT_ERROR;
 
-                    char *snr_str = strchr(self->_response, '=');
-                    snr_str++;
+                    if (strcmp(self->_custom_command_buf, "AT+RFQ?\r") == 0)
+                    {
+                        // RFQ request
+                        char *rssi_str = strchr(self->_response, '=');
+                        rssi_str++;
 
-                    self->_cmd_rfq_rssi = atoi(rssi_str);
-                    self->_cmd_rfq_snr = atoi(snr_str);
+                        char *snr_str = strchr(self->_response, ',');
+                        snr_str++;
 
-                }
+                        self->_cmd_rfq_rssi = atoi(rssi_str);
+                        self->_cmd_rfq_snr = atoi(snr_str);
+                        event = TWR_CMWX1ZZABZ_EVENT_RFQ;
 
-                if (self->_event_handler != NULL)
-                {
-                    self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_RFQ, self->_event_param);
+                    }
+
+                    if (strcmp(self->_custom_command_buf, "AT+FRMCNT?\r") == 0)
+                    {
+                        // Framecounter request
+                        char *uplink_str = strchr(self->_response, '=');
+                        uplink_str++;
+
+                        char *downlink_str = strchr(self->_response, ',');
+                        downlink_str++;
+
+                        self->_cmd_frmcnt_uplink = atoi(uplink_str);
+                        self->_cmd_frmcnt_downlink = atoi(downlink_str);
+                        event = TWR_CMWX1ZZABZ_EVENT_FRAME_COUNTER;
+
+                    }
+
+                    if (self->_event_handler != NULL)
+                    {
+                        self->_event_handler(self, event, self->_event_param);
+                    }
                 }
 
 
@@ -1021,7 +1041,7 @@ char *twr_cmwx1zzabz_get_error_response(twr_cmwx1zzabz_t *self)
     return self->_response;
 }
 
-bool twr_cmwx1zzabz_get_rfq(twr_cmwx1zzabz_t *self)
+bool twr_cmwx1zzabz_rfq(twr_cmwx1zzabz_t *self)
 {
     if (self->_custom_command)
     {
@@ -1029,7 +1049,40 @@ bool twr_cmwx1zzabz_get_rfq(twr_cmwx1zzabz_t *self)
     }
 
     self->_custom_command = true;
-    strncpy(self->_custom_command_buf, TWR_CMWX1ZZABZ_CUSTOM_COMMAND_BUFFER_SIZE, "AT+RFQ?\r");
+    strcpy(self->_custom_command_buf, "AT+RFQ?\r");
+
+    twr_scheduler_plan_now(self->_task_id);
+
+    return true;
+}
+
+bool twr_cmwx1zzabz_get_rfq(twr_cmwx1zzabz_t *self, int32_t *rssi, int32_t *snr)
+{
+    *rssi = self->_cmd_rfq_rssi;
+    *snr = self->_cmd_rfq_snr;
+
+    return true;
+}
+
+bool twr_cmwx1zzabz_frame_counter(twr_cmwx1zzabz_t *self)
+{
+    if (self->_custom_command)
+    {
+        return false;
+    }
+
+    self->_custom_command = true;
+    strcpy(self->_custom_command_buf, "AT+FRMCNT?\r");
+
+    twr_scheduler_plan_now(self->_task_id);
+
+    return true;
+}
+
+bool twr_cmwx1zzabz_get_frame_counter(twr_cmwx1zzabz_t *self, uint32_t *uplink, uint32_t *downlink)
+{
+    *uplink = self->_cmd_frmcnt_uplink;
+    *downlink = self->_cmd_frmcnt_downlink;
 
     return true;
 }
