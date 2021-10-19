@@ -87,6 +87,11 @@ bool twr_module_lcd_off(void)
     return twr_tca9534a_write_pin(&_twr_module_lcd.tca9534a, _TWR_MODULE_LCD_DISP_ON_PIN, 0);
 }
 
+bool twr_module_lcd_is_present(void)
+{
+    return _twr_module_lcd_tca9534a_init();
+}
+
 bool twr_module_lcd_is_ready(void)
 {
 	return _twr_module_lcd_tca9534a_init() && twr_gfx_display_is_ready(&_twr_module_lcd.gfx);
