@@ -62,7 +62,9 @@ typedef enum
     //! @brief Frame counter response
     TWR_CMWX1ZZABZ_EVENT_FRAME_COUNTER = 12,
 
-    TWR_CMWX1ZZABZ_EVENT_LINK_CHECK = 13,
+    TWR_CMWX1ZZABZ_EVENT_LINK_CHECK_OK = 13,
+
+    TWR_CMWX1ZZABZ_EVENT_LINK_CHECK_NOK = 14,
 
 } twr_cmwx1zzabz_event_t;
 
@@ -228,8 +230,9 @@ typedef enum
 
     TWR_CMWX1ZZABZ_STATE_LINK_CHECK_SEND = 16,
     TWR_CMWX1ZZABZ_STATE_LINK_CHECK_RESPONSE = 17,
+    TWR_CMWX1ZZABZ_STATE_LINK_CHECK_RESPONSE_ANS = 18,
 
-    TWR_CMWX1ZZABZ_STATE_RECEIVE = 18
+    TWR_CMWX1ZZABZ_STATE_RECEIVE = 19
 
 } twr_cmwx1zzabz_state_t;
 
@@ -266,6 +269,7 @@ struct twr_cmwx1zzabz_t
     void *_event_param;
     char _command[TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE];
     char _response[TWR_CMWX1ZZABZ_RX_FIFO_BUFFER_SIZE];
+    uint8_t _response_length;
     uint8_t _message_buffer[TWR_CMWX1ZZABZ_TX_MAX_PACKET_SIZE];
     size_t _message_length;
     uint8_t _message_port;
@@ -281,13 +285,14 @@ struct twr_cmwx1zzabz_t
     uint8_t _tx_port;
     bool _debug;
 
+
+
     int32_t _cmd_rfq_rssi;
     int32_t _cmd_rfq_snr;
 
     uint32_t _cmd_frmcnt_uplink;
     uint32_t _cmd_frmcnt_downlink;
 
-    uint8_t _cmd_link_check_event;
     uint8_t _cmd_link_check_margin;
     uint8_t _cmd_link_check_gwcnt;
 };
@@ -575,7 +580,7 @@ bool twr_cmwx1zzabz_get_frame_counter(twr_cmwx1zzabz_t *self, uint32_t *uplink, 
 
 bool twr_cmwx1zzabz_link_check(twr_cmwx1zzabz_t *self);
 
-bool twr_cmwx1zzabz_get_link_check(twr_cmwx1zzabz_t *self, uint8_t *mac_response, uint8_t *margin, uint8_t *gateway_count);
+bool twr_cmwx1zzabz_get_link_check(twr_cmwx1zzabz_t *self, uint8_t *margin, uint8_t *gateway_count);
 
 
 //! @}
