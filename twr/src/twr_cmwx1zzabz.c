@@ -7,7 +7,7 @@
 #define TWR_CMWX1ZZABZ_DELAY_CONFIG_SAVE 100
 #define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_RESPONSE 100
 #define TWR_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE 3000
-#define TWR_CMWX1ZZABZ_DELAY_JOIN_RESPONSE 8000
+#define TWR_CMWX1ZZABZ_DELAY_JOIN_RESPONSE 500 //8000
 #define TWR_CMWX1ZZABZ_DELAY_LINK_CHECK_RESPONSE 4000
 #define TWR_CMWX1ZZABZ_DELAY_CUSTOM_COMMAND_RESPONSE 100
 
@@ -829,7 +829,8 @@ static void _twr_cmwx1zzabz_task(void *param)
                     self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_LINK_CHECK_NOK, self->_event_param);
                 }
 
-                continue;
+                twr_scheduler_plan_current_from_now(10);
+                return;
             }
 
             case TWR_CMWX1ZZABZ_STATE_LINK_CHECK_RESPONSE_ANS:
@@ -862,7 +863,8 @@ static void _twr_cmwx1zzabz_task(void *param)
                     self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_LINK_CHECK_OK, self->_event_param);
                 }
 
-                continue;
+                twr_scheduler_plan_current_from_now(100);
+                return;
             }
 
             case TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_SEND:
