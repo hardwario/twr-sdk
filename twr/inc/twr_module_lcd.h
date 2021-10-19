@@ -97,6 +97,10 @@ bool twr_module_lcd_on(void);
 
 bool twr_module_lcd_off(void);
 
+//! @brief Get LCD Module is pressent, can use without twr_module_lcd_init
+
+bool twr_module_lcd_is_present(void);
+
 //! @brief Check if lcd is ready for commands
 //! @return true If ready
 //! @return false If not ready
