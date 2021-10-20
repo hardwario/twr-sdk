@@ -20,6 +20,7 @@ const char *_init_commands[] =
     "AT+DFORMAT=0\r",
     "AT+DUTYCYCLE=0\r",
     "AT+JOINDC=0\r",
+    "AT+DWELL=0,0\r",
     "AT+DEVADDR?\r",
     "AT+DEVEUI?\r",
     "AT+APPEUI?\r",
@@ -269,8 +270,8 @@ static void _twr_cmwx1zzabz_task(void *param)
                 }
 
                 self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE;
-
-                continue;
+                twr_scheduler_plan_current_from_now(3000);
+                return;
             }
             case TWR_CMWX1ZZABZ_STATE_INITIALIZE:
             {
@@ -443,6 +444,11 @@ static void _twr_cmwx1zzabz_task(void *param)
                 else if (strcmp(last_command, "AT+DUTYCYCLE=0\r") == 0 && strcmp(self->_response, "+ERR=-17\r") == 0)
                 {
                     // DUTYCYLE is unusable in some band configuration, ignore this err response
+                    response_handled = 1;
+                }
+                else if (strcmp(last_command, "AT+DWELL=0,0\r") == 0 && strcmp(self->_response, "+ERR=-17\r") == 0)
+                {
+                    // DWELL is used only in AS923
                     response_handled = 1;
                 }
                 else if (   strcmp(last_command, "\rAT\r") == 0 &&
