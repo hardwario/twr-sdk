@@ -1,6 +1,16 @@
 #include <twr_cmwx1zzabz.h>
 #include <twr_log.h>
 
+/*
+
+Supported Murata firmware versions
+
+1.0.02
+1.1.03 - added FRMCNT
+1.1.06 - added JOINDC
+
+*/
+
 #define TWR_CMWX1ZZABZ_DELAY_RUN 100
 #define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_RESET_H 100
 #define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND 100 // ! when using longer AT responses
@@ -838,7 +848,9 @@ static void _twr_cmwx1zzabz_task(void *param)
                     if (link_check_event == 1)
                     {
                         self->_state = TWR_CMWX1ZZABZ_STATE_LINK_CHECK_RESPONSE_ANS;
-                        continue;
+                        // Since +ANS was added in 1.1.03 we will wait until this URC arrives
+                        twr_scheduler_plan_current_from_now(20);
+                        return;
                     }
                 }
                 else
@@ -860,25 +872,23 @@ static void _twr_cmwx1zzabz_task(void *param)
 
             case TWR_CMWX1ZZABZ_STATE_LINK_CHECK_RESPONSE_ANS:
             {
-                if (!_twr_cmwx1zzabz_read_response(self))
+                // Did we received +ANS response? FW 1.0.02 don't have it
+                if (_twr_cmwx1zzabz_read_response(self))
                 {
-                    twr_scheduler_plan_current_from_now(10);
-                    return;
-                }
+                    // Search for ANS
+                    char *ans = strstr(self->_response, "+ANS=2,");
 
-                // Search for ANS
-                char *ans = strstr(self->_response, "+ANS=2,");
+                    if (ans)
+                    {
+                        ans += 7; // skip "+ANS=2,"
+                        self->_cmd_link_check_margin = atoi(ans);
 
-                if (ans)
-                {
-                    ans += 7; // skip "+ANS=2,"
-                    self->_cmd_link_check_margin = atoi(ans);
+                        // MAC answer
+                        char *gwcnt_str = strchr(ans, ',');
+                        gwcnt_str++;
 
-                    // MAC answer
-                    char *gwcnt_str = strchr(ans, ',');
-                    gwcnt_str++;
-
-                    self->_cmd_link_check_gwcnt = atoi(gwcnt_str);
+                        self->_cmd_link_check_gwcnt = atoi(gwcnt_str);
+                    }
                 }
 
                 self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
@@ -925,6 +935,16 @@ static void _twr_cmwx1zzabz_task(void *param)
 
                 self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
                 self->_custom_command = false;
+
+                // In 1.0.02 fw FRMCNT is not supported, handle this in case this command
+                // and others in future versions fails gracefully and jump to idle instead of ERROR state
+                if (memcmp(self->_response, "+ERR=-1", 7) == 0)
+                {
+                    self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
+                    self->_cmd_frmcnt_uplink = 0;
+                    self->_cmd_frmcnt_downlink = 0;
+                    continue;
+                }
 
                 if (memcmp(self->_response, "+OK=", 4) == 0)
                 {
