@@ -297,6 +297,8 @@ struct twr_cmwx1zzabz_t
 
     uint8_t _cmd_link_check_margin;
     uint8_t _cmd_link_check_gwcnt;
+
+    twr_tick_t _timeout;
 };
 
 //! @endcond
