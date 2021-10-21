@@ -451,6 +451,25 @@ static void _twr_cmwx1zzabz_task(void *param)
                     // DWELL is used only in AS923
                     response_handled = 1;
                 }
+                else if (strcmp(last_command, "AT+JOINDC=0\r") == 0 && strcmp(self->_response, "+ERR=-1\r") == 0)
+                {
+                    // JOINDC is in the firmware 1.1.06 and higher
+                    response_handled = 1;
+                }
+                else if (strcmp(last_command, "AT+VER?\r") == 0 && memcmp(self->_response, "+OK=", 4) == 0)
+                {
+                    // Grab firmware version, only first part eg. 1.1.06
+                    // +OK=1.1.06,Aug 24 2020 16:11:57<\r>
+                    char *comma = strchr(self->_response, ',');
+                    if (comma)
+                    {
+                        char *first_character = &self->_response[4];
+                        memset(self->_fw_version, '\0', sizeof(self->_fw_version));
+                        int len = comma - first_character;
+                        memcpy(self->_fw_version, first_character, len);
+                    }
+                    response_handled = 1;
+                }
                 else if (   strcmp(last_command, "\rAT\r") == 0 &&
                             strcmp(self->_response, "+OK\r") == 0
                         )
@@ -1212,6 +1231,11 @@ bool twr_cmwx1zzabz_get_frame_counter(twr_cmwx1zzabz_t *self, uint32_t *uplink, 
     *downlink = self->_cmd_frmcnt_downlink;
 
     return true;
+}
+
+char *twr_cmwx1zzabz_get_fw_version(twr_cmwx1zzabz_t *self)
+{
+    return self->_fw_version;
 }
 
 bool twr_cmwx1zzabz_link_check(twr_cmwx1zzabz_t *self)

@@ -16,6 +16,8 @@
 #define TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE (TWR_CMWX1ZZABZ_TX_MAX_PACKET_SIZE + 25)
 #define TWR_CMWX1ZZABZ_RX_FIFO_BUFFER_SIZE 64
 #define TWR_CMWX1ZZABZ_CUSTOM_COMMAND_BUFFER_SIZE 32
+#define TWR_CMWX1ZZABZ_FW_VERSION_BUFFER_SIZE 16
+
 
 //! @endcond
 
@@ -285,7 +287,7 @@ struct twr_cmwx1zzabz_t
     uint8_t _tx_port;
     bool _debug;
 
-
+    char _fw_version[TWR_CMWX1ZZABZ_FW_VERSION_BUFFER_SIZE];
 
     int32_t _cmd_rfq_rssi;
     int32_t _cmd_rfq_snr;
@@ -578,10 +580,24 @@ bool twr_cmwx1zzabz_frame_counter(twr_cmwx1zzabz_t *self);
 
 bool twr_cmwx1zzabz_get_frame_counter(twr_cmwx1zzabz_t *self, uint32_t *uplink, uint32_t *downlink);
 
+//! @brief Request send of link check packet
+//! @param[in] self Instance
+
 bool twr_cmwx1zzabz_link_check(twr_cmwx1zzabz_t *self);
+
+//! @brief Get link check values
+//! @param[in] self Instance
+//! @param[out] margin Margin id dBm
+//! @param[out] gateway_count Number of gateways that received link check packet
+//! @return true
 
 bool twr_cmwx1zzabz_get_link_check(twr_cmwx1zzabz_t *self, uint8_t *margin, uint8_t *gateway_count);
 
+//! @brief Get firmware version string
+//! @param[in] self Instance
+//! @return Pointer to the string containing version
+
+char *twr_cmwx1zzabz_get_fw_version(twr_cmwx1zzabz_t *self);
 
 //! @}
 
