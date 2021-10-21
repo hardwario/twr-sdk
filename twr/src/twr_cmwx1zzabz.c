@@ -16,10 +16,14 @@ Supported Murata firmware versions
 #define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND 100 // ! when using longer AT responses
 #define TWR_CMWX1ZZABZ_DELAY_CONFIG_SAVE 100
 #define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_RESPONSE 100
-#define TWR_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE 3000
+#define TWR_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE 1500
 #define TWR_CMWX1ZZABZ_DELAY_JOIN_RESPONSE 500 //8000
 #define TWR_CMWX1ZZABZ_DELAY_LINK_CHECK_RESPONSE 4000
 #define TWR_CMWX1ZZABZ_DELAY_CUSTOM_COMMAND_RESPONSE 100
+
+#define TWR_CMWX1ZZABZ_TIMEOUT_CUSTOM_COMMAND_RESPONSE 500
+#define TWR_CMWX1ZZABZ_TIMEOUT_LNCHECK 20000
+#define TWR_CMWX1ZZABZ_TIMEOUT_JOIN 20000
 
 // Apply changes to the factory configuration
 const char *_init_commands[] =
@@ -310,6 +314,7 @@ static void _twr_cmwx1zzabz_task(void *param)
                 }
 
                 self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_RESPONSE;
+                self->_timeout = twr_tick_get();
                 twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND);
 
                 return;
@@ -319,6 +324,10 @@ static void _twr_cmwx1zzabz_task(void *param)
                 if (!_twr_cmwx1zzabz_read_response(self))
                 {
                     twr_scheduler_plan_current_from_now(20);
+                    if (twr_tick_get() > (self->_timeout + TWR_CMWX1ZZABZ_TIMEOUT_CUSTOM_COMMAND_RESPONSE))
+                    {
+                        self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+                    }
                     return;
                 }
 
@@ -742,7 +751,11 @@ static void _twr_cmwx1zzabz_task(void *param)
                     continue;
                 }
 
+                // Clear join command flag
+                self->_join_command = false;
+
                 self->_state = TWR_CMWX1ZZABZ_STATE_JOIN_RESPONSE;
+                self->_timeout = twr_tick_get();
                 twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_JOIN_RESPONSE);
                 return;
             }
@@ -754,6 +767,10 @@ static void _twr_cmwx1zzabz_task(void *param)
                 if (!_twr_cmwx1zzabz_read_response(self))
                 {
                     twr_scheduler_plan_current_from_now(50);
+                    if (twr_tick_get() > (self->_timeout + TWR_CMWX1ZZABZ_TIMEOUT_JOIN))
+                    {
+                        self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+                    }
                     return;
                 }
 
@@ -768,9 +785,6 @@ static void _twr_cmwx1zzabz_task(void *param)
                 {
                     join_successful = true;
                 }
-
-                // Clear join command flag
-                self->_join_command = false;
 
                 if (join_successful)
                 {
@@ -812,6 +826,7 @@ static void _twr_cmwx1zzabz_task(void *param)
                 self->_link_check_command = false;
 
                 self->_state = TWR_CMWX1ZZABZ_STATE_LINK_CHECK_RESPONSE;
+                self->_timeout = twr_tick_get();
                 twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_LINK_CHECK_RESPONSE);
                 return;
             }
@@ -821,10 +836,12 @@ static void _twr_cmwx1zzabz_task(void *param)
                 if (!_twr_cmwx1zzabz_read_response(self))
                 {
                     twr_scheduler_plan_current_from_now(10);
+                    if (twr_tick_get() > (self->_timeout + TWR_CMWX1ZZABZ_TIMEOUT_LNCHECK))
+                    {
+                        self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+                    }
                     return;
                 }
-
-                //self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
 
                 if (memcmp(self->_response, "+OK", 3) == 0)
                 {
@@ -921,6 +938,7 @@ static void _twr_cmwx1zzabz_task(void *param)
                 }
 
                 self->_state = TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_RESPONSE;
+                self->_timeout = twr_tick_get();
                 twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_CUSTOM_COMMAND_RESPONSE);
                 return;
             }
@@ -930,6 +948,10 @@ static void _twr_cmwx1zzabz_task(void *param)
                 if (!_twr_cmwx1zzabz_read_response(self))
                 {
                     twr_scheduler_plan_current_from_now(50);
+                    if (twr_tick_get() > (self->_timeout + TWR_CMWX1ZZABZ_TIMEOUT_CUSTOM_COMMAND_RESPONSE))
+                    {
+                        self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+                    }
                     return;
                 }
 
