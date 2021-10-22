@@ -48,6 +48,8 @@ const char *_init_commands[] =
     "AT+NWK?\r",
     "AT+ADR?\r",
     "AT+DR?\r",
+    "AT+REP?\r",
+    "AT+RTYNUM?\r",
     NULL
 };
 
@@ -460,6 +462,22 @@ static void _twr_cmwx1zzabz_task(void *param)
                     }
                     response_handled = 1;
                 }
+                else if (strcmp(last_command, "AT+REP?\r") == 0 && response_valid)
+                {
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_REP) == 0)
+                    {
+                        self->_config.repetition_unconfirmed = atoi(response_string_value);
+                    }
+                    response_handled = 1;
+                }
+                else if (strcmp(last_command, "AT+RTYNUM?\r") == 0 && response_valid)
+                {
+                    if ((self->_save_config_mask & 1 << TWR_CMWX1ZZABZ_CONFIG_INDEX_RTYNUM) == 0)
+                    {
+                        self->_config.repetition_confirmed = atoi(response_string_value);
+                    }
+                    response_handled = 1;
+                }
                 else if (strcmp(last_command, "AT+DUTYCYCLE=0\r") == 0 && strcmp(self->_response, "+ERR=-17\r") == 0)
                 {
                     // DUTYCYLE is unusable in some band configuration, ignore this err response
@@ -692,6 +710,17 @@ static void _twr_cmwx1zzabz_task(void *param)
                         snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+DR=%d\r", (int) self->_config.datarate);
                         break;
                     }
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_REP:
+                    {
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+REP=%d\r", (int) self->_config.repetition_unconfirmed);
+                        break;
+                    }
+                    case TWR_CMWX1ZZABZ_CONFIG_INDEX_RTYNUM:
+                    {
+                        snprintf(self->_command, TWR_CMWX1ZZABZ_TX_FIFO_BUFFER_SIZE, "AT+RTYNUM=%d\r", (int) self->_config.repetition_confirmed);
+                        break;
+                    }
+
                     default:
                     {
                         break;
@@ -1217,6 +1246,30 @@ void twr_cmwx1zzabz_set_datarate(twr_cmwx1zzabz_t *self, uint8_t datarate)
 uint8_t twr_cmwx1zzabz_get_datarate(twr_cmwx1zzabz_t *self)
 {
     return self->_config.datarate;
+}
+
+void twr_cmwx1zzabz_set_repeat_unconfirmed(twr_cmwx1zzabz_t *self, uint8_t repeat)
+{
+    self->_config.repetition_unconfirmed = repeat;
+
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_REP);
+}
+
+uint8_t twr_cmwx1zzabz_get_repeat_unconfirmed(twr_cmwx1zzabz_t *self)
+{
+    return self->_config.repetition_unconfirmed;
+}
+
+void twr_cmwx1zzabz_set_repeat_confirmed(twr_cmwx1zzabz_t *self, uint8_t repeat)
+{
+    self->_config.repetition_confirmed = repeat;
+
+    _twr_cmwx1zzabz_save_config(self, TWR_CMWX1ZZABZ_CONFIG_INDEX_RTYNUM);
+}
+
+uint8_t twr_cmwx1zzabz_get_repeat_confirmed(twr_cmwx1zzabz_t *self)
+{
+    return self->_config.repetition_confirmed;
 }
 
 char *twr_cmwx1zzabz_get_error_command(twr_cmwx1zzabz_t *self)

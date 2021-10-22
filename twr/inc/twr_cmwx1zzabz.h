@@ -204,6 +204,8 @@ typedef enum
     TWR_CMWX1ZZABZ_CONFIG_INDEX_NWK = 10,
     TWR_CMWX1ZZABZ_CONFIG_INDEX_ADAPTIVE_DATARATE = 11,
     TWR_CMWX1ZZABZ_CONFIG_INDEX_DATARATE = 12,
+    TWR_CMWX1ZZABZ_CONFIG_INDEX_REP = 13,
+    TWR_CMWX1ZZABZ_CONFIG_INDEX_RTYNUM = 14,
     TWR_CMWX1ZZABZ_CONFIG_INDEX_LAST_ITEM
 
 } twr_cmwx1zzabz_config_index_t;
@@ -254,6 +256,8 @@ typedef struct
     uint8_t nwk_public;
     bool adaptive_datarate;
     uint8_t datarate;
+    uint8_t repetition_unconfirmed;
+    uint8_t repetition_confirmed;
 
 } twr_cmwx1zzabz_config;
 
@@ -600,6 +604,30 @@ bool twr_cmwx1zzabz_get_link_check(twr_cmwx1zzabz_t *self, uint8_t *margin, uint
 //! @return Pointer to the string containing version
 
 char *twr_cmwx1zzabz_get_fw_version(twr_cmwx1zzabz_t *self);
+
+//! @brief Set number of transmissions of unconfirmed message
+//! @param[in] self Instance
+//! @param[in] repeat Number of transmissions
+
+void twr_cmwx1zzabz_set_repeat_unconfirmed(twr_cmwx1zzabz_t *self, uint8_t repeat);
+
+//! @brief Get number of transmissions of unconfirmed message
+//! @param[in] self Instance
+//! @return Number of transmissions
+
+uint8_t twr_cmwx1zzabz_get_repeat_unconfirmed(twr_cmwx1zzabz_t *self);
+
+//! @brief Set number of transmissions of confirmed message
+//! @param[in] self Instance
+//! @param[in] repeat Number of transmissions
+
+void twr_cmwx1zzabz_set_repeat_confirmed(twr_cmwx1zzabz_t *self, uint8_t repeat);
+
+//! @brief Get number of transmissions of confirmed message
+//! @param[in] self Instance
+//! @return Number of transmissions
+
+uint8_t twr_cmwx1zzabz_get_repeat_confirmed(twr_cmwx1zzabz_t *self);
 
 //! @}
 
