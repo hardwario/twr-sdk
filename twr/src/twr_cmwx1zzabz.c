@@ -604,7 +604,7 @@ static void _twr_cmwx1zzabz_task(void *param)
                     continue;
                 }
 
-                self->_state = TWR_CMWX1ZZABZ_STATE_READY;
+                self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
 
                 if (self->_event_handler != NULL)
                 {
