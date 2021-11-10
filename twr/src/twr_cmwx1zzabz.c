@@ -488,9 +488,11 @@ static void _twr_cmwx1zzabz_task(void *param)
                     // DWELL is used only in AS923
                     response_handled = 1;
                 }
-                else if (strcmp(last_command, "AT+JOINDC=0\r") == 0 && strcmp(self->_response, "+ERR=-1\r") == 0)
+                else if (strcmp(last_command, "AT+JOINDC=0\r") == 0 && (strcmp(self->_response, "+ERR=-1\r") == 0 || strcmp(self->_response, "+ERR=-14\r") == 0))
                 {
                     // JOINDC is in the firmware 1.1.06 and higher
+                    // +ERR=-1 case is there for older firmwares
+                    // +ERR=-14 case is there for 1.1.06 in case modem has set MODE=0 (ABP)
                     response_handled = 1;
                 }
                 else if (strcmp(last_command, "AT+VER?\r") == 0 && memcmp(self->_response, "+OK=", 4) == 0)
