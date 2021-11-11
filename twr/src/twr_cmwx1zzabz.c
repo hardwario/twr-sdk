@@ -29,7 +29,7 @@ Supported Murata firmware versions
 // Apply changes to the factory configuration
 const char *_init_commands[] =
 {
-    "\rAT\r",
+    "AT\r",
     "AT+VER?\r",
     "AT+DEV?\r",
     "AT+DFORMAT=0\r",
@@ -287,7 +287,10 @@ static void _twr_cmwx1zzabz_task(void *param)
                             self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_MESSAGE_RETRANSMISSION, self->_event_param);
                         }
                     }
-                    else if (memcmp(self->_response, "+EVENT=0,1", 10) == 0)
+                    // This is used when band changes or factory reset command
+                    // 1.0.0.2 & 1.1.0.6 sends +EVENT=0,0 boot event
+                    // 1.1.0.3 & 1.1.0.6 sends +EVENT=0,1 factory reset event
+                    else if (memcmp(self->_response, "+EVENT=0,1", 10) == 0 || memcmp(self->_response, "+EVENT=0,0", 10) == 0)
                     {
                         self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE;
                         self->_save_config_mask = 0;
@@ -629,7 +632,7 @@ static void _twr_cmwx1zzabz_task(void *param)
                     }
                     response_handled = 1;
                 }
-                else if (   strcmp(last_command, "\rAT\r") == 0 &&
+                else if (   strcmp(last_command, "AT\r") == 0 &&
                             strcmp(self->_response, "+OK\r") == 0
                         )
                 {
@@ -1091,6 +1094,12 @@ static void _twr_cmwx1zzabz_task(void *param)
                     {
                         self->_custom_command = false;
                         self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+                        // If factory reset command, then reinitialize modem
+                        if (strcmp(self->_command, "AT+FACNEW\r") == 0)
+                        {
+                            twr_scheduler_plan_current_from_now(1000);
+                            self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE;
+                        }
                     }
                     return;
                 }
