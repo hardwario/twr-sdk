@@ -194,6 +194,9 @@ void twr_uart_init(twr_uart_channel_t channel, twr_uart_baudrate_t baudrate, twr
         }
     }
 
+    // Clear ISR bits
+    _twr_uart[channel].usart->ICR |= USART_ICR_CMCF | USART_ICR_IDLECF | USART_ICR_FECF;
+
     // Stop bits
     _twr_uart[channel].usart->CR2 &= ~USART_CR2_STOP_Msk;
     _twr_uart[channel].usart->CR2 |= ((uint32_t) setting & 0x03) << USART_CR2_STOP_Pos;
@@ -236,6 +239,10 @@ void twr_uart_deinit(twr_uart_channel_t channel)
 
     // Disable UART
     _twr_uart[channel].usart->CR1 &= ~USART_CR1_UE_Msk;
+
+    if (_twr_uart[channel].async_write_task_id != 0) {
+        twr_scheduler_unregister(_twr_uart[channel].async_write_task_id);
+    }
 
     switch(channel)
     {
