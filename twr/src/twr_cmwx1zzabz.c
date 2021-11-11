@@ -1,5 +1,6 @@
 #include <twr_cmwx1zzabz.h>
 #include <twr_log.h>
+#include <twr_timer.h>
 
 /*
 
@@ -149,13 +150,25 @@ void twr_cmwx1zzabz_set_debug(twr_cmwx1zzabz_t *self, bool debug)
     self->_debug = debug;
 }
 
-static size_t _twr_cmwx1zzabz_async_write(twr_cmwx1zzabz_t *self, twr_uart_channel_t channel, const void *buffer, size_t length)
+static size_t _twr_cmwx1zzabz_async_write(twr_cmwx1zzabz_t *self, const void *buffer, size_t length)
 {
-    size_t ret = twr_uart_async_write(channel, buffer, length);
+    size_t ret = twr_uart_async_write(self->_uart_channel, buffer, length);
 
     if (self->_debug)
     {
         twr_log_debug("LoRa TX: %s", (const char*)buffer);
+    }
+
+    return ret;
+}
+
+static size_t _twr_cmwx1zzabz_write(twr_cmwx1zzabz_t *self, const void *buffer, size_t length)
+{
+    size_t ret = twr_uart_write(self->_uart_channel, buffer, length);
+
+    if (self->_debug)
+    {
+        twr_log_debug("LoRa syncTX: %s", (const char*)buffer);
     }
 
     return ret;
@@ -274,12 +287,24 @@ static void _twr_cmwx1zzabz_task(void *param)
                             self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_MESSAGE_RETRANSMISSION, self->_event_param);
                         }
                     }
+                    else if (memcmp(self->_response, "+EVENT=0,1", 10) == 0)
+                    {
+                        self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE;
+                        self->_save_config_mask = 0;
+
+                        if (self->_event_handler != NULL)
+                        {
+                            self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_MODEM_FACTORY_RESET, self->_event_param);
+                        }
+                    }
                 }
 
                 continue;
             }
             case TWR_CMWX1ZZABZ_STATE_ERROR:
             {
+                self->_save_config_mask = 0;
+
                 if (self->_event_handler != NULL)
                 {
                     self->_event_handler(self, TWR_CMWX1ZZABZ_EVENT_ERROR, self->_event_param);
@@ -291,10 +316,107 @@ static void _twr_cmwx1zzabz_task(void *param)
             }
             case TWR_CMWX1ZZABZ_STATE_INITIALIZE:
             {
+                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
                 self->_init_command_index = 0;
-                self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_SEND;
 
-                continue;
+                // Test AT command at 9600 baud
+                char cmd_at[] = "AT\r";
+                size_t length = strlen(cmd_at);
+
+                _twr_cmwx1zzabz_write(self, cmd_at, length);
+
+                twr_timer_start();
+                twr_timer_delay(50000);
+                twr_timer_stop();
+
+                // Purge RX FIFO
+                twr_fifo_purge(&self->_rx_fifo);
+
+                if (_twr_cmwx1zzabz_async_write(self, cmd_at, length) != length)
+                {
+                    continue;
+                }
+
+                self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE_AT_RESPONSE;
+
+                twr_scheduler_plan_current_from_now(200);
+                return;
+            }
+
+            case TWR_CMWX1ZZABZ_STATE_INITIALIZE_AT_RESPONSE:
+            {
+                _twr_cmwx1zzabz_read_response(self);
+
+                if (strcmp(self->_response, "+OK\r") == 0)
+                {
+                    // Modem is replying @9600 baud
+                    if (self->_debug)
+                    {
+                        twr_log_debug("OK response @9600");
+                    }
+                    self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_SEND;
+                    continue;
+                }
+
+                // No repsponse from modem, try to recover baudrate
+                if (self->_debug)
+                {
+                    twr_log_debug("NO response @9600");
+                }
+                self->_state = TWR_CMWX1ZZABZ_STATE_RECOVER_BAUDRATE_UART;
+            }
+
+            case TWR_CMWX1ZZABZ_STATE_RECOVER_BAUDRATE_UART:
+            {
+                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+
+                // 19200 baud
+                if (self->_debug)
+                {
+                    twr_log_debug("Higher baudrate 19200");
+                }
+                twr_uart_deinit(self->_uart_channel);
+                twr_uart_init(self->_uart_channel, TWR_UART_BAUDRATE_19200, TWR_UART_SETTING_8N1);
+
+
+                twr_timer_init();
+
+                char cmd_at[] = "AT\r";
+                _twr_cmwx1zzabz_write(self, cmd_at, strlen(cmd_at));
+
+                twr_timer_start();
+                twr_timer_delay(50000);
+                twr_timer_stop();
+
+                char cmd_at_baud[] = "AT+UART=9600\r";
+                _twr_cmwx1zzabz_write(self, cmd_at_baud, strlen(cmd_at_baud));
+
+                twr_timer_start();
+                twr_timer_delay(50000);
+                twr_timer_stop();
+
+                char cmd_at_reboot[] = "AT+REBOOT\r";
+                _twr_cmwx1zzabz_write(self, cmd_at_reboot, strlen(cmd_at_reboot));
+
+                // 9600 baud
+                if (self->_debug)
+                {
+                    twr_log_debug("Lower baudrate 9600");
+                }
+                twr_uart_deinit(self->_uart_channel);
+                twr_uart_init(self->_uart_channel, TWR_UART_BAUDRATE_9600, TWR_UART_SETTING_8N1);
+
+                twr_fifo_init(&self->_tx_fifo, self->_tx_fifo_buffer, sizeof(self->_tx_fifo_buffer));
+                twr_fifo_init(&self->_rx_fifo, self->_rx_fifo_buffer, sizeof(self->_rx_fifo_buffer));
+
+                twr_uart_set_async_fifo(self->_uart_channel, &self->_tx_fifo, &self->_rx_fifo);
+                twr_uart_async_read_start(self->_uart_channel, TWR_TICK_INFINITY);
+                twr_uart_set_event_handler(self->_uart_channel, _uart_event_handler, self);
+
+                self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE;
+
+                twr_scheduler_plan_current_from_now(1000);
+                return;
             }
 
             case TWR_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_SEND:
@@ -302,15 +424,12 @@ static void _twr_cmwx1zzabz_task(void *param)
                 self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
 
                 // Purge RX FIFO
-                char rx_character;
-                while (twr_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
-                {
-                }
+                twr_fifo_purge(&self->_rx_fifo);
 
                 strcpy(self->_command, _init_commands[self->_init_command_index]);
                 size_t length = strlen(self->_command);
 
-                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                if (_twr_cmwx1zzabz_async_write(self, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -488,11 +607,12 @@ static void _twr_cmwx1zzabz_task(void *param)
                     // DWELL is used only in AS923
                     response_handled = 1;
                 }
-                else if (strcmp(last_command, "AT+JOINDC=0\r") == 0 && (strcmp(self->_response, "+ERR=-1\r") == 0 || strcmp(self->_response, "+ERR=-14\r") == 0))
+                else if (strcmp(last_command, "AT+JOINDC=0\r") == 0 && (strcmp(self->_response, "+ERR=-1\r") == 0 || strcmp(self->_response, "+ERR=-14\r") == 0 || strcmp(self->_response, "+ERR=-17\r") == 0))
                 {
                     // JOINDC is in the firmware 1.1.06 and higher
                     // +ERR=-1 case is there for older firmwares
                     // +ERR=-14 case is there for 1.1.06 in case modem has set MODE=0 (ABP)
+                    // +ERR=-17 case command is not supported in current band
                     response_handled = 1;
                 }
                 else if (strcmp(last_command, "AT+VER?\r") == 0 && memcmp(self->_response, "+OK=", 4) == 0)
@@ -574,7 +694,7 @@ static void _twr_cmwx1zzabz_task(void *param)
 
                 size_t length = command_length + self->_message_length + 1; // 1 for \n
 
-                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                if (_twr_cmwx1zzabz_async_write(self, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -640,10 +760,7 @@ static void _twr_cmwx1zzabz_task(void *param)
                 }
 
                 // Purge RX FIFO
-                char rx_character;
-                while (twr_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
-                {
-                }
+                twr_fifo_purge(&self->_rx_fifo);
 
                 switch (self->_save_command_index)
                 {
@@ -731,7 +848,7 @@ static void _twr_cmwx1zzabz_task(void *param)
 
                 size_t length = strlen(self->_command);
 
-                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                if (_twr_cmwx1zzabz_async_write(self, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -769,15 +886,12 @@ static void _twr_cmwx1zzabz_task(void *param)
                 self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
 
                 // Purge RX FIFO
-                char rx_character;
-                while (twr_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
-                {
-                }
+                twr_fifo_purge(&self->_rx_fifo);
 
                 strcpy(self->_command, "AT+JOIN\r");
 
                 size_t length = strlen(self->_command);
-                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                if (_twr_cmwx1zzabz_async_write(self, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -841,15 +955,12 @@ static void _twr_cmwx1zzabz_task(void *param)
                 self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
 
                 // Purge RX FIFO
-                char rx_character;
-                while (twr_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
-                {
-                }
+                twr_fifo_purge(&self->_rx_fifo);
 
                 strcpy(self->_command, "AT+LNCHECK\r");
 
                 size_t length = strlen(self->_command);
-                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                if (_twr_cmwx1zzabz_async_write(self, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -955,15 +1066,12 @@ static void _twr_cmwx1zzabz_task(void *param)
                 self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
 
                 // Purge RX FIFO
-                char rx_character;
-                while (twr_uart_async_read(self->_uart_channel, &rx_character, 1) != 0)
-                {
-                }
+                twr_fifo_purge(&self->_rx_fifo);
 
                 strcpy(self->_command, self->_custom_command_buf);
 
                 size_t length = strlen(self->_command);
-                if (_twr_cmwx1zzabz_async_write(self, self->_uart_channel, self->_command, length) != length)
+                if (_twr_cmwx1zzabz_async_write(self, self->_command, length) != length)
                 {
                     continue;
                 }
@@ -981,6 +1089,7 @@ static void _twr_cmwx1zzabz_task(void *param)
                     twr_scheduler_plan_current_from_now(50);
                     if (twr_tick_get() > (self->_timeout + TWR_CMWX1ZZABZ_TIMEOUT_CUSTOM_COMMAND_RESPONSE))
                     {
+                        self->_custom_command = false;
                         self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
                     }
                     return;
@@ -1326,6 +1435,21 @@ bool twr_cmwx1zzabz_get_frame_counter(twr_cmwx1zzabz_t *self, uint32_t *uplink, 
 {
     *uplink = self->_cmd_frmcnt_uplink;
     *downlink = self->_cmd_frmcnt_downlink;
+
+    return true;
+}
+
+bool twr_cmwx1zzabz_factory_reset(twr_cmwx1zzabz_t *self)
+{
+    if (self->_custom_command)
+    {
+        return false;
+    }
+
+    self->_custom_command = true;
+    strcpy(self->_custom_command_buf, "AT+FACNEW\r");
+
+    twr_scheduler_plan_now(self->_task_id);
 
     return true;
 }
