@@ -396,10 +396,12 @@ void twr_gpio_set_mode(twr_gpio_channel_t channel, twr_gpio_mode_t mode)
         // ... write AF number to appropriate pin of appropriate AFR register
         if(_twr_gpio_16_bit_pos[channel] >= 8)
         {
+            twr_gpio_port[channel]->AFR[1] &= ~(0x0f << (_twr_gpio_64_bit_pos(channel) - 32));
             twr_gpio_port[channel]->AFR[1] |= ((uint8_t)mode >> _TWR_GPIO_MODE_AF_POS) << (_twr_gpio_64_bit_pos(channel) - 32);
         }
         else
         {
+            twr_gpio_port[channel]->AFR[0] &= ~(0x0f << _twr_gpio_64_bit_pos(channel));
             twr_gpio_port[channel]->AFR[0] |= ((uint8_t)mode >> _TWR_GPIO_MODE_AF_POS) << _twr_gpio_64_bit_pos(channel);
         }
 
