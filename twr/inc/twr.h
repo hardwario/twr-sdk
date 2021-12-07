@@ -70,6 +70,7 @@
 
 // Other
 
+#include <twr_at_lora.h>
 #include <twr_analog_sensor.h>
 #include <twr_atci.h>
 #include <twr_base64.h>
