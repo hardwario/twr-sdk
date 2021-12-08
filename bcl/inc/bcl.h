@@ -1,5 +1,10 @@
 #ifndef _BCL_H
 #define _BCL_H
+
+#ifndef VERSION
+#define VERSION "vdev"
+#endif
+
 #include <twr_adc.h>
 #define BC_ADC_CHANNEL_A0 TWR_ADC_CHANNEL_A0
 #define BC_ADC_CHANNEL_A1 TWR_ADC_CHANNEL_A1
