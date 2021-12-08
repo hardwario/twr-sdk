@@ -1,6 +1,10 @@
 #ifndef _TWR_H
 #define _TWR_H
 
+#ifndef VERSION
+#define VERSION "vdev"
+#endif
+
 // Miscellaneous
 
 #include <twr_info.h>
