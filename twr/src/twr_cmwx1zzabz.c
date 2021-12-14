@@ -16,6 +16,7 @@ Supported Murata firmware versions
 #define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_RESET_H 100
 #define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND 100 // ! when using longer AT responses
 #define TWR_CMWX1ZZABZ_DELAY_CONFIG_SAVE 100
+#define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_REBOOT 500
 #define TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_RESPONSE 100
 #define TWR_CMWX1ZZABZ_DELAY_SEND_MESSAGE_RESPONSE 1500
 #define TWR_CMWX1ZZABZ_DELAY_JOIN_RESPONSE 500 //8000
@@ -29,6 +30,7 @@ Supported Murata firmware versions
 // Apply changes to the factory configuration
 const char *_init_commands[] =
 {
+    "AT+REBOOT\r",
     "AT\r",
     "AT+VER?\r",
     "AT+DEV?\r",
@@ -439,7 +441,16 @@ static void _twr_cmwx1zzabz_task(void *param)
 
                 self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE_COMMAND_RESPONSE;
                 self->_timeout = twr_tick_get();
-                twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND);
+
+                if(strcmp(self->_command, "AT+REBOOT\r") == 0)
+                {
+                    // Longer delay after reboot command
+                    twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_REBOOT);
+                }
+                else
+                {
+                    twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_INITIALIZATION_AT_COMMAND);
+                }
 
                 return;
             }
