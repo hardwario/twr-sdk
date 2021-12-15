@@ -83,6 +83,28 @@ void twr_cmwx1zzabz_init(twr_cmwx1zzabz_t *self,  twr_uart_channel_t uart_channe
     self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE;
 }
 
+void twr_cmwx1zzabz_deinit(twr_cmwx1zzabz_t *self)
+{
+    // Check if init was called previously
+    if (self->_task_id)
+    {
+        twr_scheduler_unregister(self->_task_id);
+        twr_uart_deinit(self->_uart_channel);
+    }
+}
+
+void twr_cmwx1zzabz_reboot(twr_cmwx1zzabz_t *self)
+{
+    // Clear state flags
+    self->_custom_command = false;
+    self->_link_check_command = false;
+    self->_join_command = false;
+
+    // Set initialization state and force task to run in case it is not planned
+    self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE;
+    twr_scheduler_plan_now(self->_task_id);
+}
+
 static void _uart_event_handler(twr_uart_channel_t channel, twr_uart_event_t event, void *param)
 {
     (void) channel;
@@ -323,6 +345,9 @@ static void _twr_cmwx1zzabz_task(void *param)
             {
                 self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
                 self->_init_command_index = 0;
+
+                twr_fifo_purge(&self->_rx_fifo);
+                twr_fifo_purge(&self->_tx_fifo);
 
                 // Test AT command at 9600 baud
                 char cmd_at[] = "AT\r";

@@ -318,6 +318,16 @@ struct twr_cmwx1zzabz_t
 
 void twr_cmwx1zzabz_init(twr_cmwx1zzabz_t *self, twr_uart_channel_t uart_channel);
 
+//! @brief Deinitialize CMWX1ZZABZ
+//! @param[in] self Instance
+
+void twr_cmwx1zzabz_deinit(twr_cmwx1zzabz_t *self);
+
+//! @brief Reboot and initialize CMWX1ZZABZ
+//! @param[in] self Instance
+
+void twr_cmwx1zzabz_reboot(twr_cmwx1zzabz_t *self);
+
 //! @brief Set callback function
 //! @param[in] self Instance
 //! @param[in] event_handler Function address
