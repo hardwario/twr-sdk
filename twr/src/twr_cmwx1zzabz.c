@@ -964,6 +964,13 @@ static void _twr_cmwx1zzabz_task(void *param)
                     return;
                 }
 
+                // Fix bug when loraMAC is stuck with -7 answer
+                if (memcmp(self->_response, "+ERR=-7", 7) == 0)
+                {
+                    self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+                    continue;
+                }
+
                 // Response EVENT=1,1 means JOIN was successful
                 if (memcmp(self->_response, "+EVENT=1,1", 10) == 0)
                 {
