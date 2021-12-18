@@ -343,7 +343,7 @@ bool twr_at_lora_ver_read(void)
 {
     const char *version = twr_cmwx1zzabz_get_fw_version(_at.lora);
 
-    twr_atci_printfln("$VER: %s", version);
+    twr_atci_printfln("$FWVER: %s", version);
 
     return true;
 }
