@@ -1147,7 +1147,8 @@ static void _twr_cmwx1zzabz_task(void *param)
                     return;
                 }
 
-                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+                // LoRa Module sometimes don't answer on RFQ after JOIN, go to idle instead of error loop
+                self->_state = TWR_CMWX1ZZABZ_STATE_IDLE; //TWR_CMWX1ZZABZ_STATE_ERROR;
                 self->_custom_command = false;
 
                 // In 1.0.02 fw FRMCNT is not supported, handle this in case this command
