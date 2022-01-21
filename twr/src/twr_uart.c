@@ -322,8 +322,10 @@ size_t twr_uart_write(twr_uart_channel_t channel, const void *buffer, size_t len
 
     size_t bytes_written = 0;
 
-    if (_twr_uart[channel].usart != LPUART1)
+    if (_twr_uart[channel].usart == LPUART1)
     {
+        twr_system_hsi16_enable();
+    } else {
         twr_system_pll_enable();
     }
 
@@ -345,8 +347,10 @@ size_t twr_uart_write(twr_uart_channel_t channel, const void *buffer, size_t len
         continue;
     }
 
-    if (_twr_uart[channel].usart != LPUART1)
+    if (_twr_uart[channel].usart == LPUART1)
     {
+        twr_system_hsi16_enable();
+    } else {
         twr_system_pll_disable();
     }
 
