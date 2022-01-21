@@ -351,7 +351,7 @@ size_t twr_uart_write(twr_uart_channel_t channel, const void *buffer, size_t len
 
     if (_twr_uart[channel].usart == LPUART1)
     {
-        twr_system_hsi16_enable();
+        twr_system_hsi16_disable();
     }
     else
     {
