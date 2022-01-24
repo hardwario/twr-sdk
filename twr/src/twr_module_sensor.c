@@ -1,6 +1,8 @@
 #include <twr_module_sensor.h>
 #include <twr_tca9534a.h>
 #include <twr_onewire_gpio.h>
+#include <twr_log.h>
+#include <twr_error.h>
 
 #define _TWR_MODULE_SENSOR_INITIALIZED_STATE 0xff
 #define _TWR_MODULE_SENSOR_INITIALIZED_DIRECTION 0x00
@@ -321,18 +323,30 @@ twr_onewire_t *twr_module_sensor_get_onewire(void)
 
 bool twr_module_sensor_onewire_power_up(void)
 {
-    if (_twr_module_sensor.onewire_power_semaphore == 0)
+    if (++_twr_module_sensor.onewire_power_semaphore == 1)
     {
-        if (twr_module_sensor_get_revision() == TWR_MODULE_SENSOR_REVISION_R1_1)
+        switch (twr_module_sensor_get_revision())
         {
-            if (!twr_module_sensor_set_vdd(1))
+            case TWR_MODULE_SENSOR_REVISION_R1_1:
             {
-                return false;
+                if (!twr_module_sensor_set_vdd(1))
+                {
+                    return false;
+                }
+                break;
             }
-        }
-        else
-        {
-            if (!twr_module_sensor_set_pull(TWR_MODULE_SENSOR_CHANNEL_A, TWR_MODULE_SENSOR_PULL_UP_56R))
+            case TWR_MODULE_SENSOR_REVISION_R1_0:
+            {
+                twr_gpio_set_mode(_twr_module_sensor_channel_gpio_lut[TWR_MODULE_SENSOR_CHANNEL_A], TWR_GPIO_MODE_ANALOG);
+
+                if (!twr_module_sensor_set_pull(TWR_MODULE_SENSOR_CHANNEL_A, TWR_MODULE_SENSOR_PULL_UP_56R))
+                {
+                    return false;
+                }
+                break;
+            }
+            case TWR_MODULE_SENSOR_REVISION_UNKNOWN:
+            default:
             {
                 return false;
             }
@@ -343,28 +357,35 @@ bool twr_module_sensor_onewire_power_up(void)
             return false;
         }
     }
-
-    _twr_module_sensor.onewire_power_semaphore++;
-
     return true;
 }
 
 bool twr_module_sensor_onewire_power_down(void)
 {
-    _twr_module_sensor.onewire_power_semaphore--;
+    if (_twr_module_sensor.onewire_power_semaphore < 1) twr_error(TWR_ERROR_ERROR_UNLOCK);
 
-    if (_twr_module_sensor.onewire_power_semaphore == 0)
+    if (--_twr_module_sensor.onewire_power_semaphore == 0)
     {
-        if (twr_module_sensor_get_revision() == TWR_MODULE_SENSOR_REVISION_R1_1)
+        switch (twr_module_sensor_get_revision())
         {
-            if (!twr_module_sensor_set_vdd(0))
+            case TWR_MODULE_SENSOR_REVISION_R1_1:
             {
-                return false;
+                if (!twr_module_sensor_set_vdd(0))
+                {
+                    return false;
+                }
+                break;
             }
-        }
-        else
-        {
-            if (!twr_module_sensor_set_pull(TWR_MODULE_SENSOR_CHANNEL_A, TWR_MODULE_SENSOR_PULL_NONE))
+            case TWR_MODULE_SENSOR_REVISION_R1_0:
+            {
+                if (!twr_module_sensor_set_pull(TWR_MODULE_SENSOR_CHANNEL_A, TWR_MODULE_SENSOR_PULL_NONE))
+                {
+                    return false;
+                }
+                break;
+            }
+            case TWR_MODULE_SENSOR_REVISION_UNKNOWN:
+            default:
             {
                 return false;
             }
