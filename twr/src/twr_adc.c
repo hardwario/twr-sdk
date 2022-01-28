@@ -266,7 +266,7 @@ bool twr_adc_async_measure(twr_adc_channel_t channel)
     // Begin internal reference reading
     ADC1->CR |= ADC_CR_ADSTART;
 
-    twr_sleep_disable();
+    twr_sleep_disable(); // enable in _twr_adc_task
 
     return true;
 }
@@ -337,7 +337,6 @@ void ADC1_COMP_IRQHandler(void)
         // Disable all ADC interrupts
         ADC1->IER = 0;
 
-        twr_sleep_enable();
     }
 }
 
@@ -389,6 +388,8 @@ bool twr_adc_calibration(void)
 static void _twr_adc_task(void *param)
 {
     (void) param;
+
+    twr_sleep_enable();
 
     twr_adc_channel_config_t *adc = &_twr_adc.channel_table[_twr_adc.channel_in_progress];
     twr_adc_channel_t pending_result_channel;
