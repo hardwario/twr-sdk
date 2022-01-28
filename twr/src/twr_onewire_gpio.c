@@ -62,6 +62,7 @@ static bool _twr_onewire_gpio_enable(void *ctx)
 static bool _twr_onewire_gpio_disable(void *ctx)
 {
     (void) ctx;
+    twr_gpio_set_mode((twr_gpio_channel_t) ctx, TWR_GPIO_MODE_ANALOG);
     twr_timer_stop();
     twr_system_pll_disable();
     return true;
