@@ -35,7 +35,7 @@ static void _twr_system_init_gpio(void);
 
 static void _twr_system_init_rtc(void);
 
-static void _twr_system_init_shutdown_tmp112(void);
+static void _twr_system_init_shutdown_i2c_sensors(void);
 
 static void _twr_system_switch_clock(twr_system_clock_t clock);
 
@@ -53,7 +53,7 @@ void twr_system_init(void)
 
     _twr_system_init_rtc();
 
-    _twr_system_init_shutdown_tmp112();
+    _twr_system_init_shutdown_i2c_sensors();
 }
 
 static void _twr_system_init_flash(void)
@@ -263,11 +263,14 @@ static void _twr_system_init_rtc(void)
     NVIC_EnableIRQ(RTC_IRQn);
 }
 
-static void _twr_system_init_shutdown_tmp112(void)
+static void _twr_system_init_shutdown_i2c_sensors(void)
 {
     twr_i2c_init(TWR_I2C_I2C0, TWR_I2C_SPEED_100_KHZ);
 
+    // tmp112
     twr_i2c_memory_write_16b(TWR_I2C_I2C0, 0x49, 0x01, 0x0180);
+    // lis2dh12
+    twr_i2c_memory_write_8b(TWR_I2C_I2C0, 0x19, 0x20, 0x07);
 
     twr_i2c_deinit(TWR_I2C_I2C0);
 }
@@ -294,15 +297,7 @@ void twr_system_deep_sleep_disable(void)
 
 void twr_system_enter_standby_mode(void)
 {
-    twr_i2c_init(TWR_I2C_I2C0, TWR_I2C_SPEED_100_KHZ);
-
-    // tmp112
-    twr_i2c_memory_write_16b(TWR_I2C_I2C0, 0x49, 0x01, 0x0180);
-
-    // lis2dh12
-    twr_i2c_memory_write_16b(TWR_I2C_I2C0, 0x19, 0x20, 0x07);
-
-    twr_i2c_deinit(TWR_I2C_I2C0);
+    _twr_system_init_shutdown_i2c_sensors();
 
     __disable_irq();
 
