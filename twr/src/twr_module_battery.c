@@ -107,7 +107,9 @@ twr_module_battery_format_t twr_module_battery_get_format()
 
 bool twr_module_battery_measure(void)
 {
-    if (_twr_module_battery.measurement_active)
+    if ((_twr_module_battery.measurement_active) ||
+        (_twr_module_battery.state == TWR_MODULE_STATE_DETECT_FORMAT) ||
+        (_twr_module_battery.state == TWR_MODULE_STATE_READ))
     {
         return false;
     }
@@ -279,6 +281,8 @@ start:
         }
         case TWR_MODULE_STATE_MEASURE:
         {
+            _twr_module_battery.measurement_active = true;
+
             if (_twr_module_battery.update_interval == TWR_TICK_INFINITY)
             {
                 _twr_module_battery.next_update_start = TWR_TICK_INFINITY;

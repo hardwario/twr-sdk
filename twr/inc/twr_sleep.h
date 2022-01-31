@@ -4,7 +4,7 @@
 #include <twr_system.h>
 
 typedef struct twr_sleep_manager {
-    int disable_sleep;
+    int disable_sleep_semaphore;
 } twr_sleep_manager_t;
 
 extern twr_sleep_manager_t sleep_manager;
@@ -38,7 +38,7 @@ void twr_sleep_enable(void);
  */
 static inline void twr_sleep(void)
 {
-    if (sleep_manager.disable_sleep == 0) {
+    if (sleep_manager.disable_sleep_semaphore == 0) {
         twr_system_sleep();
     }
 }
