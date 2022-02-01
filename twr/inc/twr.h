@@ -5,6 +5,14 @@
 #define VERSION "vdev"
 #endif
 
+#ifndef GIT_VERSION
+#define GIT_VERSION "?"
+#endif
+
+#ifndef BUILD_DATE
+#define BUILD_DATE ""
+#endif
+
 // Miscellaneous
 
 #include <twr_info.h>
