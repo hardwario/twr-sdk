@@ -5,6 +5,14 @@
 #define VERSION "vdev"
 #endif
 
+#ifndef GIT_VERSION
+#define GIT_VERSION "?"
+#endif
+
+#ifndef BUILD_DATE
+#define BUILD_DATE ""
+#endif
+
 #include <twr_adc.h>
 #define BC_ADC_CHANNEL_A0 TWR_ADC_CHANNEL_A0
 #define BC_ADC_CHANNEL_A1 TWR_ADC_CHANNEL_A1
