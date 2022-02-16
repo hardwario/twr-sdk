@@ -1455,7 +1455,7 @@ bool twr_cmwx1zzabz_custom_at(twr_cmwx1zzabz_t *self, char *at_command)
     }
 
     self->_custom_command = true;
-    snprintf(self->_custom_command_buf, sizeof(self->_custom_command_buf), at_command);
+    snprintf(self->_custom_command_buf, sizeof(self->_custom_command_buf), "%s\r", at_command);
 
     twr_scheduler_plan_now(self->_task_id);
 

@@ -217,6 +217,14 @@ bool twr_at_lora_link_check(void)
     return true;
 }
 
+bool twr_at_lora_custom_at_set(twr_atci_param_t *param)
+{
+    // Skip 6 characters (AT$AT=)
+    twr_cmwx1zzabz_custom_at(_at.lora, param->txt);
+
+    return true;
+}
+
 bool twr_at_lora_rfq(void)
 {
     twr_cmwx1zzabz_rfq(_at.lora);
