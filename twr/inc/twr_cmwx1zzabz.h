@@ -68,7 +68,9 @@ typedef enum
 
     TWR_CMWX1ZZABZ_EVENT_LINK_CHECK_NOK = 14,
 
-    TWR_CMWX1ZZABZ_EVENT_MODEM_FACTORY_RESET = 15
+    TWR_CMWX1ZZABZ_EVENT_MODEM_FACTORY_RESET = 15,
+
+    TWR_CMWX1ZZABZ_EVENT_CUSTOM_AT = 16
 
 } twr_cmwx1zzabz_event_t;
 
@@ -574,6 +576,12 @@ char *twr_cmwx1zzabz_get_error_command(twr_cmwx1zzabz_t *self);
 //! @return Buffer char* containing last modem response
 
 char *twr_cmwx1zzabz_get_error_response(twr_cmwx1zzabz_t *self);
+
+//! @brief Send custom AT command to LoRa Module
+//! @param[in] self Instance
+//! @param[in] at_command AT command
+
+bool twr_cmwx1zzabz_custom_at(twr_cmwx1zzabz_t *self, char *at_command);
 
 //! @brief Request RF quality of the last received packet (JOIN, LNPARAM, confirmed message)
 //! @param[in] self Instance

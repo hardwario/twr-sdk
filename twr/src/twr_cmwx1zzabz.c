@@ -1165,7 +1165,8 @@ static void _twr_cmwx1zzabz_task(void *param)
                 {
                     twr_scheduler_plan_current_now();
 
-                    twr_cmwx1zzabz_event_t event = TWR_CMWX1ZZABZ_EVENT_ERROR;
+                    // If we don't know the response, it must be custom AT command
+                    twr_cmwx1zzabz_event_t event = TWR_CMWX1ZZABZ_EVENT_CUSTOM_AT;
 
                     if (strcmp(self->_custom_command_buf, "AT+RFQ?\r") == 0)
                     {
@@ -1444,6 +1445,21 @@ char *twr_cmwx1zzabz_get_error_command(twr_cmwx1zzabz_t *self)
 char *twr_cmwx1zzabz_get_error_response(twr_cmwx1zzabz_t *self)
 {
     return self->_response;
+}
+
+bool twr_cmwx1zzabz_custom_at(twr_cmwx1zzabz_t *self, char *at_command)
+{
+    if (self->_custom_command)
+    {
+        return false;
+    }
+
+    self->_custom_command = true;
+    snprintf(self->_custom_command_buf, sizeof(self->_custom_command_buf), "%s\r", at_command);
+
+    twr_scheduler_plan_now(self->_task_id);
+
+    return true;
 }
 
 bool twr_cmwx1zzabz_rfq(twr_cmwx1zzabz_t *self)
