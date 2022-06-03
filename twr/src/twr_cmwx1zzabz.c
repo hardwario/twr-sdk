@@ -25,7 +25,7 @@ Supported Murata firmware versions
 
 #define TWR_CMWX1ZZABZ_TIMEOUT_CUSTOM_COMMAND_RESPONSE 500
 #define TWR_CMWX1ZZABZ_TIMEOUT_LNCHECK 20000
-#define TWR_CMWX1ZZABZ_TIMEOUT_JOIN 20000
+#define TWR_CMWX1ZZABZ_TIMEOUT_JOIN 100000
 
 // Apply changes to the factory configuration
 const char *_init_commands[] =
