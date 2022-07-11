@@ -1,6 +1,6 @@
 <a href="https://www.hardwario.com/"><img src="https://www.hardwario.com/ci/assets/hw-logo.svg" width="200" alt="HARDWARIO Logo" align="right"></a>
 
-# HARDWARIO Firmware SDK CMAKE version
+# HARDWARIO Firmware SDK CMAKE
 
 [![Travis](https://img.shields.io/travis/hardwario/twr-sdk/master.svg)](https://travis-ci.org/hardwario/twr-sdk)
 [![Release](https://img.shields.io/github/release/hardwario/twr-sdk.svg)](https://github.com/hardwario/twr-sdk/releases)
