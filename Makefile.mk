@@ -26,7 +26,7 @@ endif
 # Directories                                                                  #
 ################################################################################
 
-APP_DIR ?= app
+APP_DIR ?= src
 OBJ_DIR ?= obj
 OUT_DIR ?= out
 SDK_DIR ?= sdk

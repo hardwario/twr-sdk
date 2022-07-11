@@ -1,0 +1,22 @@
+target_sources(
+    ${CMAKE_PROJECT_NAME}
+    PUBLIC
+    SPIRIT_Aes.c
+    SPIRIT_Calibration.c
+    SPIRIT_Commands.c
+    SPIRIT_Csma.c
+    SPIRIT_DirectRF.c
+    SPIRIT_General.c
+    SPIRIT_Gpio.c
+    SPIRIT_Irq.c
+    SPIRIT_LinearFifo.c
+    SPIRIT_Management.c
+    SPIRIT_PktBasic.c
+    SPIRIT_PktCommon.c
+    SPIRIT_PktMbus.c
+    SPIRIT_PktStack.c
+    SPIRIT_Qi.c
+    SPIRIT_Radio.c
+    SPIRIT_Timer.c
+    SPIRIT_Types.c
+    )
