@@ -1,8 +1,8 @@
 #ifndef _TWR_H
 #define _TWR_H
 
-#ifndef VERSION
-#define VERSION "vdev"
+#ifndef FW_VERSION
+#define FW_VERSION "vdev"
 #endif
 
 #ifndef GIT_VERSION

@@ -15,11 +15,11 @@ ENDIF()
 add_executable(${CMAKE_PROJECT_NAME})
 
 if(DEFINED ENV{FW_VERSION})
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC FW_VERSION=$ENV{FW_VERSION})
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC FW_VERSION=\"$ENV{FW_VERSION}\")
 endif()
 
 if(DEFINED ENV{GIT_VERSION})
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC GIT_VERSION=$ENV{GIT_VERSION})
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC GIT_VERSION=\"$ENV{GIT_VERSION}\")
 endif()
 
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S" UTC)
