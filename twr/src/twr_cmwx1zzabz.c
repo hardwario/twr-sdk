@@ -1155,7 +1155,6 @@ static void _twr_cmwx1zzabz_task(void *param)
                 // and others in future versions fails gracefully and jump to idle instead of ERROR state
                 if (memcmp(self->_response, "+ERR=-1", 7) == 0)
                 {
-                    self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
                     self->_cmd_frmcnt_uplink = 0;
                     self->_cmd_frmcnt_downlink = 0;
                     continue;
