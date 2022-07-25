@@ -141,7 +141,7 @@ void twr_atci_write_error(void)
     twr_uart_write(TWR_ATCI_UART, "ERROR\r\n", 7);
 }
 
-bool twr_atci_clac_action(void)
+bool twr_atci_clac_action(twr_atci_param_t *param)
 {
     for (size_t i = 0; i < _twr_atci.commands_length; i++)
     {
@@ -150,7 +150,7 @@ bool twr_atci_clac_action(void)
     return true;
 }
 
-bool twr_atci_help_action(void)
+bool twr_atci_help_action(twr_atci_param_t *param)
 {
     for (size_t i = 0; i < _twr_atci.commands_length; i++)
     {
@@ -201,7 +201,7 @@ static bool _twr_atci_process_line(void)
         {
             if (command->action != NULL)
             {
-                return command->action();
+                return command->action(NULL);
             }
         }
         else if (line[command_len] == '=')
@@ -230,6 +230,19 @@ static bool _twr_atci_process_line(void)
             if (command->read != NULL)
             {
                 return command->read();
+            }
+        }
+        else if (line[command_len] == ' ' && command_len + 1 < length)
+        {
+            if (command->action != NULL)
+            {
+                twr_atci_param_t param = {
+                    .txt = line + command_len + 1,
+                    .length = length - command_len - 1,
+                    .offset = 0
+                };
+
+                return command->action(&param);
             }
         }
         else

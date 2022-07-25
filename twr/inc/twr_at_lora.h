@@ -69,16 +69,16 @@ bool twr_at_lora_repu_set(twr_atci_param_t *param);
 bool twr_at_lora_repc_read(void);
 bool twr_at_lora_repc_set(twr_atci_param_t *param);
 
-bool twr_at_lora_ver_read(void);
+bool twr_at_lora_ver_read(twr_atci_param_t *param);
 
-bool twr_at_lora_reboot(void);
-bool twr_at_lora_freset(void);
-bool twr_at_lora_frmcnt(void);
-bool twr_at_lora_link_check(void);
-bool twr_at_lora_rfq(void);
+bool twr_at_lora_reboot(twr_atci_param_t *param);
+bool twr_at_lora_freset(twr_atci_param_t *param);
+bool twr_at_lora_frmcnt(twr_atci_param_t *param);
+bool twr_at_lora_link_check(twr_atci_param_t *param);
+bool twr_at_lora_rfq(twr_atci_param_t *param);
 bool twr_at_lora_custom_at_set(twr_atci_param_t *param);
 
-bool twr_at_lora_join(void);
+bool twr_at_lora_join(twr_atci_param_t *param);
 bool twr_at_lora_debug_set(twr_atci_param_t *param);
 
 #endif
