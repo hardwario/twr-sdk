@@ -1454,9 +1454,13 @@ bool twr_cmwx1zzabz_custom_at(twr_cmwx1zzabz_t *self, char *at_command)
         return false;
     }
 
-    self->_custom_command = true;
-    snprintf(self->_custom_command_buf, sizeof(self->_custom_command_buf), "%s\r", at_command);
+    int rv = snprintf(self->_custom_command_buf, sizeof(self->_custom_command_buf), "%s\r", at_command);
+    if (rv < 0 || rv >= sizeof(self->_custom_command_buf))
+    {
+        return false;
+    }
 
+    self->_custom_command = true;
     twr_scheduler_plan_now(self->_task_id);
 
     return true;
