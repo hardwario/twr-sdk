@@ -22,7 +22,7 @@
                          {"$FRMCNT", twr_at_lora_frmcnt, NULL, NULL, NULL, "Get frame counters"},\
                          {"$LNCHECK", twr_at_lora_link_check, NULL, NULL, NULL, "MAC Link Check"},\
                          {"$RFQ", twr_at_lora_rfq, NULL, NULL, NULL, "Get RSSI/SNR of last RX packet"},\
-                         {"$AT", NULL, twr_at_lora_custom_at_set, NULL, NULL, "Send custom AT command"},\
+                         {"$AT", twr_at_lora_custom_at, twr_at_lora_custom_at, NULL, NULL, "Send custom AT command"},\
                          {"$DEBUG", NULL, twr_at_lora_debug_set, NULL, NULL, "Show debug UART communication"},\
                          {"$REBOOT", twr_at_lora_reboot, NULL, NULL, NULL, "Firmware reboot"},\
                          {"$FRESET", twr_at_lora_freset, NULL, NULL, NULL, "LoRa Module factory reset"},\
@@ -76,7 +76,7 @@ bool twr_at_lora_freset(twr_atci_param_t *param);
 bool twr_at_lora_frmcnt(twr_atci_param_t *param);
 bool twr_at_lora_link_check(twr_atci_param_t *param);
 bool twr_at_lora_rfq(twr_atci_param_t *param);
-bool twr_at_lora_custom_at_set(twr_atci_param_t *param);
+bool twr_at_lora_custom_at(twr_atci_param_t *param);
 
 bool twr_at_lora_join(twr_atci_param_t *param);
 bool twr_at_lora_debug_set(twr_atci_param_t *param);

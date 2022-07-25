@@ -217,9 +217,8 @@ bool twr_at_lora_link_check(twr_atci_param_t *param)
     return true;
 }
 
-bool twr_at_lora_custom_at_set(twr_atci_param_t *param)
+bool twr_at_lora_custom_at(twr_atci_param_t *param)
 {
-    // Skip 6 characters (AT$AT=)
     twr_cmwx1zzabz_custom_at(_at.lora, param->txt);
 
     return true;
