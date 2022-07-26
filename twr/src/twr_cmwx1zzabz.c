@@ -1,6 +1,7 @@
 #include <twr_cmwx1zzabz.h>
 #include <twr_log.h>
 #include <twr_timer.h>
+#include <twr_atci.h>
 
 /*
 
@@ -1109,8 +1110,6 @@ static void _twr_cmwx1zzabz_task(void *param)
 
             case TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_SEND:
             {
-                self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
-
                 // Purge RX FIFO
                 twr_fifo_purge(&self->_rx_fifo);
 
@@ -1119,9 +1118,12 @@ static void _twr_cmwx1zzabz_task(void *param)
                 size_t length = strlen(self->_command);
                 if (_twr_cmwx1zzabz_async_write(self, self->_command, length) != length)
                 {
-                    continue;
+                    self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
+                    twr_atci_write_error();
+                    return;
                 }
 
+                twr_atci_write_ok();
                 self->_state = TWR_CMWX1ZZABZ_STATE_CUSTOM_COMMAND_RESPONSE;
                 self->_timeout = twr_tick_get();
                 twr_scheduler_plan_current_from_now(TWR_CMWX1ZZABZ_DELAY_CUSTOM_COMMAND_RESPONSE);
@@ -1132,55 +1134,55 @@ static void _twr_cmwx1zzabz_task(void *param)
             {
                 if (!_twr_cmwx1zzabz_read_response(self))
                 {
-                    twr_scheduler_plan_current_from_now(50);
                     if (twr_tick_get() > (self->_timeout + TWR_CMWX1ZZABZ_TIMEOUT_CUSTOM_COMMAND_RESPONSE))
                     {
                         self->_custom_command = false;
-                        self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
-                        // If factory reset command, then reinitialize modem
-                        if (strcmp(self->_command, "AT+FACNEW\r") == 0)
+
+                        if ((strcmp(self->_command, "AT$HELP\r") == 0) || (strcmp(self->_command, "AT+CLAC\r") == 0))
                         {
-                            twr_scheduler_plan_current_from_now(1000);
+                            // AT+CLAC and AT$HELP do not always send a +OK to
+                            // terminate the response. Thus, if we got one of
+                            // these as a custom AT, the timeout indicates a
+                            // successful response.
+                            self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
+                            return;
+                        }
+                        else if (strcmp(self->_command, "AT+FACNEW\r") == 0)
+                        {
+                            // If factory reset command, then reinitialize modem
                             self->_state = TWR_CMWX1ZZABZ_STATE_INITIALIZE;
+                            twr_scheduler_plan_current_from_now(1000);
+                            return;
+                        }
+                        else
+                        {
+                            // We timed out while waiting for a response from
+                            // the LoRa modem. Transition into the error state
+                            // where the modem will be re-initialized after a
+                            // while.
+                            self->_state = TWR_CMWX1ZZABZ_STATE_ERROR;
+                            twr_scheduler_plan_current_now();
+                            return;
                         }
                     }
+                    twr_scheduler_plan_current_from_now(50);
                     return;
                 }
 
-                // LoRa Module sometimes don't answer on RFQ after JOIN, go to idle instead of error loop
-                self->_state = TWR_CMWX1ZZABZ_STATE_IDLE; //TWR_CMWX1ZZABZ_STATE_ERROR;
-                self->_custom_command = false;
+                // Pass the response received from the LoRa module to the
+                // application.
+                twr_atci_printf("$LORA: %s\r\n", self->_response);
 
-                // In 1.0.02 fw FRMCNT is not supported, handle this in case this command
-                // and others in future versions fails gracefully and jump to idle instead of ERROR state
-                if (memcmp(self->_response, "+ERR=-1", 7) == 0)
+                if (memcmp(self->_response, "+OK", 3) == 0)
                 {
-                    self->_cmd_frmcnt_uplink = 0;
-                    self->_cmd_frmcnt_downlink = 0;
-                    continue;
-                }
-
-                if (memcmp(self->_response, "+OK=", 4) == 0)
-                {
-                    twr_scheduler_plan_current_now();
-
-                    // If we don't know the response, it must be custom AT command
+                    // If we don't know the response, it must be a custom AT
+                    // command
                     twr_cmwx1zzabz_event_t event = TWR_CMWX1ZZABZ_EVENT_CUSTOM_AT;
 
-                    if (strcmp(self->_custom_command_buf, "AT+RFQ?\r") == 0)
-                    {
-                        // RFQ request
-                        char *rssi_str = strchr(self->_response, '=');
-                        rssi_str++;
+                    self->_custom_command = false;
+                    self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
 
-                        char *snr_str = strchr(self->_response, ',');
-                        snr_str++;
-
-                        self->_cmd_rfq_rssi = atoi(rssi_str);
-                        self->_cmd_rfq_snr = atoi(snr_str);
-                        event = TWR_CMWX1ZZABZ_EVENT_RFQ;
-                    }
-
+                    // Special handling for the custom AT command AT+FRMCNT?
                     if (strcmp(self->_custom_command_buf, "AT+FRMCNT?\r") == 0)
                     {
                         // Framecounter request
@@ -1195,16 +1197,51 @@ static void _twr_cmwx1zzabz_task(void *param)
                         event = TWR_CMWX1ZZABZ_EVENT_FRAME_COUNTER;
                     }
 
-                    self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
+                    // Special handling for the custom AT command AT+RFQ?
+                    if (strcmp(self->_custom_command_buf, "AT+RFQ?\r") == 0)
+                    {
+                        // RFQ request
+                        char *rssi_str = strchr(self->_response, '=');
+                        rssi_str++;
+
+                        char *snr_str = strchr(self->_response, ',');
+                        snr_str++;
+
+                        self->_cmd_rfq_rssi = atoi(rssi_str);
+                        self->_cmd_rfq_snr = atoi(snr_str);
+                        event = TWR_CMWX1ZZABZ_EVENT_RFQ;
+                    }
 
                     if (self->_event_handler != NULL)
                     {
                         self->_event_handler(self, event, self->_event_param);
                     }
+
                     return;
                 }
+                else if (memcmp(self->_response, "+ERR=", 5) == 0)
+                {
+                    self->_custom_command = false;
+                    self->_state = TWR_CMWX1ZZABZ_STATE_IDLE;
 
-                continue;
+                    // In 1.0.02 fw FRMCNT is not supported, handle this in case this command
+                    // and others in future versions fails gracefully and jump to idle instead of ERROR state
+                    if (memcmp(self->_response, "+ERR=-1", 7) == 0)
+                    {
+                        self->_cmd_frmcnt_uplink = 0;
+                        self->_cmd_frmcnt_downlink = 0;
+                    }
+
+                    return;
+                }
+                else
+                {
+                    // Reset the timeout timer on each received line that is
+                    // neither +OK nor +ERR
+                    self->_timeout = twr_tick_get();
+                }
+
+                break;
             }
 
             default:

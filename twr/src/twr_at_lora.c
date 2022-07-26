@@ -219,7 +219,12 @@ bool twr_at_lora_link_check(twr_atci_param_t *param)
 
 bool twr_at_lora_custom_at(twr_atci_param_t *param)
 {
-    return twr_cmwx1zzabz_custom_at(_at.lora, param->txt);
+    bool rv = twr_cmwx1zzabz_custom_at(_at.lora, param->txt);
+    if (rv)
+    {
+        twr_atci_skip_response();
+    }
+    return rv;
 }
 
 bool twr_at_lora_rfq(twr_atci_param_t *param)
