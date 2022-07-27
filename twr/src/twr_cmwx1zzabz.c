@@ -252,6 +252,11 @@ static void _twr_cmwx1zzabz_task(void *param)
 
                 while (_twr_cmwx1zzabz_read_response(self))
                 {
+                    if (self->_atci)
+                    {
+                        twr_atci_printf("$LORA: %s\r\n", self->_response);
+                    }
+
                     if (memcmp(self->_response, "+RECV=", 5) == 0)
                     {
                         self->_message_port = atoi(&self->_response[6]);
@@ -1170,8 +1175,11 @@ static void _twr_cmwx1zzabz_task(void *param)
                 }
 
                 // Pass the response received from the LoRa module to the
-                // application.
-                twr_atci_printf("$LORA: %s\r\n", self->_response);
+                // application over the ATCI if enabled.
+                if (self->_atci)
+                {
+                    twr_atci_printf("$LORA: %s\r\n", self->_response);
+                }
 
                 if (memcmp(self->_response, "+OK", 3) == 0)
                 {

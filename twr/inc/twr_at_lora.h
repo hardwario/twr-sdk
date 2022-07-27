@@ -24,6 +24,7 @@
                          {"$RFQ", twr_at_lora_rfq, NULL, NULL, NULL, "Get RSSI/SNR of last RX packet"},\
                          {"$LORA", twr_at_lora_custom_at, twr_at_lora_custom_at, NULL, NULL, "Send custom AT command to LoRa module"},\
                          {"$AT", twr_at_lora_custom_at, twr_at_lora_custom_at, NULL, NULL, "Send custom AT command"},\
+                         {"$LORA>ATCI", NULL, twr_at_lora_lora2atci_set, twr_at_lora_lora2atci_read, NULL, "Send LoRa responses and events over ATCI (0: no, 1: yes)"},\
                          {"$DEBUG", NULL, twr_at_lora_debug_set, NULL, NULL, "Show debug UART communication"},\
                          {"$REBOOT", twr_at_lora_reboot, NULL, NULL, NULL, "Firmware reboot"},\
                          {"$FRESET", twr_at_lora_freset, NULL, NULL, NULL, "LoRa Module factory reset"},\
@@ -69,6 +70,9 @@ bool twr_at_lora_repu_set(twr_atci_param_t *param);
 
 bool twr_at_lora_repc_read(void);
 bool twr_at_lora_repc_set(twr_atci_param_t *param);
+
+bool twr_at_lora_lora2atci_read(void);
+bool twr_at_lora_lora2atci_set(twr_atci_param_t *param);
 
 bool twr_at_lora_ver_read(twr_atci_param_t *param);
 

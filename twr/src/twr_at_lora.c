@@ -349,6 +349,28 @@ bool twr_at_lora_repc_set(twr_atci_param_t *param)
     return true;
 }
 
+bool twr_at_lora_lora2atci_read(void)
+{
+    twr_atci_printfln("$LORA>ATCI: %d", _at.lora->_atci);
+
+    return true;
+}
+
+bool twr_at_lora_lora2atci_set(twr_atci_param_t *param)
+{
+    uint8_t onoff = atoi(param->txt);
+
+    if (onoff > 1)
+    {
+        return false;
+    }
+
+    _at.lora->_atci = onoff;
+
+    return true;
+}
+
+
 bool twr_at_lora_ver_read(twr_atci_param_t *param)
 {
     const char *version = twr_cmwx1zzabz_get_fw_version(_at.lora);
