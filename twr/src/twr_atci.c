@@ -247,7 +247,7 @@ static bool _twr_atci_process_line(void)
         }
         else
         {
-            return false;
+            continue;
         }
 
         break;
