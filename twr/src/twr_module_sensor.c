@@ -206,12 +206,12 @@ twr_module_sensor_pull_t twr_module_sensor_get_pull(twr_module_sensor_channel_t 
         }
     }
 
-    return twr_gpio_get_pull(_twr_module_sensor_channel_gpio_lut[channel]);
+    return (twr_module_sensor_pull_t) twr_gpio_get_pull(_twr_module_sensor_channel_gpio_lut[channel]);
 }
 
 void twr_module_sensor_set_mode(twr_module_sensor_channel_t channel, twr_module_sensor_mode_t mode)
 {
-    twr_gpio_set_mode(_twr_module_sensor_channel_gpio_lut[channel], mode);
+    twr_gpio_set_mode(_twr_module_sensor_channel_gpio_lut[channel], (twr_gpio_mode_t) mode);
 }
 
 int twr_module_sensor_get_input(twr_module_sensor_channel_t channel)

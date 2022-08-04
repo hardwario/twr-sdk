@@ -436,6 +436,6 @@ size_t twr_module_rs485_read(uint8_t *buffer, size_t length, twr_tick_t timeout)
 
 bool twr_module_rs485_set_baudrate(twr_module_rs485_baudrate_t baudrate)
 {
-    return twr_sc16is740_set_baudrate(&_twr_module_rs485._sc16is750, baudrate);
+    return twr_sc16is740_set_baudrate(&_twr_module_rs485._sc16is750, (twr_sc16is740_baudrate_t) baudrate);
 }
 

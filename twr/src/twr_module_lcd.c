@@ -79,12 +79,12 @@ twr_gfx_t *twr_module_lcd_get_gfx()
 
 bool twr_module_lcd_on(void)
 {
-    return twr_tca9534a_write_pin(&_twr_module_lcd.tca9534a, _TWR_MODULE_LCD_DISP_ON_PIN, 1);
+    return twr_tca9534a_write_pin(&_twr_module_lcd.tca9534a, (twr_tca9534a_pin_t) _TWR_MODULE_LCD_DISP_ON_PIN, 1);
 }
 
 bool twr_module_lcd_off(void)
 {
-    return twr_tca9534a_write_pin(&_twr_module_lcd.tca9534a, _TWR_MODULE_LCD_DISP_ON_PIN, 0);
+    return twr_tca9534a_write_pin(&_twr_module_lcd.tca9534a, (twr_tca9534a_pin_t) _TWR_MODULE_LCD_DISP_ON_PIN, 0);
 }
 
 bool twr_module_lcd_is_present(void)
@@ -284,12 +284,12 @@ void twr_module_lcd_set_button_click_timeout(twr_tick_t click_timeout)
 
 void twr_module_lcd_set_rotation(twr_module_lcd_rotation_t rotation)
 {
-    twr_gfx_set_rotation(&_twr_module_lcd.gfx, rotation);
+    twr_gfx_set_rotation(&_twr_module_lcd.gfx, (twr_gfx_rotation_t) rotation);
 }
 
 twr_module_lcd_rotation_t twr_module_lcd_get_rotation(void)
 {
-    return twr_gfx_get_rotation(&_twr_module_lcd.gfx);
+    return (twr_module_lcd_rotation_t) twr_gfx_get_rotation(&_twr_module_lcd.gfx);
 }
 
 const twr_led_driver_t *twr_module_lcd_get_led_driver(void)
@@ -347,7 +347,7 @@ static bool _twr_module_lcd_cs_pin_set(bool state)
         return false;
     }
 
-    if (!twr_tca9534a_write_pin(&_twr_module_lcd.tca9534a, _TWR_MODULE_LCD_LED_DISP_CS_PIN, state))
+    if (!twr_tca9534a_write_pin(&_twr_module_lcd.tca9534a, (twr_tca9534a_pin_t) _TWR_MODULE_LCD_LED_DISP_CS_PIN, state))
     {
         _twr_module_lcd.is_tca9534a_initialized = false;
 

@@ -12,5 +12,5 @@ void twr_module_pir_set_event_handler(twr_module_pir_t *self, void (*event_handl
 
 void twr_module_pir_set_sensitivity(twr_module_pir_t *self, twr_module_pir_sensitivity_t sensitivity)
 {
-    twr_pyq1648_set_sensitivity(self, sensitivity);
+    twr_pyq1648_set_sensitivity(self, (twr_pyq1648_sensitivity_t) sensitivity);
 }

@@ -173,21 +173,21 @@ void twr_pwm_init(twr_pwm_channel_t channel)
 
 void twr_pwm_enable(twr_pwm_channel_t channel)
 {
-    twr_gpio_init(channel);
+    twr_gpio_init((twr_gpio_channel_t) channel);
 
     if (channel == TWR_PWM_P12 || channel == TWR_PWM_P14)
     {
-        twr_gpio_set_mode(channel, TWR_GPIO_MODE_ALTERNATE_6);
+        twr_gpio_set_mode((twr_gpio_channel_t) channel, TWR_GPIO_MODE_ALTERNATE_6);
     }
     else
     {
-        twr_gpio_set_mode(channel, TWR_GPIO_MODE_ALTERNATE_2);
+        twr_gpio_set_mode((twr_gpio_channel_t) channel, TWR_GPIO_MODE_ALTERNATE_2);
     }
 }
 
 void twr_pwm_disable(twr_pwm_channel_t channel)
 {
-    twr_gpio_set_mode(channel, TWR_GPIO_MODE_ANALOG);
+    twr_gpio_set_mode((twr_gpio_channel_t) channel, TWR_GPIO_MODE_ANALOG);
 }
 
 void twr_pwm_set(twr_pwm_channel_t channel, uint16_t pwm_value)

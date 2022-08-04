@@ -1208,6 +1208,12 @@ static void _twr_cmwx1zzabz_task(void *param)
                 continue;
             }
 
+            case TWR_CMWX1ZZABZ_STATE_RECOVER_BAUDRATE_REBOOT:
+            {
+                // TODO
+                break;
+            }
+
             default:
             {
                 break;

@@ -447,6 +447,7 @@ uint32_t HAL_RNG_ReadLastRandomNumber(RNG_HandleTypeDef *hrng)
   */
 __weak void HAL_RNG_ReadyDataCallback(RNG_HandleTypeDef *hrng, uint32_t random32bit)
 {
+  (void) random32bit;
   /* Prevent unused argument(s) compilation warning */
   UNUSED(hrng);
 
