@@ -486,10 +486,10 @@ twr_spirit_status_t twr_spirit1_command(uint8_t command)
     twr_spirit1_hal_chip_select_low();
 
     // Write header byte and read status bits (MSB)
-    uint16_t status = twr_spirit1_hal_transfer_byte(0x80) << 8;
+    uint16_t status_value = twr_spirit1_hal_transfer_byte(0x80) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= twr_spirit1_hal_transfer_byte(command);
+    status_value |= twr_spirit1_hal_transfer_byte(command);
 
     // Set chip select high
     twr_spirit1_hal_chip_select_high();
@@ -497,8 +497,10 @@ twr_spirit_status_t twr_spirit1_command(uint8_t command)
     // Disable PLL
     twr_system_pll_disable();
 
+    twr_spirit_status_t *status = ((twr_spirit_status_t *) &status_value);
+
     // TODO Why this cast?
-    return *((twr_spirit_status_t *) &status);
+    return *status;
 }
 
 twr_spirit_status_t twr_spirit1_write(uint8_t address, const void *buffer, size_t length)
@@ -510,10 +512,10 @@ twr_spirit_status_t twr_spirit1_write(uint8_t address, const void *buffer, size_
     twr_spirit1_hal_chip_select_low();
 
     // Write header byte and read status bits (MSB)
-    uint16_t status = twr_spirit1_hal_transfer_byte(0) << 8;
+    uint16_t status_value = twr_spirit1_hal_transfer_byte(0) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= twr_spirit1_hal_transfer_byte(address);
+    status_value |= twr_spirit1_hal_transfer_byte(address);
 
     // Write buffer
     for (size_t i = 0; i < length; i++)
@@ -528,8 +530,10 @@ twr_spirit_status_t twr_spirit1_write(uint8_t address, const void *buffer, size_
     // Disable PLL
     twr_system_pll_disable();
 
+    twr_spirit_status_t *status = ((twr_spirit_status_t *) &status_value);
+
     // TODO Why this cast?
-    return *((twr_spirit_status_t *) &status);
+    return *status;
 }
 
 twr_spirit_status_t twr_spirit1_read(uint8_t address, void *buffer, size_t length)
@@ -541,10 +545,10 @@ twr_spirit_status_t twr_spirit1_read(uint8_t address, void *buffer, size_t lengt
     twr_spirit1_hal_chip_select_low();
 
     // Write header byte and read status bits (MSB)
-    uint16_t status = twr_spirit1_hal_transfer_byte(1) << 8;
+    uint16_t status_value = twr_spirit1_hal_transfer_byte(1) << 8;
 
     // Write memory map address and read status bits (LSB)
-    status |= twr_spirit1_hal_transfer_byte(address);
+    status_value |= twr_spirit1_hal_transfer_byte(address);
 
     // Read buffer
     for (size_t i = 0; i < length; i++)
@@ -559,8 +563,10 @@ twr_spirit_status_t twr_spirit1_read(uint8_t address, void *buffer, size_t lengt
     // Disable PLL
     twr_system_pll_disable();
 
+    twr_spirit_status_t *status = ((twr_spirit_status_t *) &status_value);
+
     // TODO Why this cast?
-    return *((twr_spirit_status_t *) &status);
+    return *status;
 }
 
 void twr_spirit1_hal_init(void)

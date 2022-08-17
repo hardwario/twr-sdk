@@ -126,8 +126,10 @@ void SpiritIrqDeInit(SpiritIrqs* pxIrqInit)
   {
     uint32_t tempValue = 0x00000000;
 
+    SpiritIrqs *value = ((SpiritIrqs*) &tempValue);
+
     /* Sets the bitfields of passed structure to one */
-    *pxIrqInit = (*(SpiritIrqs*)(&tempValue));
+    *pxIrqInit = *value;
   }
 
   /* Writes the IRQ_MASK registers */

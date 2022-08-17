@@ -87,6 +87,11 @@ void twr_info_init(void)
         break;
     }
 
+    if(type[0] == '\0')
+    {
+        return;
+    }
+
     twr_log_error("APP: Integrity check for PIB failed %s", type);
 }
 
