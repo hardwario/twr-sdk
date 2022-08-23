@@ -394,6 +394,7 @@ static void _twr_cmwx1zzabz_task(void *param)
                     twr_log_debug("NO response @9600");
                 }
                 self->_state = TWR_CMWX1ZZABZ_STATE_RECOVER_BAUDRATE_UART;
+                continue;
             }
 
             case TWR_CMWX1ZZABZ_STATE_RECOVER_BAUDRATE_UART:
@@ -1038,7 +1039,7 @@ static void _twr_cmwx1zzabz_task(void *param)
                 }
 
                 // Check for response event
-                if (strstr(self->_response, "+EVENT=2,") > 0)
+                if (strstr(self->_response, "+EVENT=2,") > (char *)0)
                 {
                     // MAC answer
                     char *event_str = strchr(self->_response, ',');
