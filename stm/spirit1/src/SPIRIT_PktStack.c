@@ -37,8 +37,8 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "SPIRIT_PktStack.h"
-#include "MCU_Interface.h"
+#include <SPIRIT_PktStack.h>
+#include <MCU_Interface.h>
 
 
 /**

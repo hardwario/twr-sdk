@@ -38,8 +38,8 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "SPIRIT_Radio.h"
-#include "MCU_Interface.h"
+#include <SPIRIT_Radio.h>
+#include <MCU_Interface.h>
 #include <math.h>
 
 /** @addtogroup SPIRIT_Libraries

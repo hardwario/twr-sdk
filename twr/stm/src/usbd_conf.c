@@ -42,11 +42,11 @@
   ******************************************************************************
 */
 /* Includes ------------------------------------------------------------------*/
-#include "stm32l0xx.h"
-#include "stm32l0xx_hal.h"
-#include "usbd_def.h"
-#include "usbd_core.h"
-#include "usbd_cdc.h"
+#include <stm32l0xx.h>
+#include <stm32l0xx_hal.h>
+#include <usbd_def.h>
+#include <usbd_core.h>
+#include <usbd_cdc.h>
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/

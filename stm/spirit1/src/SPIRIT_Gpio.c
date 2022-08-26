@@ -37,8 +37,8 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "SPIRIT_Gpio.h"
-#include "MCU_Interface.h"
+#include <SPIRIT_Gpio.h>
+#include <MCU_Interface.h>
 
 
 /** @addtogroup SPIRIT_Libraries

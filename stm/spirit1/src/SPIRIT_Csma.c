@@ -36,8 +36,8 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "SPIRIT_Csma.h"
-#include "MCU_Interface.h"
+#include <SPIRIT_Csma.h>
+#include <MCU_Interface.h>
 
 
 /**

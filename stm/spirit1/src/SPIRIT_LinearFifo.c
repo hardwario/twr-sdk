@@ -37,8 +37,8 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "SPIRIT_LinearFifo.h"
-#include "MCU_Interface.h"
+#include <SPIRIT_LinearFifo.h>
+#include <MCU_Interface.h>
 
 
 /**

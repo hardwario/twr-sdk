@@ -37,9 +37,9 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "SPIRIT_Timer.h"
-#include "SPIRIT_Radio.h"
-#include "MCU_Interface.h"
+#include <SPIRIT_Timer.h>
+#include <SPIRIT_Radio.h>
+#include <MCU_Interface.h>
 
 
 

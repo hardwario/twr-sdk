@@ -37,7 +37,7 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "SPIRIT_Management.h"
+#include <SPIRIT_Management.h>
 
 /**
 * @addtogroup SPIRIT_Libraries

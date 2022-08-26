@@ -99,7 +99,7 @@
 
 #if defined (STM32L021xx) || defined (STM32L041xx) || defined (STM32L061xx) || defined (STM32L062xx) || defined (STM32L063xx) || defined (STM32L081xx) || defined (STM32L082xx) || defined (STM32L083xx)
 /* Includes ------------------------------------------------------------------*/
-#include "stm32l0xx_hal.h"
+#include <stm32l0xx_hal.h>
 
 #ifdef HAL_CRYP_MODULE_ENABLED
 /** @addtogroup STM32L0xx_HAL_Driver

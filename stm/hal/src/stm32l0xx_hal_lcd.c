@@ -88,7 +88,7 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32l0xx_hal.h"
+#include <stm32l0xx_hal.h>
 
 #if defined (STM32L053xx) || defined (STM32L063xx) || defined (STM32L073xx) || defined (STM32L083xx)
 

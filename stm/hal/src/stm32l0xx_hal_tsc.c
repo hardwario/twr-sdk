@@ -110,7 +110,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #if !defined(STM32L011xx) && !defined(STM32L021xx) && !defined (STM32L031xx) && !defined (STM32L041xx) && !defined (STM32L051xx) && !defined (STM32L061xx) && !defined (STM32L071xx) && !defined (STM32L081xx)
-#include "stm32l0xx_hal.h"
+#include <stm32l0xx_hal.h>
 
 #ifdef HAL_TSC_MODULE_ENABLED
 /** @addtogroup STM32L0xx_HAL_Driver

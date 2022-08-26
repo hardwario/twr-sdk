@@ -4,9 +4,9 @@
 #include <twr_system.h>
 #include <twr_timer.h>
 #include <stm32l0xx.h>
-#include "SPIRIT_Config.h"
-#include "SDK_Configuration_Common.h"
-#include "MCU_Interface.h"
+#include <SPIRIT_Config.h>
+#include <SDK_Configuration_Common.h>
+#include <MCU_Interface.h>
 
 typedef enum
 {

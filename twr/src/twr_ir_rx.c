@@ -5,7 +5,7 @@
 #include <twr_exti.h>
 #include <twr_scheduler.h>
 #include <twr_system.h>
-#include "twr_ir_rx.h"
+#include <twr_ir_rx.h>
 #include <twr_timer.h>
 
 //#define _TWR_IR_RX_DEBUG

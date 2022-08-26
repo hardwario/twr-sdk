@@ -37,8 +37,8 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "SPIRIT_Types.h"
-#include "MCU_Interface.h"
+#include <SPIRIT_Types.h>
+#include <MCU_Interface.h>
 
 
 /** @addtogroup SPIRIT_Libraries
@@ -138,7 +138,7 @@ void s_assert_failed(uint8_t* file, uint32_t line)
 }
 #elif SPIRIT_USE_VCOM_ASSERT
 
-#include "SDK_EVAL_VC_General.h"
+#include <SDK_EVAL_VC_General.h>
 
 /**
  * @brief  Reports the name of the source file and the source line number
@@ -163,7 +163,7 @@ void s_assert_failed(uint8_t* file, uint32_t line, char* expression)
 
 #elif SPIRIT_USE_FRAME_ASSERT
 
-#include "SdkUsbProtocol.h"
+#include <SdkUsbProtocol.h>
 
 /**
  * @brief Sends a notify frame with a payload indicating the name

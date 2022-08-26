@@ -37,8 +37,8 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "SPIRIT_Irq.h"
-#include "MCU_Interface.h"
+#include <SPIRIT_Irq.h>
+#include <MCU_Interface.h>
 
 
 

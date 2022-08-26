@@ -137,7 +137,7 @@
 
 #if !defined(STM32L011xx) && !defined(STM32L021xx) && !defined(STM32L031xx) && !defined(STM32L041xx)
 /* Includes ------------------------------------------------------------------*/
-#include "stm32l0xx_hal.h"
+#include <stm32l0xx_hal.h>
 
 /** @addtogroup STM32L0xx_HAL_Driver
   * @{

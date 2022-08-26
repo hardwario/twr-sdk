@@ -36,8 +36,8 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "SPIRIT_DirectRF.h"
-#include "MCU_Interface.h"
+#include <SPIRIT_DirectRF.h>
+#include <MCU_Interface.h>
 
 
 

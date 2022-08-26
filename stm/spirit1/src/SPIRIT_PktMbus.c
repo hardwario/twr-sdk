@@ -37,9 +37,9 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "SPIRIT_PktMbus.h"
-#include "SPIRIT_Radio.h"
-#include "MCU_Interface.h"
+#include <SPIRIT_PktMbus.h>
+#include <SPIRIT_Radio.h>
+#include <MCU_Interface.h>
 
 /**
  * @addtogroup SPIRIT_Libraries
@@ -199,7 +199,7 @@ void SpiritPktMbusSetFormat(void)
 
 
 /**
- * @brief  Sets how many chip sequence “01” shall be added in the preamble
+ * @brief  Sets how many chip sequence ï¿½01ï¿½ shall be added in the preamble
  *         respect to the minimum value as defined according to the specified sub-mode.
  * @param  cPreamble the number of chip sequence.
  *         This parameter is an uint8_t.
@@ -233,7 +233,7 @@ uint8_t SpiritPktMbusGetPreamble(void)
 
 
 /**
- * @brief  Sets how many chip sequence “01” will be used in postamble
+ * @brief  Sets how many chip sequence ï¿½01ï¿½ will be used in postamble
  * @param  cPostamble the number of chip sequence.
  *         This parameter is an uint8_t.
  * @retval None.
