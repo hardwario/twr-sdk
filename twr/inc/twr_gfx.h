@@ -219,6 +219,10 @@ void twr_gfx_draw_fill_rectangle(twr_gfx_t *self, int x0, int y0, int x1, int y1
 
 void twr_gfx_draw_fill_rectangle_dithering(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
 
+
+
+void twr_gfx_draw_fill_rectangle_dithering_color(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint16_t pattern, uint32_t color_fg, uint32_t color_bg);
+
 //! @brief Lcd draw circle, using Midpoint circle algorithm
 //! @param[in] self Instance
 //! @param[in] x0 Center - pixels from left edge
