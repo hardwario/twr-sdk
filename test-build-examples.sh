@@ -49,17 +49,6 @@ endif()
 add_subdirectory(src)
 """ > CMakeLists.txt
 
-step 'Compile sdk'
-mkdir src
-echo """
-#include <twr.h>
-
-void application_init()
-{
-
-}
-""" > src/application.c
-
 for dir in $EXAMPLES_DIR/*/
 do
     rm -rf src
