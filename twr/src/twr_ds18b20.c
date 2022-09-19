@@ -43,6 +43,12 @@ void twr_ds18b20_init(twr_ds18b20_t *self, twr_onewire_t *onewire, twr_ds18b20_s
     self->_sensor = sensors;
     self->_sensor_count = sensor_count;
 
+    for (int i = 0; i < self->_sensor_count; i++)
+    {
+        self->_sensor[i]._device_address = 0;
+        self->_sensor[i]._temperature_valid = false;
+    }
+
     self->_task_id_interval = twr_scheduler_register(_twr_ds18b20_task_interval, self, TWR_TICK_INFINITY);
     self->_task_id_measure = twr_scheduler_register(_twr_ds18b20_task_measure, self, _TWR_DS18B20_DELAY_RUN);
 }
@@ -114,6 +120,23 @@ uint64_t twr_ds182b0_get_short_address(twr_ds18b20_t *self, uint8_t index)
 int twr_ds18b20_get_sensor_found(twr_ds18b20_t *self)
 {
     return self->_sensor_found;
+}
+
+void twr_ds18b20_rescan(twr_ds18b20_t *self)
+{
+    for (int i = 0; i < self->_sensor_found; i++)
+    {
+        self->_sensor[i]._device_address = 0;
+        self->_sensor[i]._temperature_valid = false;
+    }
+
+    self->_measurement_active = true;
+    
+    self->_state = self->_sensor_found = 0;
+
+    self->_state = TWR_DS18B20_STATE_PREINITIALIZE;
+
+    twr_scheduler_plan_absolute(self->_task_id_measure, _TWR_DS18B20_DELAY_RUN);
 }
 
 void twr_ds18b20_set_power_dynamic(twr_ds18b20_t *self, bool on)
@@ -311,6 +334,7 @@ static void _twr_ds18b20_task_measure(void *param)
             while ((self->_sensor_found < self->_sensor_count) && twr_onewire_search_next(self->_onewire, &_device_address))
             {
                 self->_sensor[self->_sensor_found]._device_address = _device_address;
+                self->_sensor[self->_sensor_found]._temperature_valid = false;
 
                 _device_address++;
                 self->_sensor_found++;

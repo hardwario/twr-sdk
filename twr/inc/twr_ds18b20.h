@@ -160,6 +160,10 @@ uint64_t twr_ds182b0_get_short_address(twr_ds18b20_t *self, uint8_t index);
 
 int twr_ds18b20_get_sensor_found(twr_ds18b20_t *self);
 
+//! @brief Request to rescan the bus
+
+void twr_ds18b20_rescan(twr_ds18b20_t *self);
+
 //! @brief Set power dynamic, Turns VDD on and pull 4k7 only for measurement
 //! @param[in] self Instance
 //! @param[in] on True enable dynamic, False disable dynamic
