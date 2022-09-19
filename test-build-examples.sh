@@ -18,35 +18,73 @@ cd "$TEST_DIR"
 
 mkdir sdk
 cd sdk
-ln -s ../../bcl
-ln -s ../../twr
-ln -s ../../lib
-ln -s ../../fonts
-ln -s ../../stm
-ln -s ../../sys
-ln -s ../../Makefile.mk
+cp -r ../../bcl bcl
+cp -r ../../twr twr
+cp -r ../../lib lib
+cp -r ../../fonts fonts
+cp -r ../../stm stm
+cp -r ../../toolchain toolchain
+cp -r ../../tools tools
+cp -r ../../sys sys
+cp -r ../../CMakeLists.txt CMakeLists.txt
 cd ..
 
 echo """
-SDK_DIR ?= sdk
+cmake_minimum_required(VERSION 3.20.0)
 
-CFLAGS += -D'HIO_SCHEDULER_MAX_TASKS=64'
+# Setup project name and languages
+project(firmware LANGUAGES C ASM)
 
--include sdk/Makefile.mk
-""" > Makefile
+add_subdirectory(sdk)
+
+if(DEFINED LED_STRIP_COUNT)
+    target_compile_definitions(\${CMAKE_PROJECT_NAME} PUBLIC LED_STRIP_COUNT=\${LED_STRIP_COUNT})
+endif()
+
+if(DEFINED LED_STRIP_TYPE)
+    target_compile_definitions(\${CMAKE_PROJECT_NAME} PUBLIC LED_STRIP_TYPE=\${LED_STRIP_TYPE})
+endif()
+
+# If you need to add some source files to the project add them to the 'src' folder and update CMakeLists there
+add_subdirectory(src)
+""" > CMakeLists.txt
 
 step 'Compile sdk'
-mkdir app
-make -j4
+mkdir src
+echo """
+#include <twr.h>
+
+void application_init()
+{
+
+}
+""" > src/application.c
 
 for dir in $EXAMPLES_DIR/*/
 do
-    rm -rf app
-    rm -rf obj/debug/app
+    rm -rf src
+    rm -rf obj/debug/
+    rm -rf out/debug/
     dir=${dir%*/}
     step "Test ${dir##*/}"
-    cp -r $dir app
-    make -j4
+    cp -r $dir src
+    echo """
+# List any additional sources here
+target_sources(
+    \${CMAKE_PROJECT_NAME}
+    PUBLIC
+    application.c
+    )
+
+# If you added some folder with header files you need to list them here
+target_include_directories(
+    \${CMAKE_PROJECT_NAME}
+    PUBLIC
+    \${CMAKE_CURRENT_SOURCE_DIR}
+)
+""" > src/CMakeLists.txt
+    cmake -B ./obj/debug . -G Ninja -DCMAKE_TOOLCHAIN_FILE=./sdk/toolchain/toolchain.cmake -DTYPE=debug
+    ninja -C ./obj/debug
 done
 
 step 'Clean'
