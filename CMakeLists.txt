@@ -25,6 +25,12 @@ endif()
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S" UTC)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC BUILD_DATE=\"${BUILD_DATE}\")
 
+IF(DEFINED ENV{BAND})
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC BAND=$ENV{BAND})
+ELSE()
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC BAND=868)
+ENDIF()
+
 # Add debug CFLAGS
 if(TYPE MATCHES "debug")
     target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC -g3)
