@@ -41,11 +41,6 @@ twr_gfx_rotation_t twr_gfx_get_rotation(twr_gfx_t *self)
 
 void twr_gfx_draw_pixel(twr_gfx_t *self, int x, int y, uint32_t color)
 {
-    if (x >= self->_caps.width || y >= self->_caps.height || x < 0 || y < 0)
-    {
-        return;
-    }
-
     int tmp;
 
     switch (self->_rotation)
@@ -53,7 +48,7 @@ void twr_gfx_draw_pixel(twr_gfx_t *self, int x, int y, uint32_t color)
         case TWR_GFX_ROTATION_90:
         {
             tmp = x;
-            x = self->_caps.height - 1 - y;
+            x = self->_caps.width - 1 - y;
             y = tmp;
             break;
         }
@@ -66,7 +61,7 @@ void twr_gfx_draw_pixel(twr_gfx_t *self, int x, int y, uint32_t color)
         case TWR_GFX_ROTATION_270:
         {
             tmp = y;
-            y = self->_caps.width - 1 - x;
+            y = self->_caps.height - 1 - x;
             x = tmp;
             break;
         }
@@ -78,6 +73,11 @@ void twr_gfx_draw_pixel(twr_gfx_t *self, int x, int y, uint32_t color)
         {
             break;
         }
+    }
+
+    if (x >= self->_caps.width || y >= self->_caps.height || x < 0 || y < 0)
+    {
+        return;
     }
 
     self->_driver->draw_pixel(self->_display, x, y, color);
@@ -304,7 +304,22 @@ void twr_gfx_draw_fill_rectangle_dithering(twr_gfx_t *self, int x0, int y0, int 
         {
             uint8_t dx = x0 % 4;
             uint8_t dy = y % 4;
-            uint32_t d_color = color & (1 << (dx + 4*dy));
+            uint32_t d_color = (color & (1 << (dx + 4*dy))) >> (dx + 4*dy);
+            twr_gfx_draw_pixel(self, x0, y, d_color);
+        }
+    }
+}
+
+void twr_gfx_draw_fill_rectangle_dithering_color(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint16_t pattern, uint32_t color_fg, uint32_t color_bg)
+{
+    int y;
+    for (; x0 <= x1; x0++)
+    {
+        for (y = y0; y <= y1; y++)
+        {
+            uint8_t dx = x0 % 4;
+            uint8_t dy = y % 4;
+            uint32_t d_color = pattern & (1 << (dx + 4*dy)) ? color_fg : color_bg;
             twr_gfx_draw_pixel(self, x0, y, d_color);
         }
     }

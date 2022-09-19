@@ -219,6 +219,17 @@ void twr_gfx_draw_fill_rectangle(twr_gfx_t *self, int x0, int y0, int x1, int y1
 
 void twr_gfx_draw_fill_rectangle_dithering(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint32_t color);
 
+//! @brief Display draw fill rectangle with a dithering pattern defined in the pattern parameter, with the support for multicolor dithering
+//! @param[in] self Instance
+//! @param[in] x0 Pixels from left edge
+//! @param[in] y0 Pixels from top edge
+//! @param[in] x1 Pixels from left edge
+//! @param[in] y1 Pixels from top edge
+//! @param[in] pattern Dithering mask, 16 bits define bit pattern in the 4 by 4 area
+//! @param[in] color_fg Color used for the foreground of the rectangle
+//! @param[in] color_bg Color used for the background of the rectangle
+void twr_gfx_draw_fill_rectangle_dithering_color(twr_gfx_t *self, int x0, int y0, int x1, int y1, uint16_t pattern, uint32_t color_fg, uint32_t color_bg);
+
 //! @brief Lcd draw circle, using Midpoint circle algorithm
 //! @param[in] self Instance
 //! @param[in] x0 Center - pixels from left edge
