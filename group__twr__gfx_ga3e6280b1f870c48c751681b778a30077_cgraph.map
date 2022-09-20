@@ -1,3 +1,4 @@
 <map id="twr_gfx_draw_char" name="twr_gfx_draw_char">
-<area shape="rect" id="node2" href="$group__twr__gfx.html#ga9e666cc5a7148f345d1f55edd68c98e8" title="Draw pixel. " alt="" coords="199,5,348,32"/>
+<area shape="rect" id="node1" title="Display draw char." alt="" coords="5,5,151,32"/>
+<area shape="rect" id="node2" href="$group__twr__gfx.html#ga9e666cc5a7148f345d1f55edd68c98e8" title="Draw pixel." alt="" coords="199,5,347,32"/>
 </map>

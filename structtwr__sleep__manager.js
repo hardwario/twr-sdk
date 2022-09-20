@@ -1,4 +1,4 @@
 var structtwr__sleep__manager =
 [
-    [ "disable_sleep", "structtwr__sleep__manager.html#afe31bb2919b2672a44959740c3fa1285", null ]
+    [ "disable_sleep_semaphore", "structtwr__sleep__manager.html#a23fc716c1150c1dd3ae3244710bde62d", null ]
 ];

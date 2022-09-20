@@ -1,0 +1,4 @@
+<map id="twr_uart_deinit" name="twr_uart_deinit">
+<area shape="rect" id="node1" title="Deinitialize UART channel." alt="" coords="232,5,352,32"/>
+<area shape="rect" id="node2" href="$group__twr__cmwx1zzabz.html#gac18590adb6ed2f2d38c4fc7dd8c3c350" title="Deinitialize CMWX1ZZABZ." alt="" coords="5,5,184,32"/>
+</map>

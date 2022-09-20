@@ -1,5 +1,10 @@
 var NAVTREEINDEX5 =
 {
+"group__twr__sgp30.html#ga3610639ec6e906015a9c7869b1e2fcdf":[1,69,6],
+"group__twr__sgp30.html#ga668ab36205c1ff4cf828c36a1e948cb8":[1,69,4],
+"group__twr__sgp30.html#ga88c82a88e3e745f0bd652b6433f69f3c":[1,69,9],
+"group__twr__sgp30.html#ga93f3317617fd5856fb8622a5d14a0580":[1,69,0],
+"group__twr__sgp30.html#ga9e14d1c5e6c734bd24eecbc0a9439c63":[1,69,5],
 "group__twr__sgp30.html#gaa82d36df88b8a019e4a16cc2b4c3bc05":[1,69,7],
 "group__twr__sgp30.html#gacd8877e4bea89bbb1843026a80cdbd6c":[1,69,2],
 "group__twr__sgp30.html#gad901adfb31d9c3492c672d3bb08aa569":[1,69,8],
@@ -244,10 +249,5 @@ var NAVTREEINDEX5 =
 "group__twr__tag__temperature.html#ga4157ff5d006e13531dcb0c6e75de07aa":[1,84,3],
 "group__twr__tag__temperature.html#ga49497f282e13d4521b316f8d3c6c5795":[1,84,1],
 "group__twr__tag__temperature.html#ga818e1603bdf77154e4c56304bbac3495":[1,84,6],
-"group__twr__tag__temperature.html#ga885911573d9d227c675db2feb82ee6a8":[1,84,4],
-"group__twr__tag__temperature.html#ga994d04b114b7556ed73cd903e60e80fc":[1,84,5],
-"group__twr__tag__temperature.html#gaca1ea28df50c199260601ccf5c5ab583":[1,84,2],
-"group__twr__tag__temperature.html#gaeff3846bc6c85a446e4539a8163becbc":[1,84,0],
-"group__twr__tag__temperature.html#gaf61ad80b8c11094613a83f3b4f856531":[1,84,8],
-"group__twr__tag__temperature.html#gga49497f282e13d4521b316f8d3c6c5795a305e3efac2e29c8e34d11a1d56ed7d2b":[1,84,1,0]
+"group__twr__tag__temperature.html#ga885911573d9d227c675db2feb82ee6a8":[1,84,4]
 };

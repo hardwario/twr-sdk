@@ -1,3 +1,4 @@
 <map id="twr_timer_delay" name="twr_timer_delay">
-<area shape="rect" id="node2" href="$group__twr__timer.html#gacc752416f6a5c8c0fb012d7366836c40" title="Get actual tick of timer. " alt="" coords="181,5,392,32"/>
+<area shape="rect" id="node1" title="Relative delay." alt="" coords="5,5,133,32"/>
+<area shape="rect" id="node2" href="$group__twr__timer.html#gacc752416f6a5c8c0fb012d7366836c40" title="Get actual tick of timer." alt="" coords="181,5,392,32"/>
 </map>

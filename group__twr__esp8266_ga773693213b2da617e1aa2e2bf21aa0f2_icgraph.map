@@ -1,3 +1,4 @@
 <map id="twr_esp8266_is_ready" name="twr_esp8266_is_ready">
-<area shape="rect" id="node2" href="$group__twr__esp8266.html#ga747391b9038992ccf85074e210271ce3" title="Send data. " alt="" coords="220,5,399,32"/>
+<area shape="rect" id="node1" title="Check if modem is ready for commands." alt="" coords="232,5,399,32"/>
+<area shape="rect" id="node2" href="$group__twr__esp8266.html#ga747391b9038992ccf85074e210271ce3" title="Send data." alt="" coords="5,5,184,32"/>
 </map>

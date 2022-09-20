@@ -1,5 +1,10 @@
 var NAVTREEINDEX6 =
 {
+"group__twr__tag__temperature.html#ga994d04b114b7556ed73cd903e60e80fc":[1,84,5],
+"group__twr__tag__temperature.html#gaca1ea28df50c199260601ccf5c5ab583":[1,84,2],
+"group__twr__tag__temperature.html#gaeff3846bc6c85a446e4539a8163becbc":[1,84,0],
+"group__twr__tag__temperature.html#gaf61ad80b8c11094613a83f3b4f856531":[1,84,8],
+"group__twr__tag__temperature.html#gga49497f282e13d4521b316f8d3c6c5795a305e3efac2e29c8e34d11a1d56ed7d2b":[1,84,1,0],
 "group__twr__tag__temperature.html#gga49497f282e13d4521b316f8d3c6c5795a90600e22c5fcfed6f279afa9b7c277dc":[1,84,1,1],
 "group__twr__tag__temperature.html#ggaca1ea28df50c199260601ccf5c5ab583a829c882e5e4ef89c662aa99e052e8a78":[1,84,2,0],
 "group__twr__tag__temperature.html#ggaca1ea28df50c199260601ccf5c5ab583acd7be668eb5ad4a0939cbdcdd40477ac":[1,84,2,1],
@@ -224,10 +229,10 @@ var NAVTREEINDEX6 =
 "structtwr__dac__channel__setup__t.html":[2,0,12],
 "structtwr__dac__channel__setup__t.html#a2035e1bff2146f58f0a6421dad169952":[2,0,12,6],
 "structtwr__dac__channel__setup__t.html#a32d9397c27917a4e48de5094aa9f770c":[2,0,12,5],
-"structtwr__dac__channel__setup__t.html#a3945403aafe783279394b3e869376b56":[2,0,12,0],
 "structtwr__dac__channel__setup__t.html#a45e79f5d0056243fbbf825e8ac627466":[2,0,12,1],
 "structtwr__dac__channel__setup__t.html#a60a145ce77d7dbec76af5a6f799878e1":[2,0,12,9],
 "structtwr__dac__channel__setup__t.html#a656e0588a2c33ece7581045c57d4a54a":[2,0,12,7],
+"structtwr__dac__channel__setup__t.html#a7c3eebae5249d9ac6b2fedac8cbe2291":[2,0,12,0],
 "structtwr__dac__channel__setup__t.html#a8658bc94db23a7040478f49b1b7fa893":[2,0,12,8],
 "structtwr__dac__channel__setup__t.html#a9875a1b65a584eb88d406aceee0ead04":[2,0,12,2],
 "structtwr__dac__channel__setup__t.html#aae7ccafc8e648140d3c74480ab67c848":[2,0,12,10],
@@ -244,10 +249,5 @@ var NAVTREEINDEX6 =
 "structtwr__data__stream__buffer__t.html#a3ff7adf9c62843f339839d213d42669b":[1,13,0,1],
 "structtwr__data__stream__buffer__t.html#ac65f907caab0ba5a38bc97bea2ce1302":[1,13,0,0],
 "structtwr__data__stream__buffer__t.html#ad660250019dbeb335654505bb290e410":[1,13,0,3],
-"structtwr__dma__channel__config__t.html":[1,18,0],
-"structtwr__dma__channel__config__t.html#a100aa084cf35ebcf1e1a61a07b725443":[1,18,0,6],
-"structtwr__dma__channel__config__t.html#a1772b5f33c711e51d90f06d8d42599ef":[1,18,0,4],
-"structtwr__dma__channel__config__t.html#a3ca020f85a676c89136ae419281f1fc3":[1,18,0,8],
-"structtwr__dma__channel__config__t.html#a7e79dcac1ca3494f512f5e5e7feb805a":[1,18,0,1],
-"structtwr__dma__channel__config__t.html#abb2694cedec4a82842d785fe218697ec":[1,18,0,2]
+"structtwr__dma__channel__config__t.html":[1,18,0]
 };

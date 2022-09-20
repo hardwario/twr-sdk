@@ -1,3 +1,4 @@
 <map id="twr_module_lcd_set_rotation" name="twr_module_lcd_set_rotation">
-<area shape="rect" id="node2" href="$group__twr__gfx.html#ga3e048973f333b7a41cda6ac52ccbfeef" title="Set rotation. " alt="" coords="205,13,361,39"/>
+<area shape="rect" id="node1" title="Lcd set rotation." alt="" coords="5,5,157,47"/>
+<area shape="rect" id="node2" href="$group__twr__gfx.html#ga3e048973f333b7a41cda6ac52ccbfeef" title="Set rotation." alt="" coords="205,13,361,39"/>
 </map>

@@ -1,3 +1,4 @@
 <map id="twr_hts221_get_humidity_percentage" name="twr_hts221_get_humidity_percentage">
-<area shape="rect" id="node2" href="$group__twr__tag__humidity.html#ga86572e19d178962f0abc64f24e583273" title="Get measured humidity as percentage. " alt="" coords="240,5,407,47"/>
+<area shape="rect" id="node1" title="Get measured humidity as percentage." alt="" coords="220,5,407,47"/>
+<area shape="rect" id="node2" href="$group__twr__tag__humidity.html#ga86572e19d178962f0abc64f24e583273" title="Get measured humidity as percentage." alt="" coords="5,5,172,47"/>
 </map>

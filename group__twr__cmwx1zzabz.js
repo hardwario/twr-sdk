@@ -24,6 +24,8 @@ var group__twr__cmwx1zzabz =
       [ "TWR_CMWX1ZZABZ_EVENT_RFQ", "group__twr__cmwx1zzabz.html#ggaf518eb70fd60f0d38d5a432c297a4202ad32672f657dffd75f264fb56eeb1fa41", null ],
       [ "TWR_CMWX1ZZABZ_EVENT_FRAME_COUNTER", "group__twr__cmwx1zzabz.html#ggaf518eb70fd60f0d38d5a432c297a4202a59c1a7b281dbf14fba73bfb594cd6f90", null ]
     ] ],
+    [ "twr_cmwx1zzabz_custom_at", "group__twr__cmwx1zzabz.html#gabaa67729313b791618fc00a008b10bc8", null ],
+    [ "twr_cmwx1zzabz_deinit", "group__twr__cmwx1zzabz.html#gac18590adb6ed2f2d38c4fc7dd8c3c350", null ],
     [ "twr_cmwx1zzabz_factory_reset", "group__twr__cmwx1zzabz.html#gadbb3c5cb97695abe285e0a4b77b34c02", null ],
     [ "twr_cmwx1zzabz_frame_counter", "group__twr__cmwx1zzabz.html#ga58fd5c89825b2bd5d26a346b6e4f66f2", null ],
     [ "twr_cmwx1zzabz_get_adaptive_datarate", "group__twr__cmwx1zzabz.html#gad980d9af442dfb5290b32c34abda0fc6", null ],
@@ -55,6 +57,7 @@ var group__twr__cmwx1zzabz =
     [ "twr_cmwx1zzabz_is_ready", "group__twr__cmwx1zzabz.html#ga50bd343945e9c59e4529a72d57acb778", null ],
     [ "twr_cmwx1zzabz_join", "group__twr__cmwx1zzabz.html#ga6d2d2a1d628c1ea967006aad2df2fd49", null ],
     [ "twr_cmwx1zzabz_link_check", "group__twr__cmwx1zzabz.html#ga062beac8f93269d78f3899fc2e41b9fb", null ],
+    [ "twr_cmwx1zzabz_reboot", "group__twr__cmwx1zzabz.html#ga8f604e321a98a9632ad8f16cb089c994", null ],
     [ "twr_cmwx1zzabz_rfq", "group__twr__cmwx1zzabz.html#ga87a895d25a398f21af3827b7703fd3b1", null ],
     [ "twr_cmwx1zzabz_send_message", "group__twr__cmwx1zzabz.html#ga3f7750b4dd381c4da4b382958f14465c", null ],
     [ "twr_cmwx1zzabz_send_message_confirmed", "group__twr__cmwx1zzabz.html#gae7855931e19a4ef3d250f793bf7ee6e2", null ],

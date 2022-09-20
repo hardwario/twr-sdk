@@ -1,3 +1,4 @@
 <map id="twr_config_load" name="twr_config_load">
-<area shape="rect" id="node2" href="$group__twr__config.html#ga0310addf60b17b007ce651acd0f466c7" title="Initialize and load the config from EEPROM. " alt="" coords="177,5,295,32"/>
+<area shape="rect" id="node1" title="Load EEPROM configuration." alt="" coords="171,5,295,32"/>
+<area shape="rect" id="node2" href="$group__twr__config.html#ga0310addf60b17b007ce651acd0f466c7" title="Initialize and load the config from EEPROM." alt="" coords="5,5,123,32"/>
 </map>

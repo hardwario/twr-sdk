@@ -14,6 +14,7 @@ var group__twr__ds18b20 =
     [ "twr_ds18b20_init_multiple", "group__twr__ds18b20.html#gad299d696c061db237cdb71fd9952bad6", null ],
     [ "twr_ds18b20_init_single", "group__twr__ds18b20.html#ga13988a92a2396cb3677673438e991605", null ],
     [ "twr_ds18b20_measure", "group__twr__ds18b20.html#gac40691df35877fd8bee2cae8e25f8556", null ],
+    [ "twr_ds18b20_rescan", "group__twr__ds18b20.html#ga2f7060dd24303c320de5a5aaa4c115b4", null ],
     [ "twr_ds18b20_set_event_handler", "group__twr__ds18b20.html#ga0ca2dac26d2d0d94a148587d3170b440", null ],
     [ "twr_ds18b20_set_power_dynamic", "group__twr__ds18b20.html#ga2f0969aaf4d15f11c3d6764caa5a2c78", null ],
     [ "twr_ds18b20_set_update_interval", "group__twr__ds18b20.html#ga1fb7d8ec9b6edbc222224213cca8df19", null ]

@@ -1,3 +1,4 @@
 <map id="twr_rf_ook_set_bitrate" name="twr_rf_ook_set_bitrate">
-<area shape="rect" id="node2" href="$group__twr__rf__ook.html#gafbf0ddf229131f7d11a72ba18f613ece" title="Initialize RF OOK library. " alt="" coords="221,5,340,32"/>
+<area shape="rect" id="node1" title="Configure OOK bitrate." alt="" coords="172,5,340,32"/>
+<area shape="rect" id="node2" href="$group__twr__rf__ook.html#gafbf0ddf229131f7d11a72ba18f613ece" title="Initialize RF OOK library." alt="" coords="5,5,124,32"/>
 </map>

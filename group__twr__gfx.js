@@ -40,6 +40,7 @@ var group__twr__gfx =
     [ "twr_gfx_draw_fill_circle", "group__twr__gfx.html#gae4a631bb7f42a19efc63f243ae8ba76c", null ],
     [ "twr_gfx_draw_fill_rectangle", "group__twr__gfx.html#ga0bd4e930b630fe0c3ffade8110283b0a", null ],
     [ "twr_gfx_draw_fill_rectangle_dithering", "group__twr__gfx.html#ga92386f089805366534bf5fd5cc7e2d8b", null ],
+    [ "twr_gfx_draw_fill_rectangle_dithering_color", "group__twr__gfx.html#ga7beac6bef8ec97d6ccb68824d6f41dce", null ],
     [ "twr_gfx_draw_fill_round_corner", "group__twr__gfx.html#ga01efedd18cf89d55ce9067a1b61662d9", null ],
     [ "twr_gfx_draw_line", "group__twr__gfx.html#ga19710773f252b15bbe4d7b61bd404159", null ],
     [ "twr_gfx_draw_pixel", "group__twr__gfx.html#ga9e666cc5a7148f345d1f55edd68c98e8", null ],

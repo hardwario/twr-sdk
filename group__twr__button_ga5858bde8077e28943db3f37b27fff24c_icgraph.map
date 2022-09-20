@@ -1,3 +1,4 @@
 <map id="twr_button_init_virtual" name="twr_button_init_virtual">
-<area shape="rect" id="node2" href="$group__twr__module__lcd.html#ga898a3cfe5defec896e4178a4ffe5fd5d" title="Lcd set event handler for buttons. " alt="" coords="223,5,375,47"/>
+<area shape="rect" id="node1" title="Initialize virtual button." alt="" coords="205,13,375,39"/>
+<area shape="rect" id="node2" href="$group__twr__module__lcd.html#ga898a3cfe5defec896e4178a4ffe5fd5d" title="Lcd set event handler for buttons." alt="" coords="5,5,157,47"/>
 </map>

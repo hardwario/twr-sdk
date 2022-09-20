@@ -1,3 +1,4 @@
 <map id="twr_queue_init" name="twr_queue_init">
-<area shape="rect" id="node2" href="$group__twr__radio.html#ga9d548eee91f772379c5b854c386a953c" title="Initialize radio. " alt="" coords="172,5,283,32"/>
+<area shape="rect" id="node1" title="Initialize queue." alt="" coords="164,5,283,32"/>
+<area shape="rect" id="node2" href="$group__twr__radio.html#ga9d548eee91f772379c5b854c386a953c" title="Initialize radio." alt="" coords="5,5,116,32"/>
 </map>

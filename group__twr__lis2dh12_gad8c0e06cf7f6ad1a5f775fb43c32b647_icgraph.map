@@ -1,3 +1,4 @@
 <map id="twr_lis2dh12_get_result_raw" name="twr_lis2dh12_get_result_raw">
-<area shape="rect" id="node2" href="$group__twr__lis2dh12.html#gac0a5cfd7920a78418f972bdd379ac2e0" title="Get measured acceleration in g. " alt="" coords="261,5,453,32"/>
+<area shape="rect" id="node1" title="Get measured acceleration as raw value." alt="" coords="245,5,453,32"/>
+<area shape="rect" id="node2" href="$group__twr__lis2dh12.html#gac0a5cfd7920a78418f972bdd379ac2e0" title="Get measured acceleration in g." alt="" coords="5,5,197,32"/>
 </map>

@@ -1,3 +1,4 @@
 <map id="twr_soil_sensor_eeprom_save" name="twr_soil_sensor_eeprom_save">
-<area shape="rect" id="node2" href="$group__twr__soil__sensor.html#ga2a6c1d204d96ac955dbea597ea8bdc8a" title="Get device index by its device address. " alt="" coords="272,5,468,47"/>
+<area shape="rect" id="node1" title="Save calibration points and label to eeprom by device address." alt="" coords="5,13,224,39"/>
+<area shape="rect" id="node2" href="$group__twr__soil__sensor.html#ga2a6c1d204d96ac955dbea597ea8bdc8a" title="Get device index by its device address." alt="" coords="272,5,468,47"/>
 </map>

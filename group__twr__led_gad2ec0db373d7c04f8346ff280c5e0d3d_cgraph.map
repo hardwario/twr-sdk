@@ -1,3 +1,4 @@
 <map id="twr_led_blink" name="twr_led_blink">
-<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaa80e2e8343f96fbfb2dde7812b995511" title="Schedule specified task for immediate execution. " alt="" coords="163,5,345,32"/>
+<area shape="rect" id="node1" title="LED blink." alt="" coords="5,5,115,32"/>
+<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaa80e2e8343f96fbfb2dde7812b995511" title="Schedule specified task for immediate execution." alt="" coords="163,5,345,32"/>
 </map>

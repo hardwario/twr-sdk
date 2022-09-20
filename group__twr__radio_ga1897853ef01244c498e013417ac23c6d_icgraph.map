@@ -1,3 +1,4 @@
 <map id="twr_radio_pub_event_count" name="twr_radio_pub_event_count">
-<area shape="rect" id="node2" href="$group__twr__radio.html#gac998cac1abd426f7a428e6130a006ada" title="Publish push button event count, same as use twr_radio_pub_event_count with TWR_RADIO_PUB_EVENT_PUSH_..." alt="" coords="212,5,364,47"/>
+<area shape="rect" id="node1" title="Publish event count." alt="" coords="205,5,364,47"/>
+<area shape="rect" id="node2" href="$group__twr__radio.html#gac998cac1abd426f7a428e6130a006ada" title="Publish push button event count, same as use twr_radio_pub_event_count with TWR_RADIO_PUB_EVENT_PUSH_..." alt="" coords="5,5,157,47"/>
 </map>

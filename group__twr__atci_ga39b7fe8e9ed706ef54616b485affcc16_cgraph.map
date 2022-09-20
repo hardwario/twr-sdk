@@ -1,3 +1,4 @@
 <map id="twr_atci_printf" name="twr_atci_printf">
-<area shape="rect" id="node2" href="$group__twr__uart.html#ga73c7ac7aa5fdc09a52a114fc5a714950" title="Write data to UART channel (blocking call) " alt="" coords="169,5,285,32"/>
+<area shape="rect" id="node1" title="Prinf message." alt="" coords="5,5,121,32"/>
+<area shape="rect" id="node2" href="$group__twr__uart.html#ga73c7ac7aa5fdc09a52a114fc5a714950" title="Write data to UART channel (blocking call)" alt="" coords="169,5,285,32"/>
 </map>

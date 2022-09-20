@@ -1,3 +1,4 @@
 <map id="twr_ds28e17_init" name="twr_ds28e17_init">
-<area shape="rect" id="node2" href="$group__twr__onewire.html#gae76801b3ecf96d048bec175924c11eb7" title="Enable call sleep mode for all ds28e17 after transaction. " alt="" coords="187,5,387,47"/>
+<area shape="rect" id="node1" title="Initialize DS28E17." alt="" coords="5,13,139,39"/>
+<area shape="rect" id="node2" href="$group__twr__onewire.html#gae76801b3ecf96d048bec175924c11eb7" title="Enable call sleep mode for all ds28e17 after transaction." alt="" coords="187,5,387,47"/>
 </map>

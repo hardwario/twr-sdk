@@ -1,19 +1,43 @@
 <map id="twr_ds18b20_init_multiple" name="twr_ds18b20_init_multiple">
-<area shape="rect" id="node2" href="$group__twr__module__sensor.html#ga9faebc3210f730ac0a314c6305d30330" title="Semaphore for 1Wire Power up: for R1.1 set VDD On, for R1.0 pull up 56R on channel A..." alt="" coords="248,77,456,119"/>
-<area shape="rect" id="node14" href="$group__twr__ds18b20.html#ga54d70870736447843d10d7a2f284453c" title="Initialize ds18b20. " alt="" coords="285,161,419,187"/>
-<area shape="rect" id="node16" href="$group__twr__module__sensor.html#ga8ea55a11c81f2af1412b68db35859a3b" title="Initialize and get Instance 1&#45;Wire for channel B. " alt="" coords="263,212,441,253"/>
-<area shape="rect" id="node3" href="$group__twr__module__sensor.html#ga016b1cbf7aefff60b536e49969f532f1" title="Get Sensor Module revision. " alt="" coords="761,5,939,47"/>
-<area shape="rect" id="node5" href="$group__twr__module__sensor.html#gaa7b14b43c3ccd53c5927363fccf7ae0b" title="Set VDD On / Off. " alt="" coords="504,63,711,90"/>
-<area shape="rect" id="node10" href="$group__twr__module__sensor.html#gad2bd43d6e1a59f5da25feca66550a704" title="Set pull of Sensor Module channel. " alt="" coords="504,114,711,141"/>
-<area shape="rect" id="node4" href="$group__twr__tca9534a.html#ga927211887a8fd91dd4ae94599aa828c1" title="Set pin direction. " alt="" coords="1005,5,1169,47"/>
-<area shape="rect" id="node6" href="$group__twr__tca9534a.html#ga42ad181a18dddc574e8e2f50a42b1299" title="Write state to all pins. " alt="" coords="759,71,941,98"/>
-<area shape="rect" id="node7" href="$group__twr__i2c.html#gac5797baa23c0e587f693855349bc8990" title="Memory write 1 byte to I2C channel. " alt="" coords="989,71,1184,98"/>
-<area shape="rect" id="node8" href="$group__twr__i2c.html#ga8144e77db86d0a54a6a50c7e7c9140b6" title="Memory write to I2C channel. " alt="" coords="1232,71,1403,98"/>
-<area shape="rect" id="node9" href="$group__twr__ds28e17.html#gaa2a316779ca759c63f351179ef9bfc5a" title="Memory write to I2C. " alt="" coords="1451,64,1617,105"/>
-<area shape="rect" id="node11" href="$group__twr__gpio.html#ga319ca6e2a552cbfa66d04f24bc551bf8" title="Set pull&#45;up/pull&#45;down configuration for GPIO channel. " alt="" coords="782,122,918,149"/>
-<area shape="rect" id="node12" href="$group__twr__irq.html#ga4bf4bcae31426886c47fd4dc9b81ce99" title="Disable interrupt requests globally (call can be nested) " alt="" coords="1026,122,1147,149"/>
-<area shape="rect" id="node13" href="$group__twr__irq.html#gaf133f90ab90bb3cb13750b0e8d02792f" title="Enable interrupt requests globally (call can be nested) " alt="" coords="1027,173,1146,199"/>
-<area shape="rect" id="node15" href="$group__twr__scheduler.html#gaffd07a0c9f390fb3fbdca75a85dd9959" title="Register task in scheduler. " alt="" coords="522,165,693,191"/>
-<area shape="rect" id="node17" href="$group__twr__onewire.html#ga4942066d2b5fd009d65de9390966393a" title="Initialize 1&#45;Wire. " alt="" coords="525,219,690,246"/>
-<area shape="rect" id="node18" href="$group__twr__onewire.html#ga87e8483ea4b467e238c41fdf12b80421" title="Initialize 1&#45;Wire. " alt="" coords="785,219,915,246"/>
+<area shape="rect" id="node1" title="Initialize multiple ds18b20 over channel B on Sensor Module." alt="" coords="5,255,200,282"/>
+<area shape="rect" id="node2" href="$group__twr__ds18b20.html#ga54d70870736447843d10d7a2f284453c" title="Initialize ds18b20." alt="" coords="270,204,403,231"/>
+<area shape="rect" id="node4" href="$group__twr__module__sensor.html#ga8ea55a11c81f2af1412b68db35859a3b" title="Initialize and get Instance 1&#45;Wire for channel B." alt="" coords="947,228,1124,269"/>
+<area shape="rect" id="node7" href="$group__twr__module__sensor.html#gab13f9c29632d62290f1bb90da3e6b5c9" title="Initialize Sensor Module." alt="" coords="248,506,425,532"/>
+<area shape="rect" id="node3" href="$group__twr__scheduler.html#gaffd07a0c9f390fb3fbdca75a85dd9959" title="Register task in scheduler." alt="" coords="473,204,644,231"/>
+<area shape="rect" id="node5" href="$group__twr__onewire.html#ga4942066d2b5fd009d65de9390966393a" title="Initialize 1&#45;Wire." alt="" coords="1209,294,1374,320"/>
+<area shape="rect" id="node6" href="$group__twr__onewire.html#ga87e8483ea4b467e238c41fdf12b80421" title="Initialize 1&#45;Wire." alt="" coords="1486,446,1617,472"/>
+<area shape="rect" id="node8" href="$group__twr__gpio.html#ga3dd36682535321c9582f291130e9075f" title="Initialize GPIO channel." alt="" coords="982,126,1089,152"/>
+<area shape="rect" id="node11" href="$group__twr__tca9534a.html#gacf098ee03916b91aebbda19827577948" title="Initialize TCA9534A." alt="" coords="489,564,628,591"/>
+<area shape="rect" id="node28" href="$group__twr__tca9534a.html#ga42ad181a18dddc574e8e2f50a42b1299" title="Write state to all pins." alt="" coords="1460,766,1643,792"/>
+<area shape="rect" id="node37" href="$group__twr__tca9534a.html#gad13e3a65c109efc556015855383fb763" title="Set direction of all pins." alt="" coords="1206,868,1377,909"/>
+<area shape="rect" id="node9" href="$group__twr__irq.html#ga4bf4bcae31426886c47fd4dc9b81ce99" title="Disable interrupt requests globally (call can be nested)" alt="" coords="1745,522,1866,548"/>
+<area shape="rect" id="node10" href="$group__twr__irq.html#gaf133f90ab90bb3cb13750b0e8d02792f" title="Enable interrupt requests globally (call can be nested)" alt="" coords="1746,420,1865,447"/>
+<area shape="rect" id="node12" href="$group__twr__i2c.html#ga286eab51a1468de797ed590ef08f7984" title="Initialize I2C channel." alt="" coords="739,476,836,503"/>
+<area shape="rect" id="node39" href="$group__twr__i2c.html#gaedddada7a7d84f001b34bb42c731cf1f" title="Memory read 1 byte from I2C channel." alt="" coords="692,708,883,735"/>
+<area shape="rect" id="node13" href="$group__twr__ds28e17.html#gae0b02aebafc15e58072c53ad56f241c0" title="Initialize DS28E17." alt="" coords="969,496,1102,523"/>
+<area shape="rect" id="node15" href="$group__twr__gpio.html#gad416ca996d1ef6e1b74b3c0bfb039ae9" title="Set mode of operation for GPIO channel." alt="" coords="1217,395,1366,422"/>
+<area shape="rect" id="node16" href="$group__twr__gpio.html#ga319ca6e2a552cbfa66d04f24bc551bf8" title="Set pull&#45;up/pull&#45;down configuration for GPIO channel." alt="" coords="1483,598,1619,624"/>
+<area shape="rect" id="node17" href="$group__twr__i2c.html#ga987a812f42e53e426ae8af64defd31cf" title="Set I2C channel speed." alt="" coords="964,294,1107,320"/>
+<area shape="rect" id="node24" href="$group__twr__module__sensor.html#ga9faebc3210f730ac0a314c6305d30330" title="Semaphore for 1Wire Power up: for R1.1 set VDD On, for R1.0 pull up 56R on channel A." alt="" coords="931,598,1139,640"/>
+<area shape="rect" id="node33" href="$group__twr__module__x1.html#ga3f60bb31fad9722cce68d5fb7f9b693c" title="Initialize and get Instance 1&#45;Wire for channel B." alt="" coords="931,547,1140,574"/>
+<area shape="rect" id="node34" href="$group__twr__module__x1.html#ga3ddeffc8c34754f355cb93cdb766e821" title="Initialize X1 Module." alt="" coords="960,687,1111,714"/>
+<area shape="rect" id="node38" href="$group__twr__tick.html#ga707c04751cedb90e01df66ba3f8b1a13" title="Get absolute timestamp since start of program." alt="" coords="1500,496,1603,523"/>
+<area shape="rect" id="node14" href="$group__twr__onewire.html#gae76801b3ecf96d048bec175924c11eb7" title="Enable call sleep mode for all ds28e17 after transaction." alt="" coords="1191,497,1391,538"/>
+<area shape="rect" id="node18" href="$group__twr__ds28e17.html#gab8143cf3fefbcce42553a185551bc457" title="Set I2C speed." alt="" coords="1202,243,1381,270"/>
+<area shape="rect" id="node19" href="$group__twr__onewire.html#ga6441ee52c20b2381ab08d9cb0ee96ac1" title="Reset the 1&#45;Wire bus and return the presence of any device." alt="" coords="1480,344,1623,371"/>
+<area shape="rect" id="node20" href="$group__twr__onewire.html#gaaf771beb6eccc2dcbe3dbc5051f59778" title="Select device." alt="" coords="1477,126,1625,152"/>
+<area shape="rect" id="node21" href="$group__twr__onewire.html#ga62d16eadaa229627e490ecb48f7389a6" title="Start transaction, enable pll and run timer." alt="" coords="1460,177,1643,218"/>
+<area shape="rect" id="node22" href="$group__twr__onewire.html#gad0d9fbf6c1f6e9806f3409a92042f981" title="Stop transaction." alt="" coords="1443,243,1660,270"/>
+<area shape="rect" id="node23" href="$group__twr__onewire.html#ga0342106061d58212efc91ebad24579dd" title="Select device." alt="" coords="1480,294,1623,320"/>
+<area shape="rect" id="node25" href="$group__twr__module__sensor.html#ga016b1cbf7aefff60b536e49969f532f1" title="Get Sensor Module revision." alt="" coords="1463,674,1640,716"/>
+<area shape="rect" id="node27" href="$group__twr__module__sensor.html#gad2bd43d6e1a59f5da25feca66550a704" title="Set pull of Sensor Module channel." alt="" coords="1188,664,1395,691"/>
+<area shape="rect" id="node32" href="$group__twr__module__sensor.html#gaa7b14b43c3ccd53c5927363fccf7ae0b" title="Set VDD On / Off." alt="" coords="1188,715,1395,742"/>
+<area shape="rect" id="node26" href="$group__twr__tca9534a.html#ga927211887a8fd91dd4ae94599aa828c1" title="Set pin direction." alt="" coords="1723,674,1887,716"/>
+<area shape="rect" id="node29" href="$group__twr__i2c.html#gac5797baa23c0e587f693855349bc8990" title="Memory write 1 byte to I2C channel." alt="" coords="1708,806,1903,832"/>
+<area shape="rect" id="node30" href="$group__twr__i2c.html#ga8144e77db86d0a54a6a50c7e7c9140b6" title="Memory write to I2C channel." alt="" coords="1951,806,2121,832"/>
+<area shape="rect" id="node31" href="$group__twr__ds28e17.html#gaa2a316779ca759c63f351179ef9bfc5a" title="Memory write to I2C." alt="" coords="2169,798,2336,840"/>
+<area shape="rect" id="node35" href="$group__twr__log.html#ga09e88ba96b4141212f9860f7b50ec9f7" title="Log ERROR message (annotated in log as &lt;E&gt;)" alt="" coords="1237,816,1345,843"/>
+<area shape="rect" id="node36" href="$group__twr__onewire.html#gaec59dcd3d3dbc37ab40fce30fa139d75" title="Initialize 1&#45;Wire." alt="" coords="1199,614,1383,640"/>
+<area shape="rect" id="node40" href="$group__twr__i2c.html#ga95b02a5c1d0636f36d58b7fc212d9174" title="Memory read from I2C channel." alt="" coords="952,910,1119,936"/>
+<area shape="rect" id="node41" href="$group__twr__ds28e17.html#ga5778c65f5dd6eb1b541f2350422ca015" title="Memory read from I2C." alt="" coords="1190,934,1393,960"/>
 </map>

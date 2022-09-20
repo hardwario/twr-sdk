@@ -1,3 +1,4 @@
 <map id="twr_gpio_toggle_output" name="twr_gpio_toggle_output">
-<area shape="rect" id="node2" href="$group__twr__module__sensor.html#ga22296f14b5f49f382c85a650ba46be25" title="Toggle output state for Sensor Module channel. " alt="" coords="228,5,425,47"/>
+<area shape="rect" id="node1" title="Toggle output state for GPIO channel." alt="" coords="251,13,425,39"/>
+<area shape="rect" id="node2" href="$group__twr__module__sensor.html#ga22296f14b5f49f382c85a650ba46be25" title="Toggle output state for Sensor Module channel." alt="" coords="5,5,203,47"/>
 </map>

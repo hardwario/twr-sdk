@@ -1,3 +1,4 @@
 <map id="twr_ssd1306_get_caps" name="twr_ssd1306_get_caps">
-<area shape="rect" id="node2" href="$group__twr__ssd1306.html#ga6f78205840beb0b43586bd341588a417" title="Get Lcd driver. " alt="" coords="223,5,400,32"/>
+<area shape="rect" id="node1" title="Get capabilities." alt="" coords="231,5,400,32"/>
+<area shape="rect" id="node2" href="$group__twr__ssd1306.html#ga6f78205840beb0b43586bd341588a417" title="Get Lcd driver." alt="" coords="5,5,183,32"/>
 </map>

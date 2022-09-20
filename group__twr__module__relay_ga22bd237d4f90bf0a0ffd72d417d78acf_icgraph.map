@@ -1,3 +1,4 @@
 <map id="twr_module_relay_set_state" name="twr_module_relay_set_state">
-<area shape="rect" id="node2" href="$group__twr__module__relay.html#ga4692e21a99726672fef24f8af56fe8eb" title="Toggle relay to opposite state. " alt="" coords="220,13,407,39"/>
+<area shape="rect" id="node1" title="Set relay to specified state." alt="" coords="240,5,407,47"/>
+<area shape="rect" id="node2" href="$group__twr__module__relay.html#ga4692e21a99726672fef24f8af56fe8eb" title="Toggle relay to opposite state." alt="" coords="5,13,192,39"/>
 </map>

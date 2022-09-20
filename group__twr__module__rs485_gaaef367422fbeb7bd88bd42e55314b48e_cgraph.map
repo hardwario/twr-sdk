@@ -1,3 +1,4 @@
 <map id="twr_module_rs485_async_read_start" name="twr_module_rs485_async_read_start">
-<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaffd07a0c9f390fb3fbdca75a85dd9959" title="Register task in scheduler. " alt="" coords="240,13,411,39"/>
+<area shape="rect" id="node1" title="Start async reading." alt="" coords="5,5,192,47"/>
+<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaffd07a0c9f390fb3fbdca75a85dd9959" title="Register task in scheduler." alt="" coords="240,13,411,39"/>
 </map>

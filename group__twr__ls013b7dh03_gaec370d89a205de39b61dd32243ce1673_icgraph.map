@@ -1,3 +1,4 @@
 <map id="twr_ls013b7dh03_init" name="twr_ls013b7dh03_init">
-<area shape="rect" id="node2" href="$group__twr__module__lcd.html#gaf934e9beb1adcc41bda7441b94837640" title="Initialize lcd. " alt="" coords="215,5,368,32"/>
+<area shape="rect" id="node1" title="Initialize lcd driver." alt="" coords="207,5,368,32"/>
+<area shape="rect" id="node2" href="$group__twr__module__lcd.html#gaf934e9beb1adcc41bda7441b94837640" title="Initialize lcd." alt="" coords="5,5,159,32"/>
 </map>

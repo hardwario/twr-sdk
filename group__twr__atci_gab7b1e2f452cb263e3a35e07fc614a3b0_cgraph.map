@@ -1,3 +1,4 @@
 <map id="twr_atci_print_buffer_as_hex" name="twr_atci_print_buffer_as_hex">
-<area shape="rect" id="node2" href="$group__twr__uart.html#ga73c7ac7aa5fdc09a52a114fc5a714950" title="Write data to UART channel (blocking call) " alt="" coords="209,13,325,39"/>
+<area shape="rect" id="node1" title="Print buffer as HEX string." alt="" coords="5,5,161,47"/>
+<area shape="rect" id="node2" href="$group__twr__uart.html#ga73c7ac7aa5fdc09a52a114fc5a714950" title="Write data to UART channel (blocking call)" alt="" coords="209,13,325,39"/>
 </map>

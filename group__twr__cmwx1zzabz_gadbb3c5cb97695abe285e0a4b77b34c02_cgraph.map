@@ -1,3 +1,4 @@
 <map id="twr_cmwx1zzabz_factory_reset" name="twr_cmwx1zzabz_factory_reset">
-<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaa80e2e8343f96fbfb2dde7812b995511" title="Schedule specified task for immediate execution. " alt="" coords="240,13,423,39"/>
+<area shape="rect" id="node1" title="Send factory reset command to LoRa Module." alt="" coords="5,5,192,47"/>
+<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaa80e2e8343f96fbfb2dde7812b995511" title="Schedule specified task for immediate execution." alt="" coords="240,13,423,39"/>
 </map>

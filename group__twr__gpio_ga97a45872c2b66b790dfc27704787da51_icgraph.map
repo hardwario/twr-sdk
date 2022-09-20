@@ -1,3 +1,4 @@
 <map id="twr_gpio_get_output" name="twr_gpio_get_output">
-<area shape="rect" id="node2" href="$group__twr__module__sensor.html#ga154c20266c0fdd6277b75f00934e6776" title="Get output state for Sensor Module channel. " alt="" coords="208,5,385,47"/>
+<area shape="rect" id="node1" title="Get output state for GPIO channel." alt="" coords="231,13,385,39"/>
+<area shape="rect" id="node2" href="$group__twr__module__sensor.html#ga154c20266c0fdd6277b75f00934e6776" title="Get output state for Sensor Module channel." alt="" coords="5,5,183,47"/>
 </map>

@@ -1,3 +1,4 @@
 <map id="twr_wssfm10r1at_set_event_handler" name="twr_wssfm10r1at_set_event_handler">
-<area shape="rect" id="node2" href="$group__twr__module__sigfox.html#gacb5e7a3de45a989de0f0670f906b36aa" title="Initialize HARDWARIO SigFox Module. " alt="" coords="216,13,391,39"/>
+<area shape="rect" id="node1" title="Set callback function." alt="" coords="228,5,391,47"/>
+<area shape="rect" id="node2" href="$group__twr__module__sigfox.html#gacb5e7a3de45a989de0f0670f906b36aa" title="Initialize HARDWARIO SigFox Module." alt="" coords="5,13,180,39"/>
 </map>

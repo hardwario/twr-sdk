@@ -1,6 +1,6 @@
 var structtwr__dac__channel__setup__t =
 [
-    [ "dac_register", "structtwr__dac__channel__setup__t.html#a3945403aafe783279394b3e869376b56", null ],
+    [ "dac_register", "structtwr__dac__channel__setup__t.html#a7c3eebae5249d9ac6b2fedac8cbe2291", null ],
     [ "dma_channel", "structtwr__dac__channel__setup__t.html#a45e79f5d0056243fbbf825e8ac627466", null ],
     [ "dma_config", "structtwr__dac__channel__setup__t.html#a9875a1b65a584eb88d406aceee0ead04", null ],
     [ "event_handler", "structtwr__dac__channel__setup__t.html#ad56999b6e1653b46568bf37beb33d33c", null ],

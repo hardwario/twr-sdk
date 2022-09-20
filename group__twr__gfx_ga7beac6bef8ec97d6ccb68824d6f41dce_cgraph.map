@@ -1,0 +1,4 @@
+<map id="twr_gfx_draw_fill_rectangle_dithering_color" name="twr_gfx_draw_fill_rectangle_dithering_color">
+<area shape="rect" id="node1" title="Display draw fill rectangle with a dithering pattern defined in the pattern parameter,..." alt="" coords="5,5,207,47"/>
+<area shape="rect" id="node2" href="$group__twr__gfx.html#ga9e666cc5a7148f345d1f55edd68c98e8" title="Draw pixel." alt="" coords="255,13,403,39"/>
+</map>

@@ -1,4 +1,5 @@
 <map id="twr_gpio_toggle_output" name="twr_gpio_toggle_output">
-<area shape="rect" id="node2" href="$group__twr__irq.html#ga4bf4bcae31426886c47fd4dc9b81ce99" title="Disable interrupt requests globally (call can be nested) " alt="" coords="228,5,349,32"/>
-<area shape="rect" id="node3" href="$group__twr__irq.html#gaf133f90ab90bb3cb13750b0e8d02792f" title="Enable interrupt requests globally (call can be nested) " alt="" coords="229,56,348,83"/>
+<area shape="rect" id="node1" title="Toggle output state for GPIO channel." alt="" coords="5,31,180,57"/>
+<area shape="rect" id="node2" href="$group__twr__irq.html#ga4bf4bcae31426886c47fd4dc9b81ce99" title="Disable interrupt requests globally (call can be nested)" alt="" coords="228,5,349,32"/>
+<area shape="rect" id="node3" href="$group__twr__irq.html#gaf133f90ab90bb3cb13750b0e8d02792f" title="Enable interrupt requests globally (call can be nested)" alt="" coords="229,56,348,83"/>
 </map>

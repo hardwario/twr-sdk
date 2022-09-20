@@ -1,3 +1,4 @@
 <map id="twr_eeprom_async_write" name="twr_eeprom_async_write">
-<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaffd07a0c9f390fb3fbdca75a85dd9959" title="Register task in scheduler. " alt="" coords="239,5,409,32"/>
+<area shape="rect" id="node1" title="Async write buffer to EEPROM area and verify it." alt="" coords="5,5,191,32"/>
+<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaffd07a0c9f390fb3fbdca75a85dd9959" title="Register task in scheduler." alt="" coords="239,5,409,32"/>
 </map>

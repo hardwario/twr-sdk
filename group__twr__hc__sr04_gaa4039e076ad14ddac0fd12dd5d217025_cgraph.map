@@ -1,3 +1,4 @@
 <map id="twr_hc_sr04_measure" name="twr_hc_sr04_measure">
-<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaffd07a0c9f390fb3fbdca75a85dd9959" title="Register task in scheduler. " alt="" coords="217,5,388,32"/>
+<area shape="rect" id="node1" title="Start measurement manually." alt="" coords="5,5,169,32"/>
+<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaffd07a0c9f390fb3fbdca75a85dd9959" title="Register task in scheduler." alt="" coords="217,5,388,32"/>
 </map>

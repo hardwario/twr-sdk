@@ -1,3 +1,4 @@
 <map id="twr_atsha204_set_event_handler" name="twr_atsha204_set_event_handler">
-<area shape="rect" id="node2" href="$group__twr__radio.html#ga9d548eee91f772379c5b854c386a953c" title="Initialize radio. " alt="" coords="235,13,345,39"/>
+<area shape="rect" id="node1" title="Set callback function." alt="" coords="164,5,345,47"/>
+<area shape="rect" id="node2" href="$group__twr__radio.html#ga9d548eee91f772379c5b854c386a953c" title="Initialize radio." alt="" coords="5,13,116,39"/>
 </map>

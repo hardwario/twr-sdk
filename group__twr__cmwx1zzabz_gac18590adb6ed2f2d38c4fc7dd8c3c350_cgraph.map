@@ -1,0 +1,11 @@
+<map id="twr_cmwx1zzabz_deinit" name="twr_cmwx1zzabz_deinit">
+<area shape="rect" id="node1" title="Deinitialize CMWX1ZZABZ." alt="" coords="5,9,184,36"/>
+<area shape="rect" id="node2" href="$group__twr__scheduler.html#ga77cc7533dc20ee696fb73ae8798b052a" title="Unregister specified task." alt="" coords="605,5,792,32"/>
+<area shape="rect" id="node3" href="$group__twr__uart.html#gacfd54a34c04b83cc519f94d1666864a6" title="Deinitialize UART channel." alt="" coords="232,64,352,91"/>
+<area shape="rect" id="node4" href="$group__twr__gpio.html#gad416ca996d1ef6e1b74b3c0bfb039ae9" title="Set mode of operation for GPIO channel." alt="" coords="404,123,553,149"/>
+<area shape="rect" id="node7" href="$group__twr__gpio.html#ga319ca6e2a552cbfa66d04f24bc551bf8" title="Set pull&#45;up/pull&#45;down configuration for GPIO channel." alt="" coords="411,173,547,200"/>
+<area shape="rect" id="node8" href="$group__twr__uart.html#gab8141308d560e7d32059bb601f2468b8" title="Cancel async reading." alt="" coords="400,57,557,98"/>
+<area shape="rect" id="node5" href="$group__twr__irq.html#ga4bf4bcae31426886c47fd4dc9b81ce99" title="Disable interrupt requests globally (call can be nested)" alt="" coords="638,169,759,196"/>
+<area shape="rect" id="node6" href="$group__twr__irq.html#gaf133f90ab90bb3cb13750b0e8d02792f" title="Enable interrupt requests globally (call can be nested)" alt="" coords="639,119,758,145"/>
+<area shape="rect" id="node9" href="$group__twr__dma.html#gafd30d79e3596d4db446ec026e35b56d9" title="Stop DMA channel." alt="" coords="613,64,785,91"/>
+</map>

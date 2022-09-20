@@ -1,3 +1,4 @@
 <map id="twr_i2c_memory_write" name="twr_i2c_memory_write">
-<area shape="rect" id="node2" href="$group__twr__ds28e17.html#gaa2a316779ca759c63f351179ef9bfc5a" title="Memory write to I2C. " alt="" coords="224,5,391,47"/>
+<area shape="rect" id="node1" title="Memory write to I2C channel." alt="" coords="5,13,176,39"/>
+<area shape="rect" id="node2" href="$group__twr__ds28e17.html#gaa2a316779ca759c63f351179ef9bfc5a" title="Memory write to I2C." alt="" coords="224,5,391,47"/>
 </map>

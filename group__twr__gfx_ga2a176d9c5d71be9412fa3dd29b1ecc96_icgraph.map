@@ -1,3 +1,4 @@
 <map id="twr_gfx_set_font" name="twr_gfx_set_font">
-<area shape="rect" id="node2" href="$group__twr__module__lcd.html#gaca07ae9bd7438dae9178cd49e901a7bb" title="Lcd set font. " alt="" coords="184,5,369,32"/>
+<area shape="rect" id="node1" title="Set font." alt="" coords="239,5,369,32"/>
+<area shape="rect" id="node2" href="$group__twr__module__lcd.html#gaca07ae9bd7438dae9178cd49e901a7bb" title="Lcd set font." alt="" coords="5,5,191,32"/>
 </map>

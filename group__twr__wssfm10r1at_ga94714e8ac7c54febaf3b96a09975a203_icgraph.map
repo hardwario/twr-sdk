@@ -1,3 +1,4 @@
 <map id="twr_wssfm10r1at_init" name="twr_wssfm10r1at_init">
-<area shape="rect" id="node2" href="$group__twr__module__sigfox.html#gacb5e7a3de45a989de0f0670f906b36aa" title="Initialize HARDWARIO SigFox Module. " alt="" coords="216,5,391,32"/>
+<area shape="rect" id="node1" title="Initialize WSSFM10R1AT." alt="" coords="228,5,391,32"/>
+<area shape="rect" id="node2" href="$group__twr__module__sigfox.html#gacb5e7a3de45a989de0f0670f906b36aa" title="Initialize HARDWARIO SigFox Module." alt="" coords="5,5,180,32"/>
 </map>

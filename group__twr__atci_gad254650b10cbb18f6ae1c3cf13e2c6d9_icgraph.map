@@ -1,3 +1,4 @@
 <map id="twr_atci_set_uart_active_callback" name="twr_atci_set_uart_active_callback">
-<area shape="rect" id="node2" href="$group__twr__atci.html#ga890451096273b72c9feefb47ce8f792c" title="Initialize. " alt="" coords="235,13,337,39"/>
+<area shape="rect" id="node1" title="Set callback function for scan if uart is active. Used for low&#45;power when USB is disconnected (defaul..." alt="" coords="156,5,337,47"/>
+<area shape="rect" id="node2" href="$group__twr__atci.html#ga890451096273b72c9feefb47ce8f792c" title="Initialize." alt="" coords="5,13,108,39"/>
 </map>

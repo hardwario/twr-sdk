@@ -1,3 +1,4 @@
 <map id="twr_sam_m8q_start" name="twr_sam_m8q_start">
-<area shape="rect" id="node2" href="$group__twr__module__gps.html#gaa5b08730a46e5323ae37a23c47deab64" title="Start tracking. " alt="" coords="204,5,371,32"/>
+<area shape="rect" id="node1" title="Start navigation module." alt="" coords="220,5,371,32"/>
+<area shape="rect" id="node2" href="$group__twr__module__gps.html#gaa5b08730a46e5323ae37a23c47deab64" title="Start tracking." alt="" coords="5,5,172,32"/>
 </map>

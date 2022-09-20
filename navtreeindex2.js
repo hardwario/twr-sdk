@@ -1,10 +1,15 @@
 var NAVTREEINDEX2 =
 {
+"group__twr__gfx.html#ga92386f089805366534bf5fd5cc7e2d8b":[1,27,13],
+"group__twr__gfx.html#ga98421792337c0187cbcf6376d8f46a6b":[1,27,10],
+"group__twr__gfx.html#ga9c900154c62a4132140b67bcd81d97a5":[1,27,3],
+"group__twr__gfx.html#ga9e666cc5a7148f345d1f55edd68c98e8":[1,27,17],
+"group__twr__gfx.html#gab09bf59a53a79f46a8d89653ca0e0074":[1,27,7],
 "group__twr__gfx.html#gab4536b0b33da04974897af682f8f1598":[1,27,4],
-"group__twr__gfx.html#gac2f0e0a27ef49d34ded0a0342a114d4b":[1,27,19],
+"group__twr__gfx.html#gac2f0e0a27ef49d34ded0a0342a114d4b":[1,27,20],
 "group__twr__gfx.html#gae4a631bb7f42a19efc63f243ae8ba76c":[1,27,11],
-"group__twr__gfx.html#gae8cdb46e8f575d3974ff9d91d2432a87":[1,27,23],
-"group__twr__gfx.html#gaeb0624755bc7887c700d81aa5d646a09":[1,27,26],
+"group__twr__gfx.html#gae8cdb46e8f575d3974ff9d91d2432a87":[1,27,24],
+"group__twr__gfx.html#gaeb0624755bc7887c700d81aa5d646a09":[1,27,27],
 "group__twr__gfx.html#gaefe06371ace7dc6a21ea01359a4cf728":[1,27,5],
 "group__twr__gfx.html#gga9c900154c62a4132140b67bcd81d97a5a4114c65314084ad2a128075259e1c865":[1,27,3,3],
 "group__twr__gfx.html#gga9c900154c62a4132140b67bcd81d97a5a51a4665661cbf8b42703d741effa4156":[1,27,3,2],
@@ -244,10 +249,5 @@ var NAVTREEINDEX2 =
 "group__twr__module__climate.html#ga7fab793d7f49bbecdb725450340aa807":[1,40,8],
 "group__twr__module__climate.html#ga810f5e2709c81cf5bbd0f8de79f0f1e7":[1,40,13],
 "group__twr__module__climate.html#ga831369472de161ece4d9af9c3c0db4d5":[1,40,7],
-"group__twr__module__climate.html#ga878030d2b341753beff5762770bfa39d":[1,40,16],
-"group__twr__module__climate.html#gaa2360d9f20f8731bec68ddb26f8d24fe":[1,40,17],
-"group__twr__module__climate.html#gaa902f993203b62b4f69eb67776f90869":[1,40,14],
-"group__twr__module__climate.html#gac0193120827c4b27167e0bdfba926b64":[1,40,10],
-"group__twr__module__climate.html#gac81cd3eb06f3a7453e42047ea3b05e99":[1,40,1],
-"group__twr__module__climate.html#gacb5a39bd817d0523dea9952d97c05809":[1,40,11]
+"group__twr__module__climate.html#ga878030d2b341753beff5762770bfa39d":[1,40,16]
 };

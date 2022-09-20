@@ -1,3 +1,4 @@
 <map id="twr_td1207r_set_event_handler" name="twr_td1207r_set_event_handler">
-<area shape="rect" id="node2" href="$group__twr__module__sigfox.html#gacb5e7a3de45a989de0f0670f906b36aa" title="Initialize HARDWARIO SigFox Module. " alt="" coords="224,13,399,39"/>
+<area shape="rect" id="node1" title="Set callback function." alt="" coords="228,5,399,47"/>
+<area shape="rect" id="node2" href="$group__twr__module__sigfox.html#gacb5e7a3de45a989de0f0670f906b36aa" title="Initialize HARDWARIO SigFox Module." alt="" coords="5,13,180,39"/>
 </map>

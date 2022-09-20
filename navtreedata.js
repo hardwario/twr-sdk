@@ -1,3 +1,25 @@
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this file.
+
+Copyright (C) 1997-2019 by Dimitri van Heesch
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of version 2 of the GNU General Public License as published by
+the Free Software Foundation
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+@licend  The above is the entire license notice
+for the JavaScript code in this file
+*/
 var NAVTREE =
 [
   [ "Firmware SDK", "index.html", [
@@ -11,8 +33,8 @@ var NAVTREE =
         [ "Variables", "functions_vars.html", null ]
       ] ]
     ] ],
-    [ "Files", null, [
-      [ "File List", "files.html", "files" ]
+    [ "Files", "files.html", [
+      [ "File List", "files.html", "files_dup" ]
     ] ]
   ] ]
 ];
@@ -20,15 +42,15 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"group__twr__data__stream.html#ga793a954cb79e56d589e8792363cb8aea",
-"group__twr__gfx.html#gab4536b0b33da04974897af682f8f1598",
-"group__twr__module__climate.html#gacec8cd6dbcba51ee7d573acbfeab1f34",
-"group__twr__onewire.html#ga0342106061d58212efc91ebad24579dd",
-"group__twr__sgp30.html#gaa82d36df88b8a019e4a16cc2b4c3bc05",
-"group__twr__tag__temperature.html#gga49497f282e13d4521b316f8d3c6c5795a90600e22c5fcfed6f279afa9b7c277dc",
-"structtwr__dma__channel__config__t.html#ad115adddf54a1f5292914c0d5a87af48",
-"structtwr__uart__t.html#a87da52f1c1f306262125fa2ae7af82f6",
-"unionRTC__SSR.html#a41ad8a51158413da447d0c0019415711"
+"group__twr__data__stream.html#ga68751dfe67e773062503f4b9c2b0a07b",
+"group__twr__gfx.html#ga92386f089805366534bf5fd5cc7e2d8b",
+"group__twr__module__climate.html#gaa2360d9f20f8731bec68ddb26f8d24fe",
+"group__twr__mpl3115a2.html#gad5c84e2f09fc71192ae868db9bc00a0d",
+"group__twr__sgp30.html#ga3610639ec6e906015a9c7869b1e2fcdf",
+"group__twr__tag__temperature.html#ga994d04b114b7556ed73cd903e60e80fc",
+"structtwr__dma__channel__config__t.html#a100aa084cf35ebcf1e1a61a07b725443",
+"structtwr__timer__irq__t.html#ae87ed1d2f0cc002039020a4bb34275ac",
+"unionRTC__DR.html#ad5a6570ae98d510ed345c0826c06a840"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

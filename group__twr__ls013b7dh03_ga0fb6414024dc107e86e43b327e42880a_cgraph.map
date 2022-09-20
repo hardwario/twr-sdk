@@ -1,3 +1,4 @@
 <map id="twr_ls013b7dh03_is_ready" name="twr_ls013b7dh03_is_ready">
-<area shape="rect" id="node2" href="$group__twr__spi.html#ga30845157e8cbebc05b3b8896a80f5be7" title="Check if is ready for transfer. " alt="" coords="204,13,335,39"/>
+<area shape="rect" id="node1" title="Check if lcd is ready for commands." alt="" coords="5,5,156,47"/>
+<area shape="rect" id="node2" href="$group__twr__spi.html#ga30845157e8cbebc05b3b8896a80f5be7" title="Check if is ready for transfer." alt="" coords="204,13,335,39"/>
 </map>

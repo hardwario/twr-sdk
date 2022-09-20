@@ -1,4 +1,5 @@
 <map id="twr_mpl3115a2_set_event_handler" name="twr_mpl3115a2_set_event_handler">
-<area shape="rect" id="node2" href="$group__twr__module__climate.html#gac0193120827c4b27167e0bdfba926b64" title="Initialize HARDWARIO Climate Module. " alt="" coords="248,5,431,32"/>
-<area shape="rect" id="node3" href="$group__twr__tag__barometer.html#ga7186192e5885bd79632c65218b6208c7" title="Set callback function. " alt="" coords="253,57,426,98"/>
+<area shape="rect" id="node1" title="Set callback function." alt="" coords="236,27,431,69"/>
+<area shape="rect" id="node2" href="$group__twr__module__climate.html#gac0193120827c4b27167e0bdfba926b64" title="Initialize HARDWARIO Climate Module." alt="" coords="5,5,188,32"/>
+<area shape="rect" id="node3" href="$group__twr__tag__barometer.html#ga7186192e5885bd79632c65218b6208c7" title="Set callback function." alt="" coords="10,57,183,98"/>
 </map>

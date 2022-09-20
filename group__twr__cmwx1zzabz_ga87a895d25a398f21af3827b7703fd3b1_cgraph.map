@@ -1,3 +1,4 @@
 <map id="twr_cmwx1zzabz_rfq" name="twr_cmwx1zzabz_rfq">
-<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaa80e2e8343f96fbfb2dde7812b995511" title="Schedule specified task for immediate execution. " alt="" coords="212,5,395,32"/>
+<area shape="rect" id="node1" title="Request RF quality of the last received packet (JOIN, LNPARAM, confirmed message)" alt="" coords="5,5,164,32"/>
+<area shape="rect" id="node2" href="$group__twr__scheduler.html#gaa80e2e8343f96fbfb2dde7812b995511" title="Schedule specified task for immediate execution." alt="" coords="212,5,395,32"/>
 </map>
