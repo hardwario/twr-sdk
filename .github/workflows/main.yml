@@ -1,0 +1,22 @@
+name: Pack extension
+on:
+  push:
+    branches: [ main, master ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: linux
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup GNU Arm Embedded Toolchain
+        uses: carlosperate/arm-none-eabi-gcc-action@v1.4.0
+
+    	- name: Setup Ninja
+      	uses: ashutoshvarma/setup-ninja@v1.1
+
+      - name: Run Example Build Script
+        run: |
+          chmod +x ./test-build-examples.sh
+          ./test-build-examples.sh
+
