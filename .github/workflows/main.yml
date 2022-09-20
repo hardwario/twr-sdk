@@ -12,8 +12,8 @@ jobs:
       - name: Setup GNU Arm Embedded Toolchain
         uses: carlosperate/arm-none-eabi-gcc-action@v1.4.0
 
-    	- name: Setup Ninja
-      	uses: ashutoshvarma/setup-ninja@v1.1
+      - name: Setup Ninja
+        uses: ashutoshvarma/setup-ninja@v1.1
 
       - name: Run Example Build Script
         run: |
