@@ -64,8 +64,8 @@ target_include_directories(
     \${CMAKE_CURRENT_SOURCE_DIR}
 )
 """ > src/CMakeLists.txt
-    cmake -B ./obj/debug . -G Ninja -DCMAKE_TOOLCHAIN_FILE=./sdk/toolchain/toolchain.cmake -DTYPE=debug
-    ninja -C ./obj/debug
+    cmake -B obj/debug . -G Ninja -DCMAKE_TOOLCHAIN_FILE=sdk/toolchain/toolchain.cmake -DTYPE=debug
+    ninja -C obj/debug
 done
 
 step 'Clean'

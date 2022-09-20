@@ -13,7 +13,7 @@ jobs:
         uses: carlosperate/arm-none-eabi-gcc-action@v1.4.0
 
       - name: Setup Ninja
-        uses: ashutoshvarma/setup-ninja@v1.1
+        uses: seanmiddleditch/gha-setup-ninja@master
 
       - name: Run Example Build Script
         run: |
