@@ -1,7 +1,12 @@
-name: Pack extension
+name: SDK CI
 on:
   push:
     branches: [ main, master ]
+
+env:
+  DOXYFILE: ${{github.workspace}}/Doxyfile
+  HTML_DIR: ${{github.workspace}}/doc/html
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,8 +20,26 @@ jobs:
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
 
+      - name: Install doxygen
+        run: |
+          sudo apt-get install doxygen -y
+          sudo apt install graphviz -y
+
+      - name: Run Build Documentation Script
+        run: |
+          chmod +x ./build-doc.sh
+          ./build-doc.sh
+
+      - name: Deploy Documentation
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: doc/html
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+
       - name: Run Example Build Script
         run: |
           chmod +x ./test-build-examples.sh
           ./test-build-examples.sh
+
 
