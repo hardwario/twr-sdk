@@ -58,8 +58,6 @@ if(DEFINED SCHEDULER_INTERVAL)
     add_definitions("-DTWR_SCHEDULER_INTERVAL_MS=${SCHEDULER_INTERVAL}")
 endif()
 
-add_definitions("-DBAND=868")
-
 # Setup utils
 set(CMAKE_OBJCOPY ${ARM_TOOLCHAIN_DIR}/${TOOLCHAIN_PREFIX}objcopy CACHE INTERNAL "objcopy tool")
 
