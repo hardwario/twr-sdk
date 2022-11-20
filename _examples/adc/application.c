@@ -12,7 +12,7 @@ static void _adc_event_handler(twr_adc_channel_t channel, twr_adc_event_t event,
         twr_log_debug("%d", adc);
 
         float voltage;
-        twr_adc_get_result_voltage(TWR_ADC_CHANNEL_A2, &voltage);
+        twr_adc_async_get_voltage(TWR_ADC_CHANNEL_A2, &voltage);
         twr_log_debug("%f", voltage);
     }
 }
