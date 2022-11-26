@@ -1,21 +1,17 @@
 <a href="https://www.hardwario.com/"><img src="https://www.hardwario.com/ci/assets/hw-logo.svg" width="200" alt="HARDWARIO Logo" align="right"></a>
 
-# Example: Button
+# Example: Configuration
 
 [![Twitter](https://img.shields.io/twitter/follow/hardwario_en.svg?style=social&label=Follow)](https://twitter.com/hardwario_en)
 
-This example shows a simple use of a button at **Core Module** or on the **Button Module** to make Core Module LED blink fast on button hold and turn it off on button press.
+This example shows a simple use of saving a configuration to EEPROM. This way you can save something to the **Core Module** and reload it even after a power reset.
 
-You can read more [about the button in our documentation](https://docs.hardwario.com/tower/firmware-sdk/how-to/how-to-push-button).
+You can read more [about the EEPROM configuration in our documentation](https://docs.hardwario.com/tower/firmware-sdk/how-to/how-to-eeprom-twr-config).
 
 ## Required Hardware
 
 - [**Core Module**](https://shop.hardwario.com/core-module/)
-
-## Optional Hardware
-
-- [**Button Module**](https://shop.hardwario.com/button-module/)
-  - You can use the button on the **Core Module**
+- [**PIR Module**](https://shop.hardwario.com/pir-module/)
 
 ---
 

@@ -12,7 +12,7 @@ void button_event_handler(twr_button_t *self, twr_button_event_t event, void *ev
     {
         twr_led_set_mode(&led, TWR_LED_MODE_OFF);
     } else if (event == TWR_BUTTON_EVENT_HOLD ) {
-        twr_led_set_mode(&led,  TWR_LED_MODE_BLINK_FAST);
+        twr_led_set_mode(&led, TWR_LED_MODE_BLINK_FAST);
     }
 }
 

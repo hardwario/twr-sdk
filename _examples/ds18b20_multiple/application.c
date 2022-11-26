@@ -1,7 +1,7 @@
 #include <application.h>
 /*
 
- SENSOR MODULE CONNECTION
+SENSOR MODULE CONNECTION
 ==========================
 
 Sensor Module R1.0 - 4 pin connector
@@ -10,8 +10,7 @@ VCC, GND, - , DATA
 Sensor Module R1.1 - 5 pin connector
 - , GND , VCC , - , DATA
 
-
- DS18B20 sensor pinout
+DS18B20 sensor pinout
 =======================
 VCC - red
 GND - black
