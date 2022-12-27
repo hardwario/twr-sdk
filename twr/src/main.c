@@ -89,6 +89,11 @@ __attribute__((weak)) void application_error(twr_error_t code)
                     twr_log_error("TWR_ERROR_CALLBACK");
                     break;
                 }
+                case TWR_ERROR_INVALID_PARAMETER:
+                {
+                    twr_log_error("TWR_ERROR_INVALID_PARAMETER");
+                    break;
+                }
                 default:
                 {
                     break;

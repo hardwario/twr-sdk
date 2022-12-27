@@ -9,6 +9,7 @@ typedef enum
     TWR_ERROR_LOG_NOT_INITIALIZED = 1,
     TWR_ERROR_ERROR_UNLOCK = 2,
     TWR_ERROR_CALLBACK = 3,
+    TWR_ERROR_INVALID_PARAMETER = 4,
 
 } twr_error_t;
 
