@@ -22,6 +22,14 @@ static const float _twr_lis2dh12_fs_lut[] =
         [TWR_LIS2DH12_SCALE_16G] = (12/1000.f)
 };
 
+static const float _twr_lis2dh12_ths_lut[] =
+{
+        [TWR_LIS2DH12_SCALE_2G] = (0.016f),
+        [TWR_LIS2DH12_SCALE_4G] = (0.032f),
+        [TWR_LIS2DH12_SCALE_8G] = (0.062f),
+        [TWR_LIS2DH12_SCALE_16G] = (0.186f)
+};
+
 bool twr_lis2dh12_init(twr_lis2dh12_t *self, twr_i2c_channel_t i2c_channel, uint8_t i2c_address)
 {
     memset(self, 0, sizeof(*self));
@@ -310,8 +318,7 @@ bool twr_lis2dh12_set_alarm(twr_lis2dh12_t *self, twr_lis2dh12_alarm_t *alarm)
             return false;
         }
 
-        // Recalculate threshold to the 4g full-scale setting
-        uint8_t int1_ths = (uint8_t)((alarm->threshold) / 0.031f);
+        uint8_t int1_ths = (uint8_t)((alarm->threshold) / _twr_lis2dh12_ths_lut[self->_scale]);
 
         // Ensure minimum threshold level
         if (int1_ths == 0)
