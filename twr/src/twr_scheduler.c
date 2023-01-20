@@ -76,6 +76,10 @@ twr_scheduler_task_id_t twr_scheduler_register(void (*task)(void *), void *param
 
 void twr_scheduler_unregister(twr_scheduler_task_id_t task_id)
 {
+    if (task_id >= TWR_SCHEDULER_MAX_TASKS)
+    {
+        application_error(TWR_ERROR_INVALID_PARAMETER);
+    }
     _twr_scheduler.pool[task_id].task = NULL;
 
     if (_twr_scheduler.max_task_id == task_id)
@@ -105,21 +109,37 @@ twr_tick_t twr_scheduler_get_spin_tick(void)
 
 void twr_scheduler_plan_now(twr_scheduler_task_id_t task_id)
 {
+    if (task_id >= TWR_SCHEDULER_MAX_TASKS)
+    {
+        application_error(TWR_ERROR_INVALID_PARAMETER);
+    }
     _twr_scheduler.pool[task_id].tick_execution = 0;
 }
 
 void twr_scheduler_plan_absolute(twr_scheduler_task_id_t task_id, twr_tick_t tick)
 {
+    if (task_id >= TWR_SCHEDULER_MAX_TASKS || _twr_scheduler.pool[task_id].task == NULL)
+    {
+        application_error(TWR_ERROR_INVALID_PARAMETER);
+    }
     _twr_scheduler.pool[task_id].tick_execution = tick;
 }
 
 void twr_scheduler_plan_relative(twr_scheduler_task_id_t task_id, twr_tick_t tick)
 {
+    if (task_id >= TWR_SCHEDULER_MAX_TASKS || _twr_scheduler.pool[task_id].task == NULL)
+    {
+        application_error(TWR_ERROR_INVALID_PARAMETER);
+    }
     _twr_scheduler.pool[task_id].tick_execution = _twr_scheduler.tick_spin + tick;
 }
 
 void twr_scheduler_plan_from_now(twr_scheduler_task_id_t task_id, twr_tick_t tick)
 {
+    if (task_id >= TWR_SCHEDULER_MAX_TASKS || _twr_scheduler.pool[task_id].task == NULL)
+    {
+        application_error(TWR_ERROR_INVALID_PARAMETER);
+    }
     _twr_scheduler.pool[task_id].tick_execution = twr_tick_get() + tick;
 }
 
