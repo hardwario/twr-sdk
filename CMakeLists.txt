@@ -44,6 +44,8 @@ if(TYPE MATCHES "release")
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC RELEASE)
 ENDIF()
 
+target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC HAL_USART_MODULE_ENABLED)
+
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -T${CMAKE_CURRENT_SOURCE_DIR}/sys/lkr/stm32l083cz.ld)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-Map=${CMAKE_SOURCE_DIR}/${OUT_DIR}/${TYPE}/${CMAKE_PROJECT_NAME}.map)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -mcpu=cortex-m0plus)
@@ -55,15 +57,16 @@ target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -static)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,--gc-sections)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,--print-memory-usage)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-u,__errno)
-target_link_options(${CMAKE_PROJECT_NAME} PUBLIC --specs=nosys.specs)
+target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -u _printf_float)
+target_link_options(${CMAKE_PROJECT_NAME} PUBLIC --specs=nano.specs)
 
 # All other directories with source files
 # You need to update the specific CMakeLists files in the respective directories if you want to update the SDK
 add_subdirectory(twr)
 add_subdirectory(bcl)
 add_subdirectory(stm)
-add_subdirectory(lib)
 add_subdirectory(sys)
+add_subdirectory(lib)
 
 # Generate the final "firmware.bin" in "out" directory and root directory
 include(${TOOLCHAIN_DIR}/utils.cmake)
