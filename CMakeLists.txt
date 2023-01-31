@@ -60,6 +60,9 @@ target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-u,__errno)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -u _printf_float)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC --specs=nano.specs)
 
+# Disable LOAD segment with RWX permissions warning
+target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-no-warn-rwx-segments)
+
 # All other directories with source files
 # You need to update the specific CMakeLists files in the respective directories if you want to update the SDK
 add_subdirectory(twr)
