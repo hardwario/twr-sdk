@@ -44,8 +44,6 @@ if(TYPE MATCHES "release")
     target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC RELEASE)
 ENDIF()
 
-target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC HAL_USART_MODULE_ENABLED)
-
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -T${CMAKE_CURRENT_SOURCE_DIR}/sys/lkr/stm32l083cz.ld)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-Map=${CMAKE_SOURCE_DIR}/${OUT_DIR}/${TYPE}/${CMAKE_PROJECT_NAME}.map)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -mcpu=cortex-m0plus)
