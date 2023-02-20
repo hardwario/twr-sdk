@@ -49,14 +49,15 @@ target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-Map=${CMAKE_SOURCE_DIR}/${
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -mcpu=cortex-m0plus)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -mthumb)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -mlittle-endian)
-target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-lc)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-lm)
+target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-lc)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -static)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,--gc-sections)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,--print-memory-usage)
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-u,__errno)
-target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -u _printf_float)
-target_link_options(${CMAKE_PROJECT_NAME} PUBLIC --specs=nano.specs)
+
+target_link_libraries(${CMAKE_PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/lib/picolibc/lib/libc.a)
+target_link_directories(${CMAKE_PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/picolibc/lib)
 
 # Disable LOAD segment with RWX permissions warning
 target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-no-warn-rwx-segments)

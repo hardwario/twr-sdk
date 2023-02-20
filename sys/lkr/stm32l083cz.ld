@@ -133,6 +133,8 @@ SECTIONS
     . = ALIGN(4);
     PROVIDE ( end = . );
     PROVIDE ( _end = . );
+    PROVIDE ( __heap_start = LOADADDR(._user_heap_stack) );
+    PROVIDE ( __heap_end = __heap_start + _Min_Heap_Size );
     . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
     . = ALIGN(4);
