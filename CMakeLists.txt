@@ -60,7 +60,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/lib/pico
 target_link_directories(${CMAKE_PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/picolibc/lib)
 
 # Disable LOAD segment with RWX permissions warning
-target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,-no-warn-rwx-segments)
+target_link_options(${CMAKE_PROJECT_NAME} PUBLIC -Wl,--no-warn-rwx-segments)
 
 # All other directories with source files
 # You need to update the specific CMakeLists files in the respective directories if you want to update the SDK
