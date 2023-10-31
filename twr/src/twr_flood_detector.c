@@ -109,6 +109,17 @@ start:
 					twr_gpio_set_mode(TWR_GPIO_P5, TWR_GPIO_MODE_INPUT);
 					break;
 				}
+                case TWR_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_C:
+				{
+					if (!twr_module_sensor_init())
+					{
+						goto start;
+					}
+                    twr_module_sensor_set_vdd(true);
+					twr_gpio_init(TWR_GPIO_P7);
+					twr_gpio_set_mode(TWR_GPIO_P7, TWR_GPIO_MODE_INPUT);
+					break;
+				}
 				default:
 				{
 					goto start;
@@ -147,6 +158,11 @@ start:
 					twr_scheduler_plan_current_from_now(5);
 					break;
 				}
+                case TWR_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_C:
+				{
+					twr_scheduler_plan_current_from_now(5);
+					break;
+				}
 				default:
 				{
 					goto start;
@@ -180,6 +196,11 @@ start:
 					{
 						goto start;
 					}
+					break;
+				}
+                case TWR_FLOOD_DETECTOR_TYPE_LD_81_SENSOR_MODULE_CHANNEL_C:
+				{
+					self->_alarm = twr_gpio_get_input(TWR_GPIO_P7) == 1;
 					break;
 				}
 				default:
