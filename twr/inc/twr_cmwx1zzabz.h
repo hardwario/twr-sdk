@@ -297,7 +297,7 @@ struct twr_cmwx1zzabz_t
     char _custom_command_buf[TWR_CMWX1ZZABZ_CUSTOM_COMMAND_BUFFER_SIZE];
     uint8_t _tx_port;
     bool _debug;
-
+    bool _atci;
     char _fw_version[TWR_CMWX1ZZABZ_FW_VERSION_BUFFER_SIZE];
 
     int32_t _cmd_rfq_rssi;

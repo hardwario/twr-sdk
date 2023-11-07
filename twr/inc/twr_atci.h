@@ -29,7 +29,7 @@ typedef struct
 typedef struct
 {
   const char *command;
-  bool (*action)(void);
+  bool (*action)(twr_atci_param_t *param);
   bool (*set)(twr_atci_param_t *param);
   bool (*read)(void);
   bool (*help)(void);
@@ -90,11 +90,11 @@ bool twr_atci_skip_response(void);
 
 //! @brief Helper for clac action
 
-bool twr_atci_clac_action(void);
+bool twr_atci_clac_action(twr_atci_param_t *param);
 
 //! @brief Helper for help action
 
-bool twr_atci_help_action(void);
+bool twr_atci_help_action(twr_atci_param_t *param);
 
 //! @brief Parse string to uint and move parsing cursor forward
 //! @param[in] param ATCI instance

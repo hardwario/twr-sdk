@@ -182,50 +182,52 @@ bool twr_at_lora_mode_set(twr_atci_param_t *param)
     return true;
 }
 
-bool twr_at_lora_join(void)
+bool twr_at_lora_join(twr_atci_param_t *param)
 {
     twr_cmwx1zzabz_join(_at.lora);
 
     return true;
 }
 
-bool twr_at_lora_frmcnt(void)
+bool twr_at_lora_frmcnt(twr_atci_param_t *param)
 {
     twr_cmwx1zzabz_frame_counter(_at.lora);
 
     return true;
 }
 
-bool twr_at_lora_reboot(void)
+bool twr_at_lora_reboot(twr_atci_param_t *param)
 {
     twr_system_reset();
 
     return true;
 }
 
-bool twr_at_lora_freset(void)
+bool twr_at_lora_freset(twr_atci_param_t *param)
 {
     twr_cmwx1zzabz_factory_reset(_at.lora);
 
     return true;
 }
 
-bool twr_at_lora_link_check(void)
+bool twr_at_lora_link_check(twr_atci_param_t *param)
 {
     twr_cmwx1zzabz_link_check(_at.lora);
 
     return true;
 }
 
-bool twr_at_lora_custom_at_set(twr_atci_param_t *param)
+bool twr_at_lora_custom_at(twr_atci_param_t *param)
 {
-    // Skip 6 characters (AT$AT=)
-    twr_cmwx1zzabz_custom_at(_at.lora, param->txt);
-
-    return true;
+    bool rv = twr_cmwx1zzabz_custom_at(_at.lora, param->txt);
+    if (rv)
+    {
+        twr_atci_skip_response();
+    }
+    return rv;
 }
 
-bool twr_at_lora_rfq(void)
+bool twr_at_lora_rfq(twr_atci_param_t *param)
 {
     twr_cmwx1zzabz_rfq(_at.lora);
 
@@ -347,7 +349,29 @@ bool twr_at_lora_repc_set(twr_atci_param_t *param)
     return true;
 }
 
-bool twr_at_lora_ver_read(void)
+bool twr_at_lora_lora2atci_read(void)
+{
+    twr_atci_printfln("$LORA>ATCI: %d", _at.lora->_atci);
+
+    return true;
+}
+
+bool twr_at_lora_lora2atci_set(twr_atci_param_t *param)
+{
+    uint8_t onoff = atoi(param->txt);
+
+    if (onoff > 1)
+    {
+        return false;
+    }
+
+    _at.lora->_atci = onoff;
+
+    return true;
+}
+
+
+bool twr_at_lora_ver_read(twr_atci_param_t *param)
 {
     const char *version = twr_cmwx1zzabz_get_fw_version(_at.lora);
 
